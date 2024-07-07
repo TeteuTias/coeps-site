@@ -33,7 +33,7 @@ function Header02() {
           <h1>Inicio</h1>
         </div>
         <div className=" hover:text-red-800 ease-in duration-150 cursor-pointer">
-          <h1>O Evento</h1>
+          <h1>Organizadores</h1>
         </div>
         <div className=" hover:text-red-800 ease-in duration-150 cursor-pointer">
 
