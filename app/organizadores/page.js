@@ -1,5 +1,8 @@
+'use client'
+//
 import Image from "next/image";
 import Header from "../components/Header"
+import ImageModal from "../components/ImageModal";
 //
 //
 export default () =>{
@@ -193,17 +196,17 @@ export default () =>{
             <div className="bg-[url(Site.jpg)] flex content-center justify-center font-semibold text-[30px] p-16  bg-center bg-cover">
                 <h1>Comissão Organizadora</h1>
             </div>
-            <div className="flex content-center justify-center pb-10">
-                <div className=" w-2/3 space-y-6">
+            <div className="flex content-center justify-center pb-10 pt-10">
+                <div className=" w-[90%] lg:w-2/3 space-y-6">
                     <div className="flex content-center justify-center">
-                        <h1 className=" text-gray-700">
+                        <h1 className=" text-gray-700 text-justify">
                             O <span className="text-gray-800 font-bold">V COEPS</span>, desenhado e objetivado pelo DADG, é inteiramente organizado pelos alunos do Centro Universitário IMEPAC Araguari. 
                             Tradicionalmente, sempre foi realizado pelos alunos da Medicina, porém essa edição contará com alunos de outros cursos da saúde, 
                             como psicologia, enfermagem, educação física, fisioterapia e outros.
                         </h1>
                     </div>
                     <div className="flex content-center justify-center">
-                        <h1 className=" text-gray-700">
+                        <h1 className=" text-gray-700 text-center">
                             Conheça nossa comissão organizadora abaixo!
                         </h1>
                     </div>
@@ -219,18 +222,13 @@ export default () =>{
                             })
                             }
                         </div>
-                        <div className="grid grid-rows-4 grid-flow-col gap-4">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         {
                                 lista_fotos.map((value,index)=>{
                                     return (
                                     <div key={index} className="relative w-[100%]">
-                                        <Image
-                                            srcset={value}
-                                            alt="Descrição da imagem"
-                                            layout="fit"
-                                            objectFit="cover"
-                                            className=""
-                                        />
+                                        <ImageModal src={value} alt={""} />
+
                                     </div>
                                 )
                             })
