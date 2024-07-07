@@ -1,4 +1,5 @@
 import "./globals.css";
+import Link from 'next/link'
 import Image from "next/image";
 export const metadata = {
   title: 'Next.js',
@@ -30,10 +31,10 @@ function Header02() {
           />
         </div>
         <div className="hover:text-red-800 ease-in duration-150 cursor-pointer">
-          <h1>Inicio</h1>
+          <Link href="/" >Inicio</Link >
         </div>
         <div className=" hover:text-red-800 ease-in duration-150 cursor-pointer">
-          <h1>Organizadores</h1>
+          <Link href="/organizadores">Organizadores</Link>
         </div>
         <div className=" hover:text-red-800 ease-in duration-150 cursor-pointer">
 
