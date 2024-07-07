@@ -9,7 +9,6 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <Header01 />
         <Header02 />
         {children}
         <Footer/>  
@@ -19,21 +18,6 @@ export default function RootLayout({ children }) {
 }
 //Header
 //
-function Header01() {
-  return(
-      <div className="bg-[#3E4095] flex p-2 flex-col space-y-10 lg:flex-row lg:items-center lg:justify-center lg:content-center lg:space-x-10 lg:space-y-0 ">
-        <div>
-          <h1>vcoeps.dadg@gmail.com</h1>
-        </div>
-        <div>
-          <h1>(62) 98330-6426</h1>
-        </div>
-        <div>
-          <h1>Área do Congressista</h1>
-        </div>
-      </div>
-  )
-}
 function Header02() {
   return(
       <div className="top-0 sticky bg-[#3E4095]  p-4 flex flex-col space-y-10 lg:flex-row lg:border-[1px] lg:items-center lg:justify-center lg:content-center lg:space-x-10 lg:space-y-0 ">
@@ -73,6 +57,9 @@ function Header02() {
         <div className=" hover:text-red-800 ease-in duration-150 cursor-pointer">
           <h1>Inscreva-se</h1>
         </div>
+        <div className=" hover:text-red-500 ease-in duration-150 cursor-pointer">
+          <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold hover:bg-white">ÁREA DO CONGRESSITA</button>
+        </div>
       </div>
   )
 }
@@ -80,7 +67,7 @@ function Header02() {
 //
 function Footer() {
   return (
-    <div className="flex justify-center items-center content-center mt-10">
+    <div className="flex justify-center items-center content-center mt-5 mb-5">
       <div className="flex flex-col justify-center items-center content-center">
         <h1 className="font-bold text-[#3e4095] text-[20px]">Realização</h1>
         <div className="flex flex-row space-x-5">
