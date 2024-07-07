@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Header from "../components/Header"
 //
 //
 export default () =>{
@@ -186,7 +187,9 @@ export default () =>{
     ]
     var organizacao_selecionada = "TODAS"
     return (
-        <div className="">
+        <>
+        <Header/>
+        <div className="pt-12">
             <div className="bg-[url(Site.jpg)] flex content-center justify-center font-semibold text-[30px] p-16  bg-center bg-cover">
                 <h1>Comissão Organizadora</h1>
             </div>
@@ -237,6 +240,7 @@ export default () =>{
                 </div>
             </div>
         </div>
+        </>
     )
 }
 //

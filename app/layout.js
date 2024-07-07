@@ -1,3 +1,5 @@
+
+
 import "./globals.css";
 import Link from 'next/link'
 import Image from "next/image";
@@ -10,7 +12,6 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="">
-        <Header02 />
         {children}
         <Footer/>  
       </body>
@@ -21,7 +22,7 @@ export default function RootLayout({ children }) {
 //
 function Header02() {
   return(
-      <div className="top-0 sticky bg-[#3E4095]  p-4 flex flex-col space-y-10 lg:flex-row lg:border-[1px] lg:items-center lg:justify-center lg:content-center lg:space-x-10 lg:space-y-0 ">
+      <div className=" top-0 sticky bg-[#3E4095]  p-4 flex flex-col space-y-10 lg:flex-row lg:border-[1px] lg:items-center lg:justify-center lg:content-center lg:space-x-10 lg:space-y-0 ">
         <div className="hover:text-red-800 ease-in duration-150 cursor-pointer">
           <Image       
             src="/Logo01.png"
@@ -93,3 +94,6 @@ function Footer() {
     </div>
   )
 }
+
+
+

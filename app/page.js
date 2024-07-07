@@ -1,9 +1,13 @@
+'use client'
 import Image from "next/image";
-
+import Header from "./components/Header"
+//
+//
 export default function Home() {
   return (
     <main className="w-screen">
-      <div className="bg-[url(Site.jpg)] bg-center bg-cover pb-10">
+      <Header />
+      <div className="bg-[url(Site.jpg)] bg-center bg-cover pb-10 pt-12">
         <Letreiro />
         <Contador />
       </div>
