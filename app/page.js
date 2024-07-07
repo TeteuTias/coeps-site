@@ -1,0 +1,286 @@
+import Image from "next/image";
+
+export default function Home() {
+  return (
+    <main className="w-screen">
+      <div className="bg-[url(Site.jpg)] bg-center bg-cover pb-10">
+        <Header01 />
+        <Header02 />
+        <Letreiro />
+        <Contador />
+      </div>
+      <div className="flex justify-center items-center content-center text-justify p-10">
+        <TextoDIV1 />
+      </div>
+      <div className="bg-[#3e4095] text-white flex justify-center items-center content-center text-justify p-10 space-y-10">
+        <TextoDIV2 />
+      </div>
+      <div className="bg-white relative" data-negative="false">
+        <BannerDIV4 />
+      </div>
+      <Footer />
+    </main>
+  );
+}
+// Premeiro DIV
+
+function Header01() {
+  return(
+      <div className="bg-[#3E4095] flex p-2 flex-col space-y-10 lg:flex-row lg:items-center lg:justify-center lg:content-center lg:space-x-10 lg:space-y-0 ">
+        <div>
+          <h1>vcoeps.dadg@gmail.com</h1>
+        </div>
+        <div>
+          <h1>(62) 98330-6426</h1>
+        </div>
+        <div>
+          <h1>Área do Congressista</h1>
+        </div>
+      </div>
+  )
+}
+function Header02() {
+  return(
+      <div className="top-0 sticky bg-green-200/10  p-4 flex flex-col space-y-10 lg:flex-row lg:border-[1px] lg:items-center lg:justify-center lg:content-center lg:space-x-10 lg:space-y-0 ">
+        <div className="hover:text-red-800 ease-in duration-150 cursor-pointer">
+          <Image       
+            src="/Logo01.png"
+            width={150}
+            height={150}
+            alt="Picture of the author"
+          />
+        </div>
+        <div className="hover:text-red-800 ease-in duration-150 cursor-pointer">
+          <h1>Inicio</h1>
+        </div>
+        <div className=" hover:text-red-800 ease-in duration-150 cursor-pointer">
+          <h1>O Evento</h1>
+        </div>
+        <div className=" hover:text-red-800 ease-in duration-150 cursor-pointer">
+
+          <h1>Palestrantes</h1>
+        </div>
+        <div className=" hover:text-red-800 ease-in duration-150 cursor-pointer">
+          <h1>Programação</h1>
+        </div>
+        <div className=" hover:text-red-800 ease-in duration-150 cursor-pointer">
+          <h1>Inscrições</h1>
+        </div>
+        <div className=" hover:text-red-800 ease-in duration-150 cursor-pointer">
+          <h1>Trabalhos</h1>
+        </div>
+        <div className=" hover:text-red-800 ease-in duration-150 cursor-pointer">
+          <h1>Anais</h1>
+        </div>
+        <div className=" hover:text-red-800 ease-in duration-150 cursor-pointer">
+          <h1>Contato</h1>
+        </div>
+        <div className=" hover:text-red-800 ease-in duration-150 cursor-pointer">
+          <h1>Inscreva-se</h1>
+        </div>
+      </div>
+  )
+}
+function Letreiro() {
+ return (
+  <div className="flex flex-col space-y-8 justify-center items-center content-center p-10">
+    <Image       
+      src="/Letreiro01.png"
+      width={647}
+      height={180}
+      alt="Picture of the author"
+    />
+        <Image       
+      src="/Letreiro02.png"
+      width={647}
+      height={180}
+      alt="Picture of the author"
+    />
+        <Image       
+      src="/Letreiro03.png"
+      width={647}
+      height={180}
+      alt="Picture of the author"
+    />
+  </div>
+ )
+}
+function Contador() {
+  return(
+    <div className="flex justify-center items-center align-center">
+      <div className="flex flex-row space-x-2 lg:space-x-10 text lg:text-2xl">
+        <div className="flex flex-col items-center justify-center bg-[#3e4095] rounded-full w-16 h-16 sm:w-24 sm:h-24">
+          <h1>00</h1>
+          <h1>Dias</h1>
+        </div>
+        <div className="flex flex-col items-center justify-center bg-[#3e4095] rounded-full w-16 h-16 sm:w-24 sm:h-24">
+          <h1>00</h1>
+          <h1>Horas</h1>
+        </div>
+        <div className="flex flex-col items-center justify-center bg-[#3e4095] rounded-full w-16 h-16 sm:w-24 sm:h-24">
+          <h1>00</h1>
+          <h1>Min</h1>
+        </div>
+        <div className="flex flex-col items-center justify-center bg-[#3e4095] rounded-full w-16 h-16 sm:w-24 sm:h-24">
+          <h1>00</h1>
+          <h1>Seg</h1>
+        </div>
+      </div>
+    </div>
+  )
+}
+// Segundo DIV
+//
+function TextoDIV1() {
+  return (
+    <div className="w-[90%] lg:w-[70%] space-y-5">
+      <h1 className="font-semibold text-slate-950 text-[30px] lg:text-[35px]">Sobre o Congresso</h1>
+      <h1 className="text-black">
+      O V Congresso dos Estudantes e Profissionais de Saúde (COEPS), evento tradicional em Araguari, organizado pelo Diretório Acadêmico Diogo Guimarães (DADG) do curso de Medicina do Centro Universitário 
+      IMEPAC Araguari, acontecerá de 26 a 29 de outubro de 2023, presencialmente, tendo como tema “Cuidados Paliativos na formação profissional de saúde: humanização em destaque”, trazendo amplas discussões 
+      com profissionais de renome sobre o tema do paliativismo em um espectro humanizado, assim como rodas de conversas sobre a saúde de populações em situação de vulnerabilidade. Objetivamos ainda entender
+      essas abordagens nos diferentes tipos de cenários de saúde, trabalhando um tema de grande importância e que se faz pouco presente dentro da nossa formação. Além disso, teremos minicursos diversos, vivências,
+      atividades político culturais, visita técnica, submissão e apresentação de trabalhos, entre outros, além de nossa esperada festa de encerramento. Faça sua inscrição e não perca esse grande evento!
+      </h1>
+      <button className="bg-[#3e4095] px-5 py-2">SAIBA MAIS</button>
+
+    </div>
+  )
+}
+//
+// Terceiro DIV
+function TextoDIV2(){
+  return (
+    <div className="flex flex-col w-[90%] lg:w-[70%] space-y-5 pb-10">
+      <div className="flex justify-center items-center content-center text-center">
+        <h1 className="font-semibold text-[30px] lg:text-[35px]">Evento tradicional em Araguari</h1>
+      </div>
+      <div className="text-center">
+        <p1>
+          O V Congresso dos Estudantes e Profissionais de Saúde (COEPS), evento tradicional em Araguari, organizado pelo Diretório Acadêmico Diogo 
+          Guimarães (DADG) do curso de Medicina do Centro Universitário IMEPAC Araguari, acontecerá de 26 a 29 de outubro de 2023, 
+          presencialmente, tendo como tema “Cuidados Paliativos na formação profissional de saúde: humanização em destaque”.
+        </p1>
+      </div>
+      <div className="flex flex-col space-y-10 lg:space-y-0 lg:flex-row lg:space-x-10 justify-center items-center content-center pt-[50px]">
+        <div className="flex flex-col justify-center items-center content-center text-white">
+          <div className="flex flex-col justify-center items-center content-center">
+            <h1 className="font-extrabold text-[22px] lg:text-[20px]">Local do Evento</h1>
+            <h1 className="text-red-400">-----------</h1>
+          </div>
+          <div className="text-center">
+            <p className="break-words">O Evento será realizado entre os dias 26 a 29 de Outubro de 2023 no IMEPAC Centro Universitário</p>
+            </div>
+        </div>
+
+        <div className="flex flex-col justify-center items-center content-center text-white">
+          <div className="flex flex-col justify-center items-center content-center">
+            <h1 className="font-extrabold text-[22px] lg:text-[20px]">Programação</h1>
+            <h1 className="text-red-400">-----------</h1>
+          </div>
+          <div className="text-center">
+            <p className="break-words">Contaremos com ampla programação, distribuiída nos 4 dias do evento, não perca!</p>
+            </div>
+        </div>
+
+        <div className="flex flex-col justify-center items-center content-center text-white">
+          <div className="flex flex-col justify-center items-center content-center">
+            <h1 className="font-extrabold text-[22px] lg:text-[20px]">Palestrantes</h1>
+            <h1 className="text-red-400">-----------</h1>
+          </div>
+          <div className="text-center">
+            <p className="break-words">Traremos amplas discussões com profissionais de renome sobre o tema do paliativismo em um espectro humanizado</p>
+            </div>
+        </div>
+
+        <div className="flex flex-col justify-center items-center content-center text-white">
+          <div className="flex flex-col justify-center items-center content-center">
+            <h1 className="font-extrabold text-[22px] lg:text-[20px]">Trabalhos Científicos</h1>
+            <h1 className="text-red-400">-----------</h1>
+          </div>
+          <div className="text-center">
+            <p className="break-words">Com ointuito de incentivar a participação dos acadêmicos, profissionais da saúde e áreas afins em atividades de pesquisa</p>
+            </div>
+        </div>
+
+
+      </div>
+    </div>
+  )
+}
+//
+// Quarto DIV
+function BannerDIV4(){
+  return(
+    <>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="none" fill="#3e4095" >
+        <path className=""  d="M761.9,44.1L643.1,27.2L333.8,98L0,3.8V0l1000,0v3.9"></path>
+      </svg>
+      <div className=" flex flex-col justify-center items-center lg:items-start content-center lg:flex-row space-y-12 lg:space-y-0 lg:space-x-12">
+        <div className="w-fit text-[#2c3e50]">
+          <h1 className="font-bold text-[25px] lg:text-[35px] ">Inscrições antecipadas</h1>
+          <p1>Aproveite o lote inicial com valores especiais</p1>
+          <h1>--------</h1>
+          <button className="bg-[#3e4095] px-5 py-2 text-white">GARANTA SUA VAGA {'>>>'}</button>
+        </div>
+        <div className="w-[335px] lg:w-[600px] bg-[#EAEAEA]">
+          <Image       
+            src="/Imepac.png"
+            width={850}
+            height={550}
+            alt="Picture of the author"
+          />
+          <div className="bg-yellow-300 flex content-center items-center justify-center relative">
+            <div className="bg-yellow-400 border-[4px] boreder-[#3e4095] w-fit p-3 lg:p-5 rounded-full absolute">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" className="w-5 h-5 lg:w-10 lg:h-10 text-blue-500">
+                <path fill="#FFFFFF" d="M408 120c0 54.6-73.1 151.9-105.2 192c-7.7 9.6-22 9.6-29.6 0C241.1 271.9 168 174.6 168 120C168 53.7 221.7 0 288 0s120 53.7 120 120zm8 80.4c3.5-6.9 6.7-13.8 9.6-20.6c.5-1.2 1-2.5 1.5-3.7l116-46.4C558.9 123.4 576 135 576 152V422.8c0 9.8-6 18.6-15.1 22.3L416 503V200.4zM137.6 138.3c2.4 14.1 7.2 28.3 12.8 41.5c2.9 6.8 6.1 13.7 9.6 20.6V451.8L32.9 502.7C17.1 509 0 497.4 0 480.4V209.6c0-9.8 6-18.6 15.1-22.3l122.6-49zM327.8 332c13.9-17.4 35.7-45.7 56.2-77V504.3L192 449.4V255c20.5 31.3 42.3 59.6 56.2 77c20.5 25.6 59.1 25.6 79.6 0zM288 152a40 40 0 1 0 0-80 40 40 0 1 0 0 80z"/>
+              </svg>
+            </div>
+          </div>
+          <div className="text-black p-5 space-y-2">
+            <h1 className="font-bold">
+              Local do Evento
+            </h1>
+            <h1 className="font-bold">
+              IMEPAC Centro Universitário
+            </h1>
+            <p>
+              Av. Minas Gerais, 1889 – Centro, Araguari – MG, 38444-128. (34) 3249-3900
+            </p>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+//
+// Footer
+function Footer() {
+  return (
+    <div className="flex justify-center items-center content-center mt-10">
+      <div className="flex flex-col justify-center items-center content-center">
+        <h1 className="font-bold text-[#3e4095] text-[20px]">Realização</h1>
+        <div className="flex flex-row space-x-5">
+          <div>
+            <Image       
+              src="/LogoDADG.png"
+              width={150}
+              height={150}
+              alt="Picture of the author"
+            />
+          </div>
+          <div>
+            <Image       
+              src="/LogoImepac.png"
+              width={150}
+              height={150}
+              alt="Picture of the author"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+//<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--!Font Awesome Free 6.5.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free Copyright 2024 Fonticons, Inc.--><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7 .9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg>
