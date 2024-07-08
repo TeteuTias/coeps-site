@@ -1,6 +1,11 @@
 usuarios
-    {
+{
+    "_id":"", // esse ID vem do auth0. eu apenas tiro o "auth|" quando formato para ficar padronizado e mais facil de achar.
+    "isPos_registration":0/1, // Sinaliza que ainda não passou pela primeira coleta de dados do pos_registrarion no primerio login. Caso 0 ele deve ser redirecionaod para /painel/updateData. Caso 1 ele pode ir normalmente para o painel. 
+    "informacoes_usuario":{ // Contem informações do usuário
         "nome:":"", -> aqui está apenas os numeros. Mas se eu for pesquisar no auth0 tenho que adicionar "auth0|" e depois o código, sem espaço. caso duvida consulte o rawdata
         "email":"",
-        ""
-    }
+        "data_criacao":"", // É baseada no pos_registration01, é baseado na hora que é executado o pos_registration01
+
+    },
+}

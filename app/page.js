@@ -1,11 +1,16 @@
 'use client'
 import Image from "next/image";
 import Header from "./components/Header"
+import { useUser } from "@auth0/nextjs-auth0/client"
 //
 //
+
+
 export default function Home() {
+  const { user, error, isLoading } = useUser();
   return (
     <main className="w-screen">
+      <h1 className="text-black">{user?"Voce está logado":"Voce não está logado"}</h1>
       <Header />
       <div className="bg-[url(Site.jpg)] bg-center bg-cover pb-10 pt-12">
         <Letreiro />

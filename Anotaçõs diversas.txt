@@ -1,0 +1,32 @@
+
+Criando página de update + criando esquema de banco de dados
+CRIEI a página que pega as informações do usuário. Também fiz a parte do post da api e também a logica do DB no txt.
+	- api/pos_registration01 => cria as informações no db pós registro do conta.
+	- criei uma página de carregando.
+	- sempre que ele entra em updateData ele entra em contato com a API para puxar todos os dados necessários /api/get_informacoes_usuario. Se isPos_registration == 0 ele vái para a tela de updateData
+
+preciso adicionar o footer manualmente. Tive problema com ele já que fui incopetente de configurar o layout.
+preciso colocar para sempre redirecionar se eu tiver logado -> proximo que vou arrumar
+para logar um so é so usar o webhook para deslogar o amiguinho
+
+sera que consigo resolver o negócio do foot colocano h-screen ? pq ai tudo fica na tela MENOS ele
+//
+//
+
+Pacotes instalados:
+	npm install mongodb
+.env.local:
+	MONGODB_URI=mongodb://localhost:27017/meuBancoDeDados
+	MONGODB_DB=meuBancoDeDados
+
+
+
+preciso criar componetes de coisasa que eu uso muito para facilitar a manutencao
+	-> compoente de contato =>
+Fazer um "cata" realçando os detalhes qeu nao fiz.
+
+
+
+[#3E4095]
+
+2iwsPQ2D5lFPqxYj2BscNl8GvmE_3CsGFxz1AqMj348ZyqqgL

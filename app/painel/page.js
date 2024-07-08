@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 export default () =>{
     const { user, error, isLoading } = useUser();
     const router = useRouter()
-
+   
     if (isLoading) {
         return <h1 className="bg-yellow-700">Carregando</h1>
     }
@@ -19,6 +19,9 @@ export default () =>{
     return(
         <>
             <h1 className="text-black">{user?"Voce está logado":"Voce não está logado"}</h1>
+            <h1 className="text-black">{user.email}</h1>
+            <h1 className="text-black"></h1>
+
             <div className="bg-yellow-300">
                 <Link href="/api/auth/logout"><h1>LogOut</h1></Link>
             </div>
