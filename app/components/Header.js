@@ -42,7 +42,7 @@ const Header = () => {
               </Link>
             </li>
             <li>
-            <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
+            <Link href="/inscricoes" className='hover:text-red-500 ease-linear duration-150'>
                 Inscrições
               </Link>
             </li>
@@ -57,12 +57,12 @@ const Header = () => {
               </Link>
             </li>
             <li>
-                <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
+                <Link href="/#ComponenteContados" className='hover:text-red-500 ease-linear duration-150'>
                 Contato
               </Link>
             </li>
             <li>
-              <Link href="/api/auth/login" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/inscricoes" className='hover:text-red-500 ease-linear duration-150'>
                 Inscreva-se
               </Link>
             </li>
@@ -123,11 +123,6 @@ const Header = () => {
                 </li>
                 <li>
                 <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
-                    Inscrições
-                    </Link>
-                </li>
-                <li>
-                <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
                     Trabalhos
                     </Link>
                 </li>
@@ -142,7 +137,7 @@ const Header = () => {
                     </Link>
                 </li>
                 <li>
-                  <Link href="/api/auth/login" className='hover:text-red-500 ease-linear duration-150'>
+                  <Link href="/inscricoes" className='hover:text-red-500 ease-linear duration-150'>
                     Inscreva-se
                   </Link>
                 </li>
