@@ -52,12 +52,12 @@ const Header = () => {
               </Link>
             </li>
             <li>
-                <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
+                <Link href="/anais" className='hover:text-red-500 ease-linear duration-150'>
                 Anais
               </Link>
             </li>
             <li>
-                <Link href="/#ComponenteContados" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/#ComponenteContados" className='hover:text-red-500 ease-linear duration-150'>
                 Contato
               </Link>
             </li>
@@ -127,7 +127,7 @@ const Header = () => {
                     </Link>
                 </li>
                 <li>
-                    <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
+                    <Link href="/anais" className='hover:text-red-500 ease-linear duration-150'>
                     Anais
                     </Link>
                 </li>
