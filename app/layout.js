@@ -13,8 +13,8 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className="">
         {children}
-        <Footer/>  
       </body>
+        <Footer/>  
     </html>
   )
 }
@@ -69,7 +69,7 @@ function Header02() {
 //
 function Footer() {
   return (
-    <div className="flex justify-center items-center content-center mt-5 mb-5">
+    <div className="flex justify-center items-center content-center mt-5 mb-5 bg-white">
       <div className="flex flex-col justify-center items-center content-center">
         <h1 className="font-bold text-[#3e4095] text-[20px]">Realização</h1>
         <div className="flex flex-row space-x-5">
