@@ -1,5 +1,6 @@
 
-
+// app/layout.jsx
+import { UserProvider } from '@auth0/nextjs-auth0/client';
 import "./globals.css";
 import Link from 'next/link'
 import Image from "next/image";
@@ -11,10 +12,12 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className="">
-        {children}
-        <Footer/>  
-      </body>
+      <UserProvider>
+        <body className="">
+          {children}
+          <Footer/>  
+        </body>
+      </UserProvider>
     </html>
   )
 }
