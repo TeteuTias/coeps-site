@@ -1,0 +1,6 @@
+usuarios
+    {
+        "nome:":"", -> aqui está apenas os numeros. Mas se eu for pesquisar no auth0 tenho que adicionar "auth0|" e depois o código, sem espaço. caso duvida consulte o rawdata
+        "email":"",
+        ""
+    }
