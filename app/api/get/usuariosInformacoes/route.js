@@ -11,6 +11,7 @@ import { ObjectId } from 'mongodb';
 // 
 export async function GET( request, { params } ) {
     try{
+
         const { accessToken } = await getAccessToken();
         
         const response = await fetch('https://dev-kj0gfrsdev5h0hkl.us.auth0.com/userinfo', {

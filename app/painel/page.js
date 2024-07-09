@@ -15,6 +15,7 @@ export default () =>{
     const [data, setData] = useState(null)
     //
     //
+
     useEffect(() => {
         if (user && !isLoading) {
             const fetchData = async () => {
@@ -37,19 +38,24 @@ export default () =>{
     }, [user, isLoading]); 
     //
     //
-    if (isLoading || isFetching) {
-        return <TelaLoading />
+    try {
+        if (isLoading || isFetching) {
+            return <TelaLoading />
+        }
+        
+        if (!user && !isLoading) {
+            router.push('/')
+            return <></>
+        }
+        if (user && !isLoading && data && data.data.isPos_registration == 0) { // redirecionando se ele estiver logado, não estiver carregando e se isPos_registration == 0
+            router.push('/painel/updateData')
+            return <></>
+        }
+        if (!data) { // dive que fazer para "qualquer coisa". é a ultima etapa para evitar uma merda tremenda
+            return <PaginaErrorPadrao />
+        }
     }
-    
-    if (!user && !isLoading) {
-        router.push('/')
-        return <></>
-    }
-    if (user && !isLoading && data && data.data.isPos_registration == 0) { // redirecionando se ele estiver logado, não estiver carregando e se isPos_registration == 0
-        router.push('/painel/updateData')
-        return <></>
-    }
-    if (!data) { // dive que fazer para "qualquer coisa". é a ultima etapa para evitar uma merda tremenda
+    catch {
         return <PaginaErrorPadrao />
     }
     return(

@@ -22,7 +22,9 @@ export async function POST(request) {
             "_id":new ObjectId(user_id),
             "isPos_registration":0,
             "informacoes_usuario":{
-                "nome:":"",
+                "cpf":"",
+                "numero_telefone":"",
+                "nome":"",
                 "email":email,
                 "data_criacao":data_criacao,
             },
