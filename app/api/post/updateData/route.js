@@ -10,8 +10,9 @@ import { ObjectId } from 'mongodb';
 // assim, SEMPRE ENNVIE NESSE FORMATO: {cpf, numero_telefone, nome}
 export async function POST(request) {
     try {
-
+        
         const { accessToken } = await getAccessToken();
+        
         
     const response = await fetch('https://dev-kj0gfrsdev5h0hkl.us.auth0.com/userinfo', {
         headers: {

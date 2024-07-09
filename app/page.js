@@ -13,12 +13,12 @@ export default function Home() {
   //
   //
   /*
-
+  <h1 className="text-black">{user?"Voce está logado":"Voce não está logado"}</h1>
   */
   return (
     <main className="w-screen">
     <Link href="/api/auth/logout">
-      <h1 className="text-black">{user?"Voce está logado":"Voce não está logado"}</h1>
+      
     </Link>
       <Header />
       <div className="bg-[url(Site.jpg)] bg-center bg-cover pb-10 pt-12">

@@ -1,7 +1,11 @@
-Fazendo o painel/updateData funcionar
-	Agora os inputs estão funcionando. Além disso, tá também jogando no db.
-	- ?? JA QUE O LAYOUT SOBREPOE, VOU FAZER UM CLIENT SIDE E COLOCAR ELE PARA MANDAR ./ SE NAO ESTIVER LOGADO. ATÉ ENTAO TO FAZENDO ESSA MERDA NA MAO EM TODAS AS PÁGINAS
 
+
+
+
+- ?? JA QUE O LAYOUT SOBREPOE, VOU FAZER UM CLIENT SIDE E COLOCAR ELE PARA MANDAR ./ SE NAO ESTIVER LOGADO. ATÉ ENTAO TO FAZENDO ESSA MERDA NA MAO EM TODAS AS PÁGINAS
+
+
+VERFICIAR SE A API ESTÁ APENAS PARA QUEM ESTÁ LOGADO
 
 COLOCAR LOGOUT NA TELA DE ERRO
 colocar tela de erro como padrao.
@@ -18,6 +22,8 @@ Pacotes instalados:
 .env.local:
 	MONGODB_URI=mongodb://localhost:27017/meuBancoDeDados
 	MONGODB_DB=meuBancoDeDados
+
+Tornar responsivo quando ele VIRA O CELULAR PRO LADO AAAAAA
 
 Separar o painel em outro grupo, para ele ter  prorio globals e layout. Dps olhar na documentacao para ver.
 Arrumar o fetch non-store
