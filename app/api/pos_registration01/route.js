@@ -1,3 +1,4 @@
+import { ObjectId } from 'mongodb';
 import { connectToDatabase } from '../../lib/mongodb'
 //
 //
@@ -18,7 +19,7 @@ export async function POST(request) {
         const { db } = await connectToDatabase();
 
         const result = await db.collection('usuarios').insertOne({
-            "_id":user_id,
+            "_id":new ObjectId(user_id),
             "isPos_registration":0,
             "informacoes_usuario":{
                 "nome:":"",
