@@ -8,6 +8,56 @@ usuarios
         "nome:":"", -> aqui está apenas os numeros. Mas se eu for pesquisar no auth0 tenho que adicionar "auth0|" e depois o código, sem espaço. caso duvida consulte o rawdata
         "email":"", ->DEVE SER ÚNICO
         "data_criacao":"", // É baseada no pos_registration01, é baseado na hora que é executado o pos_registration01
-
     },
+    "pagamento":{
+    "situacao":0,// O zero sinaliza que ainda não há pagamento aprovado.
+    "lista_pagamentos":[],
+    }
 }
+
+*lista_pagamentos
+    [
+    {
+        id_hook_criador - id // é único. O hook01 verifica se nao ha ninguem com esse id antes de dar push | ELE É O DO CRIADOR!!!!!.
+        id_hook_modificador _ id do ULTIMO MODIFICADOR
+        id_pedido - data.order.code
+        codigo_pedido - data.code
+        valor - data.amount
+        metodo_pagamento - data.payment_method
+            pix
+            credit_card
+        data_criacao - created_at
+        data_update - updated_at
+        status - data.order.status
+            waiting_payment
+            payed?
+            ...
+        id_comprador: data.metadata._id // Corresponde ao _id do comprador. Esse é o id que está no db
+
+    id_hook - id
+    codigo_pedido - data.code
+    valor - data.code.amount/100
+    metodo_pagamento - data.payment_method
+        pix
+        credit_card
+    data_criacao - created_at
+    data_update - undefined - fica assim pq quem vai atulizar é o webwook quando fazer o pagametno
+    status - data.order.status
+        waiting_payment
+        payed?
+        ...
+    id_comprador: data.metadata._id // Corresponde ao _id do comprador. Esse é o id que está no db
+
+    *daqui para baixo só se for pix: em 0 porque sempre vai ser somente um produto por compra.
+        link_qrcode - data.last_transactoin.qr_code
+        link_qrcode_image - data.last_transaction.qr_code_url
+        
+    *daqui para baixo só se for boleto: em 0 porque sempre vai ser somente um produto por compra.
+        update["linha_pagamento"] = requestData.data.last_transaction.line
+        update["link_pdf"] = requestData.data.last_transaction.pdf
+        update["link_url"] = requestData.data.last_transaction.url
+        update["link_foto_codigo_de_barras"] = requestData.data.last_transaction.barcode
+        update["link_foto_qrcode_codigo_de_barras"] = requestData.data.last_transaction.qr_code
+
+    }
+    ]

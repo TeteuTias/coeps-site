@@ -1,12 +1,17 @@
-
-
-
-
+Tentando aprender o pagar.me e criando tela de pagamentos. No processo descobri que estou pegando as variáveis do POST de pos_registration01 da forma errada. Não estava pegando diretamente o body e sim da URL. Estou arrumando imediatamente.
+	- Adicionei campos novos do Mongodb, chamados de pagamentos. Esse guarda informações que considero importantes para o pagamento.
+		- Devido a isso, realizei uma atualização em: pos_registration01
+	- npm install pagarme => acho que nao vou usar isso, creio que vou usar o fetch normal. =:> baixei e nao estou usando.
+	- Ao fazer os hooks, decidi nomea-los por hook-número. Fiz assim já que posso configurar um hook para fazer várias coisas. Assim, ao entrar no arquivo de cada hook, temos uma explicação do que ele faz.
+	- Hook01 criado. Assim, quando um pagamento é feito já registrando no DB.
+	- Em alguns casos o pagamento é criado e JÁ ESTÁ BAGO. Quando isso ocorrer, o proprio hook01 vai dar a baixa.
+	- Hook02 criado. Assim, quando um pagamento é pago ele já registra no db que está pago e já altera o pagamento_situacao para 1. mostrando que o usuario está permitido de entrar no site.
+	- criei também um arquivo que faz teste de compra. por enquanto só funciona com boleto
 - ?? JA QUE O LAYOUT SOBREPOE, VOU FAZER UM CLIENT SIDE E COLOCAR ELE PARA MANDAR ./ SE NAO ESTIVER LOGADO. ATÉ ENTAO TO FAZENDO ESSA MERDA NA MAO EM TODAS AS PÁGINAS
 
-
+AGORA QUE APRENDI A USAR status code posso autalizar tudo!!!!!!
 VERFICIAR SE A API ESTÁ APENAS PARA QUEM ESTÁ LOGADO
-
+*** COLOCAR O NUMERO DA VERSAO NO FINAL DA PAGINA PARA DAR PRA VER SE ATUALIZOU QUANDO EU PEDIR PARA ATUALIZAR
 COLOCAR LOGOUT NA TELA DE ERRO
 colocar tela de erro como padrao.
 preciso adicionar o footer manualmente. Tive problema com ele já que fui incopetente de configurar o layout.
@@ -33,6 +38,11 @@ Fazer um "cata" realçando os detalhes qeu nao fiz.
 
 
 http://localhost:3000/api/teste02
+===========================================
+Sempre que trocar o link do ngrok voce tem que alterar os hooks do auth0 e também do pagar.me
+
+
+chave_teste01: sk_test_6bdf3eefaa574f43846df1e02f38145d
 
 [#3E4095]
 =>>> 7145

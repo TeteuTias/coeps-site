@@ -9,11 +9,12 @@ import { connectToDatabase } from '../../lib/mongodb'
  */
 export async function POST(request) {
     const { searchParams } = new URL(request.url)
+    const requestData = await request.json() 
+  
 
-    
-    const email = searchParams.get('usuario_email');
-    const user_id = searchParams.get('usuario_id').replace("auth0|","");
-    const data_criacao = new Date()
+    const email = requestData.usuario_email;
+    const user_id = requestData.usuario_id.replace("auth0|","");
+    const data_criacao = new Date() // ele manda a data criação mas eu nao estou usando.
 
     try {
         const { db } = await connectToDatabase();
@@ -28,12 +29,15 @@ export async function POST(request) {
                 "email":email,
                 "data_criacao":data_criacao,
             },
+            "pagamento":{
+                "situacao":0,// O zero sinaliza que ainda não há pagamento aprovado.
+                "lista_pagamentos":[]
+            }
             
         });
         return Response.json({ "sucesso":"Ocorreu tudo certo" })
     }
     catch (error) {
-
         return Response.json({"erro":error})
     }
 }

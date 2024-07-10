@@ -117,7 +117,7 @@ export default () =>{
                 console.log(data)
                 throw new Error(data);
             }
-            console.log(data)
+            //console.log(data)
             router.push('/painel')// se der tudo certo, ele vai direto pro /painel
         } catch (error) {
             console.error('Erro na requisição:', error);
