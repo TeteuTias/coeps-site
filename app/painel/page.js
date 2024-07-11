@@ -27,11 +27,11 @@ function PaginaAreaDoCliente () { // como é uma pagina, pega toda a tela para e
         <>
         <div className="flex flex-col items-center content-center justify-center w-[100%] h-[100%] bg-[#3E4095] text-white pt-10 lg:pt-0">
             <div className="w-[80%] lg:w-fit">
-                <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Como podemos ajudar hoje?</h1>
+                <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Como podemos ajudar hoje? -vc ta/n escrito.</h1>
             </div>
             <div className="flex flex-col items-center content-center justify-center lg:w-[65%] p-4 ">
                 <div className="grid grid-cols-2 gap-x-10 gap-y-10 lg:grid-cols-3 lg:gap-2 lg:gap-x-10 lg:gap-y-10">
-                    <CardOpcoes texto="Meus Pagamentos" emoji="💳"/>
+                    <Link href="painel/pagamentos"><CardOpcoes texto="Meus Pagamentos" emoji="💳"/></Link>
                     <CardOpcoes texto="Submição de Trabalhos" emoji="📚"/>
                     <CardOpcoes texto="Minha Programação" emoji="📅"/>
                     <CardOpcoes texto="Minhas Informações" emoji="ℹ"/>

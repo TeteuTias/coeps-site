@@ -31,6 +31,10 @@ export default ({ children }) => { // só tá existindo apra fazer as verificaç
             };
             fetchData();
         }
+        else {
+            setFetching(0)
+        }
+
     }, [user, !isLoading]); 
     useEffect(()=>{
         const verf = async () =>{
@@ -61,12 +65,13 @@ export default ({ children }) => { // só tá existindo apra fazer as verificaç
                 return <PaginaErrorPadrao />
             }
             finally {
+                
                 setIsOk(1)
             }
         };
         verf();
     }, [user, !isLoading, data])
-
+    //console.log(`${isLoading} || ${isFetching} || ${!isOk} || ${!data}`)
     return (
         <div className="min-h-screen">
             {
@@ -80,7 +85,7 @@ export default ({ children }) => { // só tá existindo apra fazer as verificaç
         </div>
     )
 }
-/**
+/** <button className="bg-black"onClick={()=>{console.log(isFetching)}}>aaaa</button>
     const { user, error, isLoading } = useUser();
     const router = useRouter()
     const [isFetching, setFetching] = useState(1)

@@ -2,191 +2,99 @@ import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 //
 export async function POST(request) {
-  try {
-    const body = await request.json();
-    const type = 'pix'//body.type
-    const documento = body.documento
-    const email = body.email
-    const telefone = body.telefone
 
-    const pagarmeApiKey = 'sk_test_6bdf3eefaa574f43846df1e02f38145d';
-    
-    switch (true) {
-      case type == 'pix':
-        var response = await fetch('https://api.pagar.me/core/v5/orders', {
+    const pagarmeApiKey = '9aa8620e-d2e9-4cbe-aeaf-25e90c39bfff248c131f423ca7dd507c1d812cf8ba380c81-9705-42fe-bf27-e873b75440da';
+
+        var response = await fetch('https://sandbox.api.pagseguro.com/checkouts', {
           method: 'POST',
           headers: {
-            'Authorization': 'Basic ' + Buffer.from(`${pagarmeApiKey}:`).toString('base64'),
+            "accept": "*/*",
+            'Authorization': `Bearer ${pagarmeApiKey}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify( 
+            
             {
-            "items": [
-              {
-                  "amount": 2990,
-                  "description": "Chaveiro do Tesseract",
-                  "quantity": 1
-              }
-        ],
-        "payments": [
-            {
-                "amount":3000,
-                "payment_method": "checkout",
-                "checkout": {
-                  "expires_in":120,
-                  "billing_address_editable" : true,
-                  "customer_editable" : true,
-                  "accepted_payment_methods": ["credit_card"],
-                  "success_url": "https://www.pagar.me",
-                  "credit_card": {}
-                }
-            }
-        ],
-              "metadata":{
-                "_id":new ObjectId("668eb4c9addeb545a1f5846c")
-              }
+              "reference_id": "REFERÊNCIA DO PRODUTO",
+              "expiration_date": "2024-08-14T19:09:10-03:00",
+              "customer": {
+                  "name": "João teste",
+                  "email": "joao@teste.com",
+                  "tax_id": "12345678909",
+                  "phone": {
+                      "country": "+55",
+                      "area": "27",
+                      "number": "999999999"
+                  }
+              },
+              "customer_modifiable": true,
+              "items": [
+                  {
+                      "reference_id": "ITEM01",
+                      "name": "Nome do Produto",
+                      "quantity": 1,
+                      "unit_amount": 500,
+                      "image_url": "https://www.petz.com.br/blog//wp-content/upload/2018/09/tamanho-de-cachorro-pet-1.jpg"
+                  }
+              ],
+              "additional_amount": 0,
+              "discount_amount": 0,
+              "shipping": {
+                  "type": "FREE",
+                  "amount": 0,
+                  "service_type": "PAC",
+                  "address": {
+                      "country": "BRA",
+                      "region_code": "SP",
+                      "city": "São Paulo",
+                      "postal_code": "01452002",
+                      "street": "Faria Lima",
+                      "number": "1384",
+                      "locality": "Pinheiros",
+                      "complement": "5 andar"
+                  },
+                  "address_modifiable": true,
+                  "box": {
+                      "dimensions": {
+                          "length": 15,
+                          "width": 10,
+                          "height": 14
+                      },
+                      "weight": 300
+                  }
+              },
+              "payment_methods": [{
+                      "type": "credit_card",
+                      "brands": ["mastercard"]
+                  }, {
+                      "type": "credit_card",
+                      "brands": ["visa"]
+                  }, {
+                      "type": "debit_card",
+                      "brands": ["visa"]
+                  }, { "type": "PIX" }, { "type": "BOLETO" }],
+              "payment_methods_configs": [
+                  {
+                      "type": "credit_card",
+                      "config_options": [
+                          {
+                              "option": "installments_limit",
+                              "value": "1"
+                          }
+                      ]
+                  }
+              ],
+              "soft_descriptor": "xxxx",
+              "redirect_url": "https://pagseguro.uol.com.br",
+              "return_url": "https://pagseguro.uol.com.br",
+              "notification_urls": ["https://92fdeadeeee2.ngrok.app/api/teste06"],
+              "payment_notification_urls": ["https://92fdeadeeee2.ngrok.app/api/teste07"]
           }
+
           ),
         });
         //console.log(response)
         var resposta = await response.json()
         return NextResponse.json({"resposta":resposta})
-      case type == 'credit_card':
-        var response = await fetch('https://api.pagar.me/core/v5/orders', {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Basic ' + Buffer.from(`${pagarmeApiKey}:`).toString('base64'),
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify( 
-            {"items": [
-        {
-            "amount": 2990,
-            "description": "Chaveiro do Tesseract",
-            "quantity": 1
-        }
-    ],
-    "customer": {
-        "name": "Tony Stark",
-        "email": email,
-        "document_type": "CPF",
-        "document": documento,
-        "type": "Individual",
-    },
-    "payments": [
-        {
-            "payment_method": "credit_card",
-            "credit_card": {
-                "recurrence": false,
-                "installments": 1,
-                "statement_descriptor": "AVENGERS",
-                "card": {
-                    "number": "4000000000000010",
-                    "holder_name": "Tony Stark",
-                    "exp_month": 1,
-                    "exp_year": 30,
-                    "cvv": "3531",
-                    "billing_address": {
-                        "line_1": "10880, Malibu Point, Malibu Central",
-                        "zip_code": "90265",
-                        "city": "Malibu",
-                        "state": "CA",
-                        "country": "US"                
-                    }
-                }
-            }
-        }
-    ],
-              "metadata":{
-                "_id":new ObjectId("668eb4c9addeb545a1f5846c")
-              }
-          }
-          ),
-        });
-        return NextResponse.json({})
-      case type == 'boleto':
-        var response = await fetch('https://api.pagar.me/core/v5/orders', {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Basic ' + Buffer.from(`${pagarmeApiKey}:`).toString('base64'),
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify( 
-            {"items": [
-        {
-            "amount": 2990,
-            "description": "Chaveiro do Tesseract",
-            "quantity": 1
-        }
-    ],
-    "customer": {
-        "name": "Tony Stark",
-        "email": email ,
-        "document_type": "CPF",
-        "document": documento,
-        "type": "Individual",
-        "address": {
-    	"line_1": "375, Av. General Justo, Centro",
-    	"line_2": "8º andar",
-    	"zip_code": "20021130",
-    	"city": "Rio de Janeiro",
-    	"state": "RJ",
-    	"country": "BR"
-    }
-    },
-    "shipping": {
-        "amount": 100,
-        "description": "Stark",
-        "recipient_name": "Tony Stark",
-        "recipient_phone": "24586787867",
-        "address": {
-            "line_1": "10880, Malibu Point, Malibu Central",
-            "zip_code": "90265",
-            "city": "Malibu",
-            "state": "CA",
-            "country": "US"    
-        }
-    },
-    "payments": [
-        {
-            "payment_method": "boleto",
-      "boleto": {
-        "instructions": "Pagar até o vencimento",
-        "due_at": "2024-09-20T00:00:00Z",
-        "document_number": "123",
-        "type": "DM"            
-                    }
-                }
-           
-        
-    ],
-              "metadata":{
-                "_id":new ObjectId("668eb4c9addeb545a1f5846c")
-              }
-          }
-          ),
-        });
-        return NextResponse.json({})
-      default:
-        return NextResponse.json({})
 
-    }
-
-
-    if (!response.ok) {
-      //console.log("!ok")
-      const errorDetails = await response.json();
-      //console.log(errorDetails)
-      return NextResponse.json({ error: 'Erro ao fazer a requisição à API do Pagar.me', details: errorDetails }, { status: response.status });
-    }
-
-    const data = await response.json();
-    //console.log("ok")
-
-    return NextResponse.json(data);
-  } catch (error) {
-    //console.log("catch")
-
-    return NextResponse.json({ error: 'Erro ao fazer a requisição à API do Pagar.me', details: error.message });
-  }
 }
