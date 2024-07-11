@@ -37,6 +37,7 @@ export default () =>{
     //
     //
     //
+
     if (isLoading) {
         return <TelaLoading />
     }
@@ -118,7 +119,7 @@ export default () =>{
                 throw new Error(data);
             }
             //console.log(data)
-            router.push('/painel')// se der tudo certo, ele vai direto pro /painel
+            router.push('/painel/pagamentos')// se der tudo certo, ele vai direto pro /painel
         } catch (error) {
             console.error('Erro na requisição:', error);
         }
@@ -128,6 +129,7 @@ export default () =>{
     };
     //
     //<h1 className="text-black">{user?"Voce está logado":"Voce não está logado"}</h1>
+
     return (
         <div className={` flex flex-col justify-center content-center items-center align-top lg:align-middle h-dvh space-y-6 lg:space-y-12`} >
             <AvisoModal texto={avisoErro} handler = {handleChangeAvisoErro} />
@@ -200,7 +202,6 @@ export default () =>{
 }
 //
 function AvisoModal({texto, handler}){
-    console.log(texto)
     if (!texto) {
         return <></>
     }

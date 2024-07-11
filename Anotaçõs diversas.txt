@@ -1,12 +1,13 @@
-Tentando aprender o pagar.me e criando tela de pagamentos. No processo descobri que estou pegando as variáveis do POST de pos_registration01 da forma errada. Não estava pegando diretamente o body e sim da URL. Estou arrumando imediatamente.
-	- Adicionei campos novos do Mongodb, chamados de pagamentos. Esse guarda informações que considero importantes para o pagamento.
-		- Devido a isso, realizei uma atualização em: pos_registration01
-	- npm install pagarme => acho que nao vou usar isso, creio que vou usar o fetch normal. =:> baixei e nao estou usando.
-	- Ao fazer os hooks, decidi nomea-los por hook-número. Fiz assim já que posso configurar um hook para fazer várias coisas. Assim, ao entrar no arquivo de cada hook, temos uma explicação do que ele faz.
-	- Hook01 criado. Assim, quando um pagamento é feito já registrando no DB.
-	- Em alguns casos o pagamento é criado e JÁ ESTÁ BAGO. Quando isso ocorrer, o proprio hook01 vai dar a baixa.
-	- Hook02 criado. Assim, quando um pagamento é pago ele já registra no db que está pago e já altera o pagamento_situacao para 1. mostrando que o usuario está permitido de entrar no site.
-	- criei também um arquivo que faz teste de compra. por enquanto só funciona com boleto
+Tomei um balde de água fria. Vou ter que migrar para o Pagseguro.
+	- Tudo que fiz pode ser em vão...
+	- passei as verificações de login/pagamento/etc que sao cruciais para ver se o usuário vai continuar todas para o layout. assim não tenho que ficar repetindo as verificacoes sempre em toda página nova.
+	- fiz o get_usuario_informacoes passar a informacao do estado do método de pagamento.
+	- além da verificação de usuario e isPos_resgistration, coloquei também a verificação de pagamento. Se não estiver 1, o usuario so consegue navegar para a pagina de pagamento.
+	- criei uma lógica para verificar se o usuario está com a inscrição feita verificando se pagamento.situacao == 1. se nao for == 1 ele vai direto para a página de pagamento.
+
+
+
+
 - ?? JA QUE O LAYOUT SOBREPOE, VOU FAZER UM CLIENT SIDE E COLOCAR ELE PARA MANDAR ./ SE NAO ESTIVER LOGADO. ATÉ ENTAO TO FAZENDO ESSA MERDA NA MAO EM TODAS AS PÁGINAS
 
 AGORA QUE APRENDI A USAR status code posso autalizar tudo!!!!!!

@@ -27,7 +27,7 @@ def enviarRequest(index, TYPE):
     id_modificador = gerar_numero_aleatorio()
     code = gerar_numero_aleatorio()
 
-
+    id_client_db = "668ef50cce62095db191c767"
     payload = {
       "type": 'credit_card',
       "documento": gerar_numero_aleatorio(),
@@ -270,7 +270,7 @@ def enviarRequest(index, TYPE):
       "status": "pending",
       "customer_id": "cus_Wr35DXuPmHKb5xNq",
       "metadata": {
-        "_id": "668eb4c9addeb545a1f5846c"
+        "_id": "668ef50cce62095db191c767"
       }
     },
     "customer": {
@@ -322,7 +322,7 @@ def enviarRequest(index, TYPE):
       "metadata": {}
     },
     "metadata": {
-      "_id": "668eb4c9addeb545a1f5846c"
+      "_id": id_client_db
     }
   }
 }
@@ -409,7 +409,7 @@ def enviarRequest(index, TYPE):
       "metadata": {}
     },
     "metadata": {
-      "_id": "668eb4c9addeb545a1f5846c"
+      "_id": id_client_db
     }
   }
 }
@@ -433,11 +433,12 @@ formas_pagamento = ["pix", "credit_card", "boleto"]
 threads = []
 
 # Criar e iniciar threads
-for i in range(1000):
+for i in range(1500):
     forma_pagamento = random.choice(formas_pagamento)
     thread = threading.Thread(target=enviarRequest, args=(i, forma_pagamento))
     threads.append(thread)
     thread.start()
+    time.sleep(5)
 
 # Aguardar que todas as threads terminem
 contador = 0

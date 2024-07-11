@@ -76,9 +76,6 @@ function Footer() {
       <div className="flex flex-col justify-center items-center content-center">
         <h1 className="font-bold text-[#3e4095] text-[20px]">Realização</h1>
         <div className="flex flex-row space-x-5">
-          <Link href="/api/auth/logout">
-            <button className='bg-yellow-700 p-5'>X</button>
-          </Link>
           <div>
             <Image       
               src="/LogoDADG.png"

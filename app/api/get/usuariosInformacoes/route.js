@@ -31,7 +31,7 @@ export async function GET( request, { params } ) {
         const { db } = await connectToDatabase();
         const result = await db.collection('usuarios').find(
             {"_id":new ObjectId(userId) },
-            { projection: { "informacoes_usuario": 1,"isPos_registration":1, _id: 0 } }
+            { projection: { "informacoes_usuario": 1,"isPos_registration":1, _id: 0,"pagamento.situacao":1 } }
         ).toArray()
         return NextResponse.json({ "data": result[0] });
 
