@@ -4,23 +4,21 @@ import { NextResponse } from 'next/server';
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { execOnce } from 'next/dist/shared/lib/utils';
 import { ObjectId } from 'mongodb';
+import { getSession } from '@auth0/nextjs-auth0';
+
 //
 //
 // Aqui ele sempre pega os mesmos parametros para realizar o update.
 // assim, SEMPRE ENNVIE NESSE FORMATO: {cpf, numero_telefone, nome}
 export async function POST(request) {
     try {
-        
+        // Verificando se está logado
         const { accessToken } = await getAccessToken();
         
-        
-    const response = await fetch('https://dev-kj0gfrsdev5h0hkl.us.auth0.com/userinfo', {
-        headers: {
-            Authorization: `Bearer ${accessToken}`
-        }
-    });
-    const userData = await response.json();
-    const userId = userData.sub.replace("auth0|",""); // Retirando o auth0|
+        // Puxando informações
+        const { user } = await getSession();
+        const userId = user.sub.replace("auth0|",""); // Retirando o auth0|  
+
     if (!userId) {
         return Response.json({"erro":"!userId"})
     }

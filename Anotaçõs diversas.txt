@@ -1,7 +1,13 @@
 
 
-
-
+ ARRUMA ESSA MERDA => acho que arrumei. Problema vinha que eu estava fazendo muito fetch para o auth0. Agora, estou utilizando o const { user } = await getSession();
+  Assim, se !user, ele retorna um erro de não altorizado. ACHO QUE VAI FUNCIONAR. E o melhor de tudo, ele já me dá todas as informações do usuário. Vou testar agora.
+  Estou deixando o acesstoken juntamente com o getSession. FICOU MUITO MAIS RÁPIDO E FLUIDO. Quero testar depois como que fica somente com o getSession.
+{
+  error: 'access_denied',
+  error_description: 'Too Many Requests',
+  error_uri: 'https://auth0.com/docs/policies/rate-limits'
+}
 
 - ?? JA QUE O LAYOUT SOBREPOE, VOU FAZER UM CLIENT SIDE E COLOCAR ELE PARA MANDAR ./ SE NAO ESTIVER LOGADO. ATÉ ENTAO TO FAZENDO ESSA MERDA NA MAO EM TODAS AS PÁGINAS
 

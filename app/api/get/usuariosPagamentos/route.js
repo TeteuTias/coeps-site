@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { execOnce } from 'next/dist/shared/lib/utils';
 import { ObjectId } from 'mongodb';
+
+
 import { getSession } from '@auth0/nextjs-auth0';
 //
 //
@@ -12,25 +14,37 @@ import { getSession } from '@auth0/nextjs-auth0';
 // 
 export async function GET( request, { params } ) {
     try{
-        // Verificando se está logado
-        const { accessToken } = await getAccessToken();
-        // Puxando informações
         
+        // Verificando se há sessão
+        const { accessToken } = await getAccessToken();
+        
+        // Puxando informações
         const { user } = await getSession();
         const userId = user.sub.replace("auth0|",""); // Retirando o auth0|  
-
         //
-        // Já vem apenas com o replace.
+        // Puxando informações de DB
         const { db } = await connectToDatabase();
+        const query  = {"_id":new ObjectId(userId) }
         const result = await db.collection('usuarios').find(
-            {"_id":new ObjectId(userId) },
-            { projection: { "informacoes_usuario": 1,"isPos_registration":1, _id: 0,"pagamento.situacao":1 } }
+            query,
+            { projection: { 
+                "_id":0,
+                "pagamento.situacao":1,
+                "pagamento.lista_pagamentos.created_at":1,
+                "pagamento.lista_pagamentos.status":1,
+                "pagamento.lista_pagamentos.items":1,
+                "pagamento.lista_pagamentos.links":{ $slice: [1, 1] } 
+                
+
+
+            }}
         ).toArray()
         return NextResponse.json({ "data": result[0] });
-
+        
     }
     catch (error){
-        return NextResponse.json({"error": error})
+        console.log(error)
+        return NextResponse.json({"error": error}, {status:500})
     }
 }
 /*

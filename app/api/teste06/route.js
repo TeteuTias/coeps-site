@@ -15,7 +15,6 @@ export async function POST(request, response) {
     //
     //
     try {
-
         const requestData = await request.json() 
         console.log(requestData)
         return Response.json({ "message": 'success' },{status:200})

@@ -2,30 +2,28 @@ import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { execOnce } from 'next/dist/shared/lib/utils';
-//
+import { getSession } from '@auth0/nextjs-auth0';
 import { connectToDatabase } from '@/app/lib/mongodb';
+//
+//
 //
 export async function POST(request) {
     try {
-        // Primeira coisa é tentar autenticar o usuário.
-        // vou deixar desativado para conseguir testar com postman
-        //
+        // Verificando se ele está logado
+        // 
         const { accessToken } = await getAccessToken();
-        const URL = process.env.AUTH0_GET_USER_INFO_URL
-        // PAGBANK_CHECKOUT_BASE_LINK COLOCARRRRRRRRRRRRRRRRRRRRRRRRR
-        const PAGBANK_API_KEY = process.env.PAGBANK_API_KEY;
-        // Após autenticar o usuário, vou puxar as informações direto do auth0
-        const response = await fetch(URL, {
-            headers: {
-                Authorization: `Bearer ${accessToken}`
-            }
-        });
-        const userData = await response.json();
-        const _id = new ObjectId(userData.sub.replace("auth0|",""))
+        //
+        //
+        const { user } = await getSession();
+        const _id = new ObjectId(user.sub.replace("auth0|","")) // Retirando o auth0|  
         //
         // Tentando Criar Pagamento Checkout.
-        // "reference_id": "668ef50cce62095db191c767", // Coloquei qualquer coisa por enquanto. Tenho que criar o sistema para criar ingressos
+        //
+        var reference_id = user.sub.replace("auth0",Math.floor(Math.random() * 1e11).toString() )
+
+        const PAGBANK_API_KEY = process.env.PAGBANK_API_KEY;
         const redirect_url = "https://www.google.com/"
+        const horario_limite = new Date(new Date().getTime()+ 10 * 60 * 1000) // "expiration_date":horario_limite,
         var response02 = await fetch('https://sandbox.api.pagseguro.com/checkouts', {
             method: 'POST',
             headers: {
@@ -35,6 +33,8 @@ export async function POST(request) {
             },
             body: JSON.stringify( 
               {
+                "reference_id":reference_id,
+                
                 "customer_modifiable": true,
                 "items": [
                     {
@@ -52,7 +52,7 @@ export async function POST(request) {
                 "redirect_url": redirect_url,
                 "return_url": redirect_url,
                 "notification_urls": ["https://92fdeadeeee2.ngrok.app/api/teste06"],
-                "payment_notification_urls": ["https://92fdeadeeee2.ngrok.app/api/teste07"]
+                "payment_notification_urls": ["https://92fdeadeeee2.ngrok.app/api/payment/webhook/payment_notification"]
             }
   
             ),
@@ -65,12 +65,13 @@ export async function POST(request) {
         var query       = {
             _id
         }
-        const alteracao = {
+        const update = {
             "$push": {
-                "pagamento.lista_pagamentos":resposta
+                "pagamento.lista_pagamentos":{...resposta,"_pagamentos":[],"_ultimo_update":new Date().toISOString()}
             }
         }
-        const result = await db.collection(colecao).updateOne(query,alteracao)
+        const result = await db.collection(colecao).updateOne(query,update)
+
         if (result.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
             return Response.json({"erro":"result.matchedCount === 0"}, {status:400})
             
