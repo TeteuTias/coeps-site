@@ -1,4 +1,6 @@
 
+  - npm install luxon
+
 
  ARRUMA ESSA MERDA => acho que arrumei. Problema vinha que eu estava fazendo muito fetch para o auth0. Agora, estou utilizando o const { user } = await getSession();
   Assim, se !user, ele retorna um erro de não altorizado. ACHO QUE VAI FUNCIONAR. E o melhor de tudo, ele já me dá todas as informações do usuário. Vou testar agora.

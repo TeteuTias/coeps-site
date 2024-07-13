@@ -50,6 +50,7 @@ export async function POST(request, response) {
             //console.log("result.matchedCount === 0")
             return Response.json({"erro":"result.matchedCount"}, {status:404})
             
+            
         } else if (result.modifiedCount === 0) { // Nenhum documento foi modificado.
             //console.log("result.modifiedCount === 0")
             return Response.json({"erro":"result.modifiedCount === 0"}, {status:400})

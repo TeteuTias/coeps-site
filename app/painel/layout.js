@@ -54,7 +54,7 @@ export default ({ children }) => { // só tá existindo apra fazer as verificaç
                     return <></>
                 }
                 // agora vamos ver se pagou, se nao pagou vai para a parte de pagamento.
-                if (user && !isLoading && !isFetching && data && data.data?.pagamento.situacao === 0) { // redirecionando se ele estiver logado, não estiver carregando e se isPos_registration == 0
+                if (user && !isLoading && !isFetching && data && (data.data?.pagamento.situacao === 0 || data.data?.pagamento.situacao === 2)) { // redirecionando se ele estiver logado, não estiver carregando e se isPos_registration == 0
                     router.push('/painel/pagamentos')
                     return <></>
                 } 

@@ -90,6 +90,28 @@ export default function A (){
             
         }
         };
+    const handlePostClick2 = async () => {
+        // Ativar isLoadingFetch
+        handleIsLoadingFetch(1)
+        try {
+            if (!data || !data.pagamento.lista_pagamentos || data?.pagamento?.lista_pagamentos?.length == 0) {
+                console.log("ERROR: !Data || !data.lista_pagamentos")
+                // Configurar o erro aqui...
+            }
+            const statusFiltro = ["WAITING","ACTIVE"]
+            const filtroLinks  = data.pagamento.lista_pagamentos.filter(item => statusFiltro.includes(item.status)).map( item => item.links[0]['href'] )[0] // [0] pq tecnicamente, deve haver só um, se tudo estiver nos conformes.
+            handleIsLoadingFetch(0)
+            route.push(filtroLinks)
+
+
+        }
+        catch (error) {
+            console.log("ERROR: CATCH HANDLEPOSTCLICK2")
+            console.log(error)
+            handleIsLoadingFetch(0)
+        }
+        //
+    };
     //
     const url_get_usuariosPagamentos = "/api/get/usuariosPagamentos"
     //
@@ -174,11 +196,17 @@ export default function A (){
                     }
 
                 </div>
-                { !data.pagamento.situacao?
+                { data.pagamento.situacao == 0?
                 <div className="flex justify-center lg:justify-start">
-                    <button onClick={()=>{handlePostClick()}} className={`bg-[#eb7038] text-white font-extrabold p-4 ${isLoadingFetch || isModalError?"cursor-not-allowed":""}`} disabled={isLoadingFetch || isModalError?true:false}>REALIZAR PAGAMENTO</button>
+                    <button onClick={()=>{handlePostClick()}} className={`bg-[#eb7038] text-white font-extrabold p-4 ${isLoadingFetch || isModalError?"cursor-not-allowed":""}`} disabled={isLoadingFetch || isModalError?true:false}>REALIZAR INSCRIÇÃO</button>
                 </div>
-                :<h1 disabled>.</h1>
+                :""
+                }
+                { data.pagamento.situacao == 2?
+                <div className="flex justify-center lg:justify-start">
+                    <button onClick={()=>{handlePostClick2()}} className={`bg-[#eb7038] text-white font-extrabold p-4 ${isLoadingFetch || isModalError?"cursor-not-allowed":""}`} disabled={isLoadingFetch || isModalError?true:false}>REALIZAR INSCRIÇÃO</button>
+                </div>
+                :""
                 }
             </div>
             <div className="bg-white w-[90%] lg:w-[30%] p-4 text-black">
@@ -251,6 +279,9 @@ const CardPagamentos = ({items=[],  metodo_pagamento="ERROR",nome="ERROR",status
             break
         case status == "WAITING":
             status = "Aguardando Pagamento"
+            break
+        case status == "EXPIRED":
+            status = "EXPIRADO"
             break
     }
         

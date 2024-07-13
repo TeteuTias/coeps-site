@@ -7,7 +7,10 @@ import { connectToDatabase } from '@/app/lib/mongodb';
 //
 //
 //
+//
+//
 export async function POST(request) {
+    console.log(getBrasiliaTime())
     try {
         // Verificando se ele está logado
         // 
@@ -23,7 +26,8 @@ export async function POST(request) {
 
         const PAGBANK_API_KEY = process.env.PAGBANK_API_KEY;
         const redirect_url = "https://www.google.com/"
-        const horario_limite = new Date(new Date().getTime()+ 10 * 60 * 1000) // "expiration_date":horario_limite,
+        //const horario_limite = new Date(new Date().getTime()+ 10 * 60 * 1000) // 2023-08-14T19:09:10-03:00
+        
         var response02 = await fetch('https://sandbox.api.pagseguro.com/checkouts', {
             method: 'POST',
             headers: {
@@ -34,7 +38,7 @@ export async function POST(request) {
             body: JSON.stringify( 
               {
                 "reference_id":reference_id,
-                
+                "expiration_date": "2024-07-12T22:50:10-03:00" ,
                 "customer_modifiable": true,
                 "items": [
                     {
@@ -58,6 +62,10 @@ export async function POST(request) {
             ),
         });
         var resposta = await response02.json();
+        if (!response02.ok) {
+            return Response.json({"erro":resposta}, {status:403})
+
+        }
         //
         // Escrevendo resposta no DB
         const { db }    = await connectToDatabase()
@@ -68,11 +76,15 @@ export async function POST(request) {
         const update = {
             "$push": {
                 "pagamento.lista_pagamentos":{...resposta,"_pagamentos":[],"_ultimo_update":new Date().toISOString()}
+            },
+            "$set":{
+                "pagamento.situacao":2
             }
         }
         const result = await db.collection(colecao).updateOne(query,update)
 
         if (result.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
+            
             return Response.json({"erro":"result.matchedCount === 0"}, {status:400})
             
         } else if (result.modifiedCount === 0) { // Nenhum documento foi modificado.
@@ -90,3 +102,24 @@ export async function POST(request) {
         return Response.json({"erro":error}, {status:403})
     }
 }
+//
+//
+//
+function getBrasiliaTime(minutesToAdd = 0) {
+    const date = new Date();
+  
+    // Brasilia is 3 hours behind UTC
+    const offset = -3;
+  
+    // Get the current UTC time in milliseconds
+    const utcTime = date.getTime() + (date.getTimezoneOffset() * 60000);
+  
+    // Create a new date object for the Brasilia time
+    const brasiliaTime = new Date(utcTime + (3600000 * offset));
+  
+    // Add the specified number of minutes to the Brasilia time
+    brasiliaTime.setMinutes(brasiliaTime.getMinutes() + minutesToAdd);
+  
+    // Return the adjusted Brasilia time
+    return brasiliaTime;
+  }
