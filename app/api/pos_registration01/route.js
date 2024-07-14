@@ -33,6 +33,7 @@ export async function POST(request) {
                 "nome":"",
                 "email":email,
                 "data_criacao":data_criacao,
+                "titulo_honorario":""
             },
             "pagamento":{
                 "situacao":0,// O zero sinaliza que ainda não há pagamento aprovado.
