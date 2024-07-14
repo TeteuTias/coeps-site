@@ -11,13 +11,13 @@ import { ObjectId } from 'mongodb';
 //
 export async function POST(request, response) {
     console.log("============== webhook 01 ================")
-    console.log("AQUII")
+    console.log(new Date().toISOString())
     //
     //
     try {
         const requestData = await request.json() 
         console.log(requestData)
-        return Response.json({ "message": 'success' },{status:200})
+        return Response.json({ "message": requestData},{status:200})
     }
     catch (error){
         console.log("ERROR")

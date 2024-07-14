@@ -82,7 +82,7 @@ const Header = () => {
         <div className="hidden space-x-4 lg:flex lg:justify-end  w-[50%]">
           <ul className="flex flex-row items-center justify-center content-center space-x-4 lg:space-x-10">
             <li>
-              <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/painel/" className='hover:text-red-500 ease-linear duration-150'>
                 Área do Congressista
               </Link>
             </li>
@@ -147,7 +147,7 @@ const Header = () => {
         <div className="lg:hidden">
             <ul className="mt-4 space-y-2"> 
             <li>
-              <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/painel/" className='hover:text-red-500 ease-linear duration-150'>
                 Área do Congressista
               </Link>
             </li>

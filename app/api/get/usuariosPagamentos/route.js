@@ -30,10 +30,13 @@ export async function GET( request, { params } ) {
             { projection: { 
                 "_id":0,
                 "pagamento.situacao":1,
-                "pagamento.lista_pagamentos.created_at":1,
+                "pagamento.lista_pagamentos.dateCreated":1,
                 "pagamento.lista_pagamentos.status":1,
-                "pagamento.lista_pagamentos.items":1,
-                "pagamento.lista_pagamentos.links":{ $slice: [1, 1] } 
+                "pagamento.lista_pagamentos.value":1,
+                "pagamento.lista_pagamentos.invoiceUrl":1,
+                "pagamento.lista_pagamentos.invoiceNumber":1,
+                "pagamento.lista_pagamentos.description":1
+
                 
 
 

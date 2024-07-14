@@ -77,7 +77,9 @@ export default function A (){
 
             // Exibe a resposta no console para fins de demonstração
             console.log('Resposta da requisição POST:', responseData);
+            
             route.push(responseData.link)
+            
             // Atualiza o estado com os dados da resposta, se necessário
         } catch (error) {
             console.error('Erro ao enviar a requisição POST:', error);
@@ -98,8 +100,8 @@ export default function A (){
                 console.log("ERROR: !Data || !data.lista_pagamentos")
                 // Configurar o erro aqui...
             }
-            const statusFiltro = ["WAITING","ACTIVE"]
-            const filtroLinks  = data.pagamento.lista_pagamentos.filter(item => statusFiltro.includes(item.status)).map( item => item.links[0]['href'] )[0] // [0] pq tecnicamente, deve haver só um, se tudo estiver nos conformes.
+            const statusFiltro = ["PENDING"]
+            const filtroLinks  = data.pagamento.lista_pagamentos.filter(item => statusFiltro.includes(item.status)).map( item => item.invoiceUrl )[0] // [0] pq tecnicamente, deve haver só um, se tudo estiver nos conformes.
             handleIsLoadingFetch(0)
             route.push(filtroLinks)
 
@@ -179,13 +181,11 @@ export default function A (){
                         <div className="flex flex-col pt-10 space-y-7">
                             {
                                 data.pagamento.lista_pagamentos?.map((value,index) =>{
-                                    var valor = value.items.reduce((acc, curr) => acc + curr.unit_amount,0)
-                                    var nome  = value.items[0].name
                                     //console.log(value)
 
                                     return (
                                         <div key={index} className=""> 
-                                            <CardPagamentos nome={nome} valor_total={valor} status={value.status} data={value.created_at}/>
+                                            <CardPagamentos valor={value.value} nome={'nome'} data_formatada={value.dateCreated} invoiceNumber={value.invoiceNumber} status={value.status} description={value.description}/>
                                         </div>
                                     )
                                 })
@@ -210,7 +210,7 @@ export default function A (){
                 }
             </div>
             <div className="bg-white w-[90%] lg:w-[30%] p-4 text-black">
-                { !data.pagamento.situacao?
+                { !data.pagamento.situacao || data.pagamento.situacao == 2?
                     <p1>
                         Realize seu primerio pagamento para confirmar sua inscrição. A confirmação de seu pagamento é realizada de forma <span className="font-bold bg-yellow-400 px-1">automática</span> em até <span className="font-bold bg-yellow-400 px-1">03 dias</span>. 
                     </p1>
@@ -243,16 +243,8 @@ export default function A (){
     )
 }
 //
-const CardPagamentos = ({items=[],  metodo_pagamento="ERROR",nome="ERROR",status="ERROR", data="DATA", valor_total="ERROR"}) =>{
+const CardPagamentos = ({valor_total="ERROR", data_formatada="ERROR", invoiceNumber="ERROR", status="ERROR", description="ERROR", valor="ERROR"}) =>{
     // Arrumando a DATA
-    try {
-        var date = new Date(data);
-        var data_formatada = date.toLocaleDateString()
-    }
-    catch {
-        var data_formatada = "ERROR"
-    }
-
     //
     //
     //
@@ -262,26 +254,27 @@ const CardPagamentos = ({items=[],  metodo_pagamento="ERROR",nome="ERROR",status
     
     */
     switch (true){ // "Traduz o que está escrito no status."
-        case status == "ACTIVE":
-            status = "Aguardando Pagamento"
-            break
-        case status == "PAID":
+        case status == "PAYMENT_CONFIRMED":
             status = "PAGO"
             break
-        case status == "IN_ANALYSIS":
-            status = "EM ANÁLISE"
+        case status == "PAYMENT_OVERDUE":
+            status = "CANCELADO"
             break
-        case status == "DECLINED":
-            status = "RECUSADO"    
+        case status == "PENDING":
+            status = "PAGAMENTO PENDENTE"
             break
-        case status == "CANCELED":
-            status = "CANCELADO"  
+
+        case status == "PAYMENT_REFUNDED":
+            status = "COBRANÇA ESTORNADA"
             break
-        case status == "WAITING":
-            status = "Aguardando Pagamento"
+        case status == "PAYMENT_REFUND_DENIED":
+            status = "ESTORNO NEGADO"
             break
-        case status == "EXPIRED":
-            status = "EXPIRADO"
+        case status == "PAYMENT_PARTIALLY_REFUNDED":
+            status = "PARCIALMENTE ESTORNADO"
+            break
+        case status == "PAYMENT_REFUND_IN_PROGRESS":
+            status = "PROCESSANDO ESTORNO"
             break
     }
         
@@ -289,12 +282,12 @@ const CardPagamentos = ({items=[],  metodo_pagamento="ERROR",nome="ERROR",status
         <div className="shadow-[0px_0px_5px_7px_rgba(0,0,0,0.05)] p-4 rounded-xl cursor-pointer relative">
             <div className="flex flex-row justify-center items-center content-center align-middle absolute z-10 p-1 bg-[#ff8952] top-[-15px] left-[-6px] space-x-[3px] rounded-sm">
                 {
-                    valor_total == "ERROR"?
-                    <h1 className="font-bold text-[13px]">{valor_total}</h1>
+                    valor == "ERROR"?
+                    <h1 className="font-bold text-[13px]">{valor}</h1>
                     :
                     <div className="text-[white] flex flex-row space-x-[3px]">
                         <h1 className="font-bold text-[13px]">R$</h1>
-                        <p className="font-serif text-[13px]">{(valor_total / 100).toFixed(2)}</p>
+                        <p className="font-serif text-[13px]">{valor}</p>
                     </div>
                 }
             </div>
@@ -303,12 +296,12 @@ const CardPagamentos = ({items=[],  metodo_pagamento="ERROR",nome="ERROR",status
                     <p className="text-red-600 font-mono text-[13px] lg:text-[13px]">{data_formatada}</p>
                 </div>
                 <div className="flex">
-                    <p className="text-red-600 font-mono text-[13px] lg:text-[13px]">{nome}</p>
+                    <p className="text-red-600 font-mono text-[13px] lg:text-[13px]">{description}</p>
                 </div>
             </div>
             <div className="flex flex-row justify-start items-center content-center">
                 <div className="flex-1 w-[80%]">
-                    <p>CHECKOUT</p>
+                    <p>#{invoiceNumber}</p>
                 </div>
                 <div className="flex flex-row">
                     <h1>{status}</h1>
@@ -344,10 +337,10 @@ const Header = ({situacao}) => {
           <div className="hidden space-x-4 lg:flex lg:justify-end  w-[50%]">
             <ul className="flex flex-row items-center justify-center content-center space-x-4 lg:space-x-10">
                 {
-                    situacao?
+                    situacao == 1?
                     <>
                         <li>
-                            <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
+                            <Link href="/painel/" className='hover:text-red-500 ease-linear duration-150'>
                             Área do Congressista
                             </Link>
                         </li>
@@ -423,7 +416,7 @@ const Header = ({situacao}) => {
                     situacao?
                     <>
                         <li>
-                            <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
+                            <Link href="/painel/" className='hover:text-red-500 ease-linear duration-150'>
                             Área do Congressista
                             </Link>
                         </li>
