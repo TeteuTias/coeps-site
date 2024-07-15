@@ -130,6 +130,7 @@ export default function A (){
 
             // Verifica se a requisição foi bem-sucedida
             if (!response.ok) {
+                console.log(response)
                 throw new Error('Falha ao enviar a requisição GET');
             }
 
@@ -172,69 +173,79 @@ export default function A (){
         <Header situacao={data.pagamento.situacao}/>
         <div className={`flex flex-col content-center items-center justify-center align-middle bg-[#3E4095] min-h-screen space-y-10 pb-10 ${isLoadingFetch || isModalError?"blur":""}`}>
             <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Meus Pagamentos</h1>
-            <div className="bg-white w-[90%] lg:w-[30%] p-4 space-y-6">
-                <div className="text-gray-800 font-bold">
-                    <h1 className="text-[14px] lg:text-[20px]">{"Histórico de pagamentos".toLocaleUpperCase()}</h1>
-                    <p className="text-red-700 font-semibold">{data.pagamento.lista_pagamentos?.length?"- "+data.pagamento.lista_pagamentos?.length.toString().padStart(2, '0')+" pagamentos encontrados":"Você ainda não realizou nenhum pagamento."}</p>
-                    {
-                        data.pagamento.lista_pagamentos.length?
-                        <div className="flex flex-col pt-10 space-y-7">
-                            {
-                                data.pagamento.lista_pagamentos?.map((value,index) =>{
-                                    //console.log(value)
+            <div className="bg-white space-y-4">
+                <div className="bg-white w-[100%] p-4 space-y-6">
+                    <div className="text-gray-800 font-bold">
+                        <h1 className="text-[20px] lg:text-[20px]">{"ℹHISTÓRICO DE PAGAMENTOS"}</h1>
+                        <p className="text-red-700 font-semibold">{data.pagamento.lista_pagamentos?.length?"- "+data.pagamento.lista_pagamentos?.length.toString().padStart(2, '0')+" pagamentos encontrados":"Você ainda não realizou nenhum pagamento."}</p>
+                        <div className="flex flex-col items-center content-center justify-center align-middle">
+                        {
+                            data.pagamento.lista_pagamentos.length?
+                            <div className="flex flex-col items-center content-center justify-center align-middle pt-10 space-y-7 w-[95%] lg:w-[65%]">
+                                {
+                                    data.pagamento.lista_pagamentos?.map((value,index) =>{
+                                        //console.log(value)
 
-                                    return (
-                                        <div key={index} className=""> 
-                                            <CardPagamentos valor={value.value} nome={'nome'} data_formatada={value.dateCreated} invoiceNumber={value.invoiceNumber} status={value.status} description={value.description}/>
-                                        </div>
-                                    )
-                                })
-                            }
+                                        return (
+                                            <div key={index} className=""> 
+                                                <CardPagamentos valor={value.value} nome={'nome'} data_formatada={value.dateCreated} invoiceNumber={value.invoiceNumber} status={value.status} description={value.description}/>
+                                            </div>
+                                        )
+                                    })
+                                }
+                            </div>
+                                :
+                                ""
+                        }
                         </div>
+
+                    </div>
+                </div>
+                <div className="bg-white w-[100%] p-4 text-black space-y-2">
+                    <h1 className="text-[20px] lg:text-[20px] text-gray-800 font-bold">{"ℹSITUAÇÃO DE INSCRIÇÃO"}</h1>
+                    <div className="">
+                        { !data.pagamento.situacao || data.pagamento.situacao == 2?
+                            <p1>
+                                Realize seu primerio pagamento para confirmar sua inscrição. A confirmação de seu pagamento é realizada de forma <span className="font-bold bg-yellow-400 px-1">automática</span> em até <span className="font-bold bg-yellow-400 px-1">03 dias</span>. 
+                            </p1>
                             :
-                            ""
-                    }
-
-                </div>
-                { data.pagamento.situacao == 0?
-                <div className="flex justify-center lg:justify-start">
-                    <button onClick={()=>{handlePostClick()}} className={`bg-[#eb7038] text-white font-extrabold p-4 ${isLoadingFetch || isModalError?"cursor-not-allowed":""}`} disabled={isLoadingFetch || isModalError?true:false}>REALIZAR INSCRIÇÃO</button>
-                </div>
-                :""
-                }
-                { data.pagamento.situacao == 2?
-                <div className="flex justify-center lg:justify-start">
-                    <button onClick={()=>{handlePostClick2()}} className={`bg-[#eb7038] text-white font-extrabold p-4 ${isLoadingFetch || isModalError?"cursor-not-allowed":""}`} disabled={isLoadingFetch || isModalError?true:false}>REALIZAR INSCRIÇÃO</button>
-                </div>
-                :""
-                }
-            </div>
-            <div className="bg-white w-[90%] lg:w-[30%] p-4 text-black">
-                { !data.pagamento.situacao || data.pagamento.situacao == 2?
-                    <p1>
-                        Realize seu primerio pagamento para confirmar sua inscrição. A confirmação de seu pagamento é realizada de forma <span className="font-bold bg-yellow-400 px-1">automática</span> em até <span className="font-bold bg-yellow-400 px-1">03 dias</span>. 
-                    </p1>
-                    :
-                    <p1>
-                        Sua inscrição foi <span className="font-bold bg-yellow-400 px-1">confirmada</span>. Você não precisa pagar mais nada! Apenas <span className="font-bold bg-yellow-400 px-1">aproveite o evento</span>.
-                    </p1>
-                }
-            </div>
-            <div className="bg-white w-[90%] lg:w-[30%] p-4 text-black space-y-3">
-                <h1>Em caso de dúvidas ou se o pagamento não for confirmado em até 03 dias, entre em contato com nossa equipe.</h1>
-                <div className="flex flex-col lg:flex-row items-center content-center justify-center text-center space-x-2">
-                    <div className=" flex-1 flex-col  ">
-                        <h1 className="font-bold px-2 lg:bg-yellow-400">Telefone</h1>
-                        <h1>64 99999-9999</h1>
+                            <p1>
+                                Sua inscrição foi <span className="font-bold ">confirmada</span>.<span className=""> Aproveite o evento</span>!
+                            </p1>
+                        }
                     </div>
-                    <div className="flex-1 flex-col ">
-                        <h1 className="font-bold px-2 lg:bg-yellow-400">Email</h1>
-                        <h1>email@docoeps.com.br</h1>
+                    <div>
+                        { data.pagamento.situacao == 0?
+                        <div className="flex justify-center lg:justify-start">
+                            <button onClick={()=>{handlePostClick()}} className={`bg-[#eb7038] text-white font-extrabold p-4 ${isLoadingFetch || isModalError?"cursor-not-allowed":""}`} disabled={isLoadingFetch || isModalError?true:false}>REALIZAR INSCRIÇÃO</button>
+                        </div>
+                        :""
+                        }
+                        { data.pagamento.situacao == 2?
+                        <div className="flex justify-center lg:justify-start">
+                            <button onClick={()=>{handlePostClick2()}} className={`bg-[#eb7038] text-white font-extrabold p-4 ${isLoadingFetch || isModalError?"cursor-not-allowed":""}`} disabled={isLoadingFetch || isModalError?true:false}>REALIZAR INSCRIÇÃO</button>
+                        </div>
+                        :""
+                        }
                     </div>
-                    <div className="flex-1 flex-col ">
-                        <h1 className="font-bold px-2 lg:bg-yellow-400">Instagram</h1>
-                        <h1>@doCoeps</h1>
+                </div>
+                <div className="bg-white w-[100%] p-4 text-black space-y-2">
+                    <h1 className="text-[20px] lg:text-[20px] text-gray-800 font-bold">{"ℹCONTATO"}</h1>
+                    <h1>Em caso de dúvidas ou se o pagamento não for confirmado em até 03 dias, entre em contato com nossa equipe.</h1>
+                    <div className="flex flex-col lg:flex-row items-center content-center justify-center text-center space-x-2">
+                        <div className=" flex-1 flex-col  ">
+                            <h1 className="font-bold px-2">Telefone</h1>
+                            <h1>64 99999-9999</h1>
+                        </div>
+                        <div className="flex-1 flex-col ">
+                            <h1 className="font-bold px-2">Email</h1>
+                            <h1>email@docoeps.com.br</h1>
+                        </div>
+                        <div className="flex-1 flex-col ">
+                            <h1 className="font-bold px-2">Instagram</h1>
+                            <h1>@doCoeps</h1>
 
+                        </div>
                     </div>
                 </div>
             </div>
@@ -279,7 +290,7 @@ const CardPagamentos = ({valor_total="ERROR", data_formatada="ERROR", invoiceNum
     }
         
     return (
-        <div className="shadow-[0px_0px_5px_7px_rgba(0,0,0,0.05)] p-4 rounded-xl cursor-pointer relative">
+        <div className="shadow-[0px_0px_5px_7px_rgba(0,0,0,0.02)] p-4 rounded-xl cursor-pointer relative">
             <div className="flex flex-row justify-center items-center content-center align-middle absolute z-10 p-1 bg-[#ff8952] top-[-15px] left-[-6px] space-x-[3px] rounded-sm">
                 {
                     valor == "ERROR"?

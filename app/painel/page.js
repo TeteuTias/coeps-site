@@ -33,7 +33,7 @@ function PaginaAreaDoCliente () { // como é uma pagina, pega toda a tela para e
                 <div className="grid grid-cols-2 gap-x-10 gap-y-10 lg:grid-cols-3 lg:gap-2 lg:gap-x-10 lg:gap-y-10">
                     <Link href="painel/pagamentos"><CardOpcoes texto="Meus Pagamentos" emoji="💳"/></Link>
                     <CardOpcoes texto="Submição de Trabalhos" emoji="📚"/>
-                    <CardOpcoes texto="Minha Programação" emoji="📅"/>
+                    <Link href="painel/minhaProgramacao"><CardOpcoes texto="Minha Programação" emoji="📅"/></Link>
                     <CardOpcoes texto="Minhas Informações" emoji="ℹ"/>
                     <CardOpcoes texto="Meus Certificados" emoji="✉"/>
                     <CardOpcoes texto="Minicursos" emoji="👩‍🎓"/>

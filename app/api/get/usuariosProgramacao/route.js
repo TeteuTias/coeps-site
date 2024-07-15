@@ -18,9 +18,14 @@ export async function GET( request, { params } ) {
         // Já vem apenas com o replace.
         const { db } = await connectToDatabase();
 
-        const [result1, result2] = await Promise.all([
+        const [result1, result2, result3] = await Promise.all([
             db.collection('minicursos').find(
-                {participants:{$in:[userId]}},
+                { 
+                    $or: [
+                      { participants:{$in:[userId]} },
+                      { "timeline.speakers": { $in: [userId] } }
+                    ]
+                },
                 { projection: { 'participants':0 }}
             ).toArray(),
             db.collection('palestras').find(
