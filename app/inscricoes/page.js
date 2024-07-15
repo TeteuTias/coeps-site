@@ -3,7 +3,7 @@ import Header from "../components/Header"
 import Link from "next/link"
 //
 //
-export default () =>{
+export default function Inscricoes(){
     return (
         <>
         <Header />

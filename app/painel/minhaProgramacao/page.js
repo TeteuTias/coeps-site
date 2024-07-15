@@ -5,7 +5,7 @@ import Image from "next/image";
 //
 //
 //
-export default () => {
+export default function MinhaProgramacao() {
     const [isFetching, setIsFetching] = useState(1)
     const [data, setData] = useState(undefined)
     const [modal, setModal] = useState(undefined)
@@ -209,7 +209,7 @@ const Modal = ({handleModal, modal}) =>{
                                 const time_end  = new Date(event.date_end).toLocaleTimeString()
 
                                 return (
-                                    <div className="space-y-3">
+                                    <div className="space-y-3" key={Math.floor(Math.random() * 100)}>
                                         <div>
                                             <div className="flex flex-row space-x-2">
                                                 <p>◽</p>
@@ -302,7 +302,7 @@ const CardProgramacao = ({cor_primaria, dateKey, event, handleModal}) => {
                             const date_end = new Date(value.timeline[value.timeline.length-1].date_end).toLocaleTimeString().slice(0,5)
                             
                             return (
-                            <div className="flex flex-col bg-white cursor-pointer" onClick={()=>{handleModal(value)}}>
+                            <div className="flex flex-col bg-white cursor-pointer" onClick={()=>{handleModal(value)}} key={index}>
                                 <div className=" flex flex-row p-2 lg:p-3">
                                     <div className="w-[80%] text-start px-2">
                                         <div>

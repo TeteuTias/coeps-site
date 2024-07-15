@@ -7,7 +7,7 @@ import TelaLoading from "@/app/components/TelaLoading";
 //
 //
 //
-export default () =>{
+export default function UpdateData() {
     const { user, error, isLoading } = useUser();
     const router = useRouter()   
     //

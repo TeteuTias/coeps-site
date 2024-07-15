@@ -2,7 +2,7 @@ import Header from "../components/Header"
 import Image from "next/image"
 //
 //
-export default () =>{
+export default function Anais(){
     return (
         <>  
             <Header />

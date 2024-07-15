@@ -10,7 +10,7 @@ import PaginaErrorPadrao from "@/app/components/PaginaErrorPadrao";
 //
 //
 //
-export default function A (){
+export default function Pagamentos (){
     const { user , isLoading } = useUser();
     const route = useRouter()
     const [ isLoadingFetch, setIsLoadingFetch ] = useState(0)
@@ -148,8 +148,10 @@ export default function A (){
             // Tratar erros conforme necessário
             }
         };
-        enviarRequisicaoGet();
-    }, [!isLoading]);
+        if (!isLoading) {
+            enviarRequisicaoGet();
+        }
+    }, [isLoading, user]);
     //
     if ( isFetchingData ) {
         return <TelaLoading />

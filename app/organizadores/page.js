@@ -5,7 +5,7 @@ import Header from "../components/Header"
 import ImageModal from "../components/ImageModal";
 //
 //
-export default () =>{
+export default function Organizadores(){
     const dict_fotos = {
         "TODAS":"só para lembrar que TODAS possui uma lógica especial.",
         "GERAL": [

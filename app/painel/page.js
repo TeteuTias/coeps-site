@@ -9,7 +9,7 @@ import Image from "next/image";
 //
 //
 //
-export default () =>{
+export default function Page(){
 
     return(
         <>
