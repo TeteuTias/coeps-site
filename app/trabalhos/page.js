@@ -1,22 +1,24 @@
+'use client'
 import ContatoBanner from "../components/ContatoBanner"
 import TituloBanner from "../components/TituloBanner"
 import Header from "../components/Header"
 import Link from "next/link"
+import CardDatas from "../components/CardDatas"
 //
 //
 export default function Trabalhos() {
     return (
         <>
             <Header />
-            <div className="pt-12 ">
-                <TituloBanner titulo="Trabalhos"/>
+            <div className="">
+                <TituloBanner titulo="Trabalhos" />
             </div>
             <div className="flex flex-col justify-center content-center items-center relative pt-10 pb-20">
                 <div className="flex flex-col space-y-10 w-[90%] lg:space-y-0 lg:space-x-10 lg:flex-row justify-center content-center items-center">
-                    <CardDatas data="00/00" texto="Limite de Submissão"/>
-                    <CardDatas data="00/00" texto="Limite de Submissão"/>
-                    <CardDatas data="00/00" texto="Limite de Submissão"/>
-                    <CardDatas data="00/00" texto="Limite de Submissão"/>
+                    <CardDatas data="00/00" texto="Limite de Submissão" />
+                    <CardDatas data="00/00" texto="Limite de Submissão" />
+                    <CardDatas data="00/00" texto="Limite de Submissão" />
+                    <CardDatas data="00/00" texto="Limite de Submissão" />
                 </div>
                 <div className=" w-[90%]">
                     <div className="pt-10">
@@ -29,10 +31,10 @@ export default function Trabalhos() {
                     </div>
                     <div className="pt-10">
                         <p className="text-[#54595f] text-justify">
-                        O Diretório Acadêmico Diogo Guimarães (DADG) do curso de graduação em Medicina do Centro Universitário IMEPAC Araguari apresenta o <span className="text-gray-800 font-bold">V Congresso dos Estudantes 
-                        e Profissionais de Saúde (COEPS)</span> que possui como tema “Cuidados Paliativos na formação profissional de saúde: humanização em destaque”. Com o intuito de 
-                        incentivar a participação dos acadêmicos, profissionais da saúde e áreas afins em atividades de pesquisa, visando complementar a formação acadêmica e 
-                        enriquecer conhecimentos, declara-se aberto o edital para a submissão de trabalhos inéditos pertinentes à área da saúde.
+                            O Diretório Acadêmico Diogo Guimarães (DADG) do curso de graduação em Medicina do Centro Universitário IMEPAC Araguari apresenta o <span className="text-gray-800 font-bold">V Congresso dos Estudantes
+                                e Profissionais de Saúde (COEPS)</span> que possui como tema “Cuidados Paliativos na formação profissional de saúde: humanização em destaque”. Com o intuito de
+                            incentivar a participação dos acadêmicos, profissionais da saúde e áreas afins em atividades de pesquisa, visando complementar a formação acadêmica e
+                            enriquecer conhecimentos, declara-se aberto o edital para a submissão de trabalhos inéditos pertinentes à área da saúde.
                         </p>
                     </div>
                     <div className="flex flex-row space-x-10 pt-12">
@@ -47,17 +49,5 @@ export default function Trabalhos() {
             </div>
             <ContatoBanner />
         </>
-    )
-}
-function CardDatas({data,texto}){
-    return (
-        <div className=" shadow-2xl px-11">
-            <div className="">
-                <div className="text-center">
-                    <h1 className="text-[#3E4095] text-[51px] font-semibold">{data}</h1>
-                    <h1 className="text-red-800 text-[20px]">{texto}</h1>
-                </div>
-            </div>
-        </div>
     )
 }

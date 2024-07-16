@@ -12,7 +12,7 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-gray-800 p-4 z-50 w-[100%] fixed">
+    <header className="bg-gray-800 p-4 z-50 w-[100%] sticky">
       <nav className="flex items-center justify-between ">
         <div>
             <Link href="/">

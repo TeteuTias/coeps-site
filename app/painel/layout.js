@@ -6,6 +6,7 @@ import TelaLoading from "../components/TelaLoading";
 import PaginaErrorPadrao from "../components/PaginaErrorPadrao";
 
 export default function Layout({ children }) { // só tá existindo apra fazer as verificações.
+    
     const { user, error, isLoading } = useUser();
     const router = useRouter()
     const [isFetching, setFetching] = useState(1)
