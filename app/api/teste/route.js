@@ -37,7 +37,7 @@ export async function POST(request, res) {
         // Conectando ao Db
         const { db } = await connectToDatabase()
         const collection = 'trabalhos'
-        db.collection(collection).insertOne({
+        const response = await db.collection(collection).insertOne({
             name: file.name,
             size: file.size,
             user_id: _id,
@@ -48,6 +48,7 @@ export async function POST(request, res) {
         return Response.json({ "data": {
             name: file.name,
             user_id: _id,
+            _id:response.insertedId
         } }, { status: 200 })
 
     }

@@ -19,7 +19,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
         const id_usuario = user.sub.replace("auth0|", "") // Retirando o auth0|  
         const id_trabalho = new ObjectId(data.id)
 
-
+        // console.log(data.id)
         //
         //
         // Puxando id_api.

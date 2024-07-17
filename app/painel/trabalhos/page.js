@@ -119,7 +119,6 @@ export default function Home() {
             console.log(error)
         }
         finally {
-            console.log('finally')
             setFile(null)
             setIsLoadingDeleteOrSend(0)
         }
@@ -151,7 +150,6 @@ export default function Home() {
     //
     //
     const deletePDF = async (id) => {
-        console.log(id)
         if (isLoadingDeleteOrSend) { return 0 }
         setIsLoadingDeleteOrSend(1)
         try {
@@ -194,7 +192,7 @@ export default function Home() {
     //
     return (
         <>
-            <WarningModal closeModal={()=>{setIsModalError(null)}} message={isModalError} isModal={isModalError} />
+            <WarningModal closeModal={() => { setIsModalError(null) }} message={isModalError} isModal={isModalError} />
             <LoadingModal isLoading={isLoadingDeleteOrSend} />
             <div className='min-h-screen'>
                 <Header />
@@ -225,7 +223,7 @@ export default function Home() {
                                     (
                                         data.resultados.map((value, index) => {
                                             return (
-                                                <Link href={value?.link ?? ""} target='_blank' key={index}>
+                                                <Link href={value?.link ?? ""} target='_blank' key={value._id + Math.floor(Math.random() * (999999999999999999999 - 10 + 1)) + 10}>
                                                     <h1 className="text-[#3E4095] hover:text-[#505191]">◽ {value.titulo}</h1>
                                                 </Link>
                                             )
@@ -265,9 +263,9 @@ export default function Home() {
                                     (
                                         dataEnvios.map((value, index) => {
                                             return (
-                                                <div className='flex flex-row content-center items-center space-x-2' key={value}>
+                                                <div className='flex flex-row content-center items-center space-x-2' key={Math.floor(Math.random() * (999999999999999999999 - 10 + 1)) + 10}>
                                                     <button onClick={() => {
-                                                        console.log(value)
+                                                        //console.log(value)
                                                         deletePDF(value._id)
 
                                                     }} className='flex font-semibold bg-red-600 hover:bg-red-500 items-center justify-center  text-white rounded-full w-5 h-5 text-xs' disabled={isLoadingDeleteOrSend}>X</button>
@@ -290,10 +288,7 @@ export default function Home() {
                         </div>
                         <div className="pt-10">
                             <p className="text-[#54595f] text-justify">
-                                O Diretório Acadêmico Diogo Guimarães (DADG) do curso de graduação em Medicina do Centro Universitário IMEPAC Araguari apresenta o <span className="text-gray-800 font-bold">V Congresso dos Estudantes
-                                    e Profissionais de Saúde (COEPS)</span> que possui como tema “Cuidados Paliativos na formação profissional de saúde: humanização em destaque”. Com o intuito de
-                                incentivar a participação dos acadêmicos, profissionais da saúde e áreas afins em atividades de pesquisa, visando complementar a formação acadêmica e
-                                enriquecer conhecimentos, declara-se aberto o edital para a submissão de trabalhos inéditos pertinentes à área da saúde.
+                                Aqui você pode visualizar todos os seus trabalhos já enviados e também tem a opção de enviar novos trabalhos. Se precisar remover algum trabalho que já foi enviado, basta clicar no botão "x" vermelho à esquerda de cada item. Para abrir um trabalho enviado, clique diretamente sobre ele.<span className="text-gray-800 font-bold"> Em caso de dúvidas, sinta-se à vontade para entrar em contato com a equipe COEPS</span>. Estamos aqui para ajudar!
                             </p>
                         </div>
                         <div className="flex flex-col items-start pt-12 space-y-2">
