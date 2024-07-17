@@ -1,6 +1,6 @@
 import { connectToDatabase } from '../../../lib/mongodb'
 import { NextResponse } from 'next/server';
-import { getAccessToken } from '@auth0/nextjs-auth0';
+import { getAccessToken,withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { ObjectId } from 'mongodb';
 import { getSession } from '@auth0/nextjs-auth0';
 //
@@ -9,15 +9,7 @@ import { getSession } from '@auth0/nextjs-auth0';
 // {"data":{"isPos_registration":0,"informacoes_usuario":{"nome:":"","email":"mateus2.0@icloud.com","data_criacao":"2024-07-08T22:48:41.110Z"}}}
 // Exemplo de return erro:
 // 
-const afterRefresh = (req, res, session) => {
-    // Modificar a sessão conforme necessário
-    session.user.customProperty = 'foo'; // Adiciona uma propriedade personalizada
-    delete session.idToken; // Remove o idToken se não for necessário
-    return session;
-};
-
-
-export async function GET(request, response) {
+export const GET = withApiAuthRequired(async function GET(request, response) {
     try {
         const { accessToken } = await getAccessToken();
 
@@ -43,7 +35,7 @@ export async function GET(request, response) {
     catch (error) {
         return NextResponse.json({ "error": error }, { status: 500 })
     }
-}
+})
 /*
 {"data":[{"_id":"6696b5adf287f4a45ed8f04f","name":"Certificado.pdf"}]}
 */

@@ -1,13 +1,13 @@
 import { ObjectId } from 'mongodb';
 import { getAccessToken } from '@auth0/nextjs-auth0';
-import { getSession } from '@auth0/nextjs-auth0';
+import { getSession,withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { connectToDatabase } from '@/app/lib/mongodb';
 //
 //
 //
 //
 //
-export async function POST(request) {
+export const POST = withApiAuthRequired(async function POST(request) {
     try {
 
         // Verificando se ele está logado
@@ -48,5 +48,5 @@ export async function POST(request) {
         console.log(error)
         return Response.json({ "erro": error }, { status: 403 })
     }
-}
+})
 //

@@ -1,5 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { connectToDatabase } from '../../lib/mongodb'
+import { withApiAuthRequired } from '@auth0/nextjs-auth0';
 //
 //
 //Nome webwook -> pos_registration01

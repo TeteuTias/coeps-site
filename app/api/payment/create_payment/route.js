@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
-import { getAccessToken } from '@auth0/nextjs-auth0';
+import { getAccessToken, withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { execOnce } from 'next/dist/shared/lib/utils';
 import { getSession } from '@auth0/nextjs-auth0';
 import { connectToDatabase } from '@/app/lib/mongodb';
@@ -9,7 +9,7 @@ import { connectToDatabase } from '@/app/lib/mongodb';
 //
 //
 //
-export async function POST(request) {
+export const POST = withApiAuthRequired(async function POST(request) {
     try {
         
         // Verificando se ele está logado
@@ -102,5 +102,5 @@ export async function POST(request) {
         console.log(error)
         return Response.json({"erro":error}, {status:403})
     }
-}
+})
 //

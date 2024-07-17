@@ -17,7 +17,7 @@ export const GET = withApiAuthRequired( async function GET(request, response) {
     return Response.request({"ola":"mund"})
 });
   */
-export async function GET(request, response) {
+export const GET = withApiAuthRequired(async function GET(request, response) {
     try {
         //
         const { accessToken } = await getAccessToken();
@@ -47,7 +47,7 @@ export async function GET(request, response) {
         //console.log(error)
         return NextResponse.json({ "error": error }, { status: 500 })
     }
-}
+})
 
 /*
 { isPos_registration: 1, pagamento: { situacao: 0 } }

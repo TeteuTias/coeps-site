@@ -2,11 +2,6 @@
 import { connectToDatabase } from '@/app/lib/mongodb';
 import { getSession } from '@auth0/nextjs-auth0';
 
-export const config = {
-    api: {
-        bodyParser: false, // Desativa o body parser padrão do Next.js
-    },
-};
 //
 // //await fs.writeFile(`./public/${file.name}`, buffer)
 export async function POST(request, res) {

@@ -265,7 +265,7 @@ export default function Home() {
                                     (
                                         dataEnvios.map((value, index) => {
                                             return (
-                                                <div className='flex flex-row content-center items-center space-x-2'>
+                                                <div className='flex flex-row content-center items-center space-x-2' key={value}>
                                                     <button onClick={() => {
                                                         console.log(value)
                                                         deletePDF(value._id)

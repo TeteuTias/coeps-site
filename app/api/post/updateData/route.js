@@ -4,13 +4,13 @@ import { NextResponse } from 'next/server';
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { execOnce } from 'next/dist/shared/lib/utils';
 import { ObjectId } from 'mongodb';
-import { getSession } from '@auth0/nextjs-auth0';
+import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0';
 
 //
 //
 // Aqui ele sempre pega os mesmos parametros para realizar o update.
 // assim, SEMPRE ENNVIE NESSE FORMATO: {cpf, numero_telefone, nome}
-export async function POST(request) {
+export const POST = withApiAuthRequired(async function POST(request) {
     try {
         // Verificando se está logado
         const { accessToken } = await getAccessToken();
@@ -81,4 +81,4 @@ export async function POST(request) {
     }   
 
 
-}
+})

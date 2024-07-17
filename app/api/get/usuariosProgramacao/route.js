@@ -1,6 +1,6 @@
 import { connectToDatabase } from '../../../lib/mongodb'
 import { NextResponse } from 'next/server';
-import { getAccessToken } from '@auth0/nextjs-auth0';
+import { getAccessToken, withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { execOnce } from 'next/dist/shared/lib/utils';
 import { ObjectId } from 'mongodb';
 import { getSession } from '@auth0/nextjs-auth0';
@@ -10,7 +10,7 @@ import { getSession } from '@auth0/nextjs-auth0';
 // {"data":{"isPos_registration":0,"informacoes_usuario":{"nome:":"","email":"mateus2.0@icloud.com","data_criacao":"2024-07-08T22:48:41.110Z"}}}
 // Exemplo de return erro:
 // 
-export async function GET( request, { params } ) {
+export const GET = withApiAuthRequired (async function GET( request, { params } ) {
     try{
         const { user } = await getSession();
         const userId = user.sub.replace("auth0|",""); // Retirando o auth0|  
@@ -41,7 +41,7 @@ export async function GET( request, { params } ) {
     catch (error){
         return NextResponse.json({"error": error})
     }
-}
+})
 /*
     try {
         const { db } = await connectToDatabase();
