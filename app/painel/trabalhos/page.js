@@ -85,7 +85,7 @@ export default function Home() {
             const formData = new FormData();
             formData.append('file', file);
 
-            const res = await fetch('/api/teste', {
+            const res = await fetch('/api/post/uploadTrabalho', {
                 method: 'POST',
                 body: formData,
             });
@@ -96,7 +96,8 @@ export default function Home() {
                     setIsModalError('ERROR 500. Caso o erro persiste, comunique os organizadores.')
                     return 0
                 }
-                setIsModalError(result.erro)
+                console.log(result)
+                setIsModalError(result.error)
                 console.log("!res.ok")
                 return 0
             }
@@ -164,6 +165,8 @@ export default function Home() {
             const data = await response.json();
             // Verificando se tudo certo
             if (!response.ok) {
+                console.log(data.erro.message)
+                setIsModalError(data.erro.message)
                 return 0 // depois vou configurar o erro
             }
             // Verificando se a pessoa pode ou não enviar mais documentos
