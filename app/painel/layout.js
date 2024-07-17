@@ -6,7 +6,8 @@ import TelaLoading from "../components/TelaLoading";
 import PaginaErrorPadrao from "../components/PaginaErrorPadrao";
 
 export default function Layout({ children }) { // só tá existindo apra fazer as verificações.
-    
+    /*
+
     const { user, error, isLoading } = useUser();
     const router = useRouter()
     const [isFetching, setFetching] = useState(1)
@@ -18,7 +19,7 @@ export default function Layout({ children }) { // só tá existindo apra fazer a
         if (user && !isLoading) {
             const fetchData = async () => {
                 try {
-                    const response = await fetch('/api/get/usuariosInformacoes',{cache:'no-cache'});
+                    const response = await fetch('/api/get/usuariosInformacoes', { cache: 'no-cache' });
                     if (!response.ok) {
                         throw new Error('Network response was not ok');
                     }
@@ -36,9 +37,9 @@ export default function Layout({ children }) { // só tá existindo apra fazer a
             setFetching(0)
         }
 
-    }, [user, isLoading]); 
-    useEffect(()=>{
-        const verf = () =>{
+    }, [user, isLoading]);
+    useEffect(() => {
+        const verf = () => {
             try {
                 // primerio ve se esta carregadno
                 if (isLoading || isFetching) {
@@ -61,7 +62,7 @@ export default function Layout({ children }) { // só tá existindo apra fazer a
                     console.log('push /painel/pagamentos')
                     router.push('/painel/pagamentos')
                     return <></>
-                } 
+                }
             }
             catch (error) {
                 console.log("error catch /painel")
@@ -69,7 +70,7 @@ export default function Layout({ children }) { // só tá existindo apra fazer a
                 return <PaginaErrorPadrao />
             }
             finally {
-                
+
                 setIsOk(1)
             }
         };
@@ -79,6 +80,13 @@ export default function Layout({ children }) { // só tá existindo apra fazer a
         }
     }, [user, isLoading, data, isFetching, router])
     //console.log(`${isLoading} || ${isFetching} || ${!isOk} || ${!data}`)
+                 */
+    return (
+        <div className="min-h-screen">
+            {children}
+        </div>
+    )
+
     return (
         <div className="min-h-screen">
             {

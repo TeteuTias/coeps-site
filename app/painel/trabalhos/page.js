@@ -133,7 +133,7 @@ export default function Home() {
                 fetch('/api/get/usuariosTrabalhos', { cache: 'no-cache' }).then(value => value.json())
             ]);
             // Setando se ele ainda pode enviar algum arquivo.
-            console.log(response2)
+
             if (response2.data.length < response1.trabalhos_por_usuario) {
                 setIsBlock(0)
             }
