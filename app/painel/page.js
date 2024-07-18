@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
-
+import HeaderPainel from "../components/HeaderPainel";
 import Image from "next/image";
 //
 //
@@ -13,7 +13,8 @@ export default function Page() {
 
   return (
     <>
-      
+
+      <HeaderPainel />
       <div className="min-h-screen bg-[#3E4095] flex flex-col justify-center content-center items-center">
         <PaginaAreaDoCliente />
       </div>
@@ -26,6 +27,7 @@ function PaginaAreaDoCliente() { // como é uma pagina, pega toda a tela para el
   return (
     <>
       <div className="flex flex-col items-center content-center  justify-center w-[100%] h-[100%] text-white">
+
         <div className="w-[80%] lg:w-fit">
           <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Como podemos ajudar hoje?</h1>
         </div>
@@ -34,7 +36,7 @@ function PaginaAreaDoCliente() { // como é uma pagina, pega toda a tela para el
             <Link href="painel/pagamentos"><CardOpcoes texto="Meus Pagamentos" emoji="💳" /></Link>
             <Link href="painel/trabalhos"><CardOpcoes texto="Submição de Trabalhos" emoji="📚" /></Link>
             <Link href="painel/minhaProgramacao"><CardOpcoes texto="Minha Programação" emoji="📅" /></Link>
-            <CardOpcoes texto="Minhas Informações" emoji="ℹ" />
+            <Link href="painel/minhasInformacoes"><CardOpcoes texto="Minhas Informações" emoji="ℹ" /></Link>
             <CardOpcoes texto="Meus Certificados" emoji="✉" />
             <CardOpcoes texto="Minicursos" emoji="👩‍🎓" />
           </div>
@@ -59,6 +61,7 @@ function CardOpcoes({ texto, emoji }) {
 //
 //
 //
+/*
 const Header = () => {
   const [menuAberto, setMenuAberto] = useState(false);
 
@@ -182,3 +185,4 @@ const Header = () => {
     </header>
   );
 };
+*/

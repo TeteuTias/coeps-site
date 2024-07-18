@@ -11,68 +11,69 @@ import { connectToDatabase } from '@/app/lib/mongodb';
 //
 export const POST = withApiAuthRequired(async function POST(request) {
     try {
-        
+
         // Verificando se ele está logado
         // 
         const { accessToken } = await getAccessToken();
         const { user } = await getSession();
-        const _id = new ObjectId(user.sub.replace("auth0|","")) // Retirando o auth0|  
+        const _id = new ObjectId(user.sub.replace("auth0|", "")) // Retirando o auth0|  
         //
         // Puxando id_api.
-        const { db }    = await connectToDatabase()
-        const collection   = 'usuarios'
-        var query       = {
+        const { db } = await connectToDatabase()
+        const collection = 'usuarios'
+        var query = {
             _id
         }
-        const dbFindOne = await db.collection(collection).find(query, {projection:{"_id":0,"id_api":1}}).toArray()
+        const dbFindOne = await db.collection(collection).find(query, { projection: { "_id": 0, "id_api": 1 } }).toArray()
 
         if (dbFindOne.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
             //console.log("result.matchedCount === 0 - dbFindOne")
-            return Response.json({"erro":"result.matchedCount"}, {status:404})           
-        } 
+            return Response.json({ "erro": "result.matchedCount" }, { status: 404 })
+        }
         else if (dbFindOne.modifiedCount === 0) { // Nenhum documento foi modificado.
             //console.log("result.modifiedCount === 0 - dbFindOne")
-            return Response.json({"erro":"result.modifiedCount === 0"}, {status:400})
+            return Response.json({ "erro": "result.modifiedCount === 0" }, { status: 400 })
         }
-        const id_api = dbFindOne[0].id_api  
+        const id_api = dbFindOne[0].id_api
         //
         // Tentando Criar Pagamento Checkout.
         const PAGBANK_API_KEY = process.env.PAGBANK_API_KEY;
-        const redirect_url = "https://92fdeadeeee2.ngrok.app/painel/pagamentos"
         //const horario_limite = new Date(new Date().getTime()+ 10 * 60 * 1000) // 2023-08-14T19:09:10-03:00
-        
-        const ASAAS_API_KEY= process.env.ASAAS_API_KEY //process.env.ASAAS_API_KEY
-        const ASAAS_API_URL= process.env.ASAAS_API_URL+"/payments"
-        
+
+        const ASAAS_API_KEY = process.env.ASAAS_API_KEY //process.env.ASAAS_API_KEY
+        const ASAAS_API_URL = process.env.ASAAS_API_URL + "/payments"
+        const urlCallback = process.env.ASAAS_URL_CALLBACK
+        const redirect_url = process.env.ASAAS_URL_REDIRECT
+
+
         const valor = 135
         const data_vencimento = new Date().toISOString().split("T")[0] // retorna o dia de hoje.
         const descricao = 'Primeiro lote para entrada no evento IV COEPS.'
-        const urlCallback = 'https://92fdeadeeee2.ngrok.app/painel/pagamentos'
         const desconto = 0
 
 
         const options = {
             method: 'POST',
             headers: {
-              accept: 'application/json',
-              'content-type': 'application/json',
-              access_token: ASAAS_API_KEY
+                accept: 'application/json',
+                'content-type': 'application/json',
+                access_token: ASAAS_API_KEY
             },
             body: JSON.stringify({
-              billingType: 'UNDEFINED',
-              discount: {value: desconto},
-              callback: {successUrl: urlCallback,autoRedirect: false},
-              customer: id_api,
-              value: valor,
-              dueDate: data_vencimento,
-              postalService: false,
-              description: descricao,
+                billingType: 'UNDEFINED',
+                discount: { value: desconto },
+                callback: { successUrl: urlCallback, autoRedirect: false },
+                customer: id_api,
+                value: valor,
+                dueDate: data_vencimento,
+                postalService: false,
+                description: descricao,
             })
-          };
-          
+        };
+
         const responseAPI = await fetch(ASAAS_API_URL, options)
         if (!responseAPI.ok) {
-            throw ({"message":"!responseAPI.ok => Registro API Pagamentos"})
+            throw ({ "message": "!responseAPI.ok => Registro API Pagamentos" })
         }
         var responseJson = await responseAPI.json()
         // 
@@ -82,25 +83,25 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 _id
             },
             {
-                "$push":{'pagamento.lista_pagamentos':{...responseJson,_webhook:[]}},
-                "$set":{'pagamento.situacao':2}
+                "$push": { 'pagamento.lista_pagamentos': { ...responseJson, _webhook: [] } },
+                "$set": { 'pagamento.situacao': 2 }
             }
         )
-        
+
         if (dbUpdateOne.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
             console.log("result.matchedCount === 0")
-            return Response.json({"erro":"result.matchedCount - dbUpdateOne"}, {status:404})           
-        } 
+            return Response.json({ "erro": "result.matchedCount - dbUpdateOne" }, { status: 404 })
+        }
         else if (dbUpdateOne.modifiedCount === 0) { // Nenhum documento foi modificado.
             console.log("result.modifiedCount === 0")
-            return Response.json({"erro":"result.modifiedCount === 0 - dbUpdateOne"}, {status:400})
+            return Response.json({ "erro": "result.modifiedCount === 0 - dbUpdateOne" }, { status: 400 })
         }
 
-        return Response.json({"link":responseJson.invoiceUrl},{status:200})
+        return Response.json({ "link": responseJson.invoiceUrl }, { status: 200 })
     }
     catch (error) {
         console.log(error)
-        return Response.json({"erro":error}, {status:403})
+        return Response.json({ "erro": error }, { status: 403 })
     }
 })
 //
