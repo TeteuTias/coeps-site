@@ -103,7 +103,6 @@ export default function MinhaProgramacao() {
         {
           modal ? <Modal handleModal={() => { handleModal(0) }} modal={modal} /> : ""
         }
-        <Header />
         <div className="flex flex-col content-center align-middle items-center justify-center ">
           <div className="w-[90%] lg:w-[60%] text-justify p-5 ">
             <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Minha Programação</h1>

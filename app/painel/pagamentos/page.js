@@ -173,7 +173,6 @@ export default function Pagamentos() {
                     : ""
             }
             <div className={`flex flex-col content-center items-center align-middle min-h-screen ${isLoadingFetch || isModalError ? "blur" : ""}`}>
-                <Header situacao={data.pagamento.situacao} />
                 <div className="bg-[#3E4095] w-full p-5 lg:p-16">
                     <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Meus Pagamentos</h1>
                 </div>

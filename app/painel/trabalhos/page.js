@@ -198,7 +198,6 @@ export default function Home() {
             <WarningModal closeModal={() => { setIsModalError(null) }} message={isModalError} isModal={isModalError} />
             <LoadingModal isLoading={isLoadingDeleteOrSend} />
             <div className='min-h-screen'>
-                <Header />
                 <div className='bg-[#3E4095] p-5'>
                     <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Submissão de Trabalhos</h1>
                 </div>

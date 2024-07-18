@@ -8,12 +8,12 @@ import Image from "next/image";
 //
 //
 //
-//
+// <Header />
 export default function Page() {
 
   return (
     <>
-      <Header />
+      
       <div className="min-h-screen bg-[#3E4095] flex flex-col justify-center content-center items-center">
         <PaginaAreaDoCliente />
       </div>
@@ -25,7 +25,7 @@ export default function Page() {
 function PaginaAreaDoCliente() { // como é uma pagina, pega toda a tela para ele com w-[100%]
   return (
     <>
-      <div className="flex flex-col items-center content-center justify-center w-[100%] h-[100%] bg-[#3E4095] text-white pt-10 lg:pt-0">
+      <div className="flex flex-col items-center content-center  justify-center w-[100%] h-[100%] text-white">
         <div className="w-[80%] lg:w-fit">
           <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Como podemos ajudar hoje?</h1>
         </div>
