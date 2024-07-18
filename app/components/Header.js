@@ -12,7 +12,7 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-gray-800 p-4 z-50 w-[100%] sticky">
+    <header className="bg-gray-800 p-4 z-50 w-[100%] sticky top-0">
       <nav className="flex items-center justify-between ">
         <div>
             <Link href="/">
@@ -67,7 +67,7 @@ const Header = () => {
               </Link>
             </li>
             <li>
-              <Link href="/api/auth/login" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/painel" className='hover:text-red-500 ease-linear duration-150'>
                 <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2 ">ÁREA DO CONGRESSITA</button>
               </Link>
             </li>

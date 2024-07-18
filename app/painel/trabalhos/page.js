@@ -291,7 +291,7 @@ export default function Home() {
                         </div>
                         <div className="pt-10">
                             <p className="text-[#54595f] text-justify">
-                                Aqui você pode visualizar todos os seus trabalhos já enviados e também tem a opção de enviar novos trabalhos. Se precisar remover algum trabalho que já foi enviado, basta clicar no botão "x" vermelho à esquerda de cada item. Para abrir um trabalho enviado, clique diretamente sobre ele.<span className="text-gray-800 font-bold"> Em caso de dúvidas, sinta-se à vontade para entrar em contato com a equipe COEPS</span>. Estamos aqui para ajudar!
+                                Aqui você pode visualizar todos os seus trabalhos já enviados e também tem a opção de enviar novos trabalhos. Se precisar remover algum trabalho que já foi enviado, basta clicar no botão <span className='font-bold'>x</span> vermelho à esquerda de cada item. Para abrir um trabalho enviado, clique diretamente sobre ele.<span className="text-gray-800 font-bold"> Em caso de dúvidas, sinta-se à vontade para entrar em contato com a equipe COEPS</span>. Estamos aqui para ajudar!
                             </p>
                         </div>
                         <div className="flex flex-col items-start pt-12 space-y-2">

@@ -49,7 +49,6 @@ const verfSubmition = async (data_inicio_submissao, data_limite_submissao) => {
     // Verificando se x está entre inicio e limite
     if (dataAtual >= inicio && dataAtual <= limite) {
         //
-        console.log("tudo ok :]")
     } else {
         throw { message: "Infelizmente, o prazo para a submissão de trabalhos já se encerrou.", status: 409 };
     }

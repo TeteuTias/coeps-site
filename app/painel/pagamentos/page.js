@@ -10,19 +10,19 @@ import PaginaErrorPadrao from "@/app/components/PaginaErrorPadrao";
 //
 //
 //
-export default function Pagamentos (){
-    const { user , isLoading } = useUser();
+export default function Pagamentos() {
+    const { user, isLoading } = useUser();
     const route = useRouter()
-    const [ isLoadingFetch, setIsLoadingFetch ] = useState(0)
+    const [isLoadingFetch, setIsLoadingFetch] = useState(0)
     const [isModalError, setIsModalError] = useState(0) // Pode ser 0 ou alguma string, que sinaliza um erro.
     const [data, setData] = useState(undefined)
     const [isFetchingData, setIsFetchingData] = useState(1) // Já começa 01 porque para não renderizar o outro e depois voltar.
     //
     //
     //
-    const handleData = (event) => { 
+    const handleData = (event) => {
         setData(event)
-     }
+    }
     //
     const handleIsFetchingData = (event) => {
         setIsFetchingData(event)
@@ -43,18 +43,18 @@ export default function Pagamentos (){
         try {
             // Exemplo de dados a serem enviados no corpo da requisição POST
             const data = {
-            title: 'Título do Post',
-            body: 'Conteúdo do Post',
-            userId: 1,
+                title: 'Título do Post',
+                body: 'Conteúdo do Post',
+                userId: 1,
             };
 
             // Configuração da requisição POST usando fetch
             const response = await fetch('/api/payment/create_payment', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
             });
 
             // Verifica se a requisição foi bem-sucedida
@@ -64,7 +64,7 @@ export default function Pagamentos (){
                     console.log(erro_message)
                     throw new Error('Falha ao enviar a requisição POST');
 
-                    
+
                 }
                 catch {
                     console.log("!response.ok - catch")
@@ -77,9 +77,9 @@ export default function Pagamentos (){
 
             // Exibe a resposta no console para fins de demonstração
             console.log('Resposta da requisição POST:', responseData);
-            
+
             route.push(responseData.link)
-            
+
             // Atualiza o estado com os dados da resposta, se necessário
         } catch (error) {
             console.error('Erro ao enviar a requisição POST:', error);
@@ -89,9 +89,9 @@ export default function Pagamentos (){
         }
         finally {
             // nao coloquei o handleIsLoadingFetch(0) porque quando dá certo de criar o pagamento, quero que ele seja redirecionado direto, sem chances de dar setstate.
-            
+
         }
-        };
+    };
     const handlePostClick2 = async () => {
         // Ativar isLoadingFetch
         handleIsLoadingFetch(1)
@@ -101,7 +101,7 @@ export default function Pagamentos (){
                 // Configurar o erro aqui...
             }
             const statusFiltro = ["PENDING"]
-            const filtroLinks  = data.pagamento.lista_pagamentos.filter(item => statusFiltro.includes(item.status)).map( item => item.invoiceUrl )[0] // [0] pq tecnicamente, deve haver só um, se tudo estiver nos conformes.
+            const filtroLinks = data.pagamento.lista_pagamentos.filter(item => statusFiltro.includes(item.status)).map(item => item.invoiceUrl)[0] // [0] pq tecnicamente, deve haver só um, se tudo estiver nos conformes.
             handleIsLoadingFetch(0)
             route.push(filtroLinks)
 
@@ -119,33 +119,33 @@ export default function Pagamentos (){
     //
     useEffect(() => {
         const enviarRequisicaoGet = async () => {
-        try {
-            // Configuração da requisição GET usando fetch
-            const response = await fetch(url_get_usuariosPagamentos, {
-                method: 'GET',
-                headers: {
-                'Content-Type': 'application/json',
-                },
-            });
+            try {
+                // Configuração da requisição GET usando fetch
+                const response = await fetch(url_get_usuariosPagamentos, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
 
-            // Verifica se a requisição foi bem-sucedida
-            if (!response.ok) {
-                console.log(response)
-                throw new Error('Falha ao enviar a requisição GET');
-            }
+                // Verifica se a requisição foi bem-sucedida
+                if (!response.ok) {
+                    console.log(response)
+                    throw new Error('Falha ao enviar a requisição GET');
+                }
 
-            // Converte a resposta para JSON
-            const responseData = await response.json();
+                // Converte a resposta para JSON
+                const responseData = await response.json();
 
-            // Exibe a resposta no console para fins de demonstração
-            console.log('Resposta da requisição GET:', responseData);
+                // Exibe a resposta no console para fins de demonstração
+                console.log('Resposta da requisição GET:', responseData);
 
-            handleIsFetchingData(0)
-            handleData(responseData.data)
+                handleIsFetchingData(0)
+                handleData(responseData.data)
             } catch (error) {
                 console.error('Erro ao enviar a requisição GET:', error);
 
-            // Tratar erros conforme necessário
+                // Tratar erros conforme necessário
             }
         };
         if (!isLoading) {
@@ -153,110 +153,123 @@ export default function Pagamentos (){
         }
     }, [isLoading, user]);
     //
-    if ( isFetchingData ) {
+    if (isFetchingData) {
         return <TelaLoading />
     }
     //
     return (
         <>
-        {
-            !isLoadingFetch && isModalError?
-            <ModalError handleIsModalError={handleIsModalError} texto={isModalError} />
-            :
-            ""
-        }
-        {
-            isLoadingFetch?
-            <div className="flex items-center content-center justify-center w-full min-h-screen absolute z-50 ">
-                <h1 className=" font-extralight text-black lg:text-[40px] animate-pulse">C A R R E G A N D O</h1>
-            </div>
-            :""
-        }
-        <Header situacao={data.pagamento.situacao}/>
-        <div className={`flex flex-col content-center items-center justify-center align-middle bg-[#3E4095] min-h-screen space-y-10 pb-10 ${isLoadingFetch || isModalError?"blur":""}`}>
-            <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Meus Pagamentos</h1>
-            <div className="bg-white space-y-4">
-                <div className="bg-white w-[100%] p-4 space-y-6">
-                    <div className="text-gray-800 font-bold">
-                        <h1 className="text-[20px] lg:text-[20px]">{"ℹHISTÓRICO DE PAGAMENTOS"}</h1>
-                        <p className="text-red-700 font-semibold">{data.pagamento.lista_pagamentos?.length?"- "+data.pagamento.lista_pagamentos?.length.toString().padStart(2, '0')+" pagamentos encontrados":"Você ainda não realizou nenhum pagamento."}</p>
-                        <div className="flex flex-col items-center content-center justify-center align-middle">
-                        {
-                            data.pagamento.lista_pagamentos.length?
-                            <div className="flex flex-col items-center content-center justify-center align-middle pt-10 space-y-7 w-[95%] lg:w-[65%]">
-                                {
-                                    data.pagamento.lista_pagamentos?.map((value,index) =>{
-                                        //console.log(value)
+            {
+                !isLoadingFetch && isModalError ?
+                    <ModalError handleIsModalError={handleIsModalError} texto={isModalError} />
+                    :
+                    ""
+            }
+            {
+                isLoadingFetch ?
+                    <div className="flex items-center content-center justify-center w-full min-h-screen absolute z-50 ">
+                        <h1 className=" font-extralight text-black lg:text-[40px] animate-pulse">C A R R E G A N D O</h1>
+                    </div>
+                    : ""
+            }
+            <div className={`flex flex-col content-center items-center align-middle min-h-screen ${isLoadingFetch || isModalError ? "blur" : ""}`}>
+                <Header situacao={data.pagamento.situacao} />
+                <div className="bg-[#3E4095] w-full p-5 lg:p-16">
+                    <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Meus Pagamentos</h1>
+                </div>
+                <div className="  w-full ">
+                    <div className="flex content-center items-center justify-center py-16  bg-white">
+                        <div className=" p-4 space-y-6 w-full md:w-[60%]">
+                            <div className="text-gray-800 font-bold">
+                                <h1 className="text-[20px] lg:text-[20px]">{"ℹHISTÓRICO DE PAGAMENTOS"}</h1>
+                                <p className="text-red-700 font-semibold">{data.pagamento.lista_pagamentos?.length ? "- " + data.pagamento.lista_pagamentos?.length.toString().padStart(2, '0') + " pagamentos encontrados" : "Você ainda não realizou nenhum pagamento."}</p>
+                                <div className="flex flex-col ">
+                                    {
+                                        data.pagamento.lista_pagamentos.length ?
+                                            <div className="flex flex-col items-start content-start justify-start pt-10 space-y-7 w-[95%] lg:w-[65%]">
+                                                {
+                                                    data.pagamento.lista_pagamentos?.map((value, index) => {
+                                                        //console.log(value)
 
-                                        return (
-                                            <div key={index} className=""> 
-                                                <CardPagamentos valor={value.value} nome={'nome'} data_formatada={value.dateCreated} invoiceNumber={value.invoiceNumber} status={value.status} description={value.description}/>
+                                                        return (
+                                                            <div key={index} className="">
+                                                                <CardPagamentos valor={value.value} nome={'nome'} data_formatada={value.dateCreated} invoiceNumber={value.invoiceNumber} status={value.status} description={value.description} />
+                                                            </div>
+                                                        )
+                                                    })
+                                                }
                                             </div>
-                                        )
-                                    })
+                                            :
+                                            ""
+                                    }
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex flex-col content-center items-center justify-center py-16 bg-[#3E4095]">
+                        <div className="w-[100%] p-4 text-black space-y-2 md:w-[60%]">
+                            <h1 className="text-[20px] lg:text-[20px] text-slate-100 font-bold">{"ℹSITUAÇÃO DE INSCRIÇÃO"}</h1>
+                            <div className="">
+                                {!data.pagamento.situacao || data.pagamento.situacao == 2 ?
+                                    <p1 className="text-white">
+                                        Realize seu primerio pagamento para confirmar sua inscrição. A confirmação de seu pagamento é realizada de forma <span className="font-bold bg-yellow-400 px-1">automática</span> em até <span className="font-bold bg-yellow-400 px-1">03 dias</span>.
+                                    </p1>
+                                    :
+                                    <p1 className="text-white">
+                                        Sua inscrição foi <span className="font-bold bg-yellow-400 px-1">confirmada</span>.<span className=""> Aproveite o evento</span>!
+                                    </p1>
                                 }
                             </div>
-                                :
-                                ""
-                        }
+                            <div>
+                                {data.pagamento.situacao == 0 ?
+                                    <div className="flex justify-center lg:justify-start">
+                                        <button onClick={() => { handlePostClick() }} className={`bg-[#eb7038] text-white font-extrabold p-4 ${isLoadingFetch || isModalError ? "cursor-not-allowed" : ""}`} disabled={isLoadingFetch || isModalError ? true : false}>REALIZAR INSCRIÇÃO</button>
+                                    </div>
+                                    : ""
+                                }
+                                {data.pagamento.situacao == 2 ?
+                                    <div className="flex justify-center lg:justify-start">
+                                        <button onClick={() => { handlePostClick2() }} className={`bg-[#eb7038] text-white font-extrabold p-4 ${isLoadingFetch || isModalError ? "cursor-not-allowed" : ""}`} disabled={isLoadingFetch || isModalError ? true : false}>REALIZAR INSCRIÇÃO</button>
+                                    </div>
+                                    : ""
+                                }
+                            </div>
                         </div>
-
-                    </div>
-                </div>
-                <div className="bg-white w-[100%] p-4 text-black space-y-2">
-                    <h1 className="text-[20px] lg:text-[20px] text-gray-800 font-bold">{"ℹSITUAÇÃO DE INSCRIÇÃO"}</h1>
-                    <div className="">
-                        { !data.pagamento.situacao || data.pagamento.situacao == 2?
-                            <p1>
-                                Realize seu primerio pagamento para confirmar sua inscrição. A confirmação de seu pagamento é realizada de forma <span className="font-bold bg-yellow-400 px-1">automática</span> em até <span className="font-bold bg-yellow-400 px-1">03 dias</span>. 
-                            </p1>
-                            :
-                            <p1>
-                                Sua inscrição foi <span className="font-bold ">confirmada</span>.<span className=""> Aproveite o evento</span>!
-                            </p1>
-                        }
                     </div>
                     <div>
-                        { data.pagamento.situacao == 0?
-                        <div className="flex justify-center lg:justify-start">
-                            <button onClick={()=>{handlePostClick()}} className={`bg-[#eb7038] text-white font-extrabold p-4 ${isLoadingFetch || isModalError?"cursor-not-allowed":""}`} disabled={isLoadingFetch || isModalError?true:false}>REALIZAR INSCRIÇÃO</button>
-                        </div>
-                        :""
-                        }
-                        { data.pagamento.situacao == 2?
-                        <div className="flex justify-center lg:justify-start">
-                            <button onClick={()=>{handlePostClick2()}} className={`bg-[#eb7038] text-white font-extrabold p-4 ${isLoadingFetch || isModalError?"cursor-not-allowed":""}`} disabled={isLoadingFetch || isModalError?true:false}>REALIZAR INSCRIÇÃO</button>
-                        </div>
-                        :""
-                        }
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="none" fill="#3e4095" >
+                            <path className="" d="M761.9,44.1L643.1,27.2L333.8,98L0,3.8V0l1000,0v3.9"></path>
+                        </svg>
                     </div>
-                </div>
-                <div className="bg-white w-[100%] p-4 text-black space-y-2">
-                    <h1 className="text-[20px] lg:text-[20px] text-gray-800 font-bold">{"ℹCONTATO"}</h1>
-                    <h1>Em caso de dúvidas ou se o pagamento não for confirmado em até 03 dias, entre em contato com nossa equipe.</h1>
-                    <div className="flex flex-col lg:flex-row items-center content-center justify-center text-center space-x-2">
-                        <div className=" flex-1 flex-col  ">
-                            <h1 className="font-bold px-2">Telefone</h1>
-                            <h1>64 99999-9999</h1>
-                        </div>
-                        <div className="flex-1 flex-col ">
-                            <h1 className="font-bold px-2">Email</h1>
-                            <h1>email@docoeps.com.br</h1>
-                        </div>
-                        <div className="flex-1 flex-col ">
-                            <h1 className="font-bold px-2">Instagram</h1>
-                            <h1>@doCoeps</h1>
+                    <div className="flex flex-col content-center items-center justify-center py-16 bg-white">
+                        <div className="md:w-[60%] p-4 text-black space-y-2">
+                            <h1 className="text-[20px] lg:text-[20px] text-gray-800 font-bold">{"ℹCONTATO"}</h1>
+                            <h1>Em caso de dúvidas ou se o pagamento não for confirmado em até 03 dias, entre em contato com nossa equipe.</h1>
+                            <div className="flex flex-col lg:flex-row items-center content-center justify-center text-center space-x-2">
+                                <div className=" flex-1 flex-col  ">
+                                    <h1 className="font-bold px-2">Telefone</h1>
+                                    <h1>64 99999-9999</h1>
+                                </div>
+                                <div className="flex-1 flex-col ">
+                                    <h1 className="font-bold px-2">Email</h1>
+                                    <h1>email@docoeps.com.br</h1>
+                                </div>
+                                <div className="flex-1 flex-col ">
+                                    <h1 className="font-bold px-2">Instagram</h1>
+                                    <h1>@doCoeps</h1>
 
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
         </>
     )
 }
 //
-const CardPagamentos = ({valor_total="ERROR", data_formatada="ERROR", invoiceNumber="ERROR", status="ERROR", description="ERROR", valor="ERROR"}) =>{
+const CardPagamentos = ({ valor_total = "ERROR", data_formatada = "ERROR", invoiceNumber = "ERROR", status = "ERROR", description = "ERROR", valor = "ERROR" }) => {
     // Arrumando a DATA
     //
     //
@@ -266,7 +279,7 @@ const CardPagamentos = ({valor_total="ERROR", data_formatada="ERROR", invoiceNum
         ACTIVE => Aguardando
     
     */
-    switch (true){ // "Traduz o que está escrito no status."
+    switch (true) { // "Traduz o que está escrito no status."
         case status == "PAYMENT_CONFIRMED":
             status = "PAGO"
             break
@@ -290,18 +303,18 @@ const CardPagamentos = ({valor_total="ERROR", data_formatada="ERROR", invoiceNum
             status = "PROCESSANDO ESTORNO"
             break
     }
-        
+
     return (
         <div className="shadow-[0px_0px_5px_7px_rgba(0,0,0,0.02)] p-4 rounded-xl cursor-pointer relative">
             <div className="flex flex-row justify-center items-center content-center align-middle absolute z-10 p-1 bg-[#ff8952] top-[-15px] left-[-6px] space-x-[3px] rounded-sm">
                 {
-                    valor == "ERROR"?
-                    <h1 className="font-bold text-[13px]">{valor}</h1>
-                    :
-                    <div className="text-[white] flex flex-row space-x-[3px]">
-                        <h1 className="font-bold text-[13px]">R$</h1>
-                        <p className="font-serif text-[13px]">{valor}</p>
-                    </div>
+                    valor == "ERROR" ?
+                        <h1 className="font-bold text-[13px]">{valor}</h1>
+                        :
+                        <div className="text-[white] flex flex-row space-x-[3px]">
+                            <h1 className="font-bold text-[13px]">R$</h1>
+                            <p className="font-serif text-[13px]">{valor}</p>
+                        </div>
                 }
             </div>
             <div className="flex flex-row space-x-8">
@@ -324,158 +337,158 @@ const CardPagamentos = ({valor_total="ERROR", data_formatada="ERROR", invoiceNum
     )
 }
 //
-const Header = ({situacao}) => {
+const Header = ({ situacao }) => {
     //
     //
     //
     const [menuAberto, setMenuAberto] = useState(false);
-  
+
     const toggleMenu = () => {
-      setMenuAberto(!menuAberto);
+        setMenuAberto(!menuAberto);
     };
-  
+
     return (
-      <header className="bg-gray-800 p-4 z-50 w-[100%] sticky top-0">
-        <nav className="flex items-center justify-between ">
-          <div>
-              <Link href="/">
-                  <Image       
-                      src="/Logo01.png"
-                      width={150}
-                      height={150}
-                      alt="Picture of the author"
-                  />
-            </Link>
-          </div>
-          <div className="hidden space-x-4 lg:flex lg:justify-end  w-[50%]">
-            <ul className="flex flex-row items-center justify-center content-center space-x-4 lg:space-x-10">
-                {
-                    situacao == 1?
-                    <>
+        <header className="bg-gray-800 p-4 z-50 w-[100%] sticky top-0">
+            <nav className="flex items-center justify-between ">
+                <div>
+                    <Link href="/">
+                        <Image
+                            src="/Logo01.png"
+                            width={150}
+                            height={150}
+                            alt="Picture of the author"
+                        />
+                    </Link>
+                </div>
+                <div className="hidden space-x-4 lg:flex lg:justify-end  w-[50%]">
+                    <ul className="flex flex-row items-center justify-center content-center space-x-4 lg:space-x-10">
+                        {
+                            situacao == 1 ?
+                                <>
+                                    <li>
+                                        <Link href="/painel/" className='hover:text-red-500 ease-linear duration-150'>
+                                            Área do Congressista
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/organizadores" className='hover:text-red-500 ease-linear duration-150'>
+                                            Trabalhos
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
+                                            Minha programação
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/anais" className='hover:text-red-500 ease-linear duration-150'>
+                                            Anais
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/#ComponenteContados" className='hover:text-red-500 ease-linear duration-150'>
+                                            Contato
+                                        </Link>
+                                    </li>
+                                </>
+                                :
+                                <li>
+                                    <Link href="" className='hover:text-red-500 ease-linear duration-150'>
+                                        {"Complete o cadastro para ter acesso total ao site".toUpperCase()}
+                                    </Link>
+                                </li>
+                        }
                         <li>
-                            <Link href="/painel/" className='hover:text-red-500 ease-linear duration-150'>
-                            Área do Congressista
+                            <Link href="/api/auth/login" className='hover:text-red-500 ease-linear duration-150'>
+                                <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2 ">LOGOUT</button>
                             </Link>
                         </li>
+                    </ul>
+                </div>
+                <div className="lg:hidden">
+                    <button
+                        onClick={toggleMenu}
+                        className="text-white hover:text-gray-300 focus:outline-none"
+                    >
+                        <svg
+                            className="w-6 h-6"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            {menuAberto ? (
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M6 18L18 6M6 6l12 12"
+                                />
+                            ) : (
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M4 6h16M4 12h16M4 18h16"
+                                />
+                            )}
+                        </svg>
+                    </button>
+                </div>
+            </nav>
+            {menuAberto && (
+                <div className="lg:hidden">
+                    <ul className="mt-4 space-y-2">
+                        {
+                            situacao ?
+                                <>
+                                    <li>
+                                        <Link href="/painel/" className='hover:text-red-500 ease-linear duration-150'>
+                                            Área do Congressista
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/organizadores" className='hover:text-red-500 ease-linear duration-150'>
+                                            Trabalhos
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
+                                            Minha programação
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/anais" className='hover:text-red-500 ease-linear duration-150'>
+                                            Anais
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/#ComponenteContados" className='hover:text-red-500 ease-linear duration-150'>
+                                            Contato
+                                        </Link>
+                                    </li>
+                                </>
+                                :
+                                <li>
+                                    <Link href="" className='hover:text-red-500 ease-linear duration-150'>
+                                        {"Complete o cadastro para ter acesso total ao site".toUpperCase()}
+                                    </Link>
+                                </li>
+                        }
                         <li>
-                        <Link href="/organizadores" className='hover:text-red-500 ease-linear duration-150'>
-                            Trabalhos
+                            <Link href="/api/auth/login" className='hover:text-red-500 ease-linear duration-150'>
+                                <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2 ">LOGOUT</button>
                             </Link>
                         </li>
-                        <li>
-                        <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
-                            Minha programação
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/anais" className='hover:text-red-500 ease-linear duration-150'>
-                                Anais
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/#ComponenteContados" className='hover:text-red-500 ease-linear duration-150'>
-                            Contato
-                            </Link>
-                        </li>
-                    </>
-                    :
-                    <li>
-                        <Link href="" className='hover:text-red-500 ease-linear duration-150'>
-                        {"Complete o cadastro para ter acesso total ao site".toUpperCase()}
-                        </Link>
-                    </li>
-                }
-              <li>
-                <Link href="/api/auth/login" className='hover:text-red-500 ease-linear duration-150'>
-                  <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2 ">LOGOUT</button>
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div className="lg:hidden">
-            <button
-              onClick={toggleMenu}
-              className="text-white hover:text-gray-300 focus:outline-none"
-            >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                {menuAberto ? (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                ) : (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                )}
-              </svg>
-            </button>
-          </div>
-        </nav>
-        {menuAberto && (
-          <div className="lg:hidden">
-              <ul className="mt-4 space-y-2"> 
-                {
-                    situacao?
-                    <>
-                        <li>
-                            <Link href="/painel/" className='hover:text-red-500 ease-linear duration-150'>
-                            Área do Congressista
-                            </Link>
-                        </li>
-                        <li>
-                        <Link href="/organizadores" className='hover:text-red-500 ease-linear duration-150'>
-                            Trabalhos
-                            </Link>
-                        </li>
-                        <li>
-                        <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
-                            Minha programação
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/anais" className='hover:text-red-500 ease-linear duration-150'>
-                                Anais
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/#ComponenteContados" className='hover:text-red-500 ease-linear duration-150'>
-                            Contato
-                            </Link>
-                        </li>
-                    </>
-                    :
-                    <li>
-                        <Link href="" className='hover:text-red-500 ease-linear duration-150'>
-                            {"Complete o cadastro para ter acesso total ao site".toUpperCase()}
-                        </Link>
-                    </li>
-                }
-              <li>
-                <Link href="/api/auth/login" className='hover:text-red-500 ease-linear duration-150'>
-                  <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2 ">LOGOUT</button>
-                </Link>
-              </li>            
-            </ul>
-          </div>
-        )}
-      </header>
+                    </ul>
+                </div>
+            )}
+        </header>
     );
 };
-  
+
 //
 //
-function ModalError ({texto, handleIsModalError}) {
+function ModalError({ texto, handleIsModalError }) {
     return (
         <div className="flex items-center content-center justify-center w-full min-h-screen absolute z-50">
             <div className="flex flex-col items-center content-center justify-center bg-white p-5 w-[90%] lg:w-[40%]">
@@ -484,7 +497,7 @@ function ModalError ({texto, handleIsModalError}) {
                     <h1 className=" font-extralight text-black lg:text-[35px]">{texto}</h1>
                 </div>
                 <div className="bg-[#3E4095] text-white font-bold p-3">
-                    <button onClick={()=>{handleIsModalError(0)}} >FECHAR</button>
+                    <button onClick={() => { handleIsModalError(0) }} >FECHAR</button>
                 </div>
             </div>
         </div>

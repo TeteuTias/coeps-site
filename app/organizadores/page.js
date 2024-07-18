@@ -192,7 +192,7 @@ export default function Organizadores(){
     return (
         <>
         <Header/>
-        <div className="pt-12">
+        <div className="">
             <div className="bg-[url(Site.jpg)] flex content-center justify-center font-semibold text-[30px] p-16  bg-center bg-cover">
                 <h1>Comissão Organizadora</h1>
             </div>

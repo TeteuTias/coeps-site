@@ -7,8 +7,8 @@ export default function Inscricoes(){
     return (
         <>
         <Header />
-        <div className="pt-12">
-            <div className="bg-[url(Site.jpg)] flex content-center justify-center font-semibold text-[30px] p-16  bg-center bg-cover ">
+        <div className="">
+            <div className="bg-[url(Site.jpg)] flex content-center justify-center font-semibold text-[30px] p-16  bg-center bg-cover py-[120px] ">
                 <h1>Inscrições</h1>
             </div>
 
@@ -23,7 +23,7 @@ export default function Inscricoes(){
                 </div>
             </div>
 
-            <div className="flex content-center justify-center text-white bg-[#3e4095] p-10 lg:py-20">
+            <div className="flex content-center justify-center text-white bg-[#3e4095] p-10 py-[120px]">
                 <div className="w-[90%] lg:w-[70%] space-y-5">
                     <h1 className="font-semibold  text-[30px] lg:text-[35px]">Formas de Pagamento</h1>
                     <h1 className="text-justify">
@@ -32,7 +32,7 @@ export default function Inscricoes(){
                 </div>
             </div>
 
-            <div className="flex content-center justify-center p-10">
+            <div className="flex content-center justify-center p-10 py-[60px]">
                 <div className="flex flex-col w-[90%] lg:w-[70%] space-y-10">
                     <h1 className="font-semibold text-slate-950 text-[30px] lg:text-[35px]">Como Realizar Minha Inscrição</h1>
                     <h1 className="text-black text-justify">
@@ -49,10 +49,10 @@ export default function Inscricoes(){
                     <path className=""  d="M761.9,44.1L643.1,27.2L333.8,98L0,3.8V0l1000,0v3.9"></path>
                 </svg>
             </div>
-            <div className="flex content-center justify-center bg-[#3e4095] text-white p-10">
+            <div className="flex content-center justify-center bg-[#3e4095] text-white p-10 py-[60px]">
                 <div className="w-[90%] lg:w-[70%] space-y-5">
                     <h1 className="font-semibold text-[30px] lg:text-[35px]">Políticas</h1>
-                    <h1 className="text-justify">
+                    <p className="text-justify leading-8">
                     No ato do cadastro, você precisará criar uma senha que juntamente com seu CPF ou e-mail serão as credenciais para acessar sua área de participante posteriormente
                     e ter acesso a todos os serviços oferecidos no evento.
 
@@ -63,7 +63,7 @@ export default function Inscricoes(){
 
                     Se você descumprir as obrigações aqui apresentadas, você estará praticando ato de exclusiva responsabilidade, sendo que eventuais prejuízos decorrentes de tal ato serão 
                     suportados por VOCÊ exclusivamente.
-                    </h1>
+                    </p>
                 </div>
             </div>
             <div className="flex content-center justify-center p-10 lg:py-24">
@@ -72,7 +72,7 @@ export default function Inscricoes(){
                     <h1 className="text-black text-justify">
                         O Art. 49 da Lei 8.078/09 do Código de Defesa do Consumidor garante um prazo legal de 7 dias após a compra para devolução de 100% do valor pago.
                         Caso deseje realizar seu reembolso, entre em contato com nossa equipe através do nosso Email ou WhatsApp.
-                        Conheça a <Link href="https://coeps.com.br/privacidade/">Política de privacidade</Link> e <Link href="https://coeps.com.br/cookies/">Política de cookies</Link>.
+                        Conheça a <Link href="https://coeps.com.br/privacidade/"className="bg-yellow-300 px-1 font-semibold">Política de privacidade</Link> e <Link href="https://coeps.com.br/cookies/"className="bg-yellow-300 px-1 font-semibold">Política de cookies</Link>.
                     </h1>
                 </div>
             </div>

@@ -15,11 +15,8 @@ export const middleware = withMiddlewareAuthRequired(async (req) => {
   if (check) { return check }
   // Verificando pagamento
   //
-  var check = await checkAll(req, res) 
-  if (check) { 
-    const urlFetch = new URL('/painel/pagamentos',req.url)
-    return check;
-  }
+  var check = await checkAll(req, res)
+  if (check) { return check }
 
 
 
