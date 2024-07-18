@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-const HeaderPainel = () => {
+const HeaderPainel = ({ isPayed = true }) => {
     const [menuAberto, setMenuAberto] = useState(false);
 
     const toggleMenu = () => {
@@ -26,31 +26,43 @@ const HeaderPainel = () => {
                 </div>
                 <div className="hidden lg:flex space-x-4 w-auto flex-wrap ml-auto">
                     <ul className="flex flex-row items-center justify-end content-center space-x-4 flex-wrap">
-                        <li>
-                            <Link href="/painel" className='hover:text-red-500 ease-linear duration-150'>
-                                Início
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/painel/trabalhos" className='hover:text-red-500 ease-linear duration-150'>
-                                Trabalhos
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/painel/minhaProgramacao" className='hover:text-red-500 ease-linear duration-150'>
-                                Programação
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
-                                Minicursos
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/painel/pagamentos" className='hover:text-red-500 ease-linear duration-150'>
-                                Pagamentos
-                            </Link>
-                        </li>
+                        {
+                            isPayed ?
+                                <>
+
+                                    <li>
+                                        <Link href="/painel" className='hover:text-red-500 ease-linear duration-150'>
+                                            Início
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/painel/trabalhos" className='hover:text-red-500 ease-linear duration-150'>
+                                            Trabalhos
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/painel/minhaProgramacao" className='hover:text-red-500 ease-linear duration-150'>
+                                            Programação
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
+                                            Minicursos
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/painel/pagamentos" className='hover:text-red-500 ease-linear duration-150'>
+                                            Pagamentos
+                                        </Link>
+                                    </li>
+                                </>
+                                :
+                                <li>
+                                    <h1 className='hover:text-red-500 ease-linear duration-150'>
+                                        Acesse o site completo ao concluir o pagamento
+                                    </h1>
+                                </li>
+                        }
                         <li>
                             <Link href="/api/auth/logout" className='hover:text-red-500 ease-linear duration-150'>
                                 <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2">LOGOUT</button>

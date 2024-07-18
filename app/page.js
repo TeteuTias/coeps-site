@@ -14,16 +14,35 @@ export default function Home() {
   //
   /*
   <h1 className="text-black">{user?"Voce está logado":"Voce não está logado"}</h1>
-  */ <Contador />
+  */          <Contador />
   return (
     <main className="w-screen">
-
       <Header />
       <div className="bg-[url(Site.jpg)] bg-center bg-cover pb-10 pt-12">
         <Letreiro />
 
       </div>
-      <div className="flex justify-center items-center content-center text-justify p-10">
+      <div className="flex justify-center items-center content-center text-justify p-5">
+        <TextoDIV1 />
+      </div>
+      <div className="bg-[#3e4095] text-white flex justify-center items-center content-center text-justify p-10 space-y-10">
+        <TextoDIV2 />
+      </div>
+      <div className="bg-white relative mb-10" >
+          <BannerDIV4 />
+      </div>
+      <Header01 />
+
+    </main>
+  );
+}
+/*
+
+      <Header />
+      <div className="bg-[url(Site.jpg)] bg-center bg-cover pb-10 pt-12">
+        <Letreiro />
+      </div>
+      <div className="flex justify-center items-center content-center text-justify p-5">
         <TextoDIV1 />
       </div>
       <div className="bg-[#3e4095] text-white flex justify-center items-center content-center text-justify p-10 space-y-10">
@@ -34,9 +53,8 @@ export default function Home() {
       </div>
       <Header01 />
 
-    </main>
-  );
-}
+
+*/
 // OS NOMES DOS DIVS E SUAS NUMERAÇÕES NAO ESTÃO CERTAS MAIS!!
 //
 //
@@ -187,11 +205,11 @@ function TextoDIV2() {
         <h1 className="font-semibold text-[30px] lg:text-[35px]">Evento tradicional em Araguari</h1>
       </div>
       <div className="text-center">
-        <p1>
+        <p>
           O V Congresso dos Estudantes e Profissionais de Saúde (COEPS), evento tradicional em Araguari, organizado pelo Diretório Acadêmico Diogo
           Guimarães (DADG) do curso de Medicina do Centro Universitário IMEPAC Araguari, acontecerá de 26 a 29 de outubro de 2023,
           presencialmente, tendo como tema “Cuidados Paliativos na formação profissional de saúde: humanização em destaque”.
-        </p1>
+        </p>
       </div>
       <div className="flex flex-col space-y-10 lg:space-y-0 lg:flex-row lg:space-x-10 justify-center items-center content-center pt-[50px]">
         <div className="flex flex-col justify-center items-center content-center text-white">

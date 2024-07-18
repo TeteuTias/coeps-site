@@ -5,6 +5,7 @@ import Header from '@/app/components/Header';
 import CardDatas from '@/app/components/CardDatas';
 import Link from 'next/link';
 import WarningModal from '@/app/components/WarningModal';
+import HeaderPainel from '@/app/components/HeaderPainel';
 //
 //
 export default function Home() {
@@ -195,6 +196,7 @@ export default function Home() {
     //
     return (
         <>
+            <HeaderPainel />
             <WarningModal closeModal={() => { setIsModalError(null) }} message={isModalError} isModal={isModalError} />
             <LoadingModal isLoading={isLoadingDeleteOrSend} />
             <div className='min-h-screen'>

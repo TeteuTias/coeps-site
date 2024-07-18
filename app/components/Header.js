@@ -12,28 +12,23 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-gray-800 p-4 z-50 w-[100%] sticky top-0">
-      <nav className="flex items-center justify-between ">
-        <div>
+    <header className="bg-gray-800 p-4 z-50 w-full sticky top-0">
+      <nav className="flex items-center justify-between flex-wrap">
+        <div className="flex-shrink-0">
           <Link href="/">
             <Image
               src="/Logo01.png"
               width={150}
               height={150}
-              alt="Picture of the author"
+              alt="Logo"
             />
           </Link>
         </div>
-        <div className="hidden lg:flex space-x-4 w-[50%]">
-          <ul className="flex flex-row items-center justify-center content-center space-x-4">
+        <div className="hidden lg:flex space-x-4 w-auto flex-wrap ml-auto">
+          <ul className="flex flex-row items-center justify-end content-center space-x-4 flex-wrap">
             <li>
               <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
                 Início
-              </Link>
-            </li>
-            <li>
-              <Link href="/organizadores" className='hover:text-red-500 ease-linear duration-150'>
-                Organizadores
               </Link>
             </li>
             <li>
@@ -42,18 +37,18 @@ const Header = () => {
               </Link>
             </li>
             <li>
-              <Link href="/inscricoes" className='hover:text-red-500 ease-linear duration-150'>
-                Inscrições
-              </Link>
-            </li>
-            <li>
               <Link href="/trabalhos" className='hover:text-red-500 ease-linear duration-150'>
                 Trabalhos
               </Link>
             </li>
             <li>
-              <Link href="/anais" className='hover:text-red-500 ease-linear duration-150'>
-                Anais
+              <Link href="/inscricoes" className='hover:text-red-500 ease-linear duration-150'>
+                Inscrições
+              </Link>
+            </li>
+            <li>
+              <Link href="/organizadores" className='hover:text-red-500 ease-linear duration-150'>
+                Organizadores
               </Link>
             </li>
             <li>
@@ -61,19 +56,17 @@ const Header = () => {
                 Contato
               </Link>
             </li>
-            <li>
-              <Link href="/inscricoes" className='hover:text-red-500 ease-linear duration-150'>
-                Inscreva-se
-              </Link>
-            </li>
+            <Link href="/anais" className='hover:text-red-500 ease-linear duration-150'>
+              Anais
+            </Link>
             <li>
               <Link href="/painel" className='hover:text-red-500 ease-linear duration-150'>
-                <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2 ">ÁREA DO CONGRESSITA</button>
+                <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2">Área do Congressista</button>
               </Link>
             </li>
           </ul>
         </div>
-        <div className="lg:hidden">
+        <div className="lg:hidden ml-auto">
           <button
             onClick={toggleMenu}
             className="text-white hover:text-gray-300 focus:outline-none"
@@ -112,11 +105,6 @@ const Header = () => {
               </Link>
             </li>
             <li>
-              <Link href="/organizadores" className='hover:text-red-500 ease-linear duration-150'>
-                Organizadores
-              </Link>
-            </li>
-            <li>
               <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
                 Programação
               </Link>
@@ -127,8 +115,13 @@ const Header = () => {
               </Link>
             </li>
             <li>
-              <Link href="/anais" className='hover:text-red-500 ease-linear duration-150'>
-                Anais
+              <Link href="/inscricoes" className='hover:text-red-500 ease-linear duration-150'>
+                Inscrições
+              </Link>
+            </li>
+            <li>
+              <Link href="/organizadores" className='hover:text-red-500 ease-linear duration-150'>
+                Organizadores
               </Link>
             </li>
             <li>
@@ -136,20 +129,20 @@ const Header = () => {
                 Contato
               </Link>
             </li>
-            <li>
-              <Link href="/inscricoes" className='hover:text-red-500 ease-linear duration-150'>
-                Inscreva-se
-              </Link>
-            </li>
+            <Link href="/anais" className='hover:text-red-500 ease-linear duration-150'>
+              Anais
+            </Link>
             <li>
               <Link href="/painel" className='hover:text-red-500 ease-linear duration-150'>
-                <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2 ">ÁREA DO CONGRESSITA</button>
+                <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2">Área do Congressista</button>
               </Link>
             </li>
           </ul>
         </div>
       )}
     </header>
+
+
   );
 };
 

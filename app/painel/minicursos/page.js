@@ -1,5 +1,11 @@
+import HeaderPainel from "@/app/components/HeaderPainel"
+//
+//
+//
 export default function Minicursos() {
     return (
-        <h1>Olá Minicursos!</h1>
+        <>
+            <HeaderPainel />
+        </>
     )
 }
