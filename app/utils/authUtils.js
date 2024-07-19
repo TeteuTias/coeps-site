@@ -23,7 +23,7 @@ export async function checkAndRefreshToken(req, res) {
         }
         return NextResponse.rewrite(urlLogOut); // QUALQUER ERRO QUE DER VAI PRO LOGOUT
     }
-}0
+}
 //
 //
 export async function checkAll(req, res) {
@@ -32,7 +32,7 @@ export async function checkAll(req, res) {
         const { accessToken } = await getAccessToken(req, res);
 
         //
-        const urlFetch = new URL("/api/get/verificacaoUsuario",req.url)
+        const urlFetch = new URL("/api/get/verificacaoUsuario", req.url)
         const response = await fetch(urlFetch.toString(), {
             method: 'get',
             headers: req.headers,
@@ -45,11 +45,11 @@ export async function checkAll(req, res) {
         // A primeira verificação é a isPos_registration depois o pagamento.
         //
         if (responseJson.isPos_registration != 1) { // se a situação for == 1 voce seta.
-            const urlPagamentos = new URL("/updateData",req.url)
+            const urlPagamentos = new URL("/updateData", req.url)
             return NextResponse.rewrite(urlPagamentos);
         }
         if (responseJson.pagamento.situacao != 1) { // se a situação for == 1 voce seta.
-            const urlPagamentos = new URL("/painel/pagamentos",req.url)
+            const urlPagamentos = new URL("/painel/pagamentos", req.url)
             return NextResponse.rewrite(urlPagamentos);
         }
         return undefined
@@ -63,4 +63,16 @@ export async function checkAll(req, res) {
         return NextResponse.rewrite(urlLogOut); // QUALQUER ERRO QUE DER VAI PRO LOGOUT
     }
 }
+//
+//
+export async function checkRoutes(req, res) {
+    // Tratando rotas ESPECIAIS.
+    if (req.nextUrl.pathname.startsWith('/updateData')) {
+        // Se ele chegou até aqui, é porque ele não precisa mais ir para updateData. Assim, não faz sentido ele ir.
+        return NextResponse.rewrite(new URL('/painel', req.url))
+    }
+    return undefined
+}
+//
+//
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { withMiddlewareAuthRequired } from '@auth0/nextjs-auth0/edge';
-import { checkAndRefreshToken, checkAll } from './app/utils/authUtils';
+import { checkAndRefreshToken, checkAll, checkRoutes } from './app/utils/authUtils';
 //
 //
 //
@@ -10,16 +10,18 @@ import { getSession } from '@auth0/nextjs-auth0/edge';
 
 export const middleware = withMiddlewareAuthRequired(async (req) => {
   const res = new NextResponse();
+
   // Verificando Token.
   var check = await checkAndRefreshToken(req, res); // apesar do nome, ele não dá refresh.
   if (check) { return check }
+
   // Verificando pagamento
-  //
-  var check = await checkAll(req, res)
+  check = await checkAll(req, res)
   if (check) { return check }
-  //
-  //
-  //
+
+  check = await checkRoutes(req,res)
+  if (check) { return check}
+
   return NextResponse.next();
 });
 //

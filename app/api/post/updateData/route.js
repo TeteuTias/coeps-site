@@ -59,7 +59,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
         //
         //
         //        
-        await db.collection('usuarios').findOneAndUpdate({"_id":b}, {"$set":{
+        await db.collection('usuarios').findOneAndUpdate({"_id":b, "isPos_registration": 0}, {"$set":{
             id_api,
             'isPos_registration':1,
             'informacoes_usuario.nome':data.nome,
