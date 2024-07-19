@@ -45,7 +45,7 @@ export async function checkAll(req, res) {
         // A primeira verificação é a isPos_registration depois o pagamento.
         //
         if (responseJson.isPos_registration != 1) { // se a situação for == 1 voce seta.
-            const urlPagamentos = new URL("/painel/updateData",req.url)
+            const urlPagamentos = new URL("/updateData",req.url)
             return NextResponse.rewrite(urlPagamentos);
         }
         if (responseJson.pagamento.situacao != 1) { // se a situação for == 1 voce seta.

@@ -17,9 +17,6 @@ export const middleware = withMiddlewareAuthRequired(async (req) => {
   //
   var check = await checkAll(req, res)
   if (check) { return check }
-
-
-
   //
   //
   //
@@ -34,6 +31,7 @@ export const middleware = withMiddlewareAuthRequired(async (req) => {
 export const config = {
   matcher: [
     '/painel/:path*',
+    '/updateData/:path*'
   ]
 }
 /*
