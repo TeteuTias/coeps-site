@@ -1,9 +1,8 @@
 'use client'
-import ContatoBanner from "../components/ContatoBanner"
-import TituloBanner from "../components/TituloBanner"
-import Header from "../components/Header"
+import ContatoBanner from "../../components/ContatoBanner"
+import TituloBanner from "../../components/TituloBanner"
 import Link from "next/link"
-import CardDatas from "../components/CardDatas"
+import CardDatas from "../../components/CardDatas"
 import { useEffect, useState } from "react"
 //
 //
@@ -40,7 +39,6 @@ export default function Trabalhos() {
     }, [loading]);
     return (
         <>
-            <Header />
             <div className="">
                 <TituloBanner titulo="Trabalhos" />
             </div>

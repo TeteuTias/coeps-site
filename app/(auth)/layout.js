@@ -1,5 +1,5 @@
 'use client'
-import HeaderPainel from "../components/HeaderPainel";
+
 //
 //
 export default function Layout({ children }) {

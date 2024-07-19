@@ -1,12 +1,10 @@
 "use client"
-import Header from "../components/Header"
 import Link from "next/link"
 //
 //
 export default function Inscricoes(){
     return (
         <>
-        <Header />
         <div className="">
             <div className="bg-[url(Site.jpg)] flex content-center justify-center font-semibold text-[30px] p-16  bg-center bg-cover py-[120px] ">
                 <h1>Inscrições</h1>

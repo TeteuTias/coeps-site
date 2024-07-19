@@ -1,8 +1,7 @@
 'use client'
 //
 import Image from "next/image";
-import Header from "../components/Header"
-import ImageModal from "../components/ImageModal";
+import ImageModal from "@/app/components/ImageModal";
 //
 //
 export default function Organizadores(){
@@ -191,7 +190,6 @@ export default function Organizadores(){
     var organizacao_selecionada = "TODAS"
     return (
         <>
-        <Header/>
         <div className="">
             <div className="bg-[url(Site.jpg)] flex content-center justify-center font-semibold text-[30px] p-16  bg-center bg-cover">
                 <h1>Comissão Organizadora</h1>

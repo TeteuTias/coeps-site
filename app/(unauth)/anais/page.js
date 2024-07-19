@@ -1,5 +1,4 @@
 'use client'
-import Header from "../components/Header"
 import Image from "next/image"
 import { useEffect, useState } from "react";
 //
@@ -41,7 +40,6 @@ export default function Anais() {
   }, [loading]);
   return (
     <>
-      <Header />
       <div className="min-h-screen">
         <div className="flex-1 min-h-screen">
 

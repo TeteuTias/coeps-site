@@ -1,6 +1,6 @@
 'use client'
 import Image from "next/image";
-import Header from "./components/Header"
+import Header from "../components/Header"
 import { useUser } from "@auth0/nextjs-auth0/client"
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -17,7 +17,6 @@ export default function Home() {
   */          <Contador />
   return (
     <main className="w-screen">
-      <Header />
       <div className="bg-[url(Site.jpg)] bg-center bg-cover pb-10 pt-12">
         <Letreiro />
 
