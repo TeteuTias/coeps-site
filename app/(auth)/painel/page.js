@@ -13,8 +13,6 @@ export default function Page() {
 
   return (
     <>
-
-      <HeaderPainel />
       <div className="min-h-screen bg-[#3E4095] flex flex-col justify-center content-center items-center">
         <PaginaAreaDoCliente />
       </div>

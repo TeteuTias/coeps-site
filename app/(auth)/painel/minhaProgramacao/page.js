@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import HeaderPainel from "@/app/components/HeaderPainel";
 //
 //
 //
@@ -100,7 +99,6 @@ export default function MinhaProgramacao() {
   //
   return (
     <>
-      <HeaderPainel />
       <div className=" min-h-screen pb-10 bg-[#3E4095]">
         {
           modal ? <Modal handleModal={() => { handleModal(0) }} modal={modal} /> : ""

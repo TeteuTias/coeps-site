@@ -1,5 +1,4 @@
 'use client'
-import HeaderPainel from "@/app/components/HeaderPainel"
 import { useEffect, useState } from "react"
 import WarningModal from "@/app/components/WarningModal"
 //
@@ -82,7 +81,6 @@ export const MinhasInformacoes = () => {
     return (
         <>
             <WarningModal message={message} isModal={isModal} closeModal={closeModalMessage}/>
-            <HeaderPainel />
             <LoadingModal isLoading={loadingModal} />
             <div className=" bg-zinc-50" onClick={()=>{console.log(DATA)}}>
                 <div className='bg-[#3E4095] p-5'>

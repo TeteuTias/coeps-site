@@ -6,7 +6,6 @@ import Link from "next/link";
 import Image from "next/image";
 import TelaLoading from "@/app/components/TelaLoading";
 import PaginaErrorPadrao from "@/app/components/PaginaErrorPadrao";
-import HeaderPainel from "@/app/components/HeaderPainel";
 //
 //
 //
@@ -160,7 +159,6 @@ export default function Pagamentos() {
     //
     return (
         <>
-        <HeaderPainel isPayed={data?.pagamento?.situacao??false }/>
             {
                 !isLoadingFetch && isModalError ?
                     <ModalError handleIsModalError={handleIsModalError} texto={isModalError} />

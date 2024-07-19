@@ -1,17 +1,19 @@
 'use client'
-
+import { useRouter } from 'next/router';
+import { Children } from 'react';
+import HeaderPainel from '../components/HeaderPainel';
 //
 //
 export default function Layout({ children }) {
     //
-    // <HeaderPainel /> problema: o layout tem que mudar se o usuário !pagou. E não dá pra ficar verificando aqui toda hora.
-    
+    //
     return (
         <>
-        
-        <div className="min-h-screen">
-            {children}
-        </div>
+
+            <div className="min-h-screen">
+                <HeaderPainel />
+                {children}
+            </div>
         </>
     )
 }
