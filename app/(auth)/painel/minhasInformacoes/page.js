@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from "react"
 import WarningModal from "@/app/components/WarningModal"
+import Link from "next/link"
 //
 //
 //
@@ -42,12 +43,17 @@ export const MinhasInformacoes = () => {
 
     }, []);
     //
-   const closeModalMessage = (e) => { 
-    setIsModal(e)
-   }
+    const closeModalMessage = (e) => {
+        setIsModal(e)
+    }
     // 
     const updateData = async (update) => {
         // update = {campo_a_ser_atualizado: atualizacao}
+        if (Object.values(update)[0].trim() == "") {
+            setMessage("Preencha o campo antes de realizar a atualização.")
+            setIsModal(1)
+            return undefined
+        }
         console.log(DATA)
         try {
             setLoadingModal(1)
@@ -60,15 +66,20 @@ export const MinhasInformacoes = () => {
                 body: JSON.stringify(update),
             });
             const responseJson = await response.json()
-            if (response.ok) {
-                setMessage(responseJson.message)
+            if (!response.ok) {
+                setMessage(responseJson.message || "Ocorreu um erro desconhecido. Recarregue a página e tente novamente. Caso o erro continue, entre em contato com a equipe COEPS.")
                 setIsModal(1)
-                setData( prev => ({
-                    ...prev,
-                    ...update
-
-                }))
+                return undefined
             }
+            setMessage(responseJson.message)
+            setIsModal(1)
+            setData(prev => ({
+                ...prev,
+                ...update
+
+            }))
+
+
         }
         catch (erro) {
             console.log(erro)
@@ -78,21 +89,26 @@ export const MinhasInformacoes = () => {
         }
     }
     //
+    const handleAlterarSenha = async () => {
+        setMessage("Para alterar a sua senha, você será redirecionado para a tela de login onde encontrará a opção 'Esqueci minha senha'. Ao clicar nessa opção, você receberá as instruções necessárias para prosseguir. Se desejar continuar após isso, clique em 'Continuar'.")
+        setIsModal(1)
+        return undefined
+    }
+    //
     return (
         <>
-            <WarningModal message={message} isModal={isModal} closeModal={closeModalMessage}/>
+            <WarningModal message={message} isModal={isModal} closeModal={closeModalMessage} />
             <LoadingModal isLoading={loadingModal} />
-            <div className=" bg-zinc-50" onClick={()=>{console.log(DATA)}}>
+            <div className=" bg-zinc-50" onClick={() => { console.log(DATA) }}>
                 <div className='bg-[#3E4095] p-5'>
                     <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Configurações de Usuário</h1>
-                    <h1 className="text-center">{'# LEMBRETE PESSOAL - [ CONFIGURAR TROCAR SENHA ] #'}</h1>
                 </div>
                 <div className="flex flex-col items-center space-y-5 py-4">
                     <Card label={"Nome"} placeholder={DATA?.nome ?? ""} labelButton={"Trocar Nome"} loading={loading} onClick={updateData} nomeCampo={'nome'} />
                     <CardAlterarSenha label="Alterar Senha" labelButton="Trocar Senha" loading={loading} />
-                    <Card label={"Email"} placeholder={DATA?.email ?? ""} labelButton={"Trocar Email"} loading={loading} onClick={updateData} nomeCampo={'email'} />
+                    { /*<Card label={"Email"} placeholder={DATA?.email ?? ""} labelButton={"Trocar Email"} loading={loading} onClick={updateData} nomeCampo={'email'} /> */}
                     <Card label={"Cpf"} placeholder={DATA?.cpf ?? ""} labelButton={"Trocar Cpf"} loading={loading} type={"number"} onClick={updateData} nomeCampo={'cpf'} />
-                    <Card label={"Telefone"} placeholder={DATA?.numero_telefone ?? ""} labelButton={"Trocar Telefone"} loading={loading} type={"number"} onClick={updateData} nomeCampo={'numero_telefone'} />
+                    <Card label={"Telefone Whatsapp"} placeholder={DATA?.numero_telefone ?? ""} labelButton={"Trocar Telefone"} loading={loading} type={"number"} onClick={updateData} nomeCampo={'numero_telefone'} />
                 </div>
             </div>
         </>
@@ -152,18 +168,18 @@ const Card = ({ label = "NÃO DEFINIDO", placeholder = "NÃO DEFINIDO", labelBut
                 </div>
             </div>
             <div className="text-[1rem] font-thin text-black px-4">
-                <button className="border-[1px] px-2 py-1 rounded-lg hover:bg-slate-100 hover:border-slate-600" onClick={() => { 
-                    onClick({[nomeCampo]:inputValue})
+                <button className="border-[1px] px-2 py-1 rounded-lg hover:bg-slate-100 hover:border-slate-600" onClick={() => {
+                    onClick({ [nomeCampo]: inputValue })
                     setInputValue("")
                 }}
-                    >
+                >
                     {labelButton}
                 </button>
             </div>
         </div>
     );
 };
-const CardAlterarSenha = ({ label = "NÃO DEFINIDO", labelButton = "NÃO DEFINIDO", loading = true, onClick = () => { } }) => {
+const CardAlterarSenha = ({ label = "NÃO DEFINIDO", labelButton = "NÃO DEFINIDO", loading = true }) => {
     if (loading) {
         return (
             <div className="border-[1px] border-teal-300 rounded-t-lg w-[95%] lg:w-[30%] pb-3 rounded-b-lg bg-white">
@@ -173,16 +189,68 @@ const CardAlterarSenha = ({ label = "NÃO DEFINIDO", labelButton = "NÃO DEFINID
             </div>
         )
     }
+    const [modal, setModal] = useState('')
+    const WarningModal = ({ message = "MENSAGEM NÃO DEFINIDA", textButton = "FECHAR", onClose = () => { }, closeModal = () => { }, isModal = 1 }) => {
+        return (
+            <>
+                {
+                    isModal ?
+                        <div className=" fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+                            < div className="w-[85%] sm:w-full bg-white p-6 rounded-lg shadow-lg max-w-md " >
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center">
+                                        <span className="text-yellow-500 text-2xl mr-2">⚠️</span>
+                                        <h2 className="text-xl font-semibold text-gray-800">Aviso</h2>
+                                    </div>
+
+                                </div>
+                                <p className="mt-4 text-gray-600">{message}</p>
+                                <div className="flex flex-row justify-end space-x-2 mt-6 text-right">
+                                    <Link href="/api/auth/logout">
+                                        <button
+                                            className="bg-red-600 font-bold text-white py-2 px-4 rounded hover:bg-red-400 transition"
+                                            onClick={
+                                                () => {
+                                                    closeModal(0)
+                                                    onClose()
+                                                }
+                                            }
+                                        >
+                                            CONTINUAR
+                                        </button>
+                                    </Link>
+                                    <button
+                                        className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-400 transition"
+                                        onClick={
+                                            () => {
+                                                closeModal(0)
+                                                onClose()
+                                            }
+                                        }
+                                    >
+                                        {textButton}
+                                    </button>
+                                </div>
+                            </div >
+                        </div >
+                        : ""
+                }
+            </>
+        );
+    };
     return (
-        <div className="border-[1px] border-teal-300 rounded-t-lg w-[95%] lg:w-[30%] pb-3 rounded-b-lg bg-white">
-            <div className="text-[1rem] font-semibold text-black p-4 border-b-[1px]">
-                <h1>{label}</h1>
-            </div>
-            <div className="p-4 ">
-                <div className="w-[100%] text-black ">
-                    <button className="border-[1px] px-2 py-1 rounded-lg font-extralight hover:bg-slate-100 hover:border-slate-600" onClick={() => { onClick() }}>{labelButton}</button>
+        <>
+            <WarningModal isModal={modal} closeModal={() => { setModal(0) }} message={modal} />
+            <div className="border-[1px] border-teal-300 rounded-t-lg w-[95%] lg:w-[30%] pb-3 rounded-b-lg bg-white">
+                <div className="text-[1rem] font-semibold text-black p-4 border-b-[1px]">
+                    <h1>{label}</h1>
+                </div>
+                <div className="p-4 ">
+                    <div className="w-[100%] text-black ">
+                        <button className="border-[1px] px-2 py-1 rounded-lg font-extralight hover:bg-slate-100 hover:border-slate-600" onClick={() => { setModal("Para alterar a sua senha, você será para a tela de login onde encontrará a opção 'Esqueci minha senha'. Ao clicar nessa opção, você receberá as instruções necessárias para prosseguir. Se desejar continuar após isso, clique em 'Continuar'.") }}>{labelButton}</button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     )
 }

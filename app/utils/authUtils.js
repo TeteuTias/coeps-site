@@ -58,7 +58,7 @@ export async function checkAll(req, res) {
         //console.log(error)
         const urlLogOut = new URL(req.url)
         urlLogOut.pathname = "/api/auth/logout"
-        console.log(error)
+        // console.log(error)
         return NextResponse.rewrite(urlLogOut); // QUALQUER ERRO QUE DER VAI PRO LOGOUT
     }
 }
