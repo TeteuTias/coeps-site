@@ -223,8 +223,9 @@ export default function Home() {
                                 !isLoading && data?.resultados?.length > 0 ?
                                     (
                                         data.resultados.map((value, index) => {
+                                            const KEY = value._id + Math.floor(Math.random() * (999999999999999999999 - 10 + 1)) + 10
                                             return (
-                                                <Link href={value?.link ?? ""} target='_blank' key={value._id + Math.floor(Math.random() * (999999999999999999999 - 10 + 1)) + 10}>
+                                                <Link href={value?.link ?? ""} target='_blank' key={KEY}>
                                                     <h1 className="text-[#3E4095] hover:text-[#505191]">◽ {value.titulo}</h1>
                                                 </Link>
                                             )
@@ -263,8 +264,9 @@ export default function Home() {
                                 !isLoading && dataEnvios?.length > 0 ?
                                     (
                                         dataEnvios.map((value, index) => {
+                                            const KEY = Math.floor(Math.random() * (999999999999999999999 - 10 + 1)) + 10
                                             return (
-                                                <div className='flex flex-row content-center items-center space-x-2' key={Math.floor(Math.random() * (999999999999999999999 - 10 + 1)) + 10}>
+                                                <div className='flex flex-row content-center items-center space-x-2' key={KEY}>
                                                     <button onClick={() => {
                                                         //console.log(value)
                                                         deletePDF(value._id)
