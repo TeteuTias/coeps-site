@@ -36,7 +36,7 @@ function PaginaAreaDoCliente() { // como é uma pagina, pega toda a tela para el
             <Link href="painel/minhaProgramacao"><CardOpcoes texto="Minha Programação" emoji="📅" /></Link>
             <Link href="painel/minhasInformacoes"><CardOpcoes texto="Minhas Informações" emoji="ℹ" /></Link>
             <CardOpcoes texto="Meus Certificados" emoji="✉" />
-            <CardOpcoes texto="Minicursos" emoji="👩‍🎓" />
+            <Link href="painel/atividades"><CardOpcoes texto="Atividades" emoji="👩‍🎓" /></Link>
           </div>
         </div>
       </div>

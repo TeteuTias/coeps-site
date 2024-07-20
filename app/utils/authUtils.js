@@ -36,7 +36,6 @@ export async function checkAll(req, res) {
         const response = await fetch(urlFetch.toString(), {
             method: 'get',
             headers: req.headers,
-
         })
         if (!response.ok) {
             throw new Error('!response.ok');
@@ -45,11 +44,11 @@ export async function checkAll(req, res) {
         // A primeira verificação é a isPos_registration depois o pagamento.
         //
         if (responseJson.isPos_registration != 1) { // se a situação for == 1 voce seta.
-            const urlPagamentos = new URL("/updateData", req.url)
-            return NextResponse.rewrite(urlPagamentos);
+            const urlUpdateData = new URL("/updateData", req.url)
+            return NextResponse.rewrite(urlUpdateData);
         }
         if (responseJson.pagamento.situacao != 1) { // se a situação for == 1 voce seta.
-            const urlPagamentos = new URL("/painel/pagamentos", req.url)
+            const urlPagamentos = new URL("/pagamentos", req.url)
             return NextResponse.rewrite(urlPagamentos);
         }
         return undefined
