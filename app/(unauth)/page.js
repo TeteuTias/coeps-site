@@ -14,7 +14,7 @@ export default function Home() {
   //
   /*
   <h1 className="text-black">{user?"Voce está logado":"Voce não está logado"}</h1>
-  */
+  */          <Contador />
   return (
     <main className="w-screen">
       <div className="bg-[url(Site.jpg)] bg-center bg-cover pb-10 pt-12">
@@ -106,6 +106,68 @@ function Letreiro() {
         height={180}
         alt="Picture of the author"
       />
+    </div>
+  )
+}
+function Contador() {
+  const targetDate = new Date('2024-10-26T13:30:00-03:00').getTime();
+
+  const calculateTimeLeft = () => {
+    const now = new Date().getTime();
+    const difference = targetDate - now;
+
+    let timeLeft = {};
+
+    if (difference > 0) {
+      timeLeft = {
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0'),
+        minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0'),
+        seconds: Math.floor((difference % (1000 * 60)) / 1000).toString().padStart(2, '0'),
+      };
+    } else {
+      timeLeft = {
+        days: '00',
+        hours: '00',
+        minutes: '00',
+        seconds: '00',
+      };
+    }
+
+    return timeLeft;
+  };
+
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [calculateTimeLeft]);
+
+  //
+  return (
+    <div className="flex justify-center items-center align-center">
+      <div className="flex flex-row space-x-2 lg:space-x-10 text lg:text-2xl">
+        <div className="flex flex-col items-center justify-center bg-[#3e4095] rounded-full w-16 h-16 sm:w-24 sm:h-24">
+          <h1>{timeLeft.days}</h1>
+          <h1>Dias</h1>
+        </div>
+        <div className="flex flex-col items-center justify-center bg-[#3e4095] rounded-full w-16 h-16 sm:w-24 sm:h-24">
+          <h1>{timeLeft.hours}</h1>
+          <h1>Horas</h1>
+        </div>
+        <div className="flex flex-col items-center justify-center bg-[#3e4095] rounded-full w-16 h-16 sm:w-24 sm:h-24">
+          <h1>{timeLeft.minutes}</h1>
+          <h1>Min</h1>
+        </div>
+        <div className="flex flex-col items-center justify-center bg-[#3e4095] rounded-full w-16 h-16 sm:w-24 sm:h-24">
+          <h1>{timeLeft.seconds}</h1>
+          <h1>Seg</h1>
+        </div>
+      </div>
     </div>
   )
 }

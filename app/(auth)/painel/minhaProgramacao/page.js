@@ -130,6 +130,14 @@ export default function MinhaProgramacao() {
                     // key - 2024-07-16
                     const hexColor = generateRandomHexColor()
                     return <CardProgramacao dateKey={key} cor_primaria={hexColor} event={data.data[key]} key={Math.floor(Math.random() * 100)} handleModal={handleModal} />
+
+                    /*
+                    for (let i = 0; i < data.data[key].length; i++) { 
+                        const value = data.data[key][i]
+                        console.log(value)
+                        return <CardProgramacao dateKey={key} cor_primaria={'#FF7F50'} event={value} key={Math.floor(Math.random() * 100)} />
+                    }
+                    */
                   }) : ""
               }
             </div>
@@ -164,6 +172,8 @@ const organizeTimelineByDate = (timeline) => {
   return organized;
 };
 const Modal = ({ handleModal, modal }) => {
+  console.log("================")
+  console.log(organizeTimelineByDate(modal.timeline))
   const timeline = organizeTimelineByDate(modal.timeline)
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -189,10 +199,19 @@ const Modal = ({ handleModal, modal }) => {
             <div className="space-y-6">
               {
                 Object.keys(timeline).map(date => {
+                  console.log(`Eventos em ${date}:`);
                   return timeline[date].map(event => {
+                    console.log(`Nome: ${event.name}`);
+                    console.log(`Descrição: ${event.description}`);
+                    console.log(`Início: ${event.date_init}`);
+                    console.log(`Fim: ${event.date_end}`);
+                    console.log('---');
+
+
                     const data = new Date(event.date_init).toLocaleDateString()
                     const time_init = new Date(event.date_init).toLocaleTimeString()
                     const time_end = new Date(event.date_end).toLocaleTimeString()
+
                     return (
                       <div className="space-y-3" key={Math.floor(Math.random() * 100)}>
                         <div>
@@ -233,18 +252,14 @@ const Modal = ({ handleModal, modal }) => {
 }
 //
 function generateRandomHexColor() {
+  // Gera um número aleatório entre 0 e 16777215 (hexadecimal: 0xFFFFFF)
+  const randomNumber = Math.floor(Math.random() * 16777215);
 
-  // Define os valores mínimo e máximo para as componentes RGB
-  const min = 120; // mínimo para garantir que não sejam muito escuras
-  const max = 255; // máximo para garantir que possam ser muito claras
+  // Converte o número aleatório para uma string hexadecimal
+  const hexString = randomNumber.toString(16);
 
-  // Gera valores aleatórios para as componentes RGB dentro da faixa [min, max]
-  const r = Math.floor(Math.random() * (max - min + 1) + min);
-  const g = Math.floor(Math.random() * (max - min + 1) + min);
-  const b = Math.floor(Math.random() * (max - min + 1) + min);
-
-  // Converte as componentes RGB para uma string hexadecimal
-  const hexColor = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+  // Adiciona zeros à esquerda se necessário para garantir que a string tenha 6 caracteres
+  const hexColor = "#" + hexString.padStart(6, '0');
 
   return hexColor;
 }

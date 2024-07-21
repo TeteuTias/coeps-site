@@ -1,7 +1,6 @@
 'use client'
 import Image from "next/image"
 import { useEffect, useState } from "react";
-import Link from "next/link";
 //
 //
 export default function Anais() {
@@ -51,13 +50,13 @@ export default function Anais() {
             <div className=" w-[60%]">
 
               <div className=" w-full">
-                <h1 className="text-black font-bold text-center text-[25px] md:text-left md:text-[30px]">Publicações</h1>
+                <h1 className="text-black font-bold text-[15px] lg:text-[30px]">Publicações</h1>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-flex">
                 {
                   !loading && anais?.length > 0 ? (
                     anais.map((value, index) => {
-                      return <CardAnais link={value.link} url="/anais01.png" titulo={value.name} ano={new Date(value.date_update).getFullYear()} key={index} />
+                      return <CardAnais url="/anais01.png" titulo={value.name} ano={new Date(value.date_update).getFullYear()} key={index}/>
                     })
 
                   ) : ""
@@ -84,24 +83,22 @@ export default function Anais() {
 }
 //
 //
-function CardAnais({ url, titulo, ano, link }) {
+function CardAnais({ url, titulo, ano }) {
   return (
-    <Link href={link} target="_blank">
-      <div className="flex flex-col justify-center items-center content-center relative w-[100%]">
-        <Image
-          src={url}
-          width={647}
-          height={180}
-          alt={titulo + " - " + ano}
-        />
-        <div className="flex flex-col justify-center items-center content-center text-[#3e4095] font-semibold text-center ">
-          <h1>{titulo}</h1>
-        </div>
-        <div className="flex flex-col justify-center items-center content-center text-gray-600 text-center">
-          <h1>{ano}</h1>
-        </div>
+    <div className="flex flex-col justify-center items-center content-center relative w-[100%]">
+      <Image
+        src={url}
+        width={647}
+        height={180}
+        alt={titulo + " - " + ano}
+      />
+      <div className="flex flex-col justify-center items-center content-center text-[#3e4095] font-semibold text-center ">
+        <h1>{titulo}</h1>
       </div>
-    </Link>
+      <div className="flex flex-col justify-center items-center content-center text-gray-600 text-center">
+        <h1>{ano}</h1>
+      </div>
+    </div>
   )
 }
 //

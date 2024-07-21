@@ -33,8 +33,7 @@ export const middleware = withMiddlewareAuthRequired(async (req) => {
 export const config = {
   matcher: [
     '/painel/:path*',
-    '/updateData/:path*',
-    '/pagamentos/:path*'
+    '/updateData/:path*'
   ]
 }
 /*
