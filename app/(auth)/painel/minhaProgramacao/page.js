@@ -164,8 +164,6 @@ const organizeTimelineByDate = (timeline) => {
   return organized;
 };
 const Modal = ({ handleModal, modal }) => {
-  console.log("================")
-  console.log(organizeTimelineByDate(modal.timeline))
   const timeline = organizeTimelineByDate(modal.timeline)
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -191,19 +189,10 @@ const Modal = ({ handleModal, modal }) => {
             <div className="space-y-6">
               {
                 Object.keys(timeline).map(date => {
-                  console.log(`Eventos em ${date}:`);
                   return timeline[date].map(event => {
-                    console.log(`Nome: ${event.name}`);
-                    console.log(`Descrição: ${event.description}`);
-                    console.log(`Início: ${event.date_init}`);
-                    console.log(`Fim: ${event.date_end}`);
-                    console.log('---');
-
-
                     const data = new Date(event.date_init).toLocaleDateString()
                     const time_init = new Date(event.date_init).toLocaleTimeString()
                     const time_end = new Date(event.date_end).toLocaleTimeString()
-
                     return (
                       <div className="space-y-3" key={Math.floor(Math.random() * 100)}>
                         <div>
