@@ -180,6 +180,7 @@ const Card = ({ label = "NÃO DEFINIDO", placeholder = "NÃO DEFINIDO", labelBut
     );
 };
 const CardAlterarSenha = ({ label = "NÃO DEFINIDO", labelButton = "NÃO DEFINIDO", loading = true }) => {
+    const [modal, setModal] = useState('')
     if (loading) {
         return (
             <div className="border-[1px] border-teal-300 rounded-t-lg w-[95%] lg:w-[30%] pb-3 rounded-b-lg bg-white">
@@ -189,7 +190,6 @@ const CardAlterarSenha = ({ label = "NÃO DEFINIDO", labelButton = "NÃO DEFINID
             </div>
         )
     }
-    const [modal, setModal] = useState('')
     const WarningModal = ({ message = "MENSAGEM NÃO DEFINIDA", textButton = "FECHAR", onClose = () => { }, closeModal = () => { }, isModal = 1 }) => {
         return (
             <>
