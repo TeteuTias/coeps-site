@@ -5,6 +5,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 const HeaderPainel = ({ isPayed = true }) => {
+    const not_payed = "Realize o pagamento para ter acesso ao site completo"
     const [menuAberto, setMenuAberto] = useState(false);
 
     const toggleMenu = () => {
@@ -46,20 +47,20 @@ const HeaderPainel = ({ isPayed = true }) => {
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
-                                            Minicursos
+                                        <Link href="/painel/atividades" className='hover:text-red-500 ease-linear duration-150'>
+                                            Atividades
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link href="/painel/pagamentos" className='hover:text-red-500 ease-linear duration-150'>
+                                        <Link href="/pagamentos" className='hover:text-red-500 ease-linear duration-150'>
                                             Pagamentos
                                         </Link>
                                     </li>
                                 </>
                                 :
                                 <li>
-                                    <h1 className='hover:text-red-500 ease-linear duration-150'>
-                                        Acesse o site completo ao concluir o pagamento
+                                    <h1 className='hover:text-red-500 ease-linear duration-150 cursor-default'>
+                                        {not_payed}
                                     </h1>
                                 </li>
                         }
@@ -103,36 +104,47 @@ const HeaderPainel = ({ isPayed = true }) => {
             {menuAberto && (
                 <div className="lg:hidden">
                     <ul className="mt-4 space-y-2">
-                        <li>
-                            <Link href="/painel" className='hover:text-red-500 ease-linear duration-150'>
-                                Início
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/painel/trabalhos" className='hover:text-red-500 ease-linear duration-150'>
-                                Trabalhos
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/painel/minhaProgramacao" className='hover:text-red-500 ease-linear duration-150'>
-                                Programação
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
-                                Minicursos
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/painel/pagamentos" className='hover:text-red-500 ease-linear duration-150'>
-                                Pagamentos
-                            </Link>
-                        </li>
-                        <li>
-                            <Link href="/api/auth/logout" className='hover:text-red-500 ease-linear duration-150'>
-                                <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2">LOGOUT</button>
-                            </Link>
-                        </li>
+                        {
+                            isPayed ?
+                                <>
+                                    <li>
+                                        <Link href="/painel" className='hover:text-red-500 ease-linear duration-150'>
+                                            Início
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/painel/trabalhos" className='hover:text-red-500 ease-linear duration-150'>
+                                            Trabalhos
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/painel/minhaProgramacao" className='hover:text-red-500 ease-linear duration-150'>
+                                            Programação
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/atividades" className='hover:text-red-500 ease-linear duration-150'>
+                                            Atividades
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/pagamentos" className='hover:text-red-500 ease-linear duration-150'>
+                                            Pagamentos
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link href="/api/auth/logout" className='hover:text-red-500 ease-linear duration-150'>
+                                            <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2">LOGOUT</button>
+                                        </Link>
+                                    </li>
+                                </>
+                                :
+                                <li>
+                                    <h1 className='hover:text-red-500 ease-linear duration-150 cursor-default'>
+                                        {not_payed}
+                                    </h1>
+                                </li>
+                        }
                     </ul>
                 </div>
             )}

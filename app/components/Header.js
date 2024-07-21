@@ -32,7 +32,7 @@ const Header = () => {
               </Link>
             </li>
             <li>
-              <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/programacao" className='hover:text-red-500 ease-linear duration-150'>
                 Programação
               </Link>
             </li>
@@ -105,7 +105,7 @@ const Header = () => {
               </Link>
             </li>
             <li>
-              <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/programacao" className='hover:text-red-500 ease-linear duration-150'>
                 Programação
               </Link>
             </li>
