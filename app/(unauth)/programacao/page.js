@@ -126,9 +126,6 @@ const App = () => {
 
     return (
         <div className="min-h-screen space-y-2">
-            <button className='bg-black' onClick={() => {
-                console.log(organizeData(data))
-            }}>AA</button>
             <div className="bg-[url(Site.jpg)] flex content-center justify-center font-semibold text-[30px] p-16  bg-center bg-cover">
                 <h1>Programação</h1>
             </div>
