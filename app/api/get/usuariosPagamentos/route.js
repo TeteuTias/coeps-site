@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { execOnce } from 'next/dist/shared/lib/utils';
 import { ObjectId } from 'mongodb';
-import { withApiAuthRequired } from '@auth0/nextjs-auth0';
+
 
 import { getSession } from '@auth0/nextjs-auth0';
 //
@@ -12,7 +12,7 @@ import { getSession } from '@auth0/nextjs-auth0';
 // {"data":{"isPos_registration":0,"informacoes_usuario":{"nome:":"","email":"mateus2.0@icloud.com","data_criacao":"2024-07-08T22:48:41.110Z"}}}
 // Exemplo de return erro:
 // 
-export const GET = withApiAuthRequired(async function GET( request, { params } ) {
+export async function GET( request, { params } ) {
     try{
         
         // Verificando se há sessão
@@ -49,7 +49,7 @@ export const GET = withApiAuthRequired(async function GET( request, { params } )
         console.log(error)
         return NextResponse.json({"error": error}, {status:500})
     }
-})
+}
 /*
     try {
         const { db } = await connectToDatabase();
