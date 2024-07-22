@@ -13,7 +13,7 @@ export const middleware = withMiddlewareAuthRequired(async (req) => {
 
   // Verificando Token.
   var check = await checkAndRefreshToken(req, res); // apesar do nome, ele não dá refresh.
-  if (check) { return check }
+  if (check) { return NextResponse.rewrite(check) }
 
   // Verificando pagamento
   check = await checkAll(req, res)
