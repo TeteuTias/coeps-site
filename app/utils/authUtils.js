@@ -42,11 +42,13 @@ export async function checkAll(req, res) {
         //
         if (responseJson.isPos_registration != 1) { // se a situação for == 1 voce seta.
             const urlUpdateData = new URL("/updateData", req.url)
-            return NextResponse.rewrite(urlUpdateData);
+            return urlUpdateData
+            //return NextResponse.rewrite(urlUpdateData);
         }
         if (responseJson.pagamento.situacao != 1) { // se a situação for == 1 voce seta.
             const urlPagamentos = new URL("/pagamentos", req.url)
-            return NextResponse.rewrite(urlPagamentos);
+            return urlPagamentos
+            //return NextResponse.rewrite(urlPagamentos);
         }
         return undefined
 
@@ -56,7 +58,8 @@ export async function checkAll(req, res) {
         const urlLogOut = new URL(req.url)
         urlLogOut.pathname = "/api/auth/logout"
         // console.log(error)
-        return NextResponse.rewrite(urlLogOut); // QUALQUER ERRO QUE DER VAI PRO LOGOUT
+        return urlLogOut
+        //return NextResponse.rewrite(urlLogOut); // QUALQUER ERRO QUE DER VAI PRO LOGOUT
     }
 }
 //
@@ -65,7 +68,9 @@ export async function checkRoutes(req, res) {
     // Tratando rotas ESPECIAIS.
     if (req.nextUrl.pathname.startsWith('/updateData')) {
         // Se ele chegou até aqui, é porque ele não precisa mais ir para updateData. Assim, não faz sentido ele ir.
-        return NextResponse.rewrite(new URL('/painel', req.url))
+        const urlPainel = new URL('/painel', req.url)
+        //return NextResponse.rewrite(new URL('/painel', req.url))
+        return urlPainel
     }
     return undefined
 }

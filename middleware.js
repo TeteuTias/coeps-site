@@ -17,10 +17,10 @@ export const middleware = withMiddlewareAuthRequired(async (req) => {
 
   // Verificando pagamento
   check = await checkAll(req, res)
-  if (check) { return check }
+  if (check) { return NextResponse.rewrite(check) }
 
   check = await checkRoutes(req,res)
-  if (check) { return check}
+  if (check) { return NextResponse.rewrite(check)}
 
   return NextResponse.next();
 });
