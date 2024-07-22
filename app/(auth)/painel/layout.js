@@ -1,4 +1,3 @@
-'use client'
 import HeaderPainel from '@/app/components/HeaderPainel';
 //
 //
@@ -12,6 +11,7 @@ export default function Layout({ children }) {
                 <HeaderPainel />
                 {children}
             </div>
+
         </>
     )
 }
