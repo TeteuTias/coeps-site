@@ -3,17 +3,16 @@ import { NextResponse } from 'next/server';
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { execOnce } from 'next/dist/shared/lib/utils';
 import { ObjectId } from 'mongodb';
-import { getSession } from '@auth0/nextjs-auth0';
+import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0';
 //
 //
 // Exemplo de return:
 // {"data":{"isPos_registration":0,"informacoes_usuario":{"nome:":"","email":"mateus2.0@icloud.com","data_criacao":"2024-07-08T22:48:41.110Z"}}}
 // Exemplo de return erro:
 // 
-export async function GET( request, { params } ) {
+export const GET = withApiAuthRequired((async function GET( request, { params } ) {
     try{
         // Verificando se está logado
-        const { accessToken } = await getAccessToken();
         // Puxando informações
         
         const { user } = await getSession();
@@ -32,7 +31,7 @@ export async function GET( request, { params } ) {
     catch (error){
         return NextResponse.json({"error": error})
     }
-}
+}))
 /*
     try {
         const { db } = await connectToDatabase();

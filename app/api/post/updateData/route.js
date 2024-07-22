@@ -13,7 +13,6 @@ import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0';
 export const POST = withApiAuthRequired(async function POST(request) {
     try {
         // Verificando se está logado
-        const { accessToken } = await getAccessToken();
         
         // Puxando informações
         const { user } = await getSession();
