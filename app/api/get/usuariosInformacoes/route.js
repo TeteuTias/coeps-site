@@ -13,7 +13,6 @@ import { getSession } from '@auth0/nextjs-auth0';
 export async function GET( request, { params } ) {
     try{
         // Verificando se está logado
-        const { accessToken } = await getAccessToken();
         // Puxando informações
         
         const { user } = await getSession();
