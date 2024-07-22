@@ -31,12 +31,12 @@ function PaginaAreaDoCliente() { // como é uma pagina, pega toda a tela para el
         </div>
         <div className="flex flex-col items-center content-center justify-center lg:w-[65%] p-4 ">
           <div className="grid grid-cols-2 gap-x-10 gap-y-10 lg:grid-cols-3 lg:gap-2 lg:gap-x-10 lg:gap-y-10">
-            <Link href="painel/pagamentos"><CardOpcoes texto="Meus Pagamentos" emoji="💳" /></Link>
+            <Link href="pagamentos"><CardOpcoes texto="Meus Pagamentos" emoji="💳" /></Link>
             <Link href="painel/trabalhos"><CardOpcoes texto="Submição de Trabalhos" emoji="📚" /></Link>
             <Link href="painel/minhaProgramacao"><CardOpcoes texto="Minha Programação" emoji="📅" /></Link>
             <Link href="painel/minhasInformacoes"><CardOpcoes texto="Minhas Informações" emoji="ℹ" /></Link>
             <CardOpcoes texto="Meus Certificados" emoji="✉" />
-            <CardOpcoes texto="Minicursos" emoji="👩‍🎓" />
+            <Link href="painel/atividades"><CardOpcoes texto="Atividades" emoji="👩‍🎓" /></Link>
           </div>
         </div>
       </div>
@@ -47,7 +47,7 @@ function PaginaAreaDoCliente() { // como é uma pagina, pega toda a tela para el
 function CardOpcoes({ texto, emoji }) {
   return (
     <div className="flex flex-col w-32 h-32 lg:w-40 lg:h-32 items-center justify-center shadow-xl bg-white text-center p-2 cursor-pointer">
-      <h1 className="text-center font-extralight text-slate-950 text-[36px] lg:text-[40px]">
+      <h1 className="text-center font-extralight text-slate-950 text-[36px] lg:text-[40px] font-emoji">
         {emoji}
       </h1>
       <h1 className="text-center font-semibold text-slate-950 text-[16px] lg:text-[20px]">

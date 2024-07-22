@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import TelaLoading from "@/app/components/TelaLoading";
 import PaginaErrorPadrao from "@/app/components/PaginaErrorPadrao";
+import HeaderPainel from "@/app/components/HeaderPainel";
 //
 //
 //
@@ -159,6 +160,7 @@ export default function Pagamentos() {
     //
     return (
         <>
+            <HeaderPainel isPayed={data?.pagamento?.situacao ?? 0}/>
             {
                 !isLoadingFetch && isModalError ?
                     <ModalError handleIsModalError={handleIsModalError} texto={isModalError} />
@@ -180,7 +182,7 @@ export default function Pagamentos() {
                     <div className="flex content-center items-center justify-center py-16  bg-white">
                         <div className=" p-4 space-y-6 w-full md:w-[60%]">
                             <div className="text-gray-800 font-bold">
-                                <h1 className="text-[20px] lg:text-[20px]">{"ℹHISTÓRICO DE PAGAMENTOS"}</h1>
+                                <h1 className="text-[20px] lg:text-[20px] font-emoji">{"ℹHISTÓRICO DE PAGAMENTOS"}</h1>
                                 <p className="text-red-700 font-semibold">{data.pagamento.lista_pagamentos?.length ? "- " + data.pagamento.lista_pagamentos?.length.toString().padStart(2, '0') + " pagamentos encontrados" : "Você ainda não realizou nenhum pagamento."}</p>
                                 <div className="flex flex-col ">
                                     {
@@ -208,7 +210,7 @@ export default function Pagamentos() {
                     </div>
                     <div className="flex flex-col content-center items-center justify-center py-16 bg-[#3E4095]">
                         <div className="w-[100%] p-4 text-black space-y-2 md:w-[60%]">
-                            <h1 className="text-[20px] lg:text-[20px] text-slate-100 font-bold">{"ℹSITUAÇÃO DE INSCRIÇÃO"}</h1>
+                            <h1 className="text-[20px] lg:text-[20px] text-slate-100 font-bold font-emoji">{"ℹSITUAÇÃO DE INSCRIÇÃO"}</h1>
                             <div className="">
                                 {!data.pagamento.situacao || data.pagamento.situacao == 2 ?
                                     <p1 className="text-white">
@@ -243,7 +245,7 @@ export default function Pagamentos() {
                     </div>
                     <div className="flex flex-col content-center items-center justify-center py-16 bg-white">
                         <div className="md:w-[60%] p-4 text-black space-y-2">
-                            <h1 className="text-[20px] lg:text-[20px] text-gray-800 font-bold">{"ℹCONTATO"}</h1>
+                            <h1 className="text-[20px] lg:text-[20px] text-gray-800 font-bold font-emoji">{"ℹCONTATO"}</h1>
                             <h1>Em caso de dúvidas ou se o pagamento não for confirmado em até 03 dias, entre em contato com nossa equipe.</h1>
                             <div className="flex flex-col lg:flex-row items-center content-center justify-center text-center space-x-2">
                                 <div className=" flex-1 flex-col  ">
@@ -267,7 +269,7 @@ export default function Pagamentos() {
         </>
     )
 }
-//
+
 const CardPagamentos = ({ valor_total = "ERROR", data_formatada = "ERROR", invoiceNumber = "ERROR", status = "ERROR", description = "ERROR", valor = "ERROR" }) => {
     // Arrumando a DATA
     //
@@ -335,158 +337,7 @@ const CardPagamentos = ({ valor_total = "ERROR", data_formatada = "ERROR", invoi
         </div>
     )
 }
-//
-const Header = ({ situacao }) => {
-    //
-    //
-    //
-    const [menuAberto, setMenuAberto] = useState(false);
 
-    const toggleMenu = () => {
-        setMenuAberto(!menuAberto);
-    };
-
-    return (
-        <header className="bg-gray-800 p-4 z-50 w-[100%] sticky top-0">
-            <nav className="flex items-center justify-between ">
-                <div>
-                    <Link href="/">
-                        <Image
-                            src="/Logo01.png"
-                            width={150}
-                            height={150}
-                            alt="Picture of the author"
-                        />
-                    </Link>
-                </div>
-                <div className="hidden space-x-4 lg:flex lg:justify-end  w-[50%]">
-                    <ul className="flex flex-row items-center justify-center content-center space-x-4 lg:space-x-10">
-                        {
-                            situacao == 1 ?
-                                <>
-                                    <li>
-                                        <Link href="/painel/" className='hover:text-red-500 ease-linear duration-150'>
-                                            Área do Congressista
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link href="/organizadores" className='hover:text-red-500 ease-linear duration-150'>
-                                            Trabalhos
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
-                                            Minha programação
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link href="/anais" className='hover:text-red-500 ease-linear duration-150'>
-                                            Anais
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link href="/#ComponenteContados" className='hover:text-red-500 ease-linear duration-150'>
-                                            Contato
-                                        </Link>
-                                    </li>
-                                </>
-                                :
-                                <li>
-                                    <Link href="" className='hover:text-red-500 ease-linear duration-150'>
-                                        {"Complete o cadastro para ter acesso total ao site".toUpperCase()}
-                                    </Link>
-                                </li>
-                        }
-                        <li>
-                            <Link href="/api/auth/login" className='hover:text-red-500 ease-linear duration-150'>
-                                <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2 ">LOGOUT</button>
-                            </Link>
-                        </li>
-                    </ul>
-                </div>
-                <div className="lg:hidden">
-                    <button
-                        onClick={toggleMenu}
-                        className="text-white hover:text-gray-300 focus:outline-none"
-                    >
-                        <svg
-                            className="w-6 h-6"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            {menuAberto ? (
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M6 18L18 6M6 6l12 12"
-                                />
-                            ) : (
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M4 6h16M4 12h16M4 18h16"
-                                />
-                            )}
-                        </svg>
-                    </button>
-                </div>
-            </nav>
-            {menuAberto && (
-                <div className="lg:hidden">
-                    <ul className="mt-4 space-y-2">
-                        {
-                            situacao ?
-                                <>
-                                    <li>
-                                        <Link href="/painel/" className='hover:text-red-500 ease-linear duration-150'>
-                                            Área do Congressista
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link href="/organizadores" className='hover:text-red-500 ease-linear duration-150'>
-                                            Trabalhos
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
-                                            Minha programação
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link href="/anais" className='hover:text-red-500 ease-linear duration-150'>
-                                            Anais
-                                        </Link>
-                                    </li>
-                                    <li>
-                                        <Link href="/#ComponenteContados" className='hover:text-red-500 ease-linear duration-150'>
-                                            Contato
-                                        </Link>
-                                    </li>
-                                </>
-                                :
-                                <li>
-                                    <Link href="" className='hover:text-red-500 ease-linear duration-150'>
-                                        {"Complete o cadastro para ter acesso total ao site".toUpperCase()}
-                                    </Link>
-                                </li>
-                        }
-                        <li>
-                            <Link href="/api/auth/login" className='hover:text-red-500 ease-linear duration-150'>
-                                <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2 ">LOGOUT</button>
-                            </Link>
-                        </li>
-                    </ul>
-                </div>
-            )}
-        </header>
-    );
-};
-
-//
-//
 function ModalError({ texto, handleIsModalError }) {
     return (
         <div className="flex items-center content-center justify-center w-full min-h-screen absolute z-50">
