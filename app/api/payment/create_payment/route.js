@@ -11,34 +11,45 @@ import { connectToDatabase } from '@/app/lib/mongodb';
 //
 export const POST = withApiAuthRequired(async function POST(request) {
     try {
-        // Verificando se o usuário está logado
-        const { user } = await getSession(request, response);
-        const _id = new ObjectId(user.sub.replace("auth0|", "")); // Retirando o auth0|
-        
-        // Puxando id_api
-        const { db } = await connectToDatabase();
-        const collection = 'usuarios';
-        const query = { _id };
 
-        const userDocument = await db.collection(collection).findOne(query, { projection: { "_id": 0, "id_api": 1 } });
-
-        if (!userDocument) {
-            return response.status(404).json({ "erro": "Usuário não encontrado" });
+        // Verificando se ele está logado
+        // 
+        const { user } = await getSession();
+        const _id = new ObjectId(user.sub.replace("auth0|", "")) // Retirando o auth0|  
+        //
+        // Puxando id_api.
+        const { db } = await connectToDatabase()
+        const collection = 'usuarios'
+        var query = {
+            _id
         }
+        const dbFindOne = await db.collection(collection).find(query, { projection: { "_id": 0, "id_api": 1 } }).toArray()
 
-        const id_api = userDocument.id_api;
-
-        // Tentando Criar Pagamento Checkout
+        if (dbFindOne.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
+            //console.log("result.matchedCount === 0 - dbFindOne")
+            return Response.json({ "erro": "result.matchedCount" }, { status: 404 })
+        }
+        else if (dbFindOne.modifiedCount === 0) { // Nenhum documento foi modificado.
+            //console.log("result.modifiedCount === 0 - dbFindOne")
+            return Response.json({ "erro": "result.modifiedCount === 0" }, { status: 400 })
+        }
+        const id_api = dbFindOne[0].id_api
+        //
+        // Tentando Criar Pagamento Checkout.
         const PAGBANK_API_KEY = process.env.PAGBANK_API_KEY;
-        const ASAAS_API_KEY = process.env.ASAAS_API_KEY;
-        const ASAAS_API_URL = process.env.ASAAS_API_URL + "/payments";
-        const urlCallback = process.env.ASAAS_URL_CALLBACK;
-        const redirect_url = process.env.ASAAS_URL_REDIRECT;
+        //const horario_limite = new Date(new Date().getTime()+ 10 * 60 * 1000) // 2023-08-14T19:09:10-03:00
 
-        const valor = 135;
-        const data_vencimento = new Date().toISOString().split("T")[0]; // Retorna o dia de hoje
-        const descricao = 'Primeiro lote para entrada no evento IV COEPS.';
-        const desconto = 0;
+        const ASAAS_API_KEY = process.env.ASAAS_API_KEY //process.env.ASAAS_API_KEY
+        const ASAAS_API_URL = process.env.ASAAS_API_URL + "/payments"
+        const urlCallback = process.env.ASAAS_URL_CALLBACK
+        const redirect_url = process.env.ASAAS_URL_REDIRECT
+
+
+        const valor = 135
+        const data_vencimento = new Date().toISOString().split("T")[0] // retorna o dia de hoje.
+        const descricao = 'Primeiro lote para entrada no evento IV COEPS.'
+        const desconto = 0
+
 
         const options = {
             method: 'POST',
@@ -59,35 +70,37 @@ export const POST = withApiAuthRequired(async function POST(request) {
             })
         };
 
-        const responseAPI = await fetch(ASAAS_API_URL, options);
+        const responseAPI = await fetch(ASAAS_API_URL, options)
         if (!responseAPI.ok) {
-            throw new Error("Erro ao registrar pagamento na API do ASAAS");
+            throw ({ "message": "!responseAPI.ok => Registro API Pagamentos" })
         }
-
-        const responseJson = await responseAPI.json();
-
+        var responseJson = await responseAPI.json()
+        // 
         // Registrando o pagamento no DB
         const dbUpdateOne = await db.collection(collection).updateOne(
-            { _id },
+            {
+                _id
+            },
             {
                 "$push": { 'pagamento.lista_pagamentos': { ...responseJson, _webhook: [] } },
                 "$set": { 'pagamento.situacao': 2 }
             }
-        );
+        )
 
-        if (dbUpdateOne.matchedCount === 0) {
-            return response.status(404).json({ "erro": "Usuário não encontrado ao atualizar" });
+        if (dbUpdateOne.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
+            console.log("result.matchedCount === 0")
+            return Response.json({ "erro": "result.matchedCount - dbUpdateOne" }, { status: 404 })
+        }
+        else if (dbUpdateOne.modifiedCount === 0) { // Nenhum documento foi modificado.
+            console.log("result.modifiedCount === 0")
+            return Response.json({ "erro": "result.modifiedCount === 0 - dbUpdateOne" }, { status: 400 })
         }
 
-        if (dbUpdateOne.modifiedCount === 0) {
-            return response.status(400).json({ "erro": "Nenhuma modificação realizada no documento do usuário" });
-        }
-
-        return response.status(200).json({ "link": responseJson.invoiceUrl });
-    } catch (error) {
-        console.error(error);
-        return response.status(403).json({ "erro": error.message });
+        return Response.json({ "link": responseJson.invoiceUrl }, { status: 200 })
     }
-});
-
+    catch (error) {
+        console.log(error)
+        return Response.json({ "erro": error }, { status: 403 })
+    }
+})
 //
