@@ -19,9 +19,10 @@ export async function checkAndRefreshToken(req, res) {
         const urlLogOut = new URL(req.url)
         urlLogOut.pathname = "/api/auth/logout"
         if (error.message === 'ERR_EXPIRED_ACCESS_TOKEN') {
-            return NextResponse.rewrite(urlLogOut);
+            return urlLogOut            //return NextResponse.rewrite(urlLogOut);
         }
-        return NextResponse.rewrite(urlLogOut); // QUALQUER ERRO QUE DER VAI PRO LOGOUT
+        return urlLogOut
+        //return NextResponse.rewrite(urlLogOut); // QUALQUER ERRO QUE DER VAI PRO LOGOUT
     }
 }
 //
