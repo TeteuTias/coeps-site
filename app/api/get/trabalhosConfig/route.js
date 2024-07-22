@@ -13,7 +13,6 @@ import { getSession,withApiAuthRequired } from '@auth0/nextjs-auth0';
 export const GET = withApiAuthRequired(async function GET(request, { params }) {
     try {
         // Verificando se está logado
-        const { accessToken } = await getAccessToken();
         // Puxando configs
         const { db } = await connectToDatabase();
         const colecao = "trabalhos_config"

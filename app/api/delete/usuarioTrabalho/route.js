@@ -12,7 +12,6 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
         // Verificando se ele está logado
         // 
-        const { accessToken } = await getAccessToken();
         //
         const { data_inicio_submissao, data_limite_submissao } = await getDatesFromDataBase()
         const verf = await verfSubmition(data_inicio_submissao, data_limite_submissao)
