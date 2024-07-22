@@ -28,6 +28,9 @@ export async function checkAndRefreshToken(req, res) {
 //
 export async function checkAll(req, res) {
     try {
+        const session = await getSession(req, res)
+        const { accessToken } = await getAccessToken(req, res);
+
         //
         const urlFetch = new URL("/api/get/verificacaoUsuario", req.url)
         const response = await fetch(urlFetch.toString(), {
