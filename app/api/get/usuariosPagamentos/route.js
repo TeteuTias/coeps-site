@@ -16,6 +16,7 @@ export async function GET( request, { params } ) {
     try{
         
         // Verificando se há sessão
+        const { accessToken } = await getAccessToken();
         
         // Puxando informações
         const { user } = await getSession();

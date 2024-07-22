@@ -14,6 +14,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
         // Verificando se ele está logado
         // 
+        const { accessToken } = await getAccessToken();
         const { user } = await getSession();
         const _id = new ObjectId(user.sub.replace("auth0|", "")) // Retirando o auth0|  
         //

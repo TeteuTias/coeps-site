@@ -11,6 +11,7 @@ import { getSession } from '@auth0/nextjs-auth0';
 // 
 export const GET = withApiAuthRequired(async function GET(request, response) {
     try {
+        const { accessToken } = await getAccessToken();
 
         const { user } = await getSession();
         const userId = user.sub.replace("auth0|", ""); // Retirando o auth0|  

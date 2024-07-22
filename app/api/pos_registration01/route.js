@@ -10,7 +10,7 @@ import { withApiAuthRequired } from '@auth0/nextjs-auth0';
  */
 
 // https://sandbox.asaas.com/api/v3/customers
-export const POST = withApiAuthRequired (async function POST(request) {
+export async function POST(request) {
 
 
     const { searchParams } = new URL(request.url)
@@ -47,4 +47,4 @@ export const POST = withApiAuthRequired (async function POST(request) {
     catch (error) {
         return Response.json({"erro":error})
     }
-})
+}

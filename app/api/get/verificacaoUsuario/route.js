@@ -20,6 +20,7 @@ export const GET = withApiAuthRequired( async function GET(request, response) {
 export const GET = withApiAuthRequired(async function GET(request, response) {
     try {
         //
+        const { accessToken } = await getAccessToken();
         const { user } = await getSession();
         //
         //
