@@ -60,7 +60,7 @@ const Header = () => {
               Anais
             </Link>
             <li>
-              <Link href="/painel" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/painel" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                 <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2">Área do Congressista</button>
               </Link>
             </li>
@@ -133,7 +133,7 @@ const Header = () => {
               Anais
             </Link>
             <li>
-              <Link href="/painel" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/painel" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                 <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2">Área do Congressista</button>
               </Link>
             </li>

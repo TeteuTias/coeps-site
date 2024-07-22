@@ -30,7 +30,6 @@ const HeaderPainel = ({ isPayed = true }) => {
                         {
                             isPayed ?
                                 <>
-
                                     <li>
                                         <Link href="/painel" className='hover:text-red-500 ease-linear duration-150'>
                                             Início
@@ -64,9 +63,9 @@ const HeaderPainel = ({ isPayed = true }) => {
                                     </h1>
                                 </li>
                         }
-                        <li>
-                            <Link href="/api/auth/logout" className='ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2'>
-                                LOGOUT
+                        <li className='hidden lg:flex'>
+                            <Link href="/api/auth/logout" prefetch={false} className='ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2'>
+                                <button className="">LOGOUT</button>
                             </Link>
                         </li>
                     </ul>
@@ -133,7 +132,7 @@ const HeaderPainel = ({ isPayed = true }) => {
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link href="/api/auth/logout" className='ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2'>
+                                        <Link href="/api/auth/logout" prefetch={false} className='ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2'>
                                             LOGOUT
                                         </Link>
                                     </li>

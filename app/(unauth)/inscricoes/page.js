@@ -37,7 +37,7 @@ export default function Inscricoes(){
                         Primeiro é necessário se cadastrar em nosso site. Após a realização do cadastro, você será redirecionado para a tela
                         de pagamentos. Após a confirmação automática de seu pagamento, você já estará com sua vaga garantida em nosso congresso!!  
                     </h1>
-                    <Link href="/painel">
+                    <Link href="/painel" prefetch={false}>
                         <button className="bg-[#3e4095] px-5 py-2">CADASTRAR</button>
                     </Link>
                 </div>

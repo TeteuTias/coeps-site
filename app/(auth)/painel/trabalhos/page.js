@@ -225,7 +225,7 @@ export default function Home() {
                                         data.resultados.map((value, index) => {
                                             const KEY = value._id + Math.floor(Math.random() * (999999999999999999999 - 10 + 1)) + 10
                                             return (
-                                                <Link href={value?.link ?? ""} target='_blank' key={KEY}>
+                                                <Link href={value?.link ?? ""} target='_blank' key={KEY} prefetch={false}>
                                                     <h1 className="text-[#3E4095] hover:text-[#505191]">◽ {value.titulo}</h1>
                                                 </Link>
                                             )
@@ -317,7 +317,7 @@ export default function Home() {
                                     }
                                     {
                                         !isLoading && data ?
-                                            <Link href={data.link_edital} target='_blank'>
+                                            <Link href={data.link_edital} target='_blank' prefetch={false}>
                                                 <button className="bg-[#3E4095] text-white p-2 px-4">VER EDITAL</button>
                                             </Link>
                                             : ""

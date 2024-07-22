@@ -81,7 +81,7 @@ export default function Trabalhos() {
                         </p>
                     </div>
                     <div className="flex flex-row space-x-10 pt-12">
-                        <Link href={config?.link_edital??""} target="_blank">
+                        <Link href={config?.link_edital??""} target="_blank" prefetch={false}>
                             <div>
                                 <button className="bg-[#3E4095] text-white p-2 px-4">
                                     {config?.link_edital?"VER EDITAL":"CARREGANDO"}
@@ -90,7 +90,7 @@ export default function Trabalhos() {
                             </div>
                         </Link>
                         <div>
-                            <Link href="/painel/trabalhos">
+                            <Link href="/painel/trabalhos" prefetch={false}>
                                 <button className="bg-[#3E4095] text-white p-2 px-4">ENVIAR TRABALHO</button>
                             </Link>
                         </div>
