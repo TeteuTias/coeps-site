@@ -17,7 +17,7 @@ export default function Minicursos() {
                 <div className="w-[95%] md:w-[50%]">
                     <h1 className="break-words text-start font-bold text-black text-[22px] lg:text-[18px]">O QUE TEMOS AQUI</h1>
                     <h1 className="text-justify">
-                        Aqui, você pode se inscrever em <span className="bg-yellow-300 px-1 font-bold">atividades complementares</span>. É obrigatório que cada participante escolha <span className="font-bold">três</span> dessas atividades. Lembre-se de que cada uma possui um número máximo de participantes, portanto, programe-se para se inscrever a tempo! Não se preocupe, todas as informações necessárias estão disponíveis aqui. Após a inscrição, a atividade será adicionada automaticamente à "Minha Programação".
+                        Aqui, você pode se inscrever em <span className="bg-yellow-300 px-1 font-bold">atividades complementares</span>. É obrigatório que cada participante escolha <span className="font-bold">três</span> dessas atividades. Lembre-se de que cada uma possui um número máximo de participantes, portanto, programe-se para se inscrever a tempo! Não se preocupe, todas as informações necessárias estão disponíveis aqui. Após a inscrição, a atividade será adicionada automaticamente à <span className="bg-yellow-300 px-1 font-bold">Minha Programação</span>.
 
                     </h1>
                 </div>
@@ -27,7 +27,7 @@ export default function Minicursos() {
                     <h1 className="break-words text-start font-bold text-white text-[22px] lg:text-[18px]">PRECISO PAGAR?</h1>
                     <h1 className="text-justify">
                         Grande parte das atividades é <span className="bg-yellow-300 text-gray-800 font-bold px-1">gratuita</span>. Entretanto, algumas podem ter cobranças simbólicas para viabilizar
-                        o evento.  Atividades pagas estão marcadas com <span className="bg-yellow-300 text-gray-800 font-bold px-1">'PAGO'</span>.
+                        o evento.  Atividades pagas estão marcadas com <span className="bg-yellow-300 text-gray-800 font-bold px-1">PAGO</span>.
                     </h1>
                 </div>
             </div>
@@ -54,7 +54,9 @@ export default function Minicursos() {
                             {
                                 apagar.map((index) => {
                                     return (
-                                        <BannerAtividade />
+                                        <div key={index}>
+                                            <BannerAtividade />
+                                        </div>
                                     )
                                 })
                             }
