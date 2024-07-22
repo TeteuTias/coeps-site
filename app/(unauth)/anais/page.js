@@ -86,7 +86,7 @@ export default function Anais() {
 //
 function CardAnais({ url, titulo, ano, link }) {
   return (
-    <Link href={link} target="_blank">
+    <Link href={link} target="_blank" prefetch={false}>
       <div className="flex flex-col justify-center items-center content-center relative w-[100%]">
         <Image
           src={url}
