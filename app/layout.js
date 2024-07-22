@@ -1,6 +1,6 @@
 
 // app/layout.jsx
-import { UserProvider } from '@auth0/nextjs-auth0/client';
+
 import "./globals.css";
 //
 //
@@ -12,12 +12,18 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <UserProvider>
+      
         <body className="">
           {children}
         </body>
-      </UserProvider>
+      
     </html>
   )
 }
+/*
+<UserProvider>
+</UserProvider>
+import { UserProvider } from '@auth0/nextjs-auth0/client';
+
+*/
 
