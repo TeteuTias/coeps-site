@@ -65,8 +65,8 @@ const HeaderPainel = ({ isPayed = true }) => {
                                 </li>
                         }
                         <li>
-                            <Link href="/api/auth/logout" className='hover:text-red-500 ease-linear duration-150'>
-                                <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2">LOGOUT</button>
+                            <Link href="/api/auth/logout" className='ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2'>
+                                LOGOUT
                             </Link>
                         </li>
                     </ul>
@@ -133,8 +133,8 @@ const HeaderPainel = ({ isPayed = true }) => {
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link href="/api/auth/logout" className='hover:text-red-500 ease-linear duration-150'>
-                                            <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2">LOGOUT</button>
+                                        <Link href="/api/auth/logout" className='ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2'>
+                                            LOGOUT
                                         </Link>
                                     </li>
                                 </>
