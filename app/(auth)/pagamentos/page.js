@@ -182,7 +182,7 @@ export default function Pagamentos() {
                     <div className="flex content-center items-center justify-center py-16  bg-white">
                         <div className=" p-4 space-y-6 w-full md:w-[60%]">
                             <div className="text-gray-800 font-bold">
-                                <h1 className="text-[20px] lg:text-[20px]">{"ℹHISTÓRICO DE PAGAMENTOS"}</h1>
+                                <h1 className="text-[20px] lg:text-[20px] font-emoji">{"ℹHISTÓRICO DE PAGAMENTOS"}</h1>
                                 <p className="text-red-700 font-semibold">{data.pagamento.lista_pagamentos?.length ? "- " + data.pagamento.lista_pagamentos?.length.toString().padStart(2, '0') + " pagamentos encontrados" : "Você ainda não realizou nenhum pagamento."}</p>
                                 <div className="flex flex-col ">
                                     {
@@ -210,7 +210,7 @@ export default function Pagamentos() {
                     </div>
                     <div className="flex flex-col content-center items-center justify-center py-16 bg-[#3E4095]">
                         <div className="w-[100%] p-4 text-black space-y-2 md:w-[60%]">
-                            <h1 className="text-[20px] lg:text-[20px] text-slate-100 font-bold">{"ℹSITUAÇÃO DE INSCRIÇÃO"}</h1>
+                            <h1 className="text-[20px] lg:text-[20px] text-slate-100 font-bold font-emoji">{"ℹSITUAÇÃO DE INSCRIÇÃO"}</h1>
                             <div className="">
                                 {!data.pagamento.situacao || data.pagamento.situacao == 2 ?
                                     <p1 className="text-white">
@@ -245,7 +245,7 @@ export default function Pagamentos() {
                     </div>
                     <div className="flex flex-col content-center items-center justify-center py-16 bg-white">
                         <div className="md:w-[60%] p-4 text-black space-y-2">
-                            <h1 className="text-[20px] lg:text-[20px] text-gray-800 font-bold">{"ℹCONTATO"}</h1>
+                            <h1 className="text-[20px] lg:text-[20px] text-gray-800 font-bold font-emoji">{"ℹCONTATO"}</h1>
                             <h1>Em caso de dúvidas ou se o pagamento não for confirmado em até 03 dias, entre em contato com nossa equipe.</h1>
                             <div className="flex flex-col lg:flex-row items-center content-center justify-center text-center space-x-2">
                                 <div className=" flex-1 flex-col  ">

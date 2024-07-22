@@ -314,22 +314,22 @@ const Modal = ({ handleModal, modal }) => {
                     <div className="space-y-3" key={Math.floor(Math.random() * 100)}>
                       <div>
                         <div className="flex flex-row space-x-2">
-                          <p>◽</p>
+                          <p className="font-emoji">◽</p>
                           <p>{event.name.toLocaleUpperCase()}</p>
                         </div>
                         <div className="flex flex-col">
                           <div className="flex flex-row space-x-2">
-                            <h1>🕐</h1>
+                            <h1 className="font-emoji">🕐</h1>
                             <h1>{data.slice(0, 5)}</h1>
                             <h1>-</h1>
                             <h1>{time_init.slice(0, 5)} às {time_end.slice(0, 5)}</h1>
                           </div>
                           <div className="flex flex-row space-x-2">
-                            <h1>📍 {event.local}</h1>
+                            <h1 className="font-emoji">📍 {event.local}</h1>
                             <h1>{event.local_description}</h1>
                           </div>
                           <div className="flex flex-row space-x-2">
-                            <h1>⭐</h1>
+                            <h1 className="font-emoji">⭐</h1>
                             <h1>{event.description}</h1>
                           </div>
                         </div>
@@ -425,7 +425,7 @@ const CardProgramacao = ({ cor_primaria, dateKey, event, handleModal }) => {
                       </div>
                     </div>
                     <div className="flex flex-row text-start text-[13px] p-2 lg:p-3 text-zinc-700">
-                      <p className="px-2">👩‍🎓</p>
+                      <p className="px-2 font-emoji">👩‍🎓</p>
                       <p className="px-2">{value.namePattern.toLocaleUpperCase()}</p>
                     </div>
                   </div>

@@ -111,13 +111,13 @@ const BannerAtividade = () => {
     return (
         <div className="relative">
             <div className="absolute  w-fit p-2" style={{ 'backgroundColor': color }}>
-                <h1>💲</h1>
+                <h1 className="font-emoji">💲</h1>
             </div>
             <div className=" bg-white shadow-2xl">
                 <div className={`p-[3px]`} style={{ 'backgroundColor': color }} />
                 <div className="p-5 space-y-5">
                     <div className="text-center">
-                        <h1 className="text-[100px]">👨‍⚕️</h1>
+                        <h1 className="text-[100px] font-emoji">👨‍⚕️</h1>
                     </div>
                     <div>
                         <h1 className="font-bold text-center">{'Terapia Hormonal de Reposição de Testosterona'.toLocaleUpperCase()}</h1>
