@@ -3,12 +3,14 @@ import { useEffect, useState } from "react"
 import HeaderPainel from "@/app/components/HeaderPainel"
 import WarningModal from "@/app/components/WarningModal"
 import { DateTime } from "luxon"
+import { useRouter  } from 'next/navigation';
 //
 //
 //
 export default function Minicursos() {
     const [loadingData, setLoadingData] = useState(1)
     const [data, setData] = useState({ _id: undefined, listEvents: [] })
+
     //
     //
     useEffect(() => {
@@ -47,6 +49,15 @@ export default function Minicursos() {
             };
         });
     }
+    const handleUninscribed = () => {
+        setData((prev) => {
+            const number = prev.alreadIinscrivy >= 3 ? 3 : prev.alreadIinscrivy + 1
+            return {
+                ...prev,
+                alreadIinscrivy: number
+            };
+        });
+    }
 
     return (
         <div className="bg-[#3E4095] min-h-screen">
@@ -75,11 +86,14 @@ export default function Minicursos() {
                 </div>
             </div>
             <div className="flex content-center justify-center w-full text-gray-700 text-clip py-16 bg-white">
-                <div className="w-[95%] md:w-[50%]">
+                <div className=" w-[95%] md:w-[50%]">
                     <h1 className="break-words text-start font-bold text-black text-[22px] lg:text-[18px]">QUANTAS ATIVIDADES EU POSSO ME INSCREVER?</h1>
-                    <h1 className="text-justify">
-                        Você pode se inscrever em <span className="bg-yellow-300 text-gray-800 font-bold px-1">03 atividades</span>.
-                    </h1>
+                    <div className="flex flex-row space-x-1">
+                        <h1 className="text-justify">
+                            Você pode se inscrever em <span className="bg-yellow-300 text-gray-800 font-bold px-1">03 atividades</span>. Caso queira retirar sua inscrição de algum dos eventos, basta
+                            clicar no botão <span className="font-extrabold">X</span> presente no canto superior direito dos eventos que você está inscrito. Caso queria retirar sua inscrição de um evento pago, por favor entre em contato com a organização.
+                        </h1>
+                    </div>
                 </div>
             </div>
             <div className="bg-[#3e4095]">
@@ -100,7 +114,7 @@ export default function Minicursos() {
                         </h1>
                         <h1 className="break-words font-bold text-white text-[22px] lg:text-[18px]">
                             {!loadingData && data?.listEvents.length > 0 ? !data.alreadIinscrivy ? `VOCÊ JÁ SE INSCREVEU EM 03 ATIVIDADES` :
-                                data.alreadIinscrivy == 1 ? `VOCÊ AINDA PODE SER INSCREVER EM ${data.alreadIinscrivy} ATIVIDADE` : `VOCÊ AINDA PODE SER INSCREVER EM ${data.alreadIinscrivy} ATIVIDADES`:""}
+                                data.alreadIinscrivy == 1 ? `VOCÊ AINDA PODE SER INSCREVER EM ${data.alreadIinscrivy} ATIVIDADE` : `VOCÊ AINDA PODE SER INSCREVER EM ${data.alreadIinscrivy} ATIVIDADES` : ""}
                         </h1>
                     </div>
 
@@ -113,7 +127,7 @@ export default function Minicursos() {
 
                                         return (
                                             <div key={value._id}>
-                                                <BannerAtividade activity={value} userId={data._id} handleAlreadyInscribed={handleAlreadyInscribed} />
+                                                <BannerAtividade activity={value} userId={data._id} handleAlreadyInscribed={handleAlreadyInscribed} handleUninscribed={handleUninscribed}/>
                                             </div>
                                         )
                                     })
@@ -192,7 +206,7 @@ function generateHexColor() {
     return color;
 }
 
-const BannerAtividade = ({ activity, userId, handleAlreadyInscribed }) => {
+const BannerAtividade = ({ activity, userId, handleAlreadyInscribed, handleUninscribed }) => {
     /*
     name
     emoji
@@ -204,8 +218,10 @@ const BannerAtividade = ({ activity, userId, handleAlreadyInscribed }) => {
     participants
     */
     const [buttonText, setButtonText] = useState(isDateEqualOrAfterToday(activity.dateOpen, activity.participants.length, activity.maxParticipants))
-    const includesUser = activity.participants.includes(userId)
+    const [includesUser, setIncludesUser] = useState(activity.participants.includes(userId))
     const [modalMessage, setModalMessage] = useState(0)
+    const [textModal2, setTextModal2] = useState('FECHAR')
+    const [modalMessage2, setModalMessage2] = useState(0)
     const [loadingModal, setLoadingModal] = useState(0)
     const nVagas = activity.maxParticipants - activity.participants.length < 0 ? "0" : activity.maxParticipants - activity.participants.length
     // const buttonText = isDateEqualOrAfterToday(activity.dateOpen)
@@ -241,6 +257,7 @@ const BannerAtividade = ({ activity, userId, handleAlreadyInscribed }) => {
             const result = await response.json();
 
             if (!response.ok) {
+                console.log("!ok")
                 console.log(result)
                 if (response.status == 403) {
                     setButtonText('CHEIO')
@@ -251,8 +268,52 @@ const BannerAtividade = ({ activity, userId, handleAlreadyInscribed }) => {
                 throw new Error(result.message || 'Algo ocorreu errado. Tente novamente.');
             }
             handleAlreadyInscribed()
+            setIncludesUser(1)
             setModalMessage(result.message)
             setButtonText('INSCRITO')
+        } catch (error) {
+            console.log(error.message);
+        } finally {
+            setLoadingModal(0)
+        }
+    };
+    const handleRemoveRegister = async (eventId) => {
+        setLoadingModal(1)
+
+        switch (true) {
+            case (!includesUser):
+                setModalMessage("Você não está inscrito no evento, portanto, não é possível retirar sua inscrição.")
+                return 0
+        }
+
+        try {
+            const response = await fetch('/api/delete/desinscreverAtividade', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ eventId }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                console.log(result)
+                if (response.status == 403) {
+                    // setButtonText('CHEIO')
+                    setModalMessage(result.message)
+                    return 0
+                }
+                setModalMessage(result.message)
+                throw new Error(result.message || 'Algo ocorreu errado. Tente novamente.');
+            }
+            //
+            /*
+            handleUninscribed()
+            setIncludesUser(0)
+            setButtonText('INSCREVER')
+            */
+           setModalMessage2(result.message)
         } catch (error) {
             console.log(error.message);
         } finally {
@@ -262,16 +323,28 @@ const BannerAtividade = ({ activity, userId, handleAlreadyInscribed }) => {
     return (
         <div className="relative bg-white min-h-[600px] max-h-[600px] shadow-2xl">
             <WarningModal message={modalMessage} textButton={"FECHAR"} closeModal={() => { setModalMessage(0) }} isModal={modalMessage} />
+            <WarningModal message={modalMessage2} textButton={"RECARREGAR PÁGINA"} closeModal={() => { setModalMessage(0) }} isModal={modalMessage2} onClose={()=>{ window.location.reload()  }} />
+
             <LoadingModal isLoading={loadingModal} />
+
             {
                 !activity.isFree ?
                     <div className="absolute  w-fit p-2" style={{ 'backgroundColor': color }}>
                         <h1 className="font-emoji">💲</h1>
                     </div> : ""
             }
-            <div className="   ">
+            <div className="">
                 <div className={`p-[3px]`} style={{ 'backgroundColor': color }} />
-                <div className="p-5 space-y-5 h-[520px] overflow-auto">
+                <div className="p-5 space-y-5 h-[520px] overflow-auto relative">
+                    {
+                        includesUser ?
+                            <div className=" absolute top-0 right-0 m-2">
+                                <button className="relative bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center focus:outline-none" onClick={() => { handleRemoveRegister(activity._id) }}>
+                                    <div className="absolute w-[2px] h-4 sm:h-4 bg-white transform rotate-45"></div>
+                                    <div className="absolute w-[2px] h-4 sm:h-4 bg-white transform -rotate-45"></div>
+                                </button>
+                            </div> : ""
+                    }
                     <h1 className="font-extrabold text-center">
                         {
                             buttonText == "INSCREVER" && !includesUser ?
