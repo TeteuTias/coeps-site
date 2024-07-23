@@ -29,6 +29,7 @@ export const PUT = withApiAuthRequired(async function (req) {
             { projection: { timeline: 1, _id: [] } }
         ).toArray();
         // console.log(userRegistrationsCount)
+
         if (userRegistrationsCount.length >= 3) {
             return Response.json({ message: 'Você já se inscreveu em 3 eventos.' }, { status: 400 });
         }
@@ -39,13 +40,19 @@ export const PUT = withApiAuthRequired(async function (req) {
                 projection: {
                     "dateOpen": 1,
                     "isOpen": 1,
-                    "timeline": 1
+                    "timeline": 1,
+                    "participants":1
                 }
             }
         ).toArray()
-
+        
+        //console.log(eventStatus)
+        if (eventStatus[0].participants.includes(userId)) {
+            return Response.json({ message: 'Você já está inscrito nesse evento.' }, { status: 402 });
+        }
+        
         if (eventStatus.length == 0) {
-            return Response.json({ message: 'Evento não encontrado' }, { status: 400 });
+            return Response.json({ message: 'Evento não encontrado. Por favor, recarregue a página' }, { status: 500 });
         }
         if (!eventStatus[0].isOpen) {
             return Response.json({ message: 'Não é mais possível se inscrever no evento' }, { status: 400 });
@@ -109,7 +116,7 @@ export const PUT = withApiAuthRequired(async function (req) {
             // return Response.json({ message: 'AQUI!' }, { status: 200 });
 
         }
-        return Response.json({ message: 'Infelizmente, as vagas se esgotaram. A' }, { status: 403 });
+        return Response.json({ message: 'Infelizmente, as vagas se esgotaram.' }, { status: 403 });
     } catch (error) {
         console.error(error);
         return Response.json({ message: 'Internal server error' }, { status: 500 });
