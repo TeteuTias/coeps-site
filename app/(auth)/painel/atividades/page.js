@@ -8,7 +8,7 @@ import { DateTime } from "luxon"
 //
 export default function Minicursos() {
     const [loadingData, setLoadingData] = useState(1)
-    const [data, setData] = useState([])
+    const [data, setData] = useState({ _id: undefined, listEvents: [] })
     //
     //
     useEffect(() => {
@@ -34,10 +34,22 @@ export default function Minicursos() {
             fetchData()
         }
     }, [loadingData])
+    const handleAlreadIinscrivy = (number) => {
+        return
+    }
+
+    const handleAlreadyInscribed = () => {
+        setData((prev) => {
+            const number = !prev.alreadIinscrivy ? 0 : prev.alreadIinscrivy - 1
+            return {
+                ...prev,
+                alreadIinscrivy: number
+            };
+        });
+    }
 
     return (
         <div className="bg-[#3E4095] min-h-screen">
-            <button className="bg-black text-white p-4" onClick={() => { console.log(data) }}>click</button>
             <div className=" w-full text-center flex items-center justify-center">
                 <div className="w-[90%] lg:w-[60%] text-justify p-5">
                     <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Atividades</h1>
@@ -83,22 +95,25 @@ export default function Minicursos() {
                                 loadingData ? 'CARREGANDO ATIVIDADES' : ""
                             }
                             {
-                                !loadingData && data.length == 0 ? "AINDA NÃO HÁ ATIVIDADES DISPONÍVEIS" : ""
+                                !loadingData && data?.listEvents.length == 0 ? "AINDA NÃO HÁ ATIVIDADES DISPONÍVEIS" : ""
                             }
                         </h1>
-                        <h1 className="break-words font-bold text-white text-[22px] lg:text-[18px]">TYPE - COLOCAR O TYPE PARA FICAR MAIS FÁCIL |CARREGANDO|MSG QUANDO CARREGADO| MENSAGEM QUANDO NÃO TEM NADA</h1>
+                        <h1 className="break-words font-bold text-white text-[22px] lg:text-[18px]">
+                            {!loadingData && data?.listEvents.length > 0 ? !data.alreadIinscrivy ? `VOCÊ JÁ SE INSCREVEU EM 03 ATIVIDADES` :
+                                data.alreadIinscrivy == 1 ? `VOCÊ AINDA PODE SER INSCREVER EM ${data.alreadIinscrivy} ATIVIDADE` : `VOCÊ AINDA PODE SER INSCREVER EM ${data.alreadIinscrivy} ATIVIDADES`:""}
+                        </h1>
                     </div>
 
                     <div className="flex items-center content-center justify-center">
                         {
-                            !loadingData && data.length > 0 &&
+                            !loadingData && data?.listEvents.length > 0 &&
                             <div className="w-[90%] sm:w-[65%] 2xl:w-[90%] grid grid-cols-1 gap-x-10 gap-y-10 p-4 2xl:grid-cols-3 2xl:gap-2 2xl:gap-x-10 2xl:gap-y-10 lg:grid-cols-2 lg:gap-2 lg:gap-x-10 lg:gap-y-10 ">
                                 {
-                                    data.map((value, index) => {
+                                    data?.listEvents.map((value, index) => {
 
                                         return (
                                             <div key={value._id}>
-                                                <BannerAtividade activity={value} />
+                                                <BannerAtividade activity={value} userId={data._id} handleAlreadyInscribed={handleAlreadyInscribed} />
                                             </div>
                                         )
                                     })
@@ -111,7 +126,7 @@ export default function Minicursos() {
         </div>
     )
 }
-const isDateEqualOrAfterToday = (inputDate) => {
+const isDateEqualOrAfterToday = (inputDate, participants, maxParticipants) => {
     // Define a data atual no fuso horário -03:00 (America/Sao_Paulo)
     const currentDate = DateTime.now().setZone('America/Sao_Paulo');
 
@@ -119,14 +134,23 @@ const isDateEqualOrAfterToday = (inputDate) => {
     const inputDateTime = DateTime.fromISO(inputDate, { zone: 'America/Sao_Paulo' });
 
     // Compara as duas datas
-    if (currentDate >= inputDateTime) {
-        return "INSCREVER"
+    if (!maxParticipants) {
+        return 'CHEIO'
     }
-    return 'FECHADO'
+
+    if (participants >= maxParticipants) {
+        return 'CHEIO'
+    }
+
+    if (currentDate < inputDateTime) {
+        return "FECHADO"
+    }
+    return 'INSCREVER'
 }
 function generateHexColor() {
     const targetColor = [0x3e, 0x40, 0x95]; // RGB values of #3e4095
     const threshold = 100; // Threshold to avoid colors too close to #3e4095
+    const whiteThreshold = 200; // Avoid colors too close to white
 
     function getRandomHex() {
         return Math.floor(Math.random() * 256);
@@ -140,6 +164,10 @@ function generateHexColor() {
         return red > 128 || green > 128 || blue > 128;
     }
 
+    function isCloseToWhite(red, green, blue) {
+        return red > whiteThreshold && green > whiteThreshold && blue > whiteThreshold;
+    }
+
     let color;
     do {
         let red, green, blue;
@@ -148,7 +176,7 @@ function generateHexColor() {
             red = getRandomHex();
             green = getRandomHex();
             blue = getRandomHex();
-        } while (!isStrongColor(red, green, blue));
+        } while (!isStrongColor(red, green, blue) || isCloseToWhite(red, green, blue));
 
         const distance = Math.sqrt(
             Math.pow(targetColor[0] - red, 2) +
@@ -164,7 +192,7 @@ function generateHexColor() {
     return color;
 }
 
-const BannerAtividade = ({ activity }) => {
+const BannerAtividade = ({ activity, userId, handleAlreadyInscribed }) => {
     /*
     name
     emoji
@@ -172,13 +200,69 @@ const BannerAtividade = ({ activity }) => {
     isOpen
     dateOpen
     isFree
+    _id
+    participants
     */
-
-    const buttonText = isDateEqualOrAfterToday(activity.dateOpen)
+    const [buttonText, setButtonText] = useState(isDateEqualOrAfterToday(activity.dateOpen, activity.participants.length, activity.maxParticipants))
+    const includesUser = activity.participants.includes(userId)
+    const [modalMessage, setModalMessage] = useState(0)
+    const [loadingModal, setLoadingModal] = useState(0)
+    const nVagas = activity.maxParticipants - activity.participants.length < 0 ? "0" : activity.maxParticipants - activity.participants.length
+    // const buttonText = isDateEqualOrAfterToday(activity.dateOpen)
     var color = generateHexColor()
+    const handleRegister = async (eventId) => {
+        setLoadingModal(1)
+        try {
+            switch (true) {
+                case (includesUser):
+                    setModalMessage("Você já está inscrito no evento!")
+                    return 0
+                case (buttonText == 'CHEIO'):
+                    setModalMessage("Infelizmente, as vagas se esgotaram.")
+                    return 0
+                case (buttonText == 'INSCRITO'):
+                    setModalMessage("Você já está inscrito no evento!")
+                    return 0
+                case (buttonText == "FECHADO"):
+                    setModalMessage("Infelizmente, o evento está fechado. Não é mais possível se inscrever.")
+                    return 0
+                case (!activity.isOpen):
+                    setModalMessage("Infelizmente, o evento está fechado. Não é mais possível se inscrever.")
+                    return 0
+            }
+            const response = await fetch('/api/put/inscreverAtividade', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ eventId }),
+            });
 
+            const result = await response.json();
+
+            if (!response.ok) {
+                console.log(result)
+                if (response.status == 403) {
+                    setButtonText('CHEIO')
+                    setModalMessage(result.message)
+                    return 0
+                }
+                setModalMessage(result.message)
+                throw new Error(result.message || 'Algo ocorreu errado. Tente novamente.');
+            }
+            handleAlreadyInscribed()
+            setModalMessage(result.message)
+            setButtonText('INSCRITO')
+        } catch (error) {
+            console.log(error.message);
+        } finally {
+            setLoadingModal(0)
+        }
+    };
     return (
         <div className="relative bg-white min-h-[600px] max-h-[600px] shadow-2xl">
+            <WarningModal message={modalMessage} textButton={"FECHAR"} closeModal={() => { setModalMessage(0) }} isModal={modalMessage} />
+            <LoadingModal isLoading={loadingModal} />
             {
                 !activity.isFree ?
                     <div className="absolute  w-fit p-2" style={{ 'backgroundColor': color }}>
@@ -188,6 +272,13 @@ const BannerAtividade = ({ activity }) => {
             <div className="   ">
                 <div className={`p-[3px]`} style={{ 'backgroundColor': color }} />
                 <div className="p-5 space-y-5 h-[520px] overflow-auto">
+                    <h1 className="font-extrabold text-center">
+                        {
+                            buttonText == "INSCREVER" && !includesUser ?
+                                `[${nVagas} Vagas]` : ""
+                        }
+
+                    </h1>
                     <div className="text-center">
                         <h1 className="text-[100px] font-emoji">{activity.emoji}</h1>
                     </div>
@@ -202,13 +293,32 @@ const BannerAtividade = ({ activity }) => {
                     <h1>{ }</h1>
                 </div>
                 <div className="flex justify-center ">
-                    <button className="p-4 font-bold text-white" style={{ 'backgroundColor': color }}>
+                    <button className="p-4 font-bold text-white" style={{ 'backgroundColor': color }} onClick={() => { handleRegister(activity._id) }}>
                         {
-                            activity.isOpen ? buttonText : "FECHADO"
+                            includesUser ? "INSCRITO" : activity.isOpen ? buttonText : "FECHADO"
                         }
+
                     </button> {/* INSCREVER|JÁ INSCRITO|FECHADO  */}
                 </div>
             </div>
         </div>
     )
 }
+
+const LoadingModal = ({ isLoading }) => {
+    if (!isLoading) return null;
+
+    return (
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 z-[200]">
+            <div className="flex flex-row content-center items-center justify-center p-5 rounded shadow-lg text-center bg-white">
+
+                <svg className="flex flex-row content-center items-center justify-center animate-spin h-10 w-10 text-blue-500" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 100 8v4a8 8 0 01-8-8z" />
+                </svg>
+
+                <p className="text-lg font-semibold p-4 text-black">Carregando</p>
+            </div>
+        </div>
+    );
+};
