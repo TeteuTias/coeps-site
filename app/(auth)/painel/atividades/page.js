@@ -179,6 +179,50 @@ const isDateEqualOrAfterToday = (inputDate, participants, maxParticipants) => {
     }
     return 'INSCREVER'
 }
+function generateHexColor() {
+    const targetColor = [0x3e, 0x40, 0x95]; // RGB values of #3e4095
+    const threshold = 100; // Threshold to avoid colors too close to #3e4095
+    const whiteThreshold = 200; // Avoid colors too close to white
+
+    function getRandomHex() {
+        return Math.floor(Math.random() * 256);
+    }
+
+    function getHexCode(value) {
+        return value.toString(16).padStart(2, '0');
+    }
+
+    function isStrongColor(red, green, blue) {
+        return red > 128 || green > 128 || blue > 128;
+    }
+
+    function isCloseToWhite(red, green, blue) {
+        return red > whiteThreshold && green > whiteThreshold && blue > whiteThreshold;
+    }
+
+    let color;
+    do {
+        let red, green, blue;
+
+        do {
+            red = getRandomHex();
+            green = getRandomHex();
+            blue = getRandomHex();
+        } while (!isStrongColor(red, green, blue) || isCloseToWhite(red, green, blue));
+
+        const distance = Math.sqrt(
+            Math.pow(targetColor[0] - red, 2) +
+            Math.pow(targetColor[1] - green, 2) +
+            Math.pow(targetColor[2] - blue, 2)
+        );
+
+        if (distance > threshold) {
+            color = `#${getHexCode(red)}${getHexCode(green)}${getHexCode(blue)}`;
+        }
+    } while (!color);
+
+    return color;
+}
 
 const BannerAtividade = ({ activity, userId, handleAlreadyInscribed, handleUninscribed }) => {
     /*
@@ -200,6 +244,7 @@ const BannerAtividade = ({ activity, userId, handleAlreadyInscribed, handleUnins
     const [loadingModal, setLoadingModal] = useState(0)
     const nVagas = activity.maxParticipants - activity.participants.length < 0 ? "0" : activity.maxParticipants - activity.participants.length
     // const buttonText = isDateEqualOrAfterToday(activity.dateOpen)
+    var color = generateHexColor()
     const handleRegister = async (eventId) => {
         setLoadingModal(1)
         try {
