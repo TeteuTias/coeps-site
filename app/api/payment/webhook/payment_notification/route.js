@@ -187,7 +187,7 @@ async function pagamentoVencido(requestData) { // Chame se, somente se, o pagame
       return Response.json({ "erro": "result.matchedCount - pagamentoRecebido()" }, { status: 404 })
     }
     else if (result.modifiedCount === 0) { // Nenhum documento foi modificado.
-      //console.log("result.modifiedCount === 0")
+
       return Response.json({ "erro": "result.modifiedCount === 0 - pagamentoRecebido()" }, { status: 400 })
     }
     //
@@ -202,8 +202,7 @@ async function pagamentoVencido(requestData) { // Chame se, somente se, o pagame
     }
     //
     //
-    console.log("userId: ",userId)
-    console.log("_eventID: ",_eventID)
+
 
     const result2 = await db.collection('minicursos').updateOne(
       { _id: new ObjectId(_eventID) }, // Query para encontrar o documento

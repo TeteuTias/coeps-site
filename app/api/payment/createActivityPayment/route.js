@@ -137,7 +137,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
         const valor = eventStatus[0].value
         const data_vencimento = formattedDate.replaceAll("/","-")
-        console.log(data_vencimento)
+        
         const descricao = "Pagamento ATIVIDADES - COEPS."
         const desconto = 0
 
@@ -151,7 +151,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 }
             }
         ).toArray()
-        console.log(userInfos)
+        
         if (userInfos.length == 0) {
             return Response.json({ message: 'Ocorreu algum erro, por favor recarregue a página! [userInfos.length == 0]' }, { status: 500 });
         }
@@ -202,18 +202,18 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
 
         if (dbUpdateOne.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
-            console.log("result.matchedCount === 0")
+            
             return Response.json({ "message": "Ocorreu algum erro, por favor, recarregue a página. [result.matchedCount - dbUpdateOne]" }, { status: 500 })
         }
         else if (dbUpdateOne.modifiedCount === 0) { // Nenhum documento foi modificado.
-            console.log("[result.modifiedCount === 0]")
+            
             return Response.json({ "erro": "Ocorreu algum erro, por favor, recarregue a página. [result.modifiedCount === 0 - dbUpdateOne]" }, { status: 500 })
         }
 
         return Response.json({ message: 'Você completou sua inscrição! Para garantir sua vaga, é essencial que o pagamento seja realizado até o final do dia. Caso contrário, sua vaga será perdida.Para efetuar o pagamento, clique no botão abaixo ou acesse o menu MEUS PAGAMENTOS.', "link": responseJson.invoiceUrl }, { status: 200 });
     }
     catch (error) {
-        console.log(error)
+        
         return Response.json({ "message": error.message || "O CORREU ALGUM ERRO DESCONHECIDO" }, { status: 500 })
     }
 })
