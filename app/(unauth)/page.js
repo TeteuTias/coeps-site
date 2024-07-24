@@ -99,7 +99,7 @@ const Waves = () => {
 function Header01() {
   return (
     <div className="bg-[#3E4095] flex flex-col items-center justify-center content-center p-3" id="ComponenteContados">
-      <h1 className=" font-bold text-[20px]">Contato</h1>
+      <h1 className="p-5 text-[20px] font-coeps text-white">CONTATO</h1>
       <div className="flex p-2 flex-col space-y-10 lg:flex-row lg:items-center lg:justify-center lg:content-center lg:space-x-10 lg:space-y-0 ">
         <div className="flex flex-row space-x-2 items-center justify-center content-center">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-5 h-5">
@@ -141,7 +141,7 @@ function Letreiro() {
 function TextoDIV1() {
   return (
     <div className="w-[90%] lg:w-[70%] space-y-5">
-      <h1 className="text-center font-semibold text-slate-950 text-[30px] lg:text-[35px]">Sobre o Congresso</h1>
+      <h1 className="text-center font-semibold text-slate-950 text-[30px] lg:text-[30px] font-coeps">SOBRE O CONGRESSO</h1>
       <h1 className="text-black">
         O V Congresso dos Estudantes e Profissionais de Saúde (COEPS), evento tradicional em Araguari, organizado pelo Diretório Acadêmico Diogo Guimarães (DADG) do curso de Medicina do Centro Universitário
         IMEPAC Araguari, acontecerá de 31 de outubro a 03 de novembro de 2024, presencialmente, tendo como tema “Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional”, trazendo amplas discussões
@@ -152,7 +152,7 @@ function TextoDIV1() {
 
       <button className="bg-[#3e4095] px-5 py-2">
         <Link href={"/inscricoes"} className="pt-40" prefetch={false}>
-          <p>GARANTA SUA VAGA</p>
+          <p className="font-coeps text-white">GARANTA SUA VAGA</p>
         </Link>
       </button>
 
@@ -166,7 +166,7 @@ function TextoDIV2() {
   return (
     <div className="flex flex-col w-[90%] lg:w-[70%] space-y-5 pb-10 p-10 ">
       <div className="flex justify-center items-center content-center text-center">
-        <h1 className="font-semibold text-[30px] lg:text-[35px]">Evento tradicional em Araguari</h1>
+        <h1 className="font-semibold text-[30px] lg:text-[30px] font-coeps text-white">EVENTO TRADICIONAL EM ARAGUARI</h1>
       </div>
       <div className="text-center">
         <p>
@@ -231,10 +231,10 @@ function BannerDIV4() {
       </svg>
       <div className=" flex flex-col justify-center items-center lg:items-start content-center lg:flex-row space-y-12 lg:space-y-0 lg:space-x-12">
         <div className="w-fit text-[#2c3e50]">
-          <h1 className="font-bold text-[25px] lg:text-[35px] ">Inscrições antecipadas</h1>
+          <h1 className="font-bold text-[25px] lg:text-[30px] font-coeps text-[#2c3e50] ">INSCRIÇÕES ANTECIPADAS</h1>
           <p1>Aproveite o lote inicial com valores especiais</p1>
           <h1>--------</h1>
-          <button className="bg-[#3e4095] px-5 py-2 text-white"><Link href="/inscricoes" prefetch={false}>GARANTA SUA VAGA {'>>>'}</Link></button>
+          <button className="bg-[#3e4095] px-5 py-2 font-coeps text-white"><Link href="/inscricoes" prefetch={false}>GARANTA SUA VAGA</Link></button>
         </div>
         <div className="w-[335px] lg:w-[600px] bg-[#EAEAEA]">
           <Image

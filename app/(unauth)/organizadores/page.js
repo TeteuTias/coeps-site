@@ -3,6 +3,7 @@
 import Image from "next/image";
 import ImageModal from "@/app/components/ImageModal";
 import Waves from "@/app/components/Waves";
+import TituloBanner from "@/app/components/TituloBanner";
 //
 //
 export default function Organizadores() {
@@ -192,8 +193,8 @@ export default function Organizadores() {
     return (
         <>
             <div className="">
-                <div className="relative bg-[url(Site.jpg)] flex content-center justify-center font-semibold text-[30px] p-36  bg-center bg-cover">
-                    <h1>Comissão Organizadora</h1>
+                <div className="relative">
+                    <TituloBanner titulo={"comissão organizadora"}/>
                     <div className="absolute -bottom-1 left-0 w-full overflo z-20  text-white">
                         <Waves />
                     </div>

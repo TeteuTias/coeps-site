@@ -2,6 +2,7 @@
 import Image from "next/image"
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import TituloBanner from "@/app/components/TituloBanner";
 //
 //
 export default function Anais() {
@@ -44,15 +45,15 @@ export default function Anais() {
       <div className="min-h-screen">
         <div className="flex-1 min-h-screen">
 
-          <div className="relative bg-[url(Site.jpg)] flex justify-center items-center content-center font-semibold text-[30px] p-36 bg-center bg-cover ">
-            <h1>Anais</h1>
+          <div className="relative">
+            <TituloBanner titulo={"anais"} />
             <div className="absolute -bottom-1 left-0 w-full overflo z-20  text-white">
               <Waves />
             </div>
           </div>
           <div className="bg-[#3E4095] flex flex-col items-center justify-center py-5">
             <div className="w-[90%] lg:w-[70%] space-y-5">
-              <h1 className="font-semibold  text-[20px] lg:text-[26px]">O QUE TEMOS AQUI</h1>
+              <h1 className="font-semibold  text-[20px] lg:text-[26px] text-white font-coeps">O QUE TEMOS AQUI</h1>
               <h1 className="text-justify">
                 Aqui você encontra todas as publicações pertinentes aos Anais de Congresso, tanto do ano atual, quanto também de congressos passados. Fique ligado!
               </h1>
@@ -66,7 +67,7 @@ export default function Anais() {
           <div className="flex flex-col justify-center items-center content-center p-10">
             <div className=" w-[70%]">
               <div className=" w-full">
-                <h1 className="text-black font-bold text-left text-[25px] md:text-left md:text-[30px]">Publicações</h1>
+                <h1 className="text-black text-left text-[25px] md:text-left md:text-[30px] font-coeps">PUBLICAÇÕES</h1>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 bg-flex w-fit gap-3">
                 {
@@ -124,7 +125,7 @@ function CardAnais({ url, titulo, ano, link }) {
 function Header01() {
   return (
     <div className="bg-[#3E4095] flex flex-col items-center justify-center content-center p-3" id="ComponenteContados">
-      <h1 className=" font-bold text-[20px]">Contato</h1>
+      <h1 className="text-[25px] text-white font-coeps p-5">CONTATO</h1>
       <div className="flex p-2 flex-col space-y-10 lg:flex-row lg:items-center lg:justify-center lg:content-center lg:space-x-10 lg:space-y-0 ">
         <div className="flex flex-row space-x-2 items-center justify-center content-center">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-5 h-5">

@@ -1,14 +1,15 @@
 "use client"
 import Link from "next/link"
 import Waves from "@/app/components/Waves"
+import TituloBanner from "@/app/components/TituloBanner"
 //
 //
 export default function Inscricoes() {
     return (
         <>
             <div className="">
-                <div className="relative bg-[url(Site.jpg)] flex content-center justify-center font-semibold text-[30px] p-36  bg-center bg-cover py-[120px] ">
-                    <h1>Inscrições</h1>
+                <div className="relative">
+                    <TituloBanner titulo={"inscrições"} />
                     <div className="absolute -bottom-1 left-0 w-full overflo z-20  text-white">
                         <Waves />
                     </div>
@@ -16,7 +17,7 @@ export default function Inscricoes() {
 
                 <div className="flex content-center justify-center p-10 lg:py-20">
                     <div className="w-[90%] lg:w-[70%] space-y-5">
-                        <h1 className="font-semibold text-slate-950 text-[30px] lg:text-[35px]">Normas da inscrição</h1>
+                        <h1 className="font-semibold text-slate-950 text-[30px] lg:text-[35px] font-coeps">Normas da inscrição</h1>
                         <h1 className="text-black text-justify">
                             O pagamento da taxa de inscrição no evento lhe assegurará o direito de participar, somente, nas atividades
                             constantes na programação científica do evento.
@@ -27,7 +28,7 @@ export default function Inscricoes() {
 
                 <div className="flex content-center justify-center text-white bg-[#3e4095] p-10 py-[120px]">
                     <div className="w-[90%] lg:w-[70%] space-y-5">
-                        <h1 className="font-semibold  text-[30px] lg:text-[35px]">Formas de Pagamento</h1>
+                        <h1 className="font-semibold  text-[30px] lg:text-[35px] font-coeps text-white">Formas de Pagamento</h1>
                         <h1 className="text-justify">
                             Atuamente, trabalhamos com três formas de pagamento: <span className="bg-red-800 font-bold">PIX</span>, <span className="bg-red-800 font-bold">Boleto Bancário</span> e <span className="bg-red-800 font-bold">Cartão de Crédito</span>.
                         </h1>
@@ -36,7 +37,7 @@ export default function Inscricoes() {
 
                 <div className="flex content-center justify-center p-10 py-[60px]">
                     <div className="flex flex-col w-[90%] lg:w-[70%] space-y-10 relative">
-                        <h1 className="font-semibold text-slate-950 text-[30px] lg:text-[35px]">Como Realizar Minha Inscrição</h1>
+                        <h1 className=" text-slate-950 text-[30px] lg:text-[35px] font-coeps">Como Realizar Minha Inscrição</h1>
                         <h1 className="text-black text-justify">
                             Primeiro é necessário se cadastrar em nosso site. Após a realização do cadastro, você será redirecionado para a tela
                             de pagamentos. Após a confirmação automática de seu pagamento, você já estará com sua vaga garantida em nosso congresso!!
@@ -53,7 +54,7 @@ export default function Inscricoes() {
                 </div>
                 <div className="flex content-center justify-center bg-[#3e4095] text-white p-10 py-[60px]">
                     <div className="w-[90%] lg:w-[70%] space-y-5">
-                        <h1 className="font-semibold text-[30px] lg:text-[35px]">Políticas</h1>
+                        <h1 className=" text-[30px] lg:text-[35px] font-coeps text-white">Políticas</h1>
                         <p className="text-justify leading-8">
                             No ato do cadastro, você precisará criar uma senha que juntamente com seu CPF ou e-mail serão as credenciais para acessar sua área de participante posteriormente
                             e ter acesso a todos os serviços oferecidos no evento.
@@ -70,7 +71,7 @@ export default function Inscricoes() {
                 </div>
                 <div className="flex content-center justify-center p-10 lg:py-24">
                     <div className="w-[90%] lg:w-[70%] space-y-5">
-                        <h1 className="font-semibold text-slate-950 text-[30px] lg:text-[35px]">Cancelamento e Reembolso</h1>
+                        <h1 className=" text-slate-950 text-[30px] lg:text-[35px] font-coeps">Cancelamento e Reembolso</h1>
                         <h1 className="text-black text-justify">
                             O Art. 49 da Lei 8.078/09 do Código de Defesa do Consumidor garante um prazo legal de 7 dias após a compra para devolução de 100% do valor pago.
                             Caso deseje realizar seu reembolso, entre em contato com nossa equipe através do nosso Email ou WhatsApp.
@@ -83,7 +84,7 @@ export default function Inscricoes() {
                         <Waves2 />
                     </div>
                     <div className="bg-[#3e4095] p-10 w-full text-center">
-                        <h1 className=" font-bold text-[20px]">Contato</h1>
+                        <h1 className=" font-coeps text-white text-[20px]">CONTATO</h1>
                         <div className="flex p-2 flex-col space-y-10 lg:flex-row lg:items-center lg:justify-center lg:content-center lg:space-x-10 lg:space-y-0 ">
                             <div className="flex flex-row space-x-2 items-center justify-center content-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-5 h-5">

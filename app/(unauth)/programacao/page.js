@@ -130,14 +130,14 @@ const App = () => {
     return (
         <div className="min-h-screen space-y-2">
             <div className="relative bg-[url(Site.jpg)] flex content-center justify-center font-semibold text-[30px] p-36  bg-center bg-cover">
-                <h1>Programação</h1>
+                <h1 className='font-coeps text-white'>PROGRAMAÇÃO</h1>
                 <div className="absolute -bottom-1 left-0 w-full overflo z-20  text-white">
                     <Waves />
                 </div>
             </div>
             <div className="flex content-center justify-center py-5">
-                <div className="w-[95%] sm:w-[70%] space-y-5">
-                    <h1 className="font-semibold text-slate-950 text-[30px] lg:text-[35px]">Nossa Programação</h1>
+                <div className="w-[95%] sm:w-[70%] space-y-5 py-10">
+                    <h1 className="font-semibold text-slate-950 text-[25px] lg:text-[30px] font-coeps">NOSSA PROGRAMAÇÃO</h1>
                     <h1 className="text-black text-justify">
                         O V COEPS contará com uma extensão programação durante os 04 dias de eventos, sendo todas as atividades presencialmente. Teremos palestras, minicursos, atividades político culturais,
                         vivências e visita técnicas, apresentação de trabalhos, entre outras, buscando fornecer diferentes possibilidades ao aluno participante.
