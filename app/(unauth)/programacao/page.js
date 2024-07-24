@@ -1,6 +1,9 @@
 'use client'
 import React, { useState, useEffect } from 'react';
+import Waves from '@/app/components/Waves';
 
+//
+//
 const organizeByTypeAndDate = (data) => {
     const mergedData = [...data.result1, ...data.result2];
 
@@ -105,8 +108,8 @@ const App = () => {
 
                 organized[item.type][date].push({
                     ...timelineItem,
-                    'namePattern':item.name,
-                    'descriptionPattern':item.description,
+                    'namePattern': item.name,
+                    'descriptionPattern': item.description,
                     date_init: timelineItem.date_init.split('T')[0], // Mantém apenas a data no objeto
                 });
             });
@@ -126,8 +129,11 @@ const App = () => {
 
     return (
         <div className="min-h-screen space-y-2">
-            <div className="bg-[url(Site.jpg)] flex content-center justify-center font-semibold text-[30px] p-16  bg-center bg-cover">
+            <div className="relative bg-[url(Site.jpg)] flex content-center justify-center font-semibold text-[30px] p-36  bg-center bg-cover">
                 <h1>Programação</h1>
+                <div className="absolute -bottom-1 left-0 w-full overflo z-20  text-white">
+                    <Waves />
+                </div>
             </div>
             <div className="flex content-center justify-center py-5">
                 <div className="w-[95%] sm:w-[70%] space-y-5">

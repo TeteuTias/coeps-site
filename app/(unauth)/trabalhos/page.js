@@ -4,6 +4,7 @@ import TituloBanner from "../../components/TituloBanner"
 import Link from "next/link"
 import CardDatas from "../../components/CardDatas"
 import { useEffect, useState } from "react"
+import Waves from "@/app/components/Waves"
 //
 //
 export default function Trabalhos() {
@@ -39,8 +40,11 @@ export default function Trabalhos() {
     }, [loading]);
     return (
         <>
-            <div className="">
+            <div className="relative">
                 <TituloBanner titulo="Trabalhos" />
+                <div className="absolute -bottom-1 left-0 w-full overflo z-20  text-white">
+                    <Waves />
+                </div>
             </div>
             <div className="flex flex-col justify-center content-center items-center relative pt-10 pb-20">
                 <div className="flex flex-col space-y-10 w-[90%] lg:space-y-0 lg:space-x-10 lg:flex-row justify-center content-center items-center">
@@ -60,9 +64,9 @@ export default function Trabalhos() {
                         {config?.resultados && !loading ?
                             config.resultados.map((value, index) => {
                                 return (
-            
-                                        <h1 className="text-[#3E4095] hover:text-[#505191] w-fit" key={index}><Link href={value.link}  target="_blank" prefetch={false}>◽ {value.titulo}</Link></h1>
-                                    )
+
+                                    <h1 className="text-[#3E4095] hover:text-[#505191] w-fit" key={index}><Link href={value.link} target="_blank" prefetch={false}>◽ {value.titulo}</Link></h1>
+                                )
 
                             })
                             : ""
@@ -81,10 +85,10 @@ export default function Trabalhos() {
                         </p>
                     </div>
                     <div className="flex flex-row space-x-10 pt-12">
-                        <Link href={config?.link_edital??""} target="_blank" prefetch={false}>
+                        <Link href={config?.link_edital ?? ""} target="_blank" prefetch={false}>
                             <div>
                                 <button className="bg-[#3E4095] text-white p-2 px-4">
-                                    {config?.link_edital?"VER EDITAL":"CARREGANDO"}
+                                    {config?.link_edital ? "VER EDITAL" : "CARREGANDO"}
                                 </button>
 
                             </div>
@@ -97,7 +101,41 @@ export default function Trabalhos() {
                     </div>
                 </div>
             </div >
-            <ContatoBanner />
+            <div>
+                <div className="relative top-1 left-0 w-full overflo z-20  text-white">
+                    <Waves2 />
+                </div>
+                <div className=" relative">
+                    <ContatoBanner />
+                </div>
+            </div>
         </>
     )
 }
+const Waves2 = () => {
+    return (
+        <div className="relative w-full overflow-hidden h-[15vh] min-h-[100px] max-h-[150px]">
+            <svg
+                className="absolute w-full h-full"
+                xmlns="http://www.w3.org/2000/svg"
+                xmlnsXlink="http://www.w3.org/1999/xlink"
+                viewBox="0 24 150 28"
+                preserveAspectRatio="none"
+                shapeRendering="auto"
+            >
+                <defs>
+                    <path
+                        id="gentle-wave"
+                        d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"
+                    />
+                </defs>
+                <g className="parallax">
+                    <use xlinkHref="#gentle-wave" x="48" y="0" fill="rgba(62, 64, 149,0.7)" />
+                    <use xlinkHref="#gentle-wave" x="48" y="3" fill="rgba(62, 64, 149,0.5)" />
+                    <use xlinkHref="#gentle-wave" x="48" y="5" fill="rgba(62, 64, 149,0.3)" />
+                    <use xlinkHref="#gentle-wave" x="48" y="7" fill="#3e4095" />
+                </g>
+            </svg>
+        </div>
+    );
+};

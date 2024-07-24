@@ -15,47 +15,87 @@ export default function Home() {
   <h1 className="text-black">{user?"Voce está logado":"Voce não está logado"}</h1>
   */
   return (
-    <main className="w-screen">
-      <div className="bg-[url(Site.jpg)] bg-center bg-cover pb-10 pt-12">
+    <main className="">
+      <div className="relative bg-[url(Site.jpg)] bg-center bg-cover  pt-12">
         <Letreiro />
 
+        <div className="absolute -bottom-1 left-0 w-full overflo z-20  text-white">
+          <Waves />
+        </div>
       </div>
       <div className="flex justify-center items-center content-center text-justify p-5">
         <TextoDIV1 />
       </div>
-      <div className="bg-[#3e4095] text-white flex justify-center items-center content-center text-justify p-10 space-y-10">
-        <TextoDIV2 />
+      <div className="relative text-white flex flex-col justify-center items-center content-center text-justify">
+        <div className="relative top-2 left-0 w-full overflo z-20  text-white">
+          <Waves2 />
+        </div>
+        <div className="bg-[#3e4095] flex justify-center">
+          <TextoDIV2 />
+        </div>
       </div>
       <div className="bg-white relative mb-10" >
-          <BannerDIV4 />
+        <BannerDIV4 />
       </div>
       <Header01 />
 
     </main>
   );
 }
-/*
-
-      <Header />
-      <div className="bg-[url(Site.jpg)] bg-center bg-cover pb-10 pt-12">
-        <Letreiro />
-      </div>
-      <div className="flex justify-center items-center content-center text-justify p-5">
-        <TextoDIV1 />
-      </div>
-      <div className="bg-[#3e4095] text-white flex justify-center items-center content-center text-justify p-10 space-y-10">
-        <TextoDIV2 />
-      </div>
-      <div className="bg-white relative mb-10" data-negative="false">
-        <BannerDIV4 />
-      </div>
-      <Header01 />
-
-
-*/
-// OS NOMES DOS DIVS E SUAS NUMERAÇÕES NAO ESTÃO CERTAS MAIS!!
-//
-//
+const Waves2 = () => {
+  return (
+    <div className="relative w-full overflow-hidden h-[15vh] min-h-[100px] max-h-[150px]">
+      <svg
+        className="absolute w-full h-full"
+        xmlns="http://www.w3.org/2000/svg"
+        xmlnsXlink="http://www.w3.org/1999/xlink"
+        viewBox="0 24 150 28"
+        preserveAspectRatio="none"
+        shapeRendering="auto"
+      >
+        <defs>
+          <path
+            id="gentle-wave"
+            d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"
+          />
+        </defs>
+        <g className="parallax">
+          <use xlinkHref="#gentle-wave" x="48" y="0" fill="rgba(62, 64, 149,0.7)" />
+          <use xlinkHref="#gentle-wave" x="48" y="3" fill="rgba(62, 64, 149,0.5)" />
+          <use xlinkHref="#gentle-wave" x="48" y="5" fill="rgba(62, 64, 149,0.3)" />
+          <use xlinkHref="#gentle-wave" x="48" y="7" fill="#3e4095" />
+        </g>
+      </svg>
+    </div>
+  );
+};
+const Waves = () => {
+  return (
+    <div className="relative w-full overflow-hidden h-[15vh] min-h-[100px] max-h-[150px]">
+      <svg
+        className="absolute w-full h-full"
+        xmlns="http://www.w3.org/2000/svg"
+        xmlnsXlink="http://www.w3.org/1999/xlink"
+        viewBox="0 24 150 28"
+        preserveAspectRatio="none"
+        shapeRendering="auto"
+      >
+        <defs>
+          <path
+            id="gentle-wave"
+            d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"
+          />
+        </defs>
+        <g className="parallax">
+          <use xlinkHref="#gentle-wave" x="48" y="0" fill="rgba(255,255,255,0.7)" />
+          <use xlinkHref="#gentle-wave" x="48" y="3" fill="rgba(255,255,255,0.5)" />
+          <use xlinkHref="#gentle-wave" x="48" y="5" fill="rgba(255,255,255,0.3)" />
+          <use xlinkHref="#gentle-wave" x="48" y="7" fill="#fff" />
+        </g>
+      </svg>
+    </div>
+  );
+};
 function Header01() {
   return (
     <div className="bg-[#3E4095] flex flex-col items-center justify-center content-center p-3" id="ComponenteContados">
@@ -86,21 +126,9 @@ function Header01() {
 // Premeiro DIV
 function Letreiro() {
   return (
-    <div className="flex flex-col space-y-8 justify-center items-center content-center p-10">
+    <div className="flex flex-col space-y-8 justify-center items-center content-center p-10 min-h-[500px]">
       <Image
         src="/Letreiro01.png"
-        width={647}
-        height={180}
-        alt="Picture of the author"
-      />
-      <Image
-        src="/Letreiro02.png"
-        width={647}
-        height={180}
-        alt="Picture of the author"
-      />
-      <Image
-        src="/Letreiro03.png"
         width={647}
         height={180}
         alt="Picture of the author"
@@ -136,7 +164,7 @@ function TextoDIV1() {
 // Terceiro DIV
 function TextoDIV2() {
   return (
-    <div className="flex flex-col w-[90%] lg:w-[70%] space-y-5 pb-10">
+    <div className="flex flex-col w-[90%] lg:w-[70%] space-y-5 pb-10 p-10 ">
       <div className="flex justify-center items-center content-center text-center">
         <h1 className="font-semibold text-[30px] lg:text-[35px]">Evento tradicional em Araguari</h1>
       </div>

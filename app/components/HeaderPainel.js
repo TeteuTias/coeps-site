@@ -122,7 +122,7 @@ const HeaderPainel = ({ isPayed = true }) => {
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link href="/atividades" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
+                                        <Link href="/painel/atividades" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                                             Atividades
                                         </Link>
                                     </li>
