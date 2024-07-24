@@ -196,7 +196,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 '_id': new ObjectId(_id)
             },
             {
-                "$push": { 'pagamento.lista_pagamentos': { ...responseJson, _webhook: [], type: "activity" } },
+                "$push": { 'pagamento.lista_pagamentos': { ...responseJson, _webhook: [], _type: "activity", _userId:_id, _eventID:eventId } },
             }
         )
 

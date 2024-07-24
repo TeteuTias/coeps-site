@@ -16,6 +16,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
         // 
         const { user } = await getSession();
         const _id = new ObjectId(user.sub.replace("auth0|", "")) // Retirando o auth0|  
+        const userId = user.sub.replace("auth0|", "") // sem estar em objectId
         //
         // Puxando id_api.
         const { db } = await connectToDatabase()
@@ -82,7 +83,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 _id
             },
             {
-                "$push": { 'pagamento.lista_pagamentos': { ...responseJson, _webhook: [] } },
+                "$push": { 'pagamento.lista_pagamentos': { ...responseJson, _webhook: [], _type:"ticket", _userId:userId } },
                 "$set": { 'pagamento.situacao': 2 }
             }
         )
