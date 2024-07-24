@@ -217,47 +217,59 @@ const Modal = ({ show, onClose, event }) => {
     return (
         <div className="fixed z-50 inset-0 overflow-y-auto ">
             <div className="flex items-center justify-center min-h-screen px-4 z-[50]">
-
                 <div className="fixed inset-0 bg-black  opacity-60 z-40" onClick={onClose}></div>
-                <div className='z-[100] w-[100%] h-[600px] overflow-auto bg-white sm:w-[60%] md:w-[50%] xl:w-[40%] 2xl:w-[30%] shadow-lg drop-shadow-lg '>
-                    <div className='text-center  '>
-                        <div className='bg-[#3E4095] py-1' >
-                            <button className='bg-yellow-600 px-2 py-1' onClick={onClose}>FECHAR</button>
+                <div className='z-[100] w-[100%] h-[600px] overflow-auto sm:w-[60%] md:w-[50%] xl:w-[40%] 2xl:w-[30%]  '>
+                    <div className='relative text-center'>
+                        <div className='absolute right-0 bg-red-600 p-3 rounded-full max-w-1 max-h-1 cursor-pointer m-2 text-center flex items-center content-center align-middle justify-center' onClick={onClose}>
+                            <p>x</p>
                         </div>
-                        <div className='bg-red-200'>
-                            <h1 className='text-black font-coeps text-[15px] py-3'>{show.name.toLocaleUpperCase()}</h1>
+                        <div className='bg-[#5b5c9e] rounded-t-md'>
+                            <h1 className='text-black font-coeps text-[15px] pt-5'>{show.name.toLocaleUpperCase()}</h1>
                         </div>
-                        <div className='space-y-2'>
-                            <div className='bg-zinc-400 px-5'>
+                        <div className='bg-white'>
+                            <div className='bg-[#5b5c9e] '>
+                                <Waves2 />
+                            </div>
+                            <div className=' px-5 pt-5'>
                                 <h1 className='text-slate-950 text-start font-semibold'>SOBRE O EVENTO</h1>
                             </div>
                             <div className='px-5'>
                                 <p className='text-slate-950 text-[15px] text-justify font-thin'>{show.description}</p>
                             </div>
                         </div>
-
-
-
-                        <div className=' space-y-2 '>
-                            <div className=''>
-                                <div className='bg-zinc-400 px-5'>
+                        <div className=' space-y-2 bg-white'>
+                            <div className='pt-10'>
+                                <div className=' px-5'>
                                     <h1 className=' text-start font-semibold text-black'>AGENDA DO EVENTO</h1>
                                 </div>
-                                <div className='space-y-5 px-5'>
+                                <div className=' px-5 py-5'>
                                     {
-                                        show?.timeline?.map((value) => {
+                                        show?.timeline?.map((value, index) => {
                                             const dataInicio = new Date(value.date_init)
                                             const dataFim = new Date(value.date_end)
 
 
                                             return (
-                                                <div key={value._id} className='text-start space-y-2'>
-                                                    <h1 className=' font-semibold text-center text-slate-900'>{value.name.toLocaleUpperCase()}</h1>
-                                                    <h1 className='text-slate-900'>{value.description}</h1>
-                                                    <h1 className='text-slate-900'><span className='font-emoji text-slate-900'>📍</span> {value.local} <span>{value.local_description}</span></h1>
-                                                    <h1 className='text-slate-900'><span className='font-emoji text-slate-900'>🕐</span>Início - {dataInicio.toLocaleString()}</h1>
-                                                    <h1 className='text-slate-900'><span className='font-emoji text-slate-900'>🕐</span>Fim - {dataFim.toLocaleString()}</h1>
-
+                                                <div key={value._id} className='text-start '>
+                                                    <div className={`bg-neutral-400 ${!index ? 'rounded-t-xl' : ""}`}>
+                                                        <h1 className=' font-semibold text-center text-slate-900 py-2'>{dataInicio.toLocaleDateString()}</h1>
+                                                    </div>
+                                                    <div className='bg-slate-50 pb-5'>
+                                                        <div className=' space-y-3 p-2'>
+                                                            <div className='text-center border-b-[1px] py-2'>
+                                                                <h1 className='text-slate-900'>{value.name}</h1>
+                                                            </div>
+                                                            <div className='border-b-[1px]'>
+                                                                <h1 className='text-slate-900 text-justify'>{value.description}</h1>
+                                                            </div>
+                                                            <div className='border-b-[1px]'>
+                                                                <h1 className='text-slate-900'>📍{value.local} <span>{value.local_description}</span></h1>
+                                                            </div>
+                                                            <div className='border-b-[1px]'>
+                                                                <h1 className='text-slate-900'>🕐{dataInicio.toLocaleTimeString()} às {dataFim.toLocaleTimeString()}</h1>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             )
                                         })
@@ -274,7 +286,7 @@ const Modal = ({ show, onClose, event }) => {
 };
 const Waves2 = () => {
     return (
-        <div className="relative w-full overflow-hidden h-[15vh] min-h-[100px] max-h-[150px]">
+        <div className="relative w-full overflow-hidden  min-h-[40px] max-h-[150px]">
             <svg
                 className="absolute w-full h-full"
                 xmlns="http://www.w3.org/2000/svg"
@@ -290,10 +302,10 @@ const Waves2 = () => {
                     />
                 </defs>
                 <g className="parallax">
-                    <use xlinkHref="#gentle-wave" x="48" y="0" fill="rgba(62, 64, 149,0.7)" />
-                    <use xlinkHref="#gentle-wave" x="48" y="3" fill="rgba(62, 64, 149,0.5)" />
-                    <use xlinkHref="#gentle-wave" x="48" y="5" fill="rgba(62, 64, 149,0.3)" />
-                    <use xlinkHref="#gentle-wave" x="48" y="7" fill="#3e4095" />
+                    <use xlinkHref="#gentle-wave" x="48" y="0" fill="rgba(255,255,255,0.7)" />
+                    <use xlinkHref="#gentle-wave" x="48" y="3" fill="rgba(255,255,255,0.5)" />
+                    <use xlinkHref="#gentle-wave" x="48" y="5" fill="rgba(255,255,255,0.3)" />
+                    <use xlinkHref="#gentle-wave" x="48" y="7" fill="#fff" />
                 </g>
             </svg>
         </div>

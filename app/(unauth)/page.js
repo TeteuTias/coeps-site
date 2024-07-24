@@ -16,9 +16,8 @@ export default function Home() {
   */
   return (
     <main className="">
-      <div className="relative bg-[url(Site.jpg)] bg-center bg-cover  pt-12">
+      <div className="relative bg-[url(Site.jpg)] bg-center bg-cover pt-12">
         <Letreiro />
-
         <div className="absolute -bottom-1 left-0 w-full overflo z-20  text-white">
           <Waves />
         </div>
@@ -229,7 +228,7 @@ function BannerDIV4() {
       <svg className="relative -top-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="none" fill="#3e4095" >
         <path className="" d="M761.9,44.1L643.1,27.2L333.8,98L0,3.8V0l1000,0v3.9"></path>
       </svg>
-      <div className=" flex flex-col justify-center items-center lg:items-start content-center lg:flex-row space-y-12 lg:space-y-0 lg:space-x-12">
+      <div className=" flex flex-col justify-center items-center lg:items-start content-center lg:flex-row space-y-12 lg:space-y-0 lg:space-x-12 p-7">
         <div className="w-fit text-[#2c3e50]">
           <h1 className="font-bold text-[25px] lg:text-[30px] font-coeps text-[#2c3e50] ">INSCRIÇÕES ANTECIPADAS</h1>
           <p1>Aproveite o lote inicial com valores especiais</p1>
