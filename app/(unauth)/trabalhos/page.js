@@ -60,9 +60,9 @@ export default function Trabalhos() {
                         {config?.resultados && !loading ?
                             config.resultados.map((value, index) => {
                                 return (
-                                    <Link href={value.link} key={index} target="_blank">
-                                        <h1 className="text-[#3E4095] hover:text-[#505191]">◽ {value.titulo}</h1>
-                                    </Link>)
+            
+                                        <h1 className="text-[#3E4095] hover:text-[#505191] w-fit" key={index}><Link href={value.link}  target="_blank" prefetch={false}>◽ {value.titulo}</Link></h1>
+                                    )
 
                             })
                             : ""

@@ -27,36 +27,36 @@ const Header = () => {
         <div className="hidden lg:flex space-x-4 w-auto flex-wrap ml-auto">
           <ul className="flex flex-row items-center justify-end content-center space-x-4 flex-wrap">
             <li>
-              <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                 Início
               </Link>
             </li>
             <li>
-              <Link href="/programacao" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/programacao" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                 Programação
               </Link>
             </li>
             <li>
-              <Link href="/trabalhos" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/trabalhos" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                 Trabalhos
               </Link>
             </li>
             <li>
-              <Link href="/inscricoes" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/inscricoes" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                 Inscrições
               </Link>
             </li>
             <li>
-              <Link href="/organizadores" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/organizadores" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                 Organizadores
               </Link>
             </li>
             <li>
-              <Link href="/#ComponenteContados" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/#ComponenteContados" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                 Contato
               </Link>
             </li>
-            <Link href="/anais" className='hover:text-red-500 ease-linear duration-150'>
+            <Link href="/anais" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
               Anais
             </Link>
             <li>
@@ -100,36 +100,36 @@ const Header = () => {
         <div className="lg:hidden">
           <ul className="mt-4 space-y-2">
             <li>
-              <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                 Início
               </Link>
             </li>
             <li>
-              <Link href="/programacao" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/programacao" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                 Programação
               </Link>
             </li>
             <li>
-              <Link href="/trabalhos" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/trabalhos" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                 Trabalhos
               </Link>
             </li>
             <li>
-              <Link href="/inscricoes" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/inscricoes" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                 Inscrições
               </Link>
             </li>
             <li>
-              <Link href="/organizadores" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/organizadores" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                 Organizadores
               </Link>
             </li>
             <li>
-              <Link href="/#ComponenteContados" className='hover:text-red-500 ease-linear duration-150'>
+              <Link href="/#ComponenteContados" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                 Contato
               </Link>
             </li>
-            <Link href="/anais" className='hover:text-red-500 ease-linear duration-150'>
+            <Link href="/anais" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
               Anais
             </Link>
             <li>
