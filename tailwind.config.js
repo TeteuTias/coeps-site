@@ -14,6 +14,7 @@ module.exports = {
       },
       fontFamily: {
         'emoji': ['Segoe UI Emoji', 'sans-serif'],
+        'coeps': ['Now', 'sans-serif']
       }
     },
   },

@@ -47,13 +47,25 @@ export default function Anais() {
           <div className="bg-[url(Site.jpg)] flex justify-center items-center content-center font-semibold text-[30px] p-16  bg-center bg-cover ">
             <h1>Anais</h1>
           </div>
-          <div className="flex flex-col justify-center items-center content-center p-10">
-            <div className=" w-[60%]">
+          <div className="bg-[#3E4095] flex flex-col items-center justify-center py-5">
+            <div className="w-[90%] lg:w-[70%] space-y-5">
+              <h1 className="font-semibold  text-[20px] lg:text-[26px]">O QUE TEMOS AQUI</h1>
+              <h1 className="text-justify">
+                Aqui você encontra todas as publicações pertinentes aos Anais de Congresso, tanto do ano atual, quanto também de congressos passados. Fique ligado!
+              </h1>
+            </div>
+          </div>
 
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="none" fill="#3e4095" >
+            <path className="" d="M761.9,44.1L643.1,27.2L333.8,98L0,3.8V0l1000,0v3.9"></path>
+          </svg>
+
+          <div className="flex flex-col justify-center items-center content-center p-10">
+            <div className=" w-[70%]">
               <div className=" w-full">
-                <h1 className="text-black font-bold text-center text-[25px] md:text-left md:text-[30px]">Publicações</h1>
+                <h1 className="text-black font-bold text-left text-[25px] md:text-left md:text-[30px]">Publicações</h1>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 bg-flex">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 bg-flex w-fit gap-3">
                 {
                   !loading && anais?.length > 0 ? (
                     anais.map((value, index) => {
@@ -86,11 +98,11 @@ export default function Anais() {
 //
 function CardAnais({ url, titulo, ano, link }) {
   return (
-    <Link href={link} target="_blank" prefetch={false}>
+    <Link href={link} target="_blank" prefetch={false} className="w-fit">
       <div className="flex flex-col justify-center items-center content-center relative w-[100%]">
         <Image
           src={url}
-          width={647}
+          width={220}
           height={180}
           alt={titulo + " - " + ano}
         />
