@@ -142,10 +142,10 @@ export default function Minicursos() {
                             <div className="w-[90%] sm:w-[65%] 2xl:w-[90%] grid grid-cols-1 gap-x-10 gap-y-10 p-4 2xl:grid-cols-3 2xl:gap-2 2xl:gap-x-10 2xl:gap-y-10 lg:grid-cols-2 lg:gap-2 lg:gap-x-10 lg:gap-y-10 ">
                                 {
                                     data?.listEvents.map((value, index) => {
-
+                                        
                                         return (
                                             <div key={value._id}>
-                                                <BannerAtividade activity={value} userId={data._id} handleAlreadyInscribed={handleAlreadyInscribed} handleUninscribed={handleUninscribed} />
+                                                <BannerAtividade activity={value} color={generateHexColor()} userId={data._id} handleAlreadyInscribed={handleAlreadyInscribed} handleUninscribed={handleUninscribed} />
                                             </div>
                                         )
                                     })
@@ -224,7 +224,7 @@ function generateHexColor() {
     return color;
 }
 
-const BannerAtividade = ({ activity, userId, handleAlreadyInscribed, handleUninscribed }) => {
+const BannerAtividade = ({ activity, userId, handleAlreadyInscribed, handleUninscribed, color }) => {
     /*
     name
     emoji
@@ -244,7 +244,6 @@ const BannerAtividade = ({ activity, userId, handleAlreadyInscribed, handleUnins
     const [loadingModal, setLoadingModal] = useState(0)
     const nVagas = activity.maxParticipants - activity.participants.length < 0 ? "0" : activity.maxParticipants - activity.participants.length
     // const buttonText = isDateEqualOrAfterToday(activity.dateOpen)
-    var color = generateHexColor()
     const handleRegister = async (eventId) => {
         setLoadingModal(1)
         try {
@@ -408,12 +407,12 @@ const BannerAtividade = ({ activity, userId, handleAlreadyInscribed, handleUnins
 
             {
                 !activity.isFree ?
-                    <div className="absolute  w-fit p-2">
+                    <div className="absolute  w-fit p-2" style={{ 'backgroundColor': color }}>
                         <h1 className="font-emoji text-gray-800">💲</h1>
                     </div> : ""
             }
-            <div className="">
-                <div className={`p-[3px]`} />
+            <div className="" >
+                <div className={`p-[3px]`} style={{ 'backgroundColor': color }}/>
                 <div className="p-5 space-y-5 h-[520px] overflow-auto relative">
                     {
                         includesUser && activity.isFree ?
@@ -443,8 +442,8 @@ const BannerAtividade = ({ activity, userId, handleAlreadyInscribed, handleUnins
                     <div className="text-center">
                         <h1 className="text-[100px] font-emoji text-gray-800">{activity.emoji}</h1>
                     </div>
-                    <div>
-                        <h1 className="font-bold text-center">{activity.name.toLocaleUpperCase()}</h1>
+                    <div >
+                        <h1 className="font-bold text-center" >{activity.name.toLocaleUpperCase()}</h1>
                     </div>
                     <div>
                         <h1 className="font-thin text-center">
@@ -456,7 +455,7 @@ const BannerAtividade = ({ activity, userId, handleAlreadyInscribed, handleUnins
                 <div className="flex justify-center ">
                     <button className="p-4 font-bold text-white" onClick={() => {
                         activity.isFree ? handleRegister(activity._id) : handlePayedRegister(activity._id)
-                    }}>
+                    }} style={{ 'backgroundColor': color }} >
                         {
                             includesUser ? "INSCRITO" : activity.isOpen ? buttonText : "FECHADO"
                         }
