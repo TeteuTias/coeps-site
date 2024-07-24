@@ -418,7 +418,7 @@ const CardProgramacao = ({ cor_primaria, dateKey, event, handleModal }) => {
                           <p className="text-zinc-700 font-extralight">{value.description}</p>
                         </div>
                       </div>
-                      <div className={`flex-1 flex-col content-center items-center justify-center align-middle w-[20%] border-l-2 text-black`}>
+                      <div className={`flex-1 flex-col content-center items-center justify-center align-middle w-[20%] border-l-2 text-black`} style={{ borderColor: cor_primaria }}>
                         <p>{dateInit}</p>
                         <p>às</p>
                         <p>{dateEnd}</p>
@@ -440,58 +440,3 @@ const CardProgramacao = ({ cor_primaria, dateKey, event, handleModal }) => {
   )
 
 }
-
-  console.log(event)
-  // Conversor UTC
-  const conversorUTC = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
-  const date = new Date(event[0].timeline[0].date_init) // pegando o primeiro.
-  const diaUTC = conversorUTC[date.getUTCDay()]
-  const dia_ano = new Date(event[0].timeline[0].date_init).toLocaleDateString().slice(0, 5)
-  //
-  //
-  return (
-    <>
-      <div className={`flex`}>
-        <div className="flex flex-col text-center w-[100%] space-y-3">
-          <div className={`text-white font-extrabold rounded-t-lg`}>
-            <h1 className="text-start">{diaUTC.toLocaleUpperCase() + " "}{dia_ano}</h1>
-            <div className={`text-white font-extrabold rounded-t-[0.1px] p-1`} />
-          </div>
-          <div className="space-y-2">
-            {
-              event.map((value, index) => {
-                const date_init = new Date(value.timeline[0].date_init).toLocaleTimeString().slice(0, 5)
-                const date_end = new Date(value.timeline[value.timeline.length - 1].date_end).toLocaleTimeString().slice(0, 5)
-
-                return (
-                  <div className="flex flex-col bg-white cursor-pointer" onClick={() => { handleModal(value) }} key={index}>
-                    <div className=" flex flex-row p-2 lg:p-3">
-                      <div className="w-[80%] text-start px-2">
-                        <div>
-                          <h1 className="break-words text-start font-extrabold text-black text-[13px] lg:text-[16px]">{value.name.toLocaleUpperCase()}</h1>
-                        </div>
-                        <div>
-                          <p className="text-zinc-700 font-extralight">{value.description}</p>
-                        </div>
-                      </div>
-                      <div className={`flex-1 flex-col content-center items-center justify-center align-middle w-[20%] border-l-2 text-black`}>
-                        <p>{date_init}</p>
-                        <p>às</p>
-                        <p>{date_end}</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-row text-start text-[13px] p-2 lg:p-3 text-zinc-700">
-                      <p className="px-2">📍</p>
-                      <p className="px-2">CLIQUE PARA MAIS INFORMAÇÕES</p>
-                    </div>
-                  </div>
-
-                )
-              })
-            }
-          </div>
-        </div>
-      </div>
-    </>
-  )
-*/
