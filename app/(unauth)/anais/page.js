@@ -44,8 +44,11 @@ export default function Anais() {
       <div className="min-h-screen">
         <div className="flex-1 min-h-screen">
 
-          <div className="bg-[url(Site.jpg)] flex justify-center items-center content-center font-semibold text-[30px] p-16  bg-center bg-cover ">
+          <div className="relative bg-[url(Site.jpg)] flex justify-center items-center content-center font-semibold text-[30px] p-36 bg-center bg-cover ">
             <h1>Anais</h1>
+            <div className="absolute -bottom-1 left-0 w-full overflo z-20  text-white">
+              <Waves />
+            </div>
           </div>
           <div className="bg-[#3E4095] flex flex-col items-center justify-center py-5">
             <div className="w-[90%] lg:w-[70%] space-y-5">
@@ -55,10 +58,10 @@ export default function Anais() {
               </h1>
             </div>
           </div>
-
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="none" fill="#3e4095" >
+          <svg className="relative -top-[1px]" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="none" fill="#3e4095" >
             <path className="" d="M761.9,44.1L643.1,27.2L333.8,98L0,3.8V0l1000,0v3.9"></path>
           </svg>
+
 
           <div className="flex flex-col justify-center items-center content-center p-10">
             <div className=" w-[70%]">
@@ -145,3 +148,32 @@ function Header01() {
     </div>
   )
 }
+
+
+const Waves = () => {
+  return (
+    <div className="relative w-full overflow-hidden h-[15vh] min-h-[100px] max-h-[150px]">
+      <svg
+        className="absolute w-full h-full"
+        xmlns="http://www.w3.org/2000/svg"
+        xmlnsXlink="http://www.w3.org/1999/xlink"
+        viewBox="0 24 150 28"
+        preserveAspectRatio="none"
+        shapeRendering="auto"
+      >
+        <defs>
+          <path
+            id="gentle-wave"
+            d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z"
+          />
+        </defs>
+        <g className="parallax">
+          <use xlinkHref="#gentle-wave" x="48" y="0" fill="rgba(62, 64, 149,0.7)" />
+          <use xlinkHref="#gentle-wave" x="48" y="3" fill="rgba(62, 64, 149,0.5)" />
+          <use xlinkHref="#gentle-wave" x="48" y="5" fill="rgba(62, 64, 149,0.3)" />
+          <use xlinkHref="#gentle-wave" x="48" y="7" fill="#3e4095" />
+        </g>
+      </svg>
+    </div>
+  );
+};

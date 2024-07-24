@@ -107,27 +107,27 @@ const HeaderPainel = ({ isPayed = true }) => {
                             isPayed ?
                                 <>
                                     <li>
-                                        <Link href="/painel" className='hover:text-red-500 ease-linear duration-150'>
+                                        <Link href="/painel" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                                             Início
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link href="/painel/trabalhos" className='hover:text-red-500 ease-linear duration-150'>
+                                        <Link href="/painel/trabalhos" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                                             Trabalhos
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link href="/painel/minhaProgramacao" className='hover:text-red-500 ease-linear duration-150'>
+                                        <Link href="/painel/minhaProgramacao" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                                             Programação
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link href="/atividades" className='hover:text-red-500 ease-linear duration-150'>
+                                        <Link href="/painel/atividades" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                                             Atividades
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link href="/pagamentos" className='hover:text-red-500 ease-linear duration-150'>
+                                        <Link href="/pagamentos" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                                             Pagamentos
                                         </Link>
                                     </li>
