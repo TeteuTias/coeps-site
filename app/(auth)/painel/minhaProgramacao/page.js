@@ -418,7 +418,7 @@ const CardProgramacao = ({ cor_primaria, dateKey, event, handleModal }) => {
                           <p className="text-zinc-700 font-extralight">{value.description}</p>
                         </div>
                       </div>
-                      <div className={`flex-1 flex-col content-center items-center justify-center align-middle w-[20%] border-l-2 text-black`} style={{ borderColor: cor_primaria }}>
+                      <div className={`flex-1 flex-col content-center items-center justify-center align-middle w-[20%] border-l-2 text-black`}>
                         <p>{dateInit}</p>
                         <p>às</p>
                         <p>{dateEnd}</p>
@@ -441,7 +441,6 @@ const CardProgramacao = ({ cor_primaria, dateKey, event, handleModal }) => {
 
 }
 
-/*
   console.log(event)
   // Conversor UTC
   const conversorUTC = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
@@ -475,7 +474,7 @@ const CardProgramacao = ({ cor_primaria, dateKey, event, handleModal }) => {
                           <p className="text-zinc-700 font-extralight">{value.description}</p>
                         </div>
                       </div>
-                      <div className={`flex-1 flex-col content-center items-center justify-center align-middle w-[20%] border-l-2 text-black`} style={{ borderColor: cor_primaria }}>
+                      <div className={`flex-1 flex-col content-center items-center justify-center align-middle w-[20%] border-l-2 text-black`}>
                         <p>{date_init}</p>
                         <p>às</p>
                         <p>{date_end}</p>
