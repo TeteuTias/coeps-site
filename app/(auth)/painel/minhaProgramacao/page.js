@@ -136,8 +136,8 @@ export default function MinhaProgramacao() {
               Object.keys(data.data).map(key => {
                 // key - 2024-07-16
                 // console.log(key)
-                const hexColor = generateRandomHexColor()
-                return <CardProgramacao dateKey={key} cor_primaria={hexColor} event={data.data[key]} key={Math.floor(Math.random() * 100)} handleModal={handleModal} />
+                
+                return <CardProgramacao dateKey={key} cor_primaria={"#FF7F50"} event={data.data[key]} key={Math.floor(Math.random() * 100)} handleModal={handleModal} />
               }) : ""
           }
           {
@@ -156,47 +156,7 @@ export default function MinhaProgramacao() {
 
 }
 //
-/*
 
-        {
-          modal ? <Modal handleModal={() => { handleModal(0) }} modal={modal} /> : ""
-        }
-        <div className="flex flex-col content-center align-middle items-center justify-center ">
-          <div className="w-[90%] lg:w-[60%] text-justify p-5 ">
-            <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Minha Programação</h1>
-          </div>
-          <div className="flex justify-center w-full bg-white">
-            <div className="w-[90%] lg:w-[50%] text-gray-700 text-clip py-16">
-              <h1 className="break-words text-start font-bold text-black text-[22px] lg:text-[18px]">O QUE TEMOS AQUI</h1>
-              <h1 className="text-justify">Aqui está o seu cronograma de eventos! Todos os eventos obrigatórios e aqueles em que você se inscreveu estão organizados para que você
-                não fique perdido. Não se esqueça de se inscrever nos minicursos! Clicando nos cards, você consegue mais informações sobre o evento presente
-                na sua agenda.
-              </h1>
-            </div>
-          </div>
-
-
-          <div className="flex flex-col relative w-[90%] lg:w-[40%] mt-6">
-            {
-              isFetching ?
-                (<>
-                  <CardProgramacaoLoading responsive={0} cor_primaria={"#FF7F50"} />
-                </>) : ""
-            }
-            <div className=" space-y-10">
-              {
-                !isFetching && data.data ?
-                  Object.keys(data.data).map(key => {
-                    // key - 2024-07-16
-                    const hexColor = generateRandomHexColor()
-                    return <CardProgramacao dateKey={key} cor_primaria={hexColor} event={data.data[key]} key={Math.floor(Math.random() * 100)} handleModal={handleModal} />
-                  }) : ""
-              }
-            </div>
-          </div>
-        </div>
-
-*/
 function organizeData(data) {
   const organized = {};
   data['palestras'].map((value1, index) => {
@@ -347,22 +307,6 @@ const Modal = ({ handleModal, modal }) => {
   )
 }
 //
-function generateRandomHexColor() {
-
-  // Define os valores mínimo e máximo para as componentes RGB
-  const min = 120; // mínimo para garantir que não sejam muito escuras
-  const max = 255; // máximo para garantir que possam ser muito claras
-
-  // Gera valores aleatórios para as componentes RGB dentro da faixa [min, max]
-  const r = Math.floor(Math.random() * (max - min + 1) + min);
-  const g = Math.floor(Math.random() * (max - min + 1) + min);
-  const b = Math.floor(Math.random() * (max - min + 1) + min);
-
-  // Converte as componentes RGB para uma string hexadecimal
-  const hexColor = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-
-  return hexColor;
-}
 // <CardProgramacao cor_primaria="#FFEBCD"/>
 const CardProgramacaoLoading = ({ cor_primaria, responsive }) => {
   //
@@ -418,7 +362,7 @@ const CardProgramacao = ({ cor_primaria, dateKey, event, handleModal }) => {
                           <p className="text-zinc-700 font-extralight">{value.description}</p>
                         </div>
                       </div>
-                      <div className={`flex-1 flex-col content-center items-center justify-center align-middle w-[20%] border-l-2 text-black`} style={{ borderColor: cor_primaria }}>
+                      <div className={`flex-1 flex-col content-center items-center justify-center align-middle w-[20%] border-l-2 text-black`}>
                         <p>{dateInit}</p>
                         <p>às</p>
                         <p>{dateEnd}</p>
