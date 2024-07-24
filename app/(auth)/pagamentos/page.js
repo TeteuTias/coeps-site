@@ -160,7 +160,7 @@ export default function Pagamentos() {
     //
     return (
         <>
-            <HeaderPainel isPayed={data?.pagamento?.situacao ?? 0}/>
+            <HeaderPainel isPayed={data?.pagamento?.situacao ?? 0} />
             {
                 !isLoadingFetch && isModalError ?
                     <ModalError handleIsModalError={handleIsModalError} texto={isModalError} />
@@ -190,11 +190,11 @@ export default function Pagamentos() {
                                             <div className="flex flex-col items-start content-start justify-start pt-10 space-y-7 w-[95%] lg:w-[65%]">
                                                 {
                                                     data.pagamento.lista_pagamentos?.map((value, index) => {
-                                                        //console.log(value)
+                                                        console.log(value)
 
                                                         return (
                                                             <div key={index} className="">
-                                                                <CardPagamentos valor={value.value} nome={'nome'} data_formatada={value.dateCreated} invoiceNumber={value.invoiceNumber} status={value.status} description={value.description} />
+                                                                <CardPagamentos invoiceUrl={value.invoiceUrl} valor={value.value} nome={'nome'} data_formatada={value.dateCreated} invoiceNumber={value.invoiceNumber} status={value.status} description={value.description} />
                                                             </div>
                                                         )
                                                     })
@@ -270,7 +270,7 @@ export default function Pagamentos() {
     )
 }
 
-const CardPagamentos = ({ valor_total = "ERROR", data_formatada = "ERROR", invoiceNumber = "ERROR", status = "ERROR", description = "ERROR", valor = "ERROR" }) => {
+const CardPagamentos = ({ valor_total = "ERROR", data_formatada = "ERROR", invoiceNumber = "ERROR", status = "ERROR", description = "ERROR", valor = "ERROR", invoiceUrl="/pagamentos" }) => {
     // Arrumando a DATA
     //
     //
@@ -306,35 +306,38 @@ const CardPagamentos = ({ valor_total = "ERROR", data_formatada = "ERROR", invoi
     }
 
     return (
-        <div className="shadow-[0px_0px_5px_7px_rgba(0,0,0,0.02)] p-4 rounded-xl cursor-pointer relative">
-            <div className="flex flex-row justify-center items-center content-center align-middle absolute z-10 p-1 bg-[#ff8952] top-[-15px] left-[-6px] space-x-[3px] rounded-sm">
-                {
-                    valor == "ERROR" ?
-                        <h1 className="font-bold text-[13px]">{valor}</h1>
-                        :
-                        <div className="text-[white] flex flex-row space-x-[3px]">
-                            <h1 className="font-bold text-[13px]">R$</h1>
-                            <p className="font-serif text-[13px]">{valor}</p>
-                        </div>
-                }
+        <Link target="_blank" prefetch={false} href={invoiceUrl}>
+            <div className="shadow-[0px_0px_5px_7px_rgba(0,0,0,0.02)] p-4 rounded-xl cursor-pointer relative">
+                <div className="flex flex-row justify-center items-center content-center align-middle absolute z-10 p-1 bg-[#ff8952] top-[-15px] left-[-6px] space-x-[3px] rounded-sm">
+                    {
+                        valor == "ERROR" ?
+                            <h1 className="font-bold text-[13px]">{valor}</h1>
+                            :
+                            <div className="text-[white] flex flex-row space-x-[3px]">
+                                <h1 className="font-bold text-[13px]">R$</h1>
+                                <p className="font-serif text-[13px]">{valor}</p>
+                            </div>
+                    }
+                </div>
+                <div className="flex flex-row space-x-8">
+                    <div className="flex w-[20%]">
+                        <p className="text-red-600 font-mono text-[13px] lg:text-[13px]">{data_formatada}</p>
+                    </div>
+                    <div className="flex">
+                        <p className="text-red-600 font-mono text-[13px] lg:text-[13px]">{description}</p>
+                    </div>
+                </div>
+                <div className="flex flex-row justify-start items-center content-center">
+                    <div className="flex-1 w-[80%]">
+                        <p>#{invoiceNumber}</p>
+                    </div>
+                    <div className="flex flex-row">
+                        <h1>{status}</h1>
+                    </div>
+                </div>
+                <p className="text-[13px] font-thin">Clique para acessar</p>
             </div>
-            <div className="flex flex-row space-x-8">
-                <div className="flex w-[20%]">
-                    <p className="text-red-600 font-mono text-[13px] lg:text-[13px]">{data_formatada}</p>
-                </div>
-                <div className="flex">
-                    <p className="text-red-600 font-mono text-[13px] lg:text-[13px]">{description}</p>
-                </div>
-            </div>
-            <div className="flex flex-row justify-start items-center content-center">
-                <div className="flex-1 w-[80%]">
-                    <p>#{invoiceNumber}</p>
-                </div>
-                <div className="flex flex-row">
-                    <h1>{status}</h1>
-                </div>
-            </div>
-        </div>
+        </Link>
     )
 }
 
