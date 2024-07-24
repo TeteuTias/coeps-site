@@ -47,7 +47,7 @@ function PaginaAreaDoCliente() { // como é uma pagina, pega toda a tela para el
 function CardOpcoes({ texto, emoji }) {
   return (
     <div className="flex flex-col w-32 h-32 lg:w-40 lg:h-32 items-center justify-center shadow-xl bg-white text-center p-2 cursor-pointer">
-      <h1 className="text-center font-extralight text-slate-950 text-[36px] lg:text-[40px]">
+      <h1 className="text-center font-extralight text-[36px] lg:text-[40px] font-emoji text-gray-800">
         {emoji}
       </h1>
       <h1 className="text-center font-semibold text-slate-950 text-[16px] lg:text-[20px]">

@@ -101,13 +101,13 @@ export default function Minicursos() {
                         <h1 className="break-words text-start font-bold text-black text-[22px] lg:text-[18px]">REGRAS DE INSCRIÇÃO</h1>
                         <div className="flex flex-col space-y-5">
                             <h1 className="text-justify">
-                                <span className="font-emoji">◽</span> O congressista deve se inscrever <span className="font-bold hover:cursor-pointer">obrigatoriamente</span> em 3 atividades.
+                                <span className="font-emoji text-gray-800">◽</span> O congressista deve se inscrever <span className="font-bold hover:cursor-pointer">obrigatoriamente</span> em 3 atividades.
                             </h1>
                             <h1 className="text-justify">
-                                <span className="font-emoji">◽</span><span className="font-bold">NÃO</span> são permitidas inscrições em atividades com horários conflitantes. É de responsabilidade do congressista realizar um planejamento prévio antes da abertura das inscrições.
+                                <span className="font-emoji text-gray-800">◽</span><span className="font-bold">NÃO</span> são permitidas inscrições em atividades com horários conflitantes. É de responsabilidade do congressista realizar um planejamento prévio antes da abertura das inscrições.
                             </h1>
                                 <h1 className="text-justify">
-                                    <span className="font-emoji">◽</span> O congressista tem acesso às datas de abertura das inscrições, horários, localizações e datas de realização das atividades <span className="font-bold hover:cursor-pointer"><Link href="/programacao" prefetch={false} target="_blank">CLICANDO AQUI</Link></span>.
+                                    <span className="font-emoji text-gray-800">◽</span> O congressista tem acesso às datas de abertura das inscrições, horários, localizações e datas de realização das atividades <span className="font-bold hover:cursor-pointer"><Link href="/programacao" prefetch={false} target="_blank">CLICANDO AQUI</Link></span>.
                                 </h1>
                         </div>
                     </div>
@@ -409,7 +409,7 @@ const BannerAtividade = ({ activity, userId, handleAlreadyInscribed, handleUnins
             {
                 !activity.isFree ?
                     <div className="absolute  w-fit p-2">
-                        <h1 className="font-emoji">💲</h1>
+                        <h1 className="font-emoji text-gray-800">💲</h1>
                     </div> : ""
             }
             <div className="">
@@ -441,7 +441,7 @@ const BannerAtividade = ({ activity, userId, handleAlreadyInscribed, handleUnins
 
                     </h1>
                     <div className="text-center">
-                        <h1 className="text-[100px] font-emoji">{activity.emoji}</h1>
+                        <h1 className="text-[100px] font-emoji text-gray-800">{activity.emoji}</h1>
                     </div>
                     <div>
                         <h1 className="font-bold text-center">{activity.name.toLocaleUpperCase()}</h1>
