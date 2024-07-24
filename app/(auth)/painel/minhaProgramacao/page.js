@@ -373,7 +373,7 @@ const CardProgramacaoLoading = ({ cor_primaria, responsive }) => {
         <div className="flex flex-col text-center w-[100%] space-y-3">
           <div className={`text-white font-extrabold rounded-t-lg `}>
             <h1 className="text-start">CARREGANDO</h1>
-            <div className={`text-white font-extrabold rounded-t-lg p-1 animate-pulse blur-[0.5px]`} style={{ 'backgroundColor': cor_primaria }} />
+            <div className={`text-white font-extrabold rounded-t-lg p-1 animate-pulse blur-[0.5px]`} />
           </div>
         </div>
 
@@ -397,7 +397,7 @@ const CardProgramacao = ({ cor_primaria, dateKey, event, handleModal }) => {
         <div className="flex flex-col text-center w-[100%] space-y-3">
           <div className={`text-white font-extrabold rounded-t-lg`}>
             <h1 className="text-start">{dayMouth.toLocaleUpperCase() + " "}{dayName}</h1>
-            <div className={`text-white font-extrabold rounded-t-[0.1px] p-1`} style={{ 'backgroundColor': cor_primaria }} />
+            <div className={`text-white font-extrabold rounded-t-[0.1px] p-1`} />
           </div>
           <div className="space-y-2">
             {
@@ -456,7 +456,7 @@ const CardProgramacao = ({ cor_primaria, dateKey, event, handleModal }) => {
         <div className="flex flex-col text-center w-[100%] space-y-3">
           <div className={`text-white font-extrabold rounded-t-lg`}>
             <h1 className="text-start">{diaUTC.toLocaleUpperCase() + " "}{dia_ano}</h1>
-            <div className={`text-white font-extrabold rounded-t-[0.1px] p-1`} style={{ 'backgroundColor': cor_primaria }} />
+            <div className={`text-white font-extrabold rounded-t-[0.1px] p-1`} />
           </div>
           <div className="space-y-2">
             {

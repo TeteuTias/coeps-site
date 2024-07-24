@@ -408,12 +408,12 @@ const BannerAtividade = ({ activity, userId, handleAlreadyInscribed, handleUnins
 
             {
                 !activity.isFree ?
-                    <div className="absolute  w-fit p-2" style={{ 'backgroundColor': color }}>
+                    <div className="absolute  w-fit p-2">
                         <h1 className="font-emoji">💲</h1>
                     </div> : ""
             }
             <div className="">
-                <div className={`p-[3px]`} style={{ 'backgroundColor': color }} />
+                <div className={`p-[3px]`} />
                 <div className="p-5 space-y-5 h-[520px] overflow-auto relative">
                     {
                         includesUser && activity.isFree ?
@@ -454,7 +454,7 @@ const BannerAtividade = ({ activity, userId, handleAlreadyInscribed, handleUnins
                     <h1>{ }</h1>
                 </div>
                 <div className="flex justify-center ">
-                    <button className="p-4 font-bold text-white" style={{ 'backgroundColor': color }} onClick={() => {
+                    <button className="p-4 font-bold text-white" onClick={() => {
                         activity.isFree ? handleRegister(activity._id) : handlePayedRegister(activity._id)
                     }}>
                         {
