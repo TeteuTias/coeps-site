@@ -77,7 +77,7 @@ export default function Pagamentos() {
             const responseData = await response.json(); // {link:url_para_o_pagamento}
 
             // Exibe a resposta no console para fins de demonstração
-            console.log('Resposta da requisição POST:', responseData);
+            //console.log('Resposta da requisição POST:', responseData);
 
             route.push(responseData.link)
 
@@ -160,7 +160,7 @@ export default function Pagamentos() {
     //
     return (
         <>
-            <HeaderPainel isPayed={data?.pagamento?.situacao ?? 0} />
+            <HeaderPainel isPayed={data?.pagamento?.situacao != 1 ? 0 : 1} />
             {
                 !isLoadingFetch && isModalError ?
                     <ModalError handleIsModalError={handleIsModalError} texto={isModalError} />
@@ -190,7 +190,7 @@ export default function Pagamentos() {
                                             <div className="flex flex-col items-start content-start justify-start pt-10 space-y-7 w-[95%] lg:w-[65%]">
                                                 {
                                                     data.pagamento.lista_pagamentos?.map((value, index) => {
-                                                        console.log(value)
+                                                        
 
                                                         return (
                                                             <div key={index} className="">
