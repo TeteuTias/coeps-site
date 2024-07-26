@@ -1,4 +1,3 @@
-// lib/mongodb.js
 import { MongoClient } from 'mongodb';
 
 const uri = process.env.MONGODB_URI;
@@ -22,6 +21,7 @@ export async function connectToDatabase() {
 
   const client = new MongoClient(uri, {
     maxPoolSize: 100, // Configuração inicial do pool de conexões
+    readPreference: 'primary' // Força a leitura da primária
   });
 
   await client.connect();
