@@ -11,12 +11,15 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      
-        <body className="">
-          {children}
-        </body>
-      
+    <html lang="pt-br">
+      <head>
+        <title>COEPS</title>
+        <link rel="icon" href="/icon.png" />
+      </head>
+      <body className="">
+        {children}
+      </body>
+
     </html>
   )
 }

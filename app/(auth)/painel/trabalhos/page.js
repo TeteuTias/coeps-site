@@ -291,15 +291,22 @@ export default function Home() {
                         </div>
                         <div className="pt-10">
                             <p className="text-[#54595f] text-justify">
-                                Aqui você pode visualizar todos os seus trabalhos já enviados e também tem a opção de enviar novos trabalhos. Se precisar remover algum trabalho que já foi enviado, basta clicar no botão <span className='font-bold'>x</span> vermelho à esquerda de cada item. Para abrir um trabalho enviado, clique diretamente sobre ele.<span className="text-gray-800 font-bold"> Em caso de dúvidas, sinta-se à vontade para entrar em contato com a equipe COEPS</span>. Estamos aqui para ajudar!
+                                Aqui você pode visualizar todos os seus trabalhos já enviados e também tem a opção de enviar novos trabalhos. Se precisar remover algum trabalho que já foi enviado, basta clicar no botão <span className='font-bold'>x</span> vermelho à esquerda de cada item.<span className="text-gray-800 font-bold"> Em caso de dúvidas, sinta-se à vontade para entrar em contato com a equipe COEPS</span>. Estamos aqui para ajudar!
                             </p>
                         </div>
-                        <div className="flex flex-col items-start pt-12 space-y-2">
-                            <div>
+                        <div className="items-start pt-12 space-y-2">
+                            <div className=''>
                                 <p className="text-[#3E4095] hover:text-[#505191]">
                                     {
                                         !isLoading && !isBlock && data?.trabalhos_por_usuario && !file ? `Você ainda pode enviar ${(data.trabalhos_por_usuario - dataEnvios.length).toString().padStart(2, '0')} trabalho(s)`
-                                            : <span>Você selecionou o arquivo <span className='font-bold'>{file?.name}</span>.</span>
+                                            : ""
+                                    }
+                                    {
+                                        !isLoading && !isBlock && data?.trabalhos_por_usuario && file ? <span>Você selecionou o arquivo <span className='font-bold'>{file?.name}</span>.</span> : ""
+                                    }
+                                    {
+                                        isLoading ? <span>CARREGANDO</span> : ""
+
                                     }
                                     {
                                         !isLoading && isBlock && data?.trabalhos_por_usuario ? "Você atingiu o limite máximo de envios" : ""
@@ -307,7 +314,7 @@ export default function Home() {
 
                                 </p>
                             </div>
-                            <div className='flex flex-row items-center space-x-5 '>
+                            <div className='flex flex-col sm:flex-row items-start sm:items-center space-x-5 '>
                                 <div className='bg-yellow-200'>
                                     {
                                         isLoading ?
@@ -324,12 +331,10 @@ export default function Home() {
                                     }
 
                                 </div>
-
-
                                 {
                                     !isBlock ?
                                         <div className=''>
-                                            <form onSubmit={handleSubmit} className='space-y-4 lg:space-y-0 space-x-5'>
+                                            <form onSubmit={handleSubmit} className='flex flex-col  space-y-4 lg:space-y-0 space-x-5'>
                                                 <input
                                                     type="file"
                                                     id="file-upload"
@@ -342,7 +347,7 @@ export default function Home() {
                                                 />
                                                 <label htmlFor='file-upload' className="bg-[#3E4095] text-white p-[9.5px] px-4 cursor-pointer" disabled={isLoadingDeleteOrSend}>{!file ? 'SELECIONAR TRABALHO' : 'TROCAR ARQUIVO'}</label>
                                                 {file ?
-                                                    <button className="text-white font-extrabold bg-red-500 p-2 px-4" onClick={() => handleIsModal(1)} disabled={isLoadingDeleteOrSend}>ENVIAR TRABALHO</button> : ""
+                                                    <button className="text-white font-extrabold bg-red-500 " onClick={() => handleIsModal(1)} disabled={isLoadingDeleteOrSend}>ENVIAR TRABALHO</button> : ""
                                                 }
                                             </form>
 
