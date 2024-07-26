@@ -9,6 +9,9 @@ import { getSession } from '@auth0/nextjs-auth0';
 // {"data":{"isPos_registration":0,"informacoes_usuario":{"nome:":"","email":"mateus2.0@icloud.com","data_criacao":"2024-07-08T22:48:41.110Z"}}}
 // Exemplo de return erro:
 // 
+
+export const dynamic = 'force-dynamic'
+
 export const GET = withApiAuthRequired(async function GET(request, response) {
     try {
         const { user } = await getSession();

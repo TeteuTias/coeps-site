@@ -16,7 +16,7 @@ const HeaderPainel = ({ isPayed = true }) => {
         <header className="bg-gray-800 p-4 z-50 w-full sticky top-0">
             <nav className="flex items-center justify-between flex-wrap">
                 <div className="flex-shrink-0">
-                    <Link href="/">
+                    <Link href="/" prefetch={false}>
                         <Image
                             src="/Logo01.png"
                             width={150}
@@ -31,27 +31,27 @@ const HeaderPainel = ({ isPayed = true }) => {
                             isPayed ?
                                 <>
                                     <li>
-                                        <Link href="/painel" className='hover:text-red-500 ease-linear duration-150'>
+                                        <Link href="/painel" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                                             Início
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link href="/painel/trabalhos" className='hover:text-red-500 ease-linear duration-150'>
+                                        <Link href="/painel/trabalhos" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                                             Trabalhos
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link href="/painel/minhaProgramacao" className='hover:text-red-500 ease-linear duration-150'>
+                                        <Link href="/painel/minhaProgramacao" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                                             Programação
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link href="/painel/atividades" className='hover:text-red-500 ease-linear duration-150'>
+                                        <Link href="/painel/atividades" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                                             Atividades
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link href="/pagamentos" className='hover:text-red-500 ease-linear duration-150'>
+                                        <Link href="/pagamentos" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                                             Pagamentos
                                         </Link>
                                     </li>
@@ -107,7 +107,7 @@ const HeaderPainel = ({ isPayed = true }) => {
                             isPayed ?
                                 <>
                                     <li>
-                                        <Link href="/painel" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
+                                        <Link href="/painel"  prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                                             Início
                                         </Link>
                                     </li>

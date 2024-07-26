@@ -15,7 +15,7 @@ const Header = () => {
     <header className="bg-gray-800 p-4 z-50 w-full sticky top-0">
       <nav className="flex items-center justify-between flex-wrap">
         <div className="flex-shrink-0">
-          <Link href="/">
+          <Link href="/" prefetch={false}>
             <Image
               src="/Logo01.png"
               width={150}

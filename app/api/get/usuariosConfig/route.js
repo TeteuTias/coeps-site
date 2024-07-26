@@ -7,6 +7,9 @@ import { getSession,withApiAuthRequired } from '@auth0/nextjs-auth0';
 //
 // Reforma algumas informações do informacoes_usuarios 
 //
+
+export const dynamic = 'force-dynamic'
+
 export const GET = withApiAuthRequired(async function GET(request, { params }) {
     try {
         // Verificando se está logado
