@@ -133,15 +133,15 @@ export default function MinhaProgramacao() {
         <div className=" space-y-10  w-[95%] lg:w-[45%]">
           {
             !isFetching && data?.data ?
-              Object.keys(data.data).map(key => {
+              Object.keys(data?.data).map(key => {
                 // key - 2024-07-16
                 // console.log(key)
-                
-                return <CardProgramacao dateKey={key} cor_primaria={"#FF7F50"} event={data.data[key]} key={Math.floor(Math.random() * 100)} handleModal={handleModal} />
+
+                return <CardProgramacao dateKey={key} cor_primaria={"#FF7F50"} event={data?.data[key]} key={Math.floor(Math.random() * 100)} handleModal={handleModal} />
               }) : ""
           }
           {
-            !isFetching && (!data.data || data.data.length == 0) ?
+            !isFetching && (!data?.data || data?.data.length == 0) ?
               <div>
                 <h1 className="break-words text-center font-bold text-white text-[22px] lg:text-[18px]">Ainda não há uma programação</h1>
               </div>
@@ -338,9 +338,11 @@ const CardProgramacao = ({ cor_primaria, dateKey, event, handleModal }) => {
   return (
     <>
       <div className={`flex`} onClick={() => { }}>
+
         <div className="flex flex-col text-center w-[100%] space-y-3">
+
           <div className={`text-white font-extrabold rounded-t-lg`}>
-            <h1 className="text-start">{dayMouth.toLocaleUpperCase() + " "}{dayName}</h1>
+            <h1 className="text-start">{dayMouth.toLocaleUpperCase() + " "}{dayName.toLocaleUpperCase()}</h1>
             <div className={`text-white font-extrabold rounded-t-[0.1px] p-1`} />
           </div>
           <div className="space-y-2">
@@ -353,6 +355,7 @@ const CardProgramacao = ({ cor_primaria, dateKey, event, handleModal }) => {
 
                 return (
                   <div className="flex flex-col bg-white cursor-pointer" onClick={() => { handleModal(value) }} key={index}>
+                    <div className="p-1 bg-green-500" />
                     <div className=" flex flex-row p-2 lg:p-3">
                       <div className="w-[80%] text-start px-2">
                         <div>
@@ -362,7 +365,7 @@ const CardProgramacao = ({ cor_primaria, dateKey, event, handleModal }) => {
                           <p className="text-zinc-700 font-extralight">{value.description}</p>
                         </div>
                       </div>
-                      <div className={`flex-1 flex-col content-center items-center justify-center align-middle w-[20%] border-l-2 text-black`}>
+                      <div className={`flex-1 flex-col content-center items-center justify-center align-middle w-[20%] border-l-4 border-green-300 text-black`}>
                         <p>{dateInit}</p>
                         <p>às</p>
                         <p>{dateEnd}</p>
