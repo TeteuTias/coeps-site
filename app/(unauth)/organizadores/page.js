@@ -5,6 +5,7 @@ import ImageModal from "@/app/components/ImageModal";
 import Waves from "@/app/components/Waves";
 import TituloBanner from "@/app/components/TituloBanner";
 import { useEffect, useState } from "react";
+import ContatoBanner from "@/app/components/ContatoBanner";
 //
 //
 export default function Organizadores() {
@@ -123,10 +124,10 @@ export default function Organizadores() {
 
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
+            <ContatoBanner />
         </>
     )
 }

@@ -32,7 +32,7 @@ function PaginaAreaDoCliente() { // como é uma pagina, pega toda a tela para el
         <div className="flex flex-col items-center content-center justify-center lg:w-[65%] p-4 ">
           <div className="grid grid-cols-2 gap-x-10 gap-y-10 lg:grid-cols-3 lg:gap-2 lg:gap-x-10 lg:gap-y-10">
             <Link href="pagamentos" prefetch={false}><CardOpcoes texto="Meus Pagamentos" emoji="💳" /></Link>
-            <Link href="painel/trabalhos" prefetch={false}><CardOpcoes texto="Submição de Trabalhos" emoji="📚" /></Link>
+            <Link href="painel/trabalhos" prefetch={false}><CardOpcoes texto="Submissão de Trabalhos" emoji="📚" /></Link>
             <Link href="painel/minhaProgramacao" prefetch={false}><CardOpcoes texto="Minha Programação" emoji="📅" /></Link>
             <Link href="painel/minhasInformacoes" prefetch={false}><CardOpcoes texto="Minhas Informações" emoji="ℹ" /></Link>
             <Link href="painel/certificados"><CardOpcoes texto="Meus Certificados" emoji="✉"  prefetch={false}/></Link>

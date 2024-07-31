@@ -250,15 +250,15 @@ export default function Pagamentos() {
                             <div className="flex flex-col lg:flex-row items-center content-center justify-center text-center space-x-2">
                                 <div className=" flex-1 flex-col  ">
                                     <h1 className="font-bold px-2">Telefone</h1>
-                                    <h1>64 99999-9999</h1>
+                                    <h1>(00) 0000-0000</h1>
                                 </div>
                                 <div className="flex-1 flex-col ">
                                     <h1 className="font-bold px-2">Email</h1>
-                                    <h1>email@docoeps.com.br</h1>
+                                    <h1>vcoeps.dadg@gmail.com</h1>
                                 </div>
                                 <div className="flex-1 flex-col ">
                                     <h1 className="font-bold px-2">Instagram</h1>
-                                    <h1>@doCoeps</h1>
+                                    <Link href='https://www.instagram.com/coeps.araguari/' prefetch={false} target="_blank" >coeps.araguari</Link>
                                 </div>
                             </div>
                         </div>

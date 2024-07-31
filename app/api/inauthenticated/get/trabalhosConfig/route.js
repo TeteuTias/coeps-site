@@ -8,7 +8,6 @@ export const dynamic = 'force-dynamic'
 // Exemplo de return erro:
 // 
 
-export const dynamic = 'force-dynamic'
 
 
 export async function GET(request, { params }) {
