@@ -28,13 +28,15 @@ export const GET = withApiAuthRequired(async function GET(request, { params }) {
     const { user } = await getSession();
     const _id = user.sub.replace("auth0|", ""); // Retirando o auth0|  
 
-    const userRegistrationsCount = await db.collection(colecao).countDocuments({
-      participants: _id
-    });
-    const alreadIinscrivy = 3 - userRegistrationsCount > 0 ? 3 - userRegistrationsCount : 0
 
+    /*
+        const userRegistrationsCount = await db.collection(colecao).countDocuments({
+          participants: _id
+        });
+        const alreadIinscrivy = 3 - userRegistrationsCount > 0 ? 3 - userRegistrationsCount : 0
+    */
 
-    return NextResponse.json({ _id, listEvents: result, alreadIinscrivy:alreadIinscrivy}, { status: 200 });
+    return NextResponse.json({ _id, listEvents: result }, { status: 200 });
 
   }
   catch (error) {

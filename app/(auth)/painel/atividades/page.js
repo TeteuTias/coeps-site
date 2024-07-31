@@ -18,7 +18,7 @@ export default function Minicursos() {
         const fetchData = async () => {
             try {
 
-                const response = await fetch('/api/get/atividades',{cache:'no-cache'})
+                const response = await fetch('/api/get/atividades', { cache: 'no-cache' })
                 const jsonResponse = await response.json()
                 if (!response.ok) {
                     console.log(jsonResponse)
@@ -37,29 +37,33 @@ export default function Minicursos() {
             fetchData()
         }
     }, [loadingData])
+    /*
     const handleAlreadIinscrivy = (number) => {
         return
     }
-
-    const handleAlreadyInscribed = () => {
-        setData((prev) => {
-            const number = !prev.alreadIinscrivy ? 0 : prev.alreadIinscrivy - 1
-            return {
-                ...prev,
-                alreadIinscrivy: number
-            };
-        });
-    }
-    const handleUninscribed = () => {
-        setData((prev) => {
-            const number = prev.alreadIinscrivy >= 3 ? 3 : prev.alreadIinscrivy + 1
-            return {
-                ...prev,
-                alreadIinscrivy: number
-            };
-        });
-    }
-
+    */
+    /*
+     const handleAlreadyInscribed = () => {
+         setData((prev) => {
+             const number = !prev.alreadIinscrivy ? 0 : prev.alreadIinscrivy - 1
+             return {
+                 ...prev,
+                 alreadIinscrivy: number
+             };
+         });
+     }
+    */
+    /*
+     const handleUninscribed = () => {
+         setData((prev) => {
+             const number = prev.alreadIinscrivy >= 3 ? 3 : prev.alreadIinscrivy + 1
+             return {
+                 ...prev,
+                 alreadIinscrivy: number
+             };
+         });
+     }
+    */
     return (
         <div className="bg-[#3E4095] min-h-screen">
             <div className=" w-full text-center flex items-center justify-center">
@@ -73,7 +77,6 @@ export default function Minicursos() {
                     <h1 className="text-justify">
                         Aqui, você pode se inscrever em <span className="bg-yellow-300 px-1 font-bold">atividades complementares</span>. É obrigatório que cada participante escolha <span className="font-bold">três</span> dessas atividades. Lembre-se de que cada uma possui um número máximo de participantes, portanto, programe-se para se inscrever a tempo! Não se preocupe, todas as informações necessárias estão disponíveis aqui. Após a inscrição, a atividade será adicionada automaticamente à <span className="bg-yellow-300 px-1 font-bold">Minha Programação</span>. Você consegue ver mais detalhes
                         sobre as atividades <Link prefetch={false} target="_blank" href="/programacao"><span className="bg-yellow-300 px-1 cursor-pointer font-bold">clicando aqui</span></Link>.
-
                     </h1>
                 </div>
             </div>
@@ -92,7 +95,7 @@ export default function Minicursos() {
                         <h1 className="break-words text-start font-bold text-black text-[22px] lg:text-[18px]">QUANTAS ATIVIDADES EU POSSO ME INSCREVER?</h1>
                         <div className="flex flex-row space-x-1">
                             <h1 className="text-justify">
-                                Você pode se inscrever em <span className="bg-yellow-300 text-gray-800 font-bold px-1">03 atividades</span>. Caso queira retirar sua inscrição de algum dos eventos, basta
+                                Você pode se inscrever em <span className="bg-yellow-300 text-gray-800 font-bold px-1">quantas atividades quiser</span>. Caso queira retirar sua inscrição de algum dos eventos, basta
                                 clicar no botão <span className="font-extrabold">X</span> presente no canto superior direito dos eventos que você está inscrito. Caso queria retirar sua inscrição de um evento pago, por favor entre em contato com a organização.
                             </h1>
                         </div>
@@ -106,9 +109,9 @@ export default function Minicursos() {
                             <h1 className="text-justify">
                                 <span className="font-emoji text-gray-800">◽</span><span className="font-bold">NÃO</span> são permitidas inscrições em atividades com horários conflitantes. É de responsabilidade do congressista realizar um planejamento prévio antes da abertura das inscrições.
                             </h1>
-                                <h1 className="text-justify">
-                                    <span className="font-emoji text-gray-800">◽</span> O congressista tem acesso às datas de abertura das inscrições, horários, localizações e datas de realização das atividades <span className="font-bold hover:cursor-pointer"><Link href="/programacao" prefetch={false} target="_blank">CLICANDO AQUI</Link></span>.
-                                </h1>
+                            <h1 className="text-justify">
+                                <span className="font-emoji text-gray-800">◽</span> O congressista tem acesso às datas de abertura das inscrições, horários, localizações e datas de realização das atividades <span className="font-bold hover:cursor-pointer"><Link href="/programacao" prefetch={false} target="_blank">CLICANDO AQUI</Link></span>.
+                            </h1>
                         </div>
                     </div>
                 </div>
@@ -131,8 +134,10 @@ export default function Minicursos() {
                             }
                         </h1>
                         <h1 className="break-words font-bold text-white text-[22px] lg:text-[18px]">
-                            {!loadingData && data?.listEvents.length > 0 ? !data.alreadIinscrivy ? `VOCÊ JÁ SE INSCREVEU EM 03 ATIVIDADES` :
-                                data.alreadIinscrivy == 1 ? `VOCÊ AINDA PODE SER INSCREVER EM ${data.alreadIinscrivy} ATIVIDADE` : `VOCÊ AINDA PODE SER INSCREVER EM ${data.alreadIinscrivy} ATIVIDADES` : ""}
+                            {!loadingData && data?.listEvents.length > 0 ?
+                                `ATIVIDADES DISPONÍVEIS`
+                                : ""
+                            }
                         </h1>
                     </div>
 
@@ -141,11 +146,11 @@ export default function Minicursos() {
                             !loadingData && data?.listEvents.length > 0 &&
                             <div className="w-[90%] sm:w-[65%] 2xl:w-[90%] grid grid-cols-1 gap-x-10 gap-y-10 p-4 2xl:grid-cols-3 2xl:gap-2 2xl:gap-x-10 2xl:gap-y-10 lg:grid-cols-2 lg:gap-2 lg:gap-x-10 lg:gap-y-10 ">
                                 {
-                                    data?.listEvents.map((value, index) => {
-                                        
+                                    data?.listEvents.map((value) => {
+
                                         return (
                                             <div key={value._id}>
-                                                <BannerAtividade activity={value} color={generateHexColor()} userId={data._id} handleAlreadyInscribed={handleAlreadyInscribed} handleUninscribed={handleUninscribed} />
+                                                <BannerAtividade activity={value} color={generateHexColor()} userId={data._id} />
                                             </div>
                                         )
                                     })
@@ -224,7 +229,7 @@ function generateHexColor() {
     return color;
 }
 
-const BannerAtividade = ({ activity, userId, handleAlreadyInscribed, handleUninscribed, color }) => {
+const BannerAtividade = ({ activity, userId, color }) => {
     /*
     name
     emoji
@@ -289,7 +294,7 @@ const BannerAtividade = ({ activity, userId, handleAlreadyInscribed, handleUnins
                 setModalMessage(result.message)
                 throw new Error(result.message || 'Algo ocorreu errado. Tente novamente.');
             }
-            handleAlreadyInscribed()
+            // handleAlreadyInscribed()
             setIncludesUser(1)
             setModalMessage(result.message)
             setButtonText('INSCRITO')
@@ -344,7 +349,7 @@ const BannerAtividade = ({ activity, userId, handleAlreadyInscribed, handleUnins
                 setModalMessage(result.message)
                 throw new Error(result.message || 'Algo ocorreu errado. Tente novamente.');
             }
-            handleAlreadyInscribed()
+            // handleAlreadyInscribed()
             setIncludesUser(1)
             setModalMessage3(result.message)
             setModal3Link(result.link || "/pagamentos")
@@ -412,7 +417,7 @@ const BannerAtividade = ({ activity, userId, handleAlreadyInscribed, handleUnins
                     </div> : ""
             }
             <div className="" >
-                <div className={`p-[3px]`} style={{ 'backgroundColor': color }}/>
+                <div className={`p-[3px]`} style={{ 'backgroundColor': color }} />
                 <div className="p-5 space-y-5 h-[520px] overflow-auto relative">
                     {
                         includesUser && activity.isFree ?

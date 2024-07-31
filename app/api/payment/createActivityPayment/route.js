@@ -21,6 +21,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
         //
         const { db } = await connectToDatabase()
         const collection = 'minicursos'
+
         // Verifica se o usuário tem 4 ou menos inscrições
         const userRegistrationsCount = await db.collection(collection).find(
             {
@@ -28,10 +29,11 @@ export const POST = withApiAuthRequired(async function POST(request) {
             },
             { projection: { timeline: 1, _id: [] } }
         ).toArray();
+        /*
         if (userRegistrationsCount.length >= 3) {
             return Response.json({ message: 'Você já se inscreveu em 3 eventos.' }, { status: 400 });
         }
-
+        */
         const eventStatus = await db.collection(collection).find(
             { _id: new ObjectId(eventId) },
             {
@@ -42,7 +44,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
                     "timeline": 1,
                     "value": 1,
                     "isFree": 1,
-                    "participants":1
+                    "participants": 1
                 }
             }
         ).toArray()
@@ -136,8 +138,8 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
 
         const valor = eventStatus[0].value
-        const data_vencimento = formattedDate.replaceAll("/","-")
-        
+        const data_vencimento = formattedDate.replaceAll("/", "-")
+
         const descricao = "Pagamento ATIVIDADES - COEPS."
         const desconto = 0
 
@@ -151,7 +153,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 }
             }
         ).toArray()
-        
+
         if (userInfos.length == 0) {
             return Response.json({ message: 'Ocorreu algum erro, por favor recarregue a página! [userInfos.length == 0]' }, { status: 500 });
         }
@@ -196,29 +198,30 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 '_id': new ObjectId(_id)
             },
             {
-                "$push": { 'pagamento.lista_pagamentos': { ...responseJson, _webhook: [], _type: "activity", _userId:_id, _eventID:eventId } },
+                "$push": { 'pagamento.lista_pagamentos': { ...responseJson, _webhook: [], _type: "activity", _userId: _id, _eventID: eventId } },
             }
         )
 
 
         if (dbUpdateOne.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
-            
+
             return Response.json({ "message": "Ocorreu algum erro, por favor, recarregue a página. [result.matchedCount - dbUpdateOne]" }, { status: 500 })
         }
         else if (dbUpdateOne.modifiedCount === 0) { // Nenhum documento foi modificado.
-            
+
             return Response.json({ "erro": "Ocorreu algum erro, por favor, recarregue a página. [result.modifiedCount === 0 - dbUpdateOne]" }, { status: 500 })
         }
 
         return Response.json({ message: 'Você completou sua inscrição! Para garantir sua vaga, é essencial que o pagamento seja realizado até o final do dia. Caso contrário, sua vaga será perdida.Para efetuar o pagamento, clique no botão abaixo ou acesse o menu MEUS PAGAMENTOS.', "link": responseJson.invoiceUrl }, { status: 200 });
     }
     catch (error) {
-        
+
         return Response.json({ "message": error.message || "O CORREU ALGUM ERRO DESCONHECIDO" }, { status: 500 })
     }
 })
 //
 const isScheduleConflict = (existingEvents, newEvent) => {
+    /*
     for (const event of existingEvents) {
         for (const existingTimeline of event.timeline) {
             const existingStart = DateTime.fromISO(existingTimeline.date_init);
@@ -238,6 +241,29 @@ const isScheduleConflict = (existingEvents, newEvent) => {
             }
         }
     }
+    */
+    for (const event of existingEvents) {
+        for (const existingTimeline of event.timeline) {
+            const existingStart = DateTime.fromISO(existingTimeline.date_init);
+            const existingEnd = DateTime.fromISO(existingTimeline.date_end);
+
+            for (const newTimeline of newEvent.timeline) {
+                const newStart = DateTime.fromISO(newTimeline.date_init);
+                const newEnd = DateTime.fromISO(newTimeline.date_end);
+
+                // Verificação de conflito, considerando que o novo evento pode começar exatamente quando o evento existente termina
+                if (
+                    (newStart > existingStart && newStart < existingEnd) ||
+                    (newEnd > existingStart && newEnd <= existingEnd) ||
+                    (newStart < existingStart && newEnd > existingEnd) ||
+                    (newStart <= existingEnd && newEnd >= existingEnd)
+                ) {
+                    return 1; // Horário conflitante
+                }
+            }
+        }
+    }
+
     return 0; // Nenhum conflito encontrado
 }
 //

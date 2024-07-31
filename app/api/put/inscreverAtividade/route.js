@@ -30,9 +30,11 @@ export const PUT = withApiAuthRequired(async function (req) {
         ).toArray();
         // console.log(userRegistrationsCount)
 
+        /*
         if (userRegistrationsCount.length >= 3) {
             return Response.json({ message: 'Você já se inscreveu em 3 eventos.' }, { status: 400 });
         }
+        */
 
         const eventStatus = await db.collection(collection).find(
             { _id: eventId },
@@ -41,16 +43,16 @@ export const PUT = withApiAuthRequired(async function (req) {
                     "dateOpen": 1,
                     "isOpen": 1,
                     "timeline": 1,
-                    "participants":1
+                    "participants": 1
                 }
             }
         ).toArray()
-        
+
         //console.log(eventStatus)
         if (eventStatus[0].participants.includes(userId)) {
             return Response.json({ message: 'Você já está inscrito nesse evento.' }, { status: 402 });
         }
-        
+
         if (eventStatus.length == 0) {
             return Response.json({ message: 'Evento não encontrado. Por favor, recarregue a página' }, { status: 500 });
         }
