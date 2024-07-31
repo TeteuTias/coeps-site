@@ -1,3 +1,4 @@
+'use client'
 // components/ImageModal.js
 
 import { useState } from 'react';
@@ -18,7 +19,7 @@ const ImageModal = ({ src, alt }) => {
     <div>
       <div onClick={abrirModal} className="cursor-pointer">
         <Image
-          srcset={src}
+          src={src}
           alt={alt}
           width={500} // Ajuste o tamanho conforme necessário
           height={500} // Ajuste o tamanho conforme necessário
@@ -31,7 +32,7 @@ const ImageModal = ({ src, alt }) => {
               <h1>X</h1>
             </div>
             <Image
-              srcset={src}
+              src={src}
               alt={alt}
               layout="responsive"
               width={500} // Ajuste o tamanho conforme necessário

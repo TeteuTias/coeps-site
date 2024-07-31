@@ -1,27 +1,40 @@
 import { connectToDatabase } from '@/app/lib/mongodb';
 import { NextResponse } from 'next/server';
-
-export const dynamic = 'force-dynamic'
 //
 // Exemplo de return:
-// {"data":{"isPos_registration":0,"informacoes_usuario":{"nome:":"","email":"mateus2.0@icloud.com","data_criacao":"2024-07-08T22:48:41.110Z"}}}
-// Exemplo de return erro:
+//
+//
 // 
+
+export const dynamic = 'force-dynamic'
+
 
 export async function GET(request, { params }) {
     try {
         // Puxando configs
         const { db } = await connectToDatabase();
-        const colecao = "anais"
+        const colecao = "organizadores"
         const result = await db.collection(colecao).find(
-            {},
+            {
+                
+            },
             {
                 projection: {
-                    '_id':0
+                    "_id": 0,
+                    "name": 1,
+                    "imagesList": 1,
                 }
             }
         ).toArray()
-        return NextResponse.json({ data:result });
+        return NextResponse.json(
+            [ ...result ],
+            {
+                headers: {
+                    'Cache-Control': 'no-cache',
+                }
+            }
+        )
+
     }
     catch (error) {
         //console.log(error)
