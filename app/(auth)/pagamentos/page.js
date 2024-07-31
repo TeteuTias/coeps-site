@@ -190,7 +190,7 @@ export default function Pagamentos() {
                                             <div className="flex flex-col items-start content-start justify-start pt-10 space-y-7 w-[95%] lg:w-[65%]">
                                                 {
                                                     data.pagamento.lista_pagamentos?.map((value, index) => {
-                                                        
+
 
                                                         return (
                                                             <div key={index} className="">
@@ -213,13 +213,13 @@ export default function Pagamentos() {
                             <h1 className="text-[20px] lg:text-[20px] text-slate-100 font-bold font-emoji">{"ℹSITUAÇÃO DE INSCRIÇÃO"}</h1>
                             <div className="">
                                 {!data.pagamento.situacao || data.pagamento.situacao == 2 ?
-                                    <p1 className="text-white">
+                                    <p className="text-white">
                                         Realize seu primerio pagamento para confirmar sua inscrição. A confirmação de seu pagamento é realizada de forma <span className="font-bold bg-yellow-400 px-1">automática</span> em até <span className="font-bold bg-yellow-400 px-1">03 dias</span>.
-                                    </p1>
+                                    </p>
                                     :
-                                    <p1 className="text-white">
+                                    <p className="text-white">
                                         Sua inscrição foi <span className="font-bold bg-yellow-400 px-1">confirmada</span>.<span className=""> Aproveite o evento</span>!
-                                    </p1>
+                                    </p>
                                 }
                             </div>
                             <div>
@@ -259,7 +259,6 @@ export default function Pagamentos() {
                                 <div className="flex-1 flex-col ">
                                     <h1 className="font-bold px-2">Instagram</h1>
                                     <h1>@doCoeps</h1>
-
                                 </div>
                             </div>
                         </div>
@@ -270,7 +269,7 @@ export default function Pagamentos() {
     )
 }
 
-const CardPagamentos = ({ valor_total = "ERROR", data_formatada = "ERROR", invoiceNumber = "ERROR", status = "ERROR", description = "ERROR", valor = "ERROR", invoiceUrl="/pagamentos" }) => {
+const CardPagamentos = ({ valor_total = "ERROR", data_formatada = "ERROR", invoiceNumber = "ERROR", status = "ERROR", description = "ERROR", valor = "ERROR", invoiceUrl = "/pagamentos" }) => {
     // Arrumando a DATA
     //
     //
@@ -306,38 +305,41 @@ const CardPagamentos = ({ valor_total = "ERROR", data_formatada = "ERROR", invoi
     }
 
     return (
-        <Link target="_blank" prefetch={false} href={invoiceUrl}>
-            <div className="shadow-[0px_0px_5px_7px_rgba(0,0,0,0.02)] p-4 rounded-xl cursor-pointer relative">
-                <div className="flex flex-row justify-center items-center content-center align-middle absolute z-10 p-1 bg-[#ff8952] top-[-15px] left-[-6px] space-x-[3px] rounded-sm">
-                    {
-                        valor == "ERROR" ?
-                            <h1 className="font-bold text-[13px]">{valor}</h1>
-                            :
-                            <div className="text-[white] flex flex-row space-x-[3px]">
-                                <h1 className="font-bold text-[13px]">R$</h1>
-                                <p className="font-serif text-[13px]">{valor}</p>
-                            </div>
-                    }
-                </div>
-                <div className="flex flex-row space-x-8">
-                    <div className="flex w-[20%]">
-                        <p className="text-red-600 font-mono text-[13px] lg:text-[13px]">{data_formatada}</p>
-                    </div>
-                    <div className="flex">
-                        <p className="text-red-600 font-mono text-[13px] lg:text-[13px]">{description}</p>
-                    </div>
-                </div>
-                <div className="flex flex-row justify-start items-center content-center">
-                    <div className="flex-1 w-[80%]">
-                        <p>#{invoiceNumber}</p>
-                    </div>
-                    <div className="flex flex-row">
-                        <h1>{status}</h1>
-                    </div>
-                </div>
-                <p className="text-[13px] font-thin">Clique para acessar</p>
+        <div className="shadow-[0px_0px_5px_7px_rgba(0,0,0,0.02)] p-4 rounded-xl cursor-pointer relative">
+            <div className="flex flex-row justify-center items-center content-center align-middle absolute z-10 p-1 bg-[#ff8952] top-[-15px] left-[-6px] space-x-[3px] rounded-sm">
+                {
+                    valor == "ERROR" ?
+                        <h1 className="font-bold text-[13px]">{valor}</h1>
+                        :
+                        <div className="text-[white] flex flex-row space-x-[3px]">
+                            <h1 className="font-bold text-[13px]">R$</h1>
+                            <p className="font-serif text-[13px]">{valor}</p>
+                        </div>
+                }
             </div>
-        </Link>
+            <div className="flex flex-row space-x-8">
+                <div className="flex w-[20%]">
+                    <p className="text-red-600 font-mono text-[13px] lg:text-[13px]">{data_formatada}</p>
+                </div>
+                <div className="flex">
+                    <p className="text-red-600 font-mono text-[13px] lg:text-[13px]">{description}</p>
+                </div>
+            </div>
+            <div className="flex flex-row justify-start items-center content-center">
+                <div className="flex-1 w-[80%]">
+                    <p>#{invoiceNumber}</p>
+                </div>
+                <div className="flex flex-row">
+                    <h1>{status}</h1>
+                </div>
+            </div>
+            {
+                status != "PAYMENT_OVERDUE" ?
+                    <Link target="_blank" prefetch={false} href={invoiceUrl} className="">
+                        <p className="text-[13px] font-thin">Clique aqui para acessar</p>
+                    </Link>:""
+            }
+        </div>
     )
 }
 
