@@ -18,15 +18,21 @@ export async function GET(request, { params }) {
         const [result1, result2] = await Promise.all([
             db.collection(colecao1).find(
                 {},
-                
+
             ).toArray(),
             db.collection(colecao2).find(
-                
+
             ).toArray(),
         ]);
         return NextResponse.json(
-            { result1, result2 }
-        );
+            { result1, result2 },
+            {
+                headers: {
+                    'Cache-Control': 'no-cache',
+                }
+            }
+        )
+
     }
     catch (error) {
         //console.log(error)

@@ -35,7 +35,6 @@ export const config = {
   matcher: [
     '/painel/:path*',
     '/updateData/:path*',
-    '/pagamentos/:path*'
   ]
 }
 /*

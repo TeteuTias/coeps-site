@@ -54,7 +54,7 @@ const App = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch('/api/inauthenticated/get/programacao');
+                const response = await fetch('/api/inauthenticated/get/programacao', {cache:'no-store'});
                 const result = await response.json();
                 setData(result);
             } catch (error) {
