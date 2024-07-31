@@ -202,10 +202,23 @@ export default function Home() {
                 </div>
                 <div className="flex flex-col justify-center content-center items-center relative pt-10 pb-20">
                     <div className="flex flex-col space-y-10 w-[90%] lg:space-y-0 lg:space-x-10 lg:flex-row justify-center content-center items-center">
-                        <CardDatas isLoading={isLoading} data={new Date(data.data_limite_submissao).toLocaleDateString().slice(0, 5)} texto="Limite de Submissão" />
-                        <CardDatas isLoading={isLoading} data={formatNumber(data.trabalhos_por_usuario)} texto="Trabalhos por autor" />
-                        <CardDatas isLoading={isLoading} data={formatNumber(data.autores_por_trabalho)} texto="Autores por trabalho" />
-                        <CardDatas isLoading={isLoading} data={new Date(data.data_publicacao_resultados).toLocaleDateString().slice(0, 5)} texto="Publicação de Resultados" />
+                        {
+                            isLoading ? (
+                                <>
+                                    <CardDatas isLoading={isLoading} data={new Date(data.data_limite_submissao).toLocaleDateString().slice(0, 5)} texto="Limite de Submissão" />
+                                    <CardDatas isLoading={isLoading} data={formatNumber(data.trabalhos_por_usuario)} texto="Trabalhos por autor" />
+                                    <CardDatas isLoading={isLoading} data={formatNumber(data.autores_por_trabalho)} texto="Autores por trabalho" />
+                                    <CardDatas isLoading={isLoading} data={new Date(data.data_publicacao_resultados).toLocaleDateString().slice(0, 5)} texto="Publicação de Resultados" />
+                                </>
+
+                            ) :
+                                <div className="flex flex-col space-y-10 justify-center content-center items-center">
+                                    <h1 className="text-[#54595f]">
+                                        Ainda não definimos a data para a abertura das submissões de trabalhos. No entanto, não se preocupe! Acompanhe nosso site
+                                        e nossas redes sociais para receber as atualizações mais recentes e ficar por dentro das próximas datas.
+                                    </h1>
+                                </div>
+                        }
                     </div>
                     <div className=" w-[90%]">
                         <div className="pt-10">
@@ -240,12 +253,22 @@ export default function Home() {
                             }
                         </div>
                         <div className="pt-10">
-                            <p className="text-[#54595f] text-justify">
-                                O Diretório Acadêmico Diogo Guimarães (DADG) do curso de graduação em Medicina do Centro Universitário IMEPAC Araguari apresenta o <span className="text-gray-800 font-bold">V Congresso dos Estudantes
-                                    e Profissionais de Saúde (COEPS)</span> que possui como tema “Cuidados Paliativos na formação profissional de saúde: humanização em destaque”. Com o intuito de
-                                incentivar a participação dos acadêmicos, profissionais da saúde e áreas afins em atividades de pesquisa, visando complementar a formação acadêmica e
-                                enriquecer conhecimentos, declara-se aberto o edital para a submissão de trabalhos inéditos pertinentes à área da saúde.
-                            </p>
+                            {
+                                !isLoading && data?.isOpen ?
+                                    <p className="text-[#54595f] text-justify">
+                                        O Diretório Acadêmico Diogo Guimarães (DADG) do curso de graduação em Medicina do Centro Universitário IMEPAC Araguari apresenta o <span className="text-gray-800 font-bold">VI Congresso dos Estudantes
+                                            e Profissionais de Saúde (COEPS)</span> que possui como tema “Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional”. Com o intuito de
+                                        incentivar a participação dos acadêmicos, profissionais da saúde e áreas afins em atividades de pesquisa, visando complementar a formação acadêmica e
+                                        enriquecer conhecimentos, declara-se aberto o edital para a submissão de trabalhos inéditos pertinentes à área da saúde.
+                                    </p> :
+                                    !isLoading && !data?.isOpen ?
+                                        <p className="text-[#54595f] text-justify">
+                                            O Diretório Acadêmico Diogo Guimarães (DADG) do curso de Medicina do Centro Universitário IMEPAC Araguari está preparando o <span className="text-gray-800 font-bold">VI Congresso dos Estudantes e Profissionais
+                                                de Saúde (COEPS)</span>, com o tema “Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional”.
+                                            <span className="text-gray-800 font-bold">Atualmente, o edital para a submissão de trabalhos inéditos ainda não está aberto</span>. No entanto, em breve, divulgaremos mais
+                                            informações sobre como participar e submeter suas pesquisas. Fique atento ao nosso site e às nossas redes sociais para atualizações e detalhes sobre o processo de submissão.
+                                        </p> : ""
+                            }
                         </div>
                     </div>
                     <div className=" w-[90%]">
@@ -281,6 +304,15 @@ export default function Home() {
                                     )
                                     : ""
                             }
+                        <div className="pt-2">
+                            {
+                                !isLoading ?
+                                    <p className="text-[#54595f] text-justify">
+                                        Aqui você pode visualizar todos os seus trabalhos já enviados e também tem a opção de enviar novos trabalhos. Se precisar remover algum trabalho que já foi enviado, basta clicar no botão <span className='font-bold'>x</span> vermelho à esquerda de cada item.<span className="text-gray-800 font-bold"> Em caso de dúvidas, sinta-se à vontade para entrar em contato com a equipe COEPS</span>. Estamos aqui para ajudar!
+                                    </p>
+                                    : ""
+                            }
+                        </div>
                             {
                                 !isLoading && dataEnvios?.length == 0 ?
                                     <div className='text-start'>
@@ -289,76 +321,74 @@ export default function Home() {
                                     : ""
                             }
                         </div>
-                        <div className="pt-10">
-                            <p className="text-[#54595f] text-justify">
-                                Aqui você pode visualizar todos os seus trabalhos já enviados e também tem a opção de enviar novos trabalhos. Se precisar remover algum trabalho que já foi enviado, basta clicar no botão <span className='font-bold'>x</span> vermelho à esquerda de cada item.<span className="text-gray-800 font-bold"> Em caso de dúvidas, sinta-se à vontade para entrar em contato com a equipe COEPS</span>. Estamos aqui para ajudar!
-                            </p>
-                        </div>
-                        <div className="items-start pt-12 space-y-2">
-                            <div className=''>
-                                <p className="text-[#3E4095] hover:text-[#505191]">
-                                    {
-                                        !isLoading && !isBlock && data?.trabalhos_por_usuario && !file ? `Você ainda pode enviar ${(data.trabalhos_por_usuario - dataEnvios.length).toString().padStart(2, '0')} trabalho(s)`
-                                            : ""
-                                    }
-                                    {
-                                        !isLoading && !isBlock && data?.trabalhos_por_usuario && file ? <span>Você selecionou o arquivo <span className='font-bold'>{file?.name}</span>.</span> : ""
-                                    }
-                                    {
-                                        isLoading ? <span>CARREGANDO</span> : ""
+                        {
+                            !isLoading && data?.isOpen ?
+                                <div className="items-start pt-12 space-y-2">
+                                    <div className=''>
+                                        <p className="text-[#3E4095] hover:text-[#505191]">
+                                            {
+                                                !isLoading && !isBlock && data?.trabalhos_por_usuario && !file ? `Você ainda pode enviar ${(data.trabalhos_por_usuario - dataEnvios.length).toString().padStart(2, '0')} trabalho(s)`
+                                                    : ""
+                                            }
+                                            {
+                                                !isLoading && !isBlock && data?.trabalhos_por_usuario && file ? <span>Você selecionou o arquivo <span className='font-bold'>{file?.name}</span>.</span> : ""
+                                            }
+                                            {
+                                                isLoading ? <span>CARREGANDO</span> : ""
 
-                                    }
-                                    {
-                                        !isLoading && isBlock && data?.trabalhos_por_usuario ? "Você atingiu o limite máximo de envios" : ""
-                                    }
+                                            }
+                                            {
+                                                !isLoading && isBlock && data?.trabalhos_por_usuario ? "Você atingiu o limite máximo de envios" : ""
+                                            }
 
-                                </p>
-                            </div>
-                            <div className='flex flex-col sm:flex-row items-start sm:items-center space-x-5 '>
-                                <div className='bg-yellow-200'>
-                                    {
-                                        isLoading ?
-                                            <button className="bg-[#3E4095] text-white p-2 px-4">CARREGANDO</button>
-                                            : ""
+                                        </p>
+                                    </div>
+                                    <div className='flex flex-col sm:flex-row items-start sm:items-center space-x-5 '>
+                                        <div className='bg-yellow-200'>
+                                            {
+                                                isLoading ?
+                                                    <button className="bg-[#3E4095] text-white p-2 px-4">CARREGANDO</button>
+                                                    : ""
 
-                                    }
-                                    {
-                                        !isLoading && data ?
-                                            <Link href={data.link_edital} target='_blank' prefetch={false}>
-                                                <button className="bg-[#3E4095] text-white p-2 px-4">VER EDITAL</button>
-                                            </Link>
-                                            : ""
-                                    }
+                                            }
+                                            {
+                                                !isLoading && data ?
+                                                    <Link href={data.link_edital} target='_blank' prefetch={false}>
+                                                        <button className="bg-[#3E4095] text-white p-2 px-4">VER EDITAL</button>
+                                                    </Link>
+                                                    : ""
+                                            }
 
-                                </div>
-                                {
-                                    !isBlock ?
-                                        <div className=''>
-                                            <form onSubmit={handleSubmit} className='flex flex-col  space-y-4 lg:space-y-0 space-x-5'>
-                                                <input
-                                                    type="file"
-                                                    id="file-upload"
-                                                    accept="application/pdf"
-                                                    onChange={(e) => {
-                                                        setFile(e.target.files[0])
-                                                        handleMessage(`Arquivo "${e?.target?.files[0]?.name}" selecionado.`)
-                                                    }}
-                                                    className='hidden'
-                                                />
-                                                <label htmlFor='file-upload' className="bg-[#3E4095] text-white p-[9.5px] px-4 cursor-pointer" disabled={isLoadingDeleteOrSend}>{!file ? 'SELECIONAR TRABALHO' : 'TROCAR ARQUIVO'}</label>
-                                                {file ?
-                                                    <button className="text-white font-extrabold bg-red-500 " onClick={() => handleIsModal(1)} disabled={isLoadingDeleteOrSend}>ENVIAR TRABALHO</button> : ""
-                                                }
-                                            </form>
+                                        </div>
+                                        {
+                                            !isBlock ?
+                                                <div className=''>
+                                                    <form onSubmit={handleSubmit} className='flex flex-col  space-y-4 lg:space-y-0 space-x-5'>
+                                                        <input
+                                                            type="file"
+                                                            id="file-upload"
+                                                            accept="application/pdf"
+                                                            onChange={(e) => {
+                                                                setFile(e.target.files[0])
+                                                                handleMessage(`Arquivo "${e?.target?.files[0]?.name}" selecionado.`)
+                                                            }}
+                                                            className='hidden'
+                                                        />
+                                                        <label htmlFor='file-upload' className="bg-[#3E4095] text-white p-[9.5px] px-4 cursor-pointer" disabled={isLoadingDeleteOrSend}>{!file ? 'SELECIONAR TRABALHO' : 'TROCAR ARQUIVO'}</label>
+                                                        {file ?
+                                                            <button className="text-white font-extrabold bg-red-500 " onClick={() => handleIsModal(1)} disabled={isLoadingDeleteOrSend}>ENVIAR TRABALHO</button> : ""
+                                                        }
+                                                    </form>
 
-                                            {/* <button className="bg-[#3E4095] text-white p-2 px-4">ENVIAR TRABALHO</button> */}
-                                        </div> : ""
-                                }
+                                                    {/* <button className="bg-[#3E4095] text-white p-2 px-4">ENVIAR TRABALHO</button> */}
+                                                </div> : ""
+                                        }
 
 
 
-                            </div>
-                        </div>
+                                    </div>
+                                </div> : ""
+                        }
                     </div>
                 </div>
             </div>

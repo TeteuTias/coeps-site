@@ -99,8 +99,8 @@ export default function Trabalhos() {
                                 </p> :
                                 <p className="text-[#54595f] text-justify">
                                     O Diretório Acadêmico Diogo Guimarães (DADG) do curso de Medicina do Centro Universitário IMEPAC Araguari está preparando o <span className="text-gray-800 font-bold">VI Congresso dos Estudantes e Profissionais
-                                        de Saúde (COEPS)</span>, com o tema “Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional”.
-                                    Atualmente, o edital para a submissão de trabalhos inéditos ainda não está aberto. No entanto, em breve, divulgaremos mais
+                                    de Saúde (COEPS)</span>, com o tema “Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional”. <span className="text-gray-800 font-bold"> Atualmente, o edital para a submissão de trabalhos inéditos
+                                    ainda não está aberto</span>. No entanto, em breve, divulgaremos mais
                                     informações sobre como participar e submeter suas pesquisas. Fique atento ao nosso site e às nossas redes sociais para atualizações e detalhes sobre o processo de submissão.
                                 </p>
                         }
