@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Waves from '@/app/components/Waves';
 import { userAgentFromString } from 'next/server';
 import { DateTime } from 'luxon';
+
 //
 //
 const organizeByTypeAndDate = (data) => {
@@ -54,7 +55,7 @@ const App = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await fetch('/api/inauthenticated/get/programacao', {cache:'no-store'});
+                const response = await fetch('/api/inauthenticated/get/programacao', { cache: 'no-store' });
                 const result = await response.json();
                 setData(result);
             } catch (error) {
@@ -147,13 +148,12 @@ const App = () => {
             <div>
                 <div className='flex flex-col justify-center bg-[#3E4095] p-5 space-y-5'>
                     <div className='text-center'>
+                        <h1 className='text-white font-coeps text-[25px]'>{loading ? 'CARREGANDO' : ""}</h1>
                         <h1 className='text-white font-coeps text-[25px]'>{!loading && Object.keys(organizedData).length > 0 ? 'CLIQUE PARA OBTER MAIS DETALHES' : ""}</h1>
                         <h1 className='text-white font-coeps text-[25px]'>{!loading && Object.keys(organizedData).length == 0 ? 'AINDA NÃO TEMOS UM CRONOGRAMA DE EVENTOS' : ""}</h1>
-
                     </div>
                 </div>
             </div>
-
             <div className='bg-green-100 p-5'>
                 <div className='flex flex-col justify-center'>
                     <div className='flex flex-row flex-wrap justify-center space-x-6'>
