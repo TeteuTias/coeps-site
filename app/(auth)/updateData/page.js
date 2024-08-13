@@ -119,7 +119,7 @@ export default function UpdateData() {
                 throw new Error(data);
             }
             //console.log(data)
-            router.push('/painel/pagamentos')// se der tudo certo, ele vai direto pro /painel
+            router.push('/pagamentos')// se der tudo certo, ele vai direto pro /painel
         } catch (error) {
             console.error('Erro na requisição:', error);
         }

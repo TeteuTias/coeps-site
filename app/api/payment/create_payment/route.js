@@ -60,19 +60,25 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 access_token: ASAAS_API_KEY
             },
             body: JSON.stringify({
+                name:"Primeiro Lote COEPS",
+                chargeType:"DETACHED",
+                dueDateLimitDays:3,
+                maxInstallmentCount:3,
                 billingType: 'UNDEFINED',
                 discount: { value: desconto },
                 callback: { successUrl: urlCallback, autoRedirect: false },
-                customer: id_api,
+                //customer: id_api,
                 value: valor,
                 dueDate: data_vencimento,
-                postalService: false,
+                // postalService: false,
                 description: descricao,
             })
         };
 
         const responseAPI = await fetch(ASAAS_API_URL, options)
         if (!responseAPI.ok) {
+            var responseJson = await responseAPI.json()
+            console.log(responseJson)
             throw ({ "message": "!responseAPI.ok => Registro API Pagamentos" })
         }
         var responseJson = await responseAPI.json()
