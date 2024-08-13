@@ -64,7 +64,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 chargeType:"DETACHED",
                 dueDateLimitDays:3,
                 maxInstallmentCount:3,
-                billingType: 'CREDIT_CARD',
+                billingType: 'UNDEFINED',
                 discount: { value: desconto },
                 callback: { successUrl: urlCallback, autoRedirect: false },
                 //customer: id_api,
@@ -75,7 +75,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
             })
         };
 
-        const responseAPI = await fetch("https://api.asaas.com/api/v3/paymentLinks", options)
+        const responseAPI = await fetch(ASAAS_API_URL, options)
         if (!responseAPI.ok) {
             var responseJson = await responseAPI.json()
             console.log(responseJson)
