@@ -75,7 +75,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
             })
         };
 
-        const responseAPI = await fetch(ASAAS_API_URL, options)
+        const responseAPI = await fetch("https://sandbox.asaas.com/api/v3/paymentLinks", options)
         if (!responseAPI.ok) {
             var responseJson = await responseAPI.json()
             console.log(responseJson)
