@@ -41,7 +41,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
         //const horario_limite = new Date(new Date().getTime()+ 10 * 60 * 1000) // 2023-08-14T19:09:10-03:00
 
         const ASAAS_API_KEY = process.env.ASAAS_API_KEY //process.env.ASAAS_API_KEY
-        const ASAAS_API_URL = process.env.ASAAS_API_URL + "/payments"
+        const ASAAS_API_URL = process.env.ASAAS_API_URL + "/paymentLinks"
         const urlCallback = process.env.ASAAS_URL_CALLBACK
         const redirect_url = process.env.ASAAS_URL_REDIRECT
 
