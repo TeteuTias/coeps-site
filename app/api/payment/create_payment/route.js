@@ -64,7 +64,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 chargeType:"DETACHED",
                 dueDateLimitDays:3,
                 maxInstallmentCount:3,
-                billingType: 'UNDEFINED',
+                billingType: 'CREDIT_CARD',
                 discount: { value: desconto },
                 callback: { successUrl: urlCallback, autoRedirect: false },
                 //customer: id_api,
