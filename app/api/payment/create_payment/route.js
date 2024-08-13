@@ -70,6 +70,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 customer: id_api,
                 value: valor,
                 dueDate: data_vencimento,
+                installmentCount:5,
                 postalService: false,
                 description: descricao,
             })

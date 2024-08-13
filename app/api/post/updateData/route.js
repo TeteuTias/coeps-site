@@ -50,8 +50,9 @@ export const POST = withApiAuthRequired(async function POST(request) {
         //
         var id_api   = ""
         const response = await fetch(ASAAS_API_URL, options)
+        var responseJson = await response.json()
         if (!response.ok) {
-            throw ({"message":"!response.ok => Registro API Pagamentos"})
+            throw ({"message":responseJson})
         }
         var responseJson = await response.json()
         id_api = responseJson.id
