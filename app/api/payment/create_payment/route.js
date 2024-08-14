@@ -60,19 +60,17 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 access_token: ASAAS_API_KEY
             },
             body: JSON.stringify({
-                name:"Primeiro Lote COEPS",
-                chargeType:"DETACHED",
-                dueDateLimitDays:3,
-                maxInstallmentCount:3,
-                billingType: 'UNDEFINED',
-                discount: { value: desconto },
-                callback: { successUrl: urlCallback, autoRedirect: false },
                 customer: id_api,
+                name:"Primeiro Lote COEPS",
+                billingType: 'UNDEFINED',
                 value: valor,
                 dueDate: data_vencimento,
-                installmentCount:5,
-                postalService: false,
                 description: descricao,
+                dueDateLimitDays:3,
+                discount: { value: desconto },
+                callback: { successUrl: urlCallback, autoRedirect: false },
+
+                postalService: false,
             })
         };
 

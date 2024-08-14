@@ -84,8 +84,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
             */
     }
     catch (error) {
-        console.log(error)
-        return Response.json({ "erro": error }, { status: 500 })
+        return Response.json({ "erro": "Algo deu errado." }, { status: 500 })
     }
 
 
