@@ -46,7 +46,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
         const redirect_url = process.env.ASAAS_URL_REDIRECT
 
 
-        const valor = 135
+        const valor = 180
         const data_vencimento = new Date().toISOString().split("T")[0] // retorna o dia de hoje.
         const descricao = 'Primeiro lote para entrada no evento IV COEPS.'
         const desconto = 0
