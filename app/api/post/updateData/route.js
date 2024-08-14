@@ -39,21 +39,24 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 access_token: ASAAS_API_KEY
             },
             body: JSON.stringify({
-                'name': str(data.nome),
-                'email': str(user.email),
-                'cpfCnpj': str(data.cpf),
-                'mobilePhone': str(data.numero_telefone),
-                'observations': str(userId),
+                'name': data.nome,
+                'email': user.email,
+                'cpfCnpj': data.cpf,
+                'mobilePhone': data.numero_telefone,
+                'observations': userId,
                 'notificationDisabled': true,
             })
         }
         //
         var id_api = ""
-        const response = await fetch("https://asaas.com/api/v3/customers", options)
-        var responseJson = await response.json()
+        const response = await fetch(ASAAS_API_URL, options)
+        // console.log(responseJson)
         if (!response.ok) {
-            throw ({ "message": responseJson })
+            const errorText = await response.text()
+            console.log("! response: ",errorText)
+            throw ({ "message": error })
         }
+        var responseJson = await response.json()
         id_api = responseJson.id
         //
         //
@@ -81,6 +84,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
             */
     }
     catch (error) {
+        console.log(error)
         return Response.json({ "erro": error }, { status: 500 })
     }
 
