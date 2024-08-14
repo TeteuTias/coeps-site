@@ -71,19 +71,11 @@ function Footer() {
       <div className="flex flex-col justify-center items-center content-center">
         <h1 className="font-bold text-[#3e4095] text-[20px]">Realização</h1>
         <div className="flex flex-row space-x-5">
-          <div>
+          <div className='bg-black'>
             <Image
-              src="/LogoDADG.png"
-              width={150}
-              height={150}
-              alt="Picture of the author"
-            />
-          </div>
-          <div>
-            <Image
-              src="/LogoImepac.png"
-              width={150}
-              height={150}
+              src="/LogoImepacDADG.png"
+              width={300}
+              height={300}
               alt="Picture of the author"
             />
           </div>
