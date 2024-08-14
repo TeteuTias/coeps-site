@@ -125,10 +125,16 @@ function Header01() {
 // Premeiro DIV
 function Letreiro() {
   return (
-    <div className="flex flex-col space-y-8 justify-center items-center content-center p-10 min-h-[500px]">
+    <div className="flex flex-col space-y-10 justify-center items-center content-center p-10 min-h-[500px]">
       <Image
         src="/Letreiro01.png"
         width={647}
+        height={180}
+        alt="Picture of the author"
+      />
+      <Image
+        src="/Letreiro03.png"
+        width={400}
         height={180}
         alt="Picture of the author"
       />
