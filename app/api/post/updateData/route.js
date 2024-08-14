@@ -39,11 +39,11 @@ export const POST = withApiAuthRequired(async function POST(request) {
             access_token: ASAAS_API_KEY
             },
             body: JSON.stringify({
-                'name':data.nome,
-                'email':user.email,
-                'cpfCnpj':data.cpf,
-                'mobilePhone':data.numero_telefone,
-                'observations': userId,
+                'name':str(data.nome),
+                'email':str(user.email),
+                'cpfCnpj':str(data.cpf),
+                'mobilePhone':str(data.numero_telefone),
+                'observations': str(userId),
                 'notificationDisabled': true,
             })
         }
@@ -84,7 +84,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
             */
     }
     catch (error){
-        return Response.json({ "erro":error })
+        return Response.json({ "erro":error },{status:500})
     }   
 
 
