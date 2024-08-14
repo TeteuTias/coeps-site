@@ -58,14 +58,21 @@ export const POST = withApiAuthRequired(async function POST(request) {
         id_api = responseJson.id
         //
         //
-        //        
-        await db.collection('usuarios').findOneAndUpdate({"_id":b, "isPos_registration": 0}, {"$set":{
-            id_api,
-            'isPos_registration':1,
-            'informacoes_usuario.nome':data.nome,
-            'informacoes_usuario.cpf':data.cpf,
-            'informacoes_usuario.numero_telefone':data.numero_telefone,
-        }})
+        //
+        try {
+
+            await db.collection('usuarios').findOneAndUpdate({"_id":b, "isPos_registration": 0}, {"$set":{
+                id_api,
+                'isPos_registration':1,
+                'informacoes_usuario.nome':data.nome,
+                'informacoes_usuario.cpf':data.cpf,
+                'informacoes_usuario.numero_telefone':data.numero_telefone,
+            }})
+        }   
+        catch (error) {
+            console.log(error)
+            return Response.json({error:error})
+        }     
         
         return Response.json({ "sucesso":"Ocorreu Tudo Certo!" })
         /**
