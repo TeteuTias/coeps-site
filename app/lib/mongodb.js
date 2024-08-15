@@ -2,7 +2,7 @@ import { MongoClient } from 'mongodb';
 
 const uri = process.env.MONGODB_URI;
 const dbName = process.env.MONGODB_DB;
-
+const maxPoolSizeValue = process.env.maxPoolSizeValue
 if (!uri) {
   throw new Error('Please add your Mongo URI to .env.local');
 }
