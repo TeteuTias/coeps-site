@@ -25,7 +25,6 @@ export const POST = withApiAuthRequired(async function POST(request) {
             _id
         }
         const dbFindOne = await db.collection(collection).find(query, { projection: { "_id": 0, "id_api": 1 } }).toArray()
-
         if (dbFindOne.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
             //console.log("result.matchedCount === 0 - dbFindOne")
             return Response.json({ "erro": "result.matchedCount" }, { status: 404 })
@@ -35,6 +34,12 @@ export const POST = withApiAuthRequired(async function POST(request) {
             return Response.json({ "erro": "result.modifiedCount === 0" }, { status: 400 })
         }
         const id_api = dbFindOne[0].id_api
+        //
+        const colecao = "ingressos_config"
+        const resultPagamento = await db.collection(colecao).find(
+          {_id: new ObjectId("66bcfceedc9c7250e85b2ac6")},
+        ).toArray()
+
         //
         // Tentando Criar Pagamento Checkout.
         const PAGBANK_API_KEY = process.env.PAGBANK_API_KEY;
@@ -46,7 +51,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
         const redirect_url = process.env.ASAAS_URL_REDIRECT
 
 
-        const valor = 180
+        const valor = resultPagamento[0].valorAVista
         const data_vencimento = new Date().toISOString().split("T")[0] // retorna o dia de hoje.
         const descricao = 'Primeiro lote para entrada no evento IV COEPS.'
         const desconto = 0
