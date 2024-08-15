@@ -28,10 +28,10 @@ export async function POST(request, response) {
     }
 
 
-    return Response.json({ "message": '!witch' }, { status: 400 })
+    return Response.json({ "message": '!witch' }, { status: 200 })
   }
   catch (error) {
-    return Response.json({ "error": error }, { status: 500 })
+    return Response.json({ "error": error }, { status: 200 })
   }
 
 }
@@ -48,7 +48,7 @@ async function pagamentoRecebido(requestData) { // Chame se, somente se, o pagam
   const paymentType = await getPaymentByInvoiceNumber(invoiceNumber, db, collection, id_api)
   // console.log(paymentType)
   if (!paymentType) {
-    return { "message": '!paymentType' }, { status: 500 }
+    return { "message": '!paymentType' }, { status: 200 }
   }//ticket | activity
   if (paymentType == "ticket") {
     const filter = {
@@ -71,11 +71,11 @@ async function pagamentoRecebido(requestData) { // Chame se, somente se, o pagam
     var result = await db.collection(collection).updateOne(filter, update, options);
     if (result.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
       //console.log("result.matchedCount === 0")
-      return Response.json({ "erro": "result.matchedCount - pagamentoRecebido()" }, { status: 404 })
+      return Response.json({ "erro": "result.matchedCount - pagamentoRecebido()" }, { status: 200 })
     }
     else if (result.modifiedCount === 0) { // Nenhum documento foi modificado.
       //console.log("result.modifiedCount === 0")
-      return Response.json({ "erro": "result.modifiedCount === 0 - pagamentoRecebido()" }, { status: 400 })
+      return Response.json({ "erro": "result.modifiedCount === 0 - pagamentoRecebido()" }, { status: 200 })
     }
     return { "message": 'success' }, { status: 200 }
 
@@ -100,17 +100,17 @@ async function pagamentoRecebido(requestData) { // Chame se, somente se, o pagam
     var result = await db.collection(collection).updateOne(filter, update, options);
     if (result.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
       //console.log("result.matchedCount === 0")
-      return Response.json({ "erro": "result.matchedCount - pagamentoRecebido()" }, { status: 404 })
+      return Response.json({ "erro": "result.matchedCount - pagamentoRecebido()" }, { status: 200 })
     }
     else if (result.modifiedCount === 0) { // Nenhum documento foi modificado.
       //console.log("result.modifiedCount === 0")
-      return Response.json({ "erro": "result.modifiedCount === 0 - pagamentoRecebido()" }, { status: 400 })
+      return Response.json({ "erro": "result.modifiedCount === 0 - pagamentoRecebido()" }, { status: 200 })
     }
     return { "message": 'success' }, { status: 200 }
 
   }
   // Dando baixa no DB.
-  return { "message": '!paymentType configured' }, { status: 500 }
+  return { "message": '!paymentType configured' }, { status: 200 }
 
 }
 
@@ -126,7 +126,7 @@ async function pagamentoVencido(requestData) { // Chame se, somente se, o pagame
 
   const paymentType = await getPaymentByInvoiceNumber(invoiceNumber, db, collection, id_api)
   if (!paymentType) {
-    return { "message": '!paymentType' }, { status: 500 }
+    return { "message": '!paymentType' }, { status: 200 }
   }//ticket | activity
 
   if (paymentType == "ticket") {
@@ -152,11 +152,34 @@ async function pagamentoVencido(requestData) { // Chame se, somente se, o pagame
     const result = await db.collection(collection).updateOne(filter, update, options);
     if (result.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
       //console.log("result.matchedCount === 0")
-      return Response.json({ "erro": "result.matchedCount - pagamentoRecebido()" }, { status: 404 })
+      return Response.json({ "erro": "result.matchedCount - pagamentoRecebido()" }, { status: 200 })
     }
     else if (result.modifiedCount === 0) { // Nenhum documento foi modificado.
       //console.log("result.modifiedCount === 0")
-      return Response.json({ "erro": "result.modifiedCount === 0 - pagamentoRecebido()" }, { status: 400 })
+      return Response.json({ "erro": "result.modifiedCount === 0 - pagamentoRecebido()" }, { status: 200 })
+    }
+
+    try {
+
+      // Excluindo Cobrança
+      const ASAAS_API_KEY = process.env.ASAAS_API_KEY //process.env.ASAAS_API_KEY
+      const ASAAS_API_URL = process.env.ASAAS_API_URL + "/payments/" + requestData.payment.invoiceNumber
+      const optionsDELETE = {
+        method: 'DELETE',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+          access_token: ASAAS_API_KEY
+        },
+        body: JSON.stringify({})
+      };
+
+      const responseAPI = await fetch(ASAAS_API_URL, optionsDELETE)
+
+
+    }
+    catch (error) {
+
     }
 
     return { "message": 'success' }, { status: 200 }
@@ -184,21 +207,21 @@ async function pagamentoVencido(requestData) { // Chame se, somente se, o pagame
     const result = await db.collection(collection).updateOne(filter, update, options);
     if (result.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
       //console.log("result.matchedCount === 0")
-      return Response.json({ "erro": "result.matchedCount - pagamentoRecebido()" }, { status: 404 })
+      return Response.json({ "erro": "result.matchedCount - pagamentoRecebido()" }, { status: 200 })
     }
     else if (result.modifiedCount === 0) { // Nenhum documento foi modificado.
 
-      return Response.json({ "erro": "result.modifiedCount === 0 - pagamentoRecebido()" }, { status: 400 })
+      return Response.json({ "erro": "result.modifiedCount === 0 - pagamentoRecebido()" }, { status: 200 })
     }
     //
     //
     const userId = await getUserIdByInvoiceNumber(invoiceNumber, db, collection, id_api)
     if (!userId) {
-      return { "message": '!userId' }, { status: 500 }
+      return { "message": '!userId' }, { status: 200 }
     }
     const _eventID = await getEventIdByInvoiceNumber(invoiceNumber, db, collection, id_api)
     if (!_eventID) {
-      return { "message": '!_eventID' }, { status: 500 }
+      return { "message": '!_eventID' }, { status: 200 }
     }
     //
     //
@@ -213,8 +236,33 @@ async function pagamentoVencido(requestData) { // Chame se, somente se, o pagame
       }
     )
 
+    try {
+
+      // Excluindo Cobrança
+      const ASAAS_API_KEY = process.env.ASAAS_API_KEY //process.env.ASAAS_API_KEY
+      const ASAAS_API_URL = process.env.ASAAS_API_URL + "/payments/" + requestData.payment.invoiceNumber
+      console.log(ASAAS_API_URL)
+      const optionsDELETE = {
+        method: 'DELETE',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+          access_token: ASAAS_API_KEY
+        },
+        body: JSON.stringify({})
+      };
+
+      const responseAPI = await fetch(ASAAS_API_URL, optionsDELETE)
+      const a = await responseAPI.json()
+      console.log(a)
+    }
+    catch (error) {
+      console.log(error)
+    }
+
     return { "message": 'success' }, { status: 200 }
   }
+
 
 }
 // Apenas escreve na tela os states correspondentes ao estorno. Ele não é capaz de julgar se a pessoa inda vai ou nao ter acesso ao site.
@@ -246,11 +294,11 @@ async function pagamentoEstorno(requestData) { // Chame se, somente se, o pagame
   const result = await db.collection(collection).updateOne(filter, update, options);
   if (result.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
     //console.log("result.matchedCount === 0")
-    return Response.json({ "erro": "result.matchedCount - pagamentoRecebido()" }, { status: 404 })
+    return Response.json({ "erro": "result.matchedCount - pagamentoRecebido()" }, { status: 200 })
   }
   else if (result.modifiedCount === 0) { // Nenhum documento foi modificado.
     //console.log("result.modifiedCount === 0")
-    return Response.json({ "erro": "result.modifiedCount === 0 - pagamentoRecebido()" }, { status: 400 })
+    return Response.json({ "erro": "result.modifiedCount === 0 - pagamentoRecebido()" }, { status: 200 })
   }
 
   return { "message": 'success' }, { status: 200 }
