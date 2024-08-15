@@ -15,9 +15,12 @@ export const middleware = withMiddlewareAuthRequired(async (req) => {
   var check = await checkAndRefreshToken(req, res); // apesar do nome, ele não dá refresh.
   if (check) { return NextResponse.rewrite(check) }
 
+  
   // Verificando pagamento
-  check = await checkAll(req, res)
-  if (check) { return NextResponse.rewrite(check) }
+  if (!req.nextUrl.pathname.startsWith('/pagamentos')) {
+    check = await checkAll(req, res)
+    if (check) { return NextResponse.rewrite(check) }
+  }
 
   check = await checkRoutes(req, res)
   if (check) { return NextResponse.rewrite(check) }
@@ -35,6 +38,7 @@ export const config = {
   matcher: [
     '/painel/:path*',
     '/updateData/:path*',
+    '/pagamentos/:path*',
   ]
 }
 /*
