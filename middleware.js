@@ -15,16 +15,16 @@ export const middleware = withMiddlewareAuthRequired(async (req) => {
   var check = await checkAndRefreshToken(req, res); // apesar do nome, ele não dá refresh.
   if (check) { return NextResponse.rewrite(check) }
 
-  
+
   // Verificando pagamento
-  if (!req.nextUrl.pathname.startsWith('/pagamentos')) {
-    check = await checkAll(req, res)
-    if (check) { return NextResponse.rewrite(check) }
-  }
-
-  check = await checkRoutes(req, res)
+  check = await checkAll(req, res)
   if (check) { return NextResponse.rewrite(check) }
+  
+  if (!req.nextUrl.pathname.startsWith('/pagamentos')) {
+    check = await checkRoutes(req, res)
+    if (check) { return NextResponse.rewrite(check) }
 
+  }
   return res
   //return NextResponse.next();
 });
