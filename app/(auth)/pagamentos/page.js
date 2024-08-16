@@ -18,6 +18,9 @@ export default function Pagamentos() {
     const { user, isLoading } = useUser();
     const route = useRouter()
     const [isLoadingFetch, setIsLoadingFetch] = useState(0)
+    const [isLoadingPaymentData, setIsLoadingPaymentData] = useState(1)
+    const [dataPaymentConfig, setDataPaymentConfig] = useState(undefined)
+
     const [isModalError, setIsModalError] = useState(0) // Pode ser 0 ou alguma string, que sinaliza um erro.
     const [data, setData] = useState(undefined)
     const [isFetchingData, setIsFetchingData] = useState(1) // Já começa 01 porque para não renderizar o outro e depois voltar.
@@ -158,7 +161,40 @@ export default function Pagamentos() {
         }
     }, [isLoading, user]);
     //
-    if (isFetchingData) {
+    useEffect(() => {
+        const enviarRequisicaoGet = async () => {
+            try {
+                // Configuração da requisição GET usando fetch
+                const response = await fetch("/api/payment/paymentConfigs", {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                // Verifica se a requisição foi bem-sucedida
+                if (!response.ok) {
+                    console.log(response)
+                    throw new Error('Falha ao enviar a requisição GET');
+                }
+
+                // Converte a resposta para JSON
+                const responseData = await response.json();
+                console.log(responseData)
+                setDataPaymentConfig(responseData)
+
+            } catch (error) {
+                console.error('Erro ao enviar a requisição GET:', error);
+                // Tratar erros conforme necessário
+            }
+            finally {
+                setIsLoadingPaymentData(0)
+            }
+        };
+        enviarRequisicaoGet();
+    }, []);
+    //
+    if (isFetchingData || isLoadingPaymentData) {
         return <TelaLoading />
     }
     //
@@ -184,8 +220,55 @@ export default function Pagamentos() {
                     <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Meus Pagamentos</h1>
                 </div>
                 <div className="  w-full ">
-                    <div className="flex content-center items-center justify-center py-16  bg-white">
+
+                    <div className="flex flex-col content-center items-center justify-center bg-white">
+
+                        {
+                            dataPaymentConfig && (
+                                <div className='w-full flex justify-center bg-[#fcf9f7]'>
+                                    <div className=" p-4 space-y-6 w-full md:w-[60%]">
+
+                                        <div className=''>
+                                            <h1 className="text-[20px] lg:text-[20px] font-emoji text-black font-bold">{"🪙VALORES"}</h1>
+                                            < p className="text-red-700 font-semibold font-emoji">Abaixo você encontra informações sobre os valores correspondente ao Lote atual.</p>
+                                            <div className='flex justify-center pt-4 pb-4'>
+                                                <p className="text-white font-semibold font-emoji text-center bg-red-500 p-1 rounded-sm w-fit">{dataPaymentConfig.nome.toLocaleUpperCase()}</p>
+                                            </div>
+
+                                            <div>
+                                                <p className="text-black font-semibold font-emoji ">💳CRÉDITO À VISTA: R${dataPaymentConfig.valorAVista}</p>
+                                                <p className="text-black font-semibold font-emoji ">💴DÉBITO: R$ {dataPaymentConfig.valorAVista}</p>
+                                                <p className="text-black font-semibold font-emoji ">🌟PIX: R$ {dataPaymentConfig.valorAVista}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-red-700 font-semibold font-emoji text-start py-4">Opções de parcelamento</p>
+                                            </div>
+                                            <div>
+                                                {
+                                                    dataPaymentConfig?.parcelamentos?.map((value) => {
+                                                        return (
+                                                            <div className='flex flex-row' key={value.codigo}>
+                                                                <p className='text-black font-emoji'>◾ Parcelar em {value.totalParcelas} {value.totalParcelas == 1 ? "vez" : "vezes"} de R${value.valorCadaParcela}, totalizando R${value.totalParcelas * value.valorCadaParcela}.</p>
+                                                            </div>
+                                                        )
+                                                    })
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                            )
+                        }
+
                         <div className=" p-4 space-y-6 w-full md:w-[60%]">
+                            <div className="text-gray-800 font-bold">
+
+
+
+
+                            </div>
                             <div className="text-gray-800 font-bold">
                                 <h1 className="text-[20px] lg:text-[20px] font-emoji">{"ℹHISTÓRICO DE PAGAMENTOS"}</h1>
                                 <p className="text-red-700 font-semibold">{data.pagamento.lista_pagamentos?.length ? "- " + data.pagamento.lista_pagamentos?.length.toString().padStart(2, '0') + " pagamentos encontrados" : "Você ainda não realizou nenhum pagamento."}</p>
@@ -274,7 +357,7 @@ export default function Pagamentos() {
                                 </div>
                                 <div className="flex-1 flex-col ">
                                     <h1 className="font-bold px-2">Email</h1>
-                                    <h1>vcoeps.dadg@gmail.com</h1>
+                                    <h1>dadg.imepac@gmail.com</h1>
                                 </div>
                                 <div className="flex-1 flex-col ">
                                     <h1 className="font-bold px-2">Instagram</h1>
@@ -284,7 +367,7 @@ export default function Pagamentos() {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
         </>
     )
 }
