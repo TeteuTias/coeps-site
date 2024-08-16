@@ -141,9 +141,9 @@ export default function MinhaProgramacao() {
               }) : ""
           }
           {
-            !isFetching && (!data?.data || data?.data.length == 0) ?
+            !isFetching && (!data?.data || Object.keys(data.data).length == 0) ?
               <div>
-                <h1 className="break-words text-center font-bold text-white text-[22px] lg:text-[18px]">Ainda não há uma programação</h1>
+                <h1 className="break-words text-center font-bold text-white text-[22px] lg:text-[18px]">Você ainda não possui uma programação</h1>
               </div>
 
               : ""
