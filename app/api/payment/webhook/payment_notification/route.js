@@ -16,6 +16,9 @@ export async function POST(request, response) {
   try {
     const requestData = await request.json()
     switch (true) {
+      case requestData.event == "PAYMENT_RECEIVED" && (requestData.payment.billingType == "PIX" || requestData.payment.billingType == "RECEIVED_IN_CASH" || requestData.payment.billingType == "BOLETO"):
+        var msg = await pagamentoRecebido(requestData)
+        return Response.json(msg)
       case requestData.event == "PAYMENT_CONFIRMED":
         var msg = await pagamentoRecebido(requestData)
         return Response.json(msg)
