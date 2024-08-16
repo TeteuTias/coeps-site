@@ -63,10 +63,7 @@ async function deletarPagamento(requestData) { // Chame se, somente se, o pagame
       }
     }
   };
-  const options = {
-    arrayFilters: [{ "elem.invoiceNumber": invoiceNumber }]
-  };
-  var result = await db.collection(collection).updateOne(filter, update, options);
+  var result = await db.collection(collection).updateOne(filter, update);
   if (result.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
     //console.log("result.matchedCount === 0")
     return Response.json({ "erro": "result.matchedCount - deletarPagamento()" }, { status: 200 })
