@@ -16,6 +16,9 @@ export async function POST(request, response) {
   try {
     const requestData = await request.json()
     switch (true) {
+      case requestData.event == "PAYMENT_DELETED":
+        var msg = await deletarPagamento(requestData)
+        return Response.json(msg)
       case requestData.event == "PAYMENT_RECEIVED" && (requestData.payment.billingType == "PIX" || requestData.payment.billingType == "RECEIVED_IN_CASH" || requestData.payment.billingType == "BOLETO" || requestData.payment.billingType == "UNDEFINED"):
         var msg = await pagamentoRecebido(requestData)
         return Response.json(msg)
@@ -38,6 +41,49 @@ export async function POST(request, response) {
   }
 
 }
+// Confirma deleta um pagamento.
+async function deletarPagamento(requestData) { // Chame se, somente se, o pagamento estiver CONFIRMADO.
+
+
+  // Setando variáveis importantes
+  const id_api = requestData.payment.customer
+  const invoiceNumber = requestData.payment.invoiceNumber
+  const { db } = await connectToDatabase()
+  const collection = 'usuarios'
+
+
+  const filter = {
+    id_api,
+    "pagamento.lista_pagamentos.invoiceNumber": invoiceNumber
+  };
+  const update = {
+    $pull: {
+      "pagamento.lista_pagamentos": {
+        invoiceNumber: invoiceNumber
+      }
+    }
+  };
+  const options = {
+    arrayFilters: [{ "elem.invoiceNumber": invoiceNumber }]
+  };
+  var result = await db.collection(collection).updateOne(filter, update, options);
+  if (result.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
+    //console.log("result.matchedCount === 0")
+    return Response.json({ "erro": "result.matchedCount - deletarPagamento()" }, { status: 200 })
+  }
+  else if (result.modifiedCount === 0) { // Nenhum documento foi modificado.
+    //console.log("result.modifiedCount === 0")
+    return Response.json({ "erro": "result.modifiedCount === 0 - deletarPagamento()" }, { status: 200 })
+  }
+  return { "message": 'success' }, { status: 200 }
+
+
+
+  // Dando baixa no DB.
+  return { "message": '!paymentType configured' }, { status: 200 }
+
+}
+
 // Confirma o pgamento escrevendo ele no DB.
 async function pagamentoRecebido(requestData) { // Chame se, somente se, o pagamento estiver CONFIRMADO.
 
