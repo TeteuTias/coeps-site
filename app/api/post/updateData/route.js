@@ -52,9 +52,8 @@ export const POST = withApiAuthRequired(async function POST(request) {
         const response = await fetch(ASAAS_API_URL, options)
         // console.log(responseJson)
         if (!response.ok) {
-            const errorText = await response.text()
-            console.log("! response: ",errorText)
-            throw ({ "message": error })
+            const errorText = await response.json()
+            throw ({ "message": errorText.errors[0].description })
         }
         var responseJson = await response.json()
         id_api = responseJson.id
@@ -84,7 +83,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
             */
     }
     catch (error) {
-        return Response.json({ "erro": "Algo deu errado." }, { status: 500 })
+        return Response.json({ "message": error.message || "Ocorreu um erro desconhecido. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe COEPS." }, { status: 500 })
     }
 
 

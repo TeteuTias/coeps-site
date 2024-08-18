@@ -111,6 +111,10 @@ export default function UpdateData() {
                 })
 
             if (!response.ok) {
+                const responseJson = await response.json()
+                console.log(responseJson)
+                handleChangeAvisoErro(responseJson.message)
+                handleChangeSetIsLoadingForms(0)
                 throw new Error('Erro ao carregar os dados');
             }
             const data = await response.json();
