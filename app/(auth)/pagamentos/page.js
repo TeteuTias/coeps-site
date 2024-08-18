@@ -759,7 +759,8 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
                                 <h1>{data?.nome || "PAGAMENTOS"}</h1>
                             </div>
                             <Cards
-                                locale={{ valid: 'Validade' }}
+                                locale={{ valid: 'Validade', }}
+                                placeholders={{name:"SEU NOME AQUI"}}
                                 number={cardInfo.number}
                                 expiry={cardInfo.expiry}
                                 cvc={cardInfo.cvc}
@@ -813,7 +814,7 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
                                             </div>
                                             <div className='font-bold pb-8 text-[#3e4095]'>
                                                 <p>
-                                                    AAA Escolha uma das {data?.parcelamentos?.length} opções de parcelamento disponíveis:
+                                                    Escolha uma das {data?.parcelamentos?.length} opções de parcelamento disponíveis:
                                                 </p>
                                             </div>
                                         </div>
