@@ -180,7 +180,6 @@ export default function Pagamentos() {
 
                 // Converte a resposta para JSON
                 const responseData = await response.json();
-                console.log(responseData)
                 setDataPaymentConfig(responseData)
 
             } catch (error) {
@@ -224,6 +223,7 @@ export default function Pagamentos() {
                     <div className="flex flex-col content-center items-center justify-center bg-white">
 
                         {
+                            data.pagamento.situacao != 1 &&
                             dataPaymentConfig && (
                                 <div className='w-full flex justify-center bg-[#fcf9f7]'>
                                     <div className=" p-4 space-y-6 w-full md:w-[60%]">
@@ -236,9 +236,10 @@ export default function Pagamentos() {
                                             </div>
 
                                             <div>
-                                                <p className="text-black font-semibold font-emoji ">💳CRÉDITO À VISTA: R${dataPaymentConfig.valorAVista}</p>
-                                                <p className="text-black font-semibold font-emoji ">💴DÉBITO: R$ {dataPaymentConfig.valorAVista}</p>
-                                                <p className="text-black font-semibold font-emoji ">🌟PIX: R$ {dataPaymentConfig.valorAVista}</p>
+                                                <p className="text-black font-semibold font-emoji ">💳CRÉDITO À VISTA: R${dataPaymentConfig.valorAVista.toFixed(2)}</p>
+                                                <p className="text-black font-semibold font-emoji ">💴DÉBITO: R$ {dataPaymentConfig.valorAVista.toFixed(2)}</p>
+                                                <p className="text-black font-semibold font-emoji ">📑BOLETO: R$ {dataPaymentConfig.valorAVista.toFixed(2)}</p>
+                                                <p className="text-black font-semibold font-emoji ">🌟PIX: R$ {dataPaymentConfig.valorAVista.toFixed(2)}</p>
                                             </div>
                                             <div>
                                                 <p className="text-red-700 font-semibold font-emoji text-start py-4">Opções de parcelamento</p>
@@ -248,7 +249,7 @@ export default function Pagamentos() {
                                                     dataPaymentConfig?.parcelamentos?.map((value) => {
                                                         return (
                                                             <div className='flex flex-row' key={value.codigo}>
-                                                                <p className='text-black font-emoji'>◾ Parcelar em {value.totalParcelas} {value.totalParcelas == 1 ? "vez" : "vezes"} de R${value.valorCadaParcela}, totalizando R${value.totalParcelas * value.valorCadaParcela}.</p>
+                                                                <p className='text-black font-emoji'>◾ Parcelar em {value.totalParcelas} {value.totalParcelas == 1 ? "vez" : "vezes"} de R${value.valorCadaParcela.toFixed(2)}, totalizando R${(value.totalParcelas * value.valorCadaParcela).toFixed(2)}.</p>
                                                             </div>
                                                         )
                                                     })
@@ -353,7 +354,7 @@ export default function Pagamentos() {
                             <div className="flex flex-col lg:flex-row items-center content-center justify-center text-center space-x-2">
                                 <div className=" flex-1 flex-col  ">
                                     <h1 className="font-bold px-2">Telefone</h1>
-                                    <h1>(00) 0000-0000</h1>
+                                    <h1>(15) 98812-3011</h1>
                                 </div>
                                 <div className="flex-1 flex-col ">
                                     <h1 className="font-bold px-2">Email</h1>
@@ -383,7 +384,7 @@ const CardPagamentos = ({ valor_total = "ERROR", data_formatada = "ERROR", invoi
     
     */
     switch (true) { // "Traduz o que está escrito no status."
-        case status == "PAYMENT_CONFIRMED" || status == "CONFIRMED":
+        case status == "PAYMENT_CONFIRMED" || status == "CONFIRMED" || status == "PAYMENT_RECEIVED":
             status = "PAGO"
             break
         case status == "PAYMENT_OVERDUE":
@@ -505,7 +506,7 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
                 const data = await response.json();
                 setData(data)
                 setLoading(false)
-                console.log('Dados recebidos:', data);
+                // console.log('Dados recebidos:', data);
 
                 // Faça algo com os dados aqui
 
@@ -539,7 +540,11 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
             setCardInfo((prev) => ({ ...prev, [name]: formattedValue }));
         } else if (name === 'cvc' && value.length > 4) {
             return;
-        } else {
+        }
+        else if (name == 'number' && value.length > 19) {
+            return;
+        }
+        else {
             setCardInfo((prev) => ({ ...prev, [name]: value }));
         }
     };
@@ -652,7 +657,26 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
             <div className='fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50'>
                 <div className='relative bg-white p-6 rounded-lg shadow-lg w-full max-w-lg overflow-auto h-[90%]'>
                     <button
-                        onClick={onClose}
+                        onClick={() => {
+                            setPersonalInfo({
+                                name: '',
+                                email: '',
+                                cpfCnpj: '',
+                                postalCode: '',
+                                addressNumber: '',
+                                phone: '',
+                            })
+                            setCardInfo({
+                                number: '',
+                                expiry: '',
+                                cvc: '',
+                                name: '',
+                                focus: '',
+                            })
+                            setStep(1)
+
+                            onClose()
+                        }}
                         className='flex justify-center font-bold text-center rounded-full absolute top-2 right-2 w-7 h-7 text-white bg-red-500'
                     >
                         <span>x</span>
@@ -660,7 +684,7 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
                     {step === 2 && (
                         <button
                             onClick={() => setStep(1)}
-                            className='flex justify-center font-bold text-center absolute top-2 left-2 px-1 text-white bg-red-500'
+                            className='flex justify-center font-bold text-center absolute top-2 left-2 px-1 py-[0.5px] text-white bg-red-500 rounded-xl'
                         >
                             <span>VOLTAR</span>
                         </button>
@@ -689,7 +713,7 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
                                 />
                                 <input
                                     className='text-black mb-2 p-2 border rounded'
-                                    type="text"
+                                    type="tel"
                                     name="cpfCnpj"
                                     placeholder="CPF"
                                     value={personalInfo.cpfCnpj}
@@ -697,7 +721,7 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
                                 />
                                 <input
                                     className='text-black mb-2 p-2 border rounded'
-                                    type="text"
+                                    type="tel"
                                     name="postalCode"
                                     placeholder="CEP"
                                     value={personalInfo.postalCode}
@@ -705,9 +729,9 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
                                 />
                                 <input
                                     className='text-black mb-2 p-2 border rounded'
-                                    type="text"
+                                    type="tel"
                                     name="addressNumber"
-                                    placeholder="Número do Endereço"
+                                    placeholder="Número da Residência"
                                     value={personalInfo.addressNumber}
                                     onChange={handlePersonalInfoChange}
                                 />
@@ -732,9 +756,10 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
                     {step === 2 && (
                         <div className=''>
                             <div className='text-center font-bold text-[#3e4095] text-[20px] mb-5'>
-                                <h1 onClick={() => { console.log(data) }}>{data?.nome || "PAGAMENTOS"}</h1>
+                                <h1>{data?.nome || "PAGAMENTOS"}</h1>
                             </div>
                             <Cards
+                                locale={{ valid: 'Validade' }}
                                 number={cardInfo.number}
                                 expiry={cardInfo.expiry}
                                 cvc={cardInfo.cvc}
@@ -788,7 +813,7 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
                                             </div>
                                             <div className='font-bold pb-8 text-[#3e4095]'>
                                                 <p>
-                                                    Escolha uma das {data?.parcelamentos?.length} opções de parcelamento disponíveis:
+                                                    AAA Escolha uma das {data?.parcelamentos?.length} opções de parcelamento disponíveis:
                                                 </p>
                                             </div>
                                         </div>
@@ -800,7 +825,7 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
                                                         <div key={value.codigo} className={`p-5 cursor-pointer ${value.codigo == idPagamento ? 'bg-red-600' : "bg-yellow-100"}`} onClick={() => {
                                                             handleIdPagamento(value.codigo)
                                                             setTextoPagametoEscolhido(
-                                                                `Você escolheu realizar o pagamento em ${value.totalParcelas} parcelas de R$ ${value.valorCadaParcela}, totalizando R$${value.valorCadaParcela * value.totalParcelas}`
+                                                                `Você escolheu realizar o pagamento em ${value.totalParcelas} parcelas de R$ ${value.valorCadaParcela.toFixed(2)}, totalizando R$${(value.valorCadaParcela * value.totalParcelas).toFixed(2)}`
                                                             )
 
                                                         }}
@@ -811,7 +836,7 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
                                                                 </p>
                                                             </div>
                                                             <h1>
-                                                                Quero realizar o pagamento em <span className='font-bold'>{value.totalParcelas} parcelas de R${value.valorCadaParcela}</span>, totalizando <span className='font-bold'>R${value.valorCadaParcela * value.totalParcelas}</span>.
+                                                                Quero realizar o pagamento em <span className='font-bold'>{value.totalParcelas} parcelas de R${value.valorCadaParcela.toFixed(2)}</span>, totalizando <span className='font-bold'>R${(value.valorCadaParcela * value.totalParcelas).toFixed(2)}</span>.
                                                             </h1>
                                                         </div>
                                                     )
@@ -835,7 +860,7 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
 
             {/* Modal de Confirmação */}
             {isConfirmationOpen && (
-                <div className='fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50'>
+                <div className='fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-2'>
                     <div className='bg-white p-6 rounded-lg shadow-lg w-full max-w-lg'>
                         <h2 className='text-center font-bold text-[#3e4095] text-[20px] mb-5'>Confirmar Pagamento</h2>
                         <p className='text-black'>{textoPagamentoEscolhido}.</p>

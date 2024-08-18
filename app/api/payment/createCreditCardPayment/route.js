@@ -12,7 +12,7 @@ import { connectToDatabase } from '@/app/lib/mongodb';
 export const POST = withApiAuthRequired(async function POST(request) {
     try {
         const forwardedFor = request.headers.get('x-forwarded-for');
-    
+
         // Se houver mais de um IP na lista, pega o primeiro
         const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : request.socket.remoteAddress;
 
@@ -70,11 +70,11 @@ export const POST = withApiAuthRequired(async function POST(request) {
         const descricao = 'Primeiro lote para entrada no evento IV COEPS.'
         const desconto = 0
 
-        
+
         const configFromDb = configs.parcelamentos.find(parcela => parcela.codigo === requestData.idPagamento); // Essa é a config que veio direto do DB. Usamos ela para fazer o pagamento.
-        
+
         if (!configFromDb) {
-            return NextResponse.json({"message":"Ocorreu um erro interno. Por favor, recarregue a página e tente novamente. [!configFromDb]"},{status:500})
+            return NextResponse.json({ "message": "Ocorreu um erro interno. Por favor, recarregue a página e tente novamente. [!configFromDb]" }, { status: 500 })
         }
 
         /*
@@ -102,9 +102,10 @@ export const POST = withApiAuthRequired(async function POST(request) {
             },
             "remoteIp": ip
         })
-        // return Response.json({"message":"sdfasdasf"},{status:500})
         */
-        
+        // return Response.json({"message":"sdfasdasf"},{status:500})
+
+
         const options = {
             method: 'POST',
             headers: {
@@ -121,8 +122,8 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 "creditCard": {
                     "holderName": requestData.cardInfo.name,
                     "number": requestData.cardInfo.number,
-                    "expiryMonth": requestData.cardInfo.expiry.replace("/")[0],
-                    "expiryYear": 20+requestData.cardInfo.expiry.replace("/")[1],
+                    "expiryMonth": requestData.cardInfo.expiry.split("/")[0],
+                    "expiryYear": 20 + requestData.cardInfo.expiry.split("/")[1],
                     "ccv": requestData.cardInfo.cvc
                 },
                 "creditCardHolderInfo": {
@@ -137,11 +138,11 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 "remoteIp": ip
             })
         };
-        
+
         const responseAPI = await fetch(ASAAS_API_URL, options)
         if (!responseAPI.ok) {
             var responseJson = await responseAPI.json()
-            return Response.json({ "message": responseJson['errors'][0]['description'], "code":responseJson['errors'][0]['code'] },{status:500})
+            return Response.json({ "message": responseJson['errors'][0]['description'], "code": responseJson['errors'][0]['code'] }, { status: 500 })
         }
         var responseJson = await responseAPI.json()
         // 
@@ -152,7 +153,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 _id
             },
             {
-                "$push": { 'pagamento.lista_pagamentos': {...responseJson,"description":configs.nome, _webhook: [], _type: "ticket", _userId: userId } },
+                "$push": { 'pagamento.lista_pagamentos': { ...responseJson, "description": configs.nome, _webhook: [], _type: "ticket", _userId: userId } },
                 "$set": { 'pagamento.situacao': 2 }
             }
         )
@@ -169,7 +170,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
         return Response.json({ "message": "Seu pagamento foi realizado com sucesso! Dentro de 03 dias úteis ele será confirmado e você tera acesso total ao site! Clique em recarregar para prosseguir." }, { status: 200 })
     }
     catch (error) {
-        
+
         return Response.json({ "erro": error }, { status: 403 })
     }
 })
