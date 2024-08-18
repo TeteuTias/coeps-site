@@ -77,7 +77,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
             return NextResponse.json({ "message": "Ocorreu um erro interno. Por favor, recarregue a página e tente novamente. [!configFromDb]" }, { status: 500 })
         }
 
-        
+        /*
         console.log({
             "customer": id_api,
             "billingType": "CREDIT_CARD",
@@ -102,7 +102,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
             },
             "remoteIp": ip
         })
-        
+        */
         // return Response.json({"message":"sdfasdasf"},{status:500})
 
 
