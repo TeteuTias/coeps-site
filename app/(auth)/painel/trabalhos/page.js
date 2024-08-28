@@ -191,6 +191,15 @@ export default function Home() {
         }
     };
     //
+    return (
+        <>
+            <div className='bg-[#3E4095] h-screen w-screen flex items-center justify-center flex-col'>
+                <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Página em Manutenção</h1>
+                <p className="break-words text-center font-extrabold text-white text-[22px] lg:text-[15px]">Voltamos já!</p>
+
+            </div>
+        </>
+    )
     //
     return (
         <>
@@ -304,15 +313,15 @@ export default function Home() {
                                     )
                                     : ""
                             }
-                        <div className="pt-2">
-                            {
-                                !isLoading ?
-                                    <p className="text-[#54595f] text-justify">
-                                        Aqui você pode visualizar todos os seus trabalhos já enviados e também tem a opção de enviar novos trabalhos. Se precisar remover algum trabalho que já foi enviado, basta clicar no botão <span className='font-bold'>x</span> vermelho à esquerda de cada item.<span className="text-gray-800 font-bold"> Em caso de dúvidas, sinta-se à vontade para entrar em contato com a equipe COEPS</span>. Estamos aqui para ajudar!
-                                    </p>
-                                    : ""
-                            }
-                        </div>
+                            <div className="pt-2">
+                                {
+                                    !isLoading ?
+                                        <p className="text-[#54595f] text-justify">
+                                            Aqui você pode visualizar todos os seus trabalhos já enviados e também tem a opção de enviar novos trabalhos. Se precisar remover algum trabalho que já foi enviado, basta clicar no botão <span className='font-bold'>x</span> vermelho à esquerda de cada item.<span className="text-gray-800 font-bold"> Em caso de dúvidas, sinta-se à vontade para entrar em contato com a equipe COEPS</span>. Estamos aqui para ajudar!
+                                        </p>
+                                        : ""
+                                }
+                            </div>
                             {
                                 !isLoading && dataEnvios?.length == 0 ?
                                     <div className='text-start'>
