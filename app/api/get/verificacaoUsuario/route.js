@@ -34,7 +34,7 @@ export const GET = withApiAuthRequired(async function GET(request, response) {
             {
                 "_id": new ObjectId(userId)
             },
-            { projection: { 'pagamento.situacao': 1, 'isPos_registration': 1, '_id': 0 } }
+            { projection: { 'pagamento.situacao_animacao':1,'pagamento.situacao': 1, 'isPos_registration': 1, '_id': 0 } }
         ).toArray()
 
         return NextResponse.json({

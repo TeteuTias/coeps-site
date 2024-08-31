@@ -16,6 +16,7 @@
     "next": "14.2.4",
     "pagarme": "^4.35.2",
     "react": "^18",
+    "react-canvas-confetti": "^2.0.7",
     "react-credit-cards-2": "^1.0.2",
     "react-dom": "^18"
   },

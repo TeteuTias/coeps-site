@@ -54,6 +54,14 @@ export async function checkAll(req, res) {
             return urlPagamentos
             //return NextResponse.rewrite(urlPagamentos);
         }
+        if (responseJson.pagamento.situacao_animacao == 0 && responseJson.pagamento.situacao == 1) {
+            const urlPagamentos = new URL("/suaInscricaoFoiConfirmada", req.url)
+            return urlPagamentos
+        }
+        if (req.nextUrl.pathname.startsWith('/suaInscricaoFoiConfirmada') && responseJson.pagamento.situacao_animacao == 1 ) {
+            const urlPagamentos = new URL("/painel", req.url)
+            return urlPagamentos
+        }
         return undefined
 
 

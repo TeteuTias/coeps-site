@@ -36,6 +36,7 @@ export const middleware = withMiddlewareAuthRequired(async (req) => {
 //
 export const config = {
   matcher: [
+    '/suaInscricaoFoiConfirmada/:path*',
     '/painel/:path*',
     '/updateData/:path*',
     '/pagamentos/:path*',
