@@ -9,6 +9,9 @@ import WarningModal from '@/app/components/WarningModal';
 export default function Home() {
     const [file, setFile] = useState(null);
     const [message, setMessage] = useState('Você ainda pode enviar xx trabalhos');
+
+    const [messageBlock, setMessageBlock] = useState("")
+
     const [data, setData] = useState(
         {
             "data_inicio_submissao": undefined,
@@ -21,15 +24,58 @@ export default function Home() {
     const [dataEnvios, setDataEnvios] = useState([])
     const [isModal, setIsModal] = useState(0)
     const [isLoading, setIsLoading] = useState(1)
-    const [isBlock, setIsBlock] = useState(1)
+    const [isBlock, setIsBlock] = useState(0)
     const [isModalError, setIsModalError] = useState(null)
     //
     const [isLoadingDeleteOrSend, setIsLoadingDeleteOrSend] = useState(0)
+
+
+    const baixarArquivo = async (fileId) => {
+        setIsLoadingDeleteOrSend(1)
+        try {
+            const response = await fetch(`/api/get/baixarTrabalhoUsuario/${fileId}`, {
+                method: 'GET',
+            });
+
+            if (!response.ok) {
+                throw new Error('Erro ao fazer o download do arquivo');
+            }
+
+            // Extrair o nome do arquivo do cabeçalho
+            const contentDisposition = response.headers.get('Content-Disposition');
+            const filename = contentDisposition
+                ? contentDisposition.split('filename=')[1]
+                : 'downloaded_file';
+
+            // Criar um blob a partir do stream de resposta
+            const blob = await response.blob();
+
+            // Criar um link temporário para download
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename.replace(/"/g, ''); // Remover aspas do nome do arquivo, se houver
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url); // Limpar o URL temporário
+        } catch (error) {
+            setIsModalError(error.message || "Ocorreu algum erro ao tentar baixar seu arquivo. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe COEPS.")
+            console.error('Erro ao baixar o arquivo:', error);
+        }
+        finally {
+            setIsModalError("Seu download foi realizado com sucesso!")
+            setIsLoadingDeleteOrSend(0)
+        }
+    };
+
+
     const removeItem = (idToRemove) => {
         // Verificando se vai liberar ou nao
         if (dataEnvios.length == data.trabalhos_por_usuario || dataEnvios.length - 1 >= data.trabalhos_por_usuario) { // Bloqueando se preciso
             if (!isBlock) {
-                setIsBlock(1)
+                //setIsBlock(1)
+                //setMessageBlock("Você já atingiu seu limite máximo de envios. Em caso de dúvidas, entre em contato com a equipe COEPS.")
             }
         }
         if (dataEnvios.length < data.trabalhos_por_usuario || dataEnvios.length - 1 < data.trabalhos_por_usuario) { // Bloqueando se preciso
@@ -91,12 +137,13 @@ export default function Home() {
             // Verificando se o fetch foi OK
             const result = await res.json();
             if (!res.ok) {
+                /*
                 if (res.status == 500) {
                     setIsModalError('ERROR 500. Caso o erro persiste, comunique os organizadores.')
                     return 0
                 }
-                console.log(result)
-                setIsModalError(result.error)
+                */
+                setIsModalError(result.message || "Ocorreu algum erro desconhecido. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe COEPS.")
                 console.log("!res.ok")
                 return 0
             }
@@ -105,14 +152,16 @@ export default function Home() {
             // Depois de dar tudo certo, ele faz algumas coisas..
             if (dataEnvios.length == data.trabalhos_por_usuario || dataEnvios.length + 1 >= data.trabalhos_por_usuario) { // Bloqueando se preciso
                 if (!isBlock) {
-                    setIsBlock(1)
+                    //setIsBlock(1)
+                    // setMessageBlock("Você já atingiu seu limite máximo de envios. Em caso de dúvidas, entre em contato com a equipe COEPS.")
                 }
             }
 
             // Em fim, fazendo o que ele iria fazer idependente das condições.
             handleDataEnvios(result.data)
             setFile(null)
-            setMessage("Trabalho submetido com sucesso!");
+            setIsModalError("Arquivo enviado com sucesso!")
+            setMessage("Arquivo enviado com sucesso!");
             setIsLoadingDeleteOrSend(0)
         }
         catch (error) {
@@ -136,6 +185,36 @@ export default function Home() {
             if (response2.data.length < response1.trabalhos_por_usuario) {
                 setIsBlock(0)
             }
+
+
+            // ----
+
+            const dataAtual = new Date();
+
+            // Definir as datas de início e fim da submissão em UTC
+            const dataInicioSubmissaoUTC = new Date(response1.data_inicio_submissao);
+            const dataLimiteSubmissaoUTC = new Date(response1.data_limite_submissao);
+
+            // Definir o offset para o fuso horário -03:00 (em horas)
+            const fusoOffset = -3; // Offset em horas
+
+            // Ajustar a data atual para o fuso horário -03:00
+            const offsetAtual = dataAtual.getTimezoneOffset() / 60; // Offset do sistema em horas
+            const dataAtualAjustada = new Date(dataAtual.getTime() + (offsetAtual - fusoOffset) * 3600000);
+
+            // Ajustar as datas de início e fim da submissão para o fuso horário -03:00
+            const dataInicioSubmissaoAjustada = new Date(dataInicioSubmissaoUTC.getTime() + fusoOffset * 3600000);
+            const dataLimiteSubmissaoAjustada = new Date(dataLimiteSubmissaoUTC.getTime() + fusoOffset * 3600000);
+
+            // Verificar se a data atual está dentro do intervalo ajustado
+            if (dataAtualAjustada >= dataInicioSubmissaoAjustada && dataAtualAjustada <= dataLimiteSubmissaoAjustada) {
+                // Não faz nada :|
+            } else {
+                setIsBlock(1)
+                setMessageBlock("Infelizmente, o prazo para a submissão de trabalhos se encerrou. Caso tenha alguma dúvida ou precise de assistência, fique à vontade para entrar em contato com a equipe COEPS. Estamos aqui para ajudar!")
+            }
+
+            // ----
 
             // Setando o que eu iria setar de qualquer forma 
             handleData(response1)
@@ -164,10 +243,10 @@ export default function Home() {
             const data = await response.json();
             // Verificando se tudo certo
             if (!response.ok) {
-                console.log(data.erro.message)
-                setIsModalError(data.erro.message)
+                setIsModalError(data.message)
                 return 0 // depois vou configurar o erro
             }
+            setIsModalError(data.message)
             // Verificando se a pessoa pode ou não enviar mais documentos
             if (dataEnvios - 1 < data.trabalhos_por_usuario) { // Como já foi removido, coloco -1
                 // Se cair aqui, ele é desbloqueado
@@ -178,7 +257,8 @@ export default function Home() {
             if (dataEnvios - 1 >= data.trabalhos_por_usuario) { // Como já foi removido, coloco -1
                 // Se cair aqui, ele é desbloqueado
                 if (!isBlock) { // Bloqueio se tiver bloqueao
-                    setIsBlock(1)
+                    setMessageBlock("Você já atingiu seu limite máximo de envios. Em caso de dúvidas, entre em contato com a equipe COEPS.")
+                    //setIsBlock(1)
                 }
             }
             // Removendo da lista de DataEnvios
@@ -190,7 +270,7 @@ export default function Home() {
             setIsLoadingDeleteOrSend(0)
         }
     };
-    //
+    /*
     return (
         <>
             <div className='bg-[#3E4095] h-screen w-screen flex items-center justify-center flex-col'>
@@ -200,7 +280,7 @@ export default function Home() {
             </div>
         </>
     )
-    //
+    */
     return (
         <>
             <WarningModal closeModal={() => { setIsModalError(null) }} message={isModalError} isModal={isModalError} />
@@ -220,13 +300,19 @@ export default function Home() {
                                     <CardDatas isLoading={isLoading} data={new Date(data.data_publicacao_resultados).toLocaleDateString().slice(0, 5)} texto="Publicação de Resultados" />
                                 </>
 
-                            ) :
+                            ) : !isLoading && isBlock ?
                                 <div className="flex flex-col space-y-10 justify-center content-center items-center">
                                     <h1 className="text-[#54595f]">
-                                        Ainda não definimos a data para a abertura das submissões de trabalhos. No entanto, não se preocupe! Acompanhe nosso site
-                                        e nossas redes sociais para receber as atualizações mais recentes e ficar por dentro das próximas datas.
+                                        {messageBlock}
                                     </h1>
                                 </div>
+                                :
+                                <>
+                                    <CardDatas isLoading={isLoading} data={new Date(data.data_limite_submissao).toLocaleDateString().slice(0, 5)} texto="Limite de Submissão" />
+                                    <CardDatas isLoading={isLoading} data={formatNumber(data.trabalhos_por_usuario)} texto="Trabalhos por autor" />
+                                    <CardDatas isLoading={isLoading} data={formatNumber(data.autores_por_trabalho)} texto="Autores por trabalho" />
+                                    <CardDatas isLoading={isLoading} data={new Date(data.data_publicacao_resultados).toLocaleDateString().slice(0, 5)} texto="Publicação de Resultados" />
+                                </>
                         }
                     </div>
                     <div className=" w-[90%]">
@@ -292,6 +378,27 @@ export default function Home() {
                                     </div>
                                     : ""
                             }
+
+                            <div className="pt-2">
+                                {
+                                    !isLoading ?
+                                        <p className="text-[#54595f] text-justify">
+                                            Aqui você pode visualizar todos os seus arquivos já enviados e também tem a opção de enviar novos arquivos. Se precisar remover
+                                            algum arquivo que já foi enviado, basta clicar no botão <span className='font-bold'>x</span> vermelho à esquerda de cada item.
+                                            <span className='bg-yellow-300 px-1'>É possível <span className='font-bold text-gray-800'>baixar</span> seu arquivo enviado clicando sobre ele.</span>
+                                            <span className="text-gray-800 font-bold"> Em caso de dúvidas,
+                                                sinta-se à vontade para entrar em contato com a equipe COEPS</span>. Estamos aqui para ajudar!
+                                        </p>
+                                        : ""
+                                }
+                            </div>
+                            {
+                                !isLoading && dataEnvios?.length == 0 ?
+                                    <div className='text-start'>
+                                        <h1 className="text-[#3E4095] hover:text-[#505191]">Você ainda não realizou nenhum envio</h1>
+                                    </div>
+                                    : ""
+                            }
                             {
                                 !isLoading && dataEnvios?.length > 0 ?
                                     (
@@ -305,28 +412,14 @@ export default function Home() {
 
                                                     }} className='flex font-semibold bg-red-600 hover:bg-red-500 items-center justify-center  text-white rounded-full w-5 h-5 text-xs' disabled={isLoadingDeleteOrSend}>X</button>
 
-                                                    <h1 className="text-[#3E4095] hover:text-[#505191]">{value?.name}</h1>
+                                                    <h1 className=" cursor-pointer text-[#3E4095] hover:text-[#505191]"
+                                                        onClick={() => { baixarArquivo(value._id) }}
+                                                    >{value?.name}</h1>
 
                                                 </div>
                                             )
                                         })
                                     )
-                                    : ""
-                            }
-                            <div className="pt-2">
-                                {
-                                    !isLoading ?
-                                        <p className="text-[#54595f] text-justify">
-                                            Aqui você pode visualizar todos os seus trabalhos já enviados e também tem a opção de enviar novos trabalhos. Se precisar remover algum trabalho que já foi enviado, basta clicar no botão <span className='font-bold'>x</span> vermelho à esquerda de cada item.<span className="text-gray-800 font-bold"> Em caso de dúvidas, sinta-se à vontade para entrar em contato com a equipe COEPS</span>. Estamos aqui para ajudar!
-                                        </p>
-                                        : ""
-                                }
-                            </div>
-                            {
-                                !isLoading && dataEnvios?.length == 0 ?
-                                    <div className='text-start'>
-                                        <h1 className="text-[#3E4095] hover:text-[#505191]">Você ainda não realizou nenhum envio</h1>
-                                    </div>
                                     : ""
                             }
                         </div>
@@ -336,11 +429,13 @@ export default function Home() {
                                     <div className=''>
                                         <p className="text-[#3E4095] hover:text-[#505191]">
                                             {
-                                                !isLoading && !isBlock && data?.trabalhos_por_usuario && !file ? `Você ainda pode enviar ${(data.trabalhos_por_usuario - dataEnvios.length).toString().padStart(2, '0')} trabalho(s)`
+                                                !isLoading && !isBlock && data?.trabalhos_por_usuario && !file ? "Você ainda não selecionou um Arquivo." : ""
+                                            }                                            {/*
+                                                !isLoading && !isBlock && data?.trabalhos_por_usuario && !file ? `Você ainda pode enviar ${(data.trabalhos_por_usuario - dataEnvios.length).toString().padStart(2, '0')} arquivo(s)`
                                                     : ""
-                                            }
+                                            */}
                                             {
-                                                !isLoading && !isBlock && data?.trabalhos_por_usuario && file ? <span>Você selecionou o arquivo <span className='font-bold'>{file?.name}</span>.</span> : ""
+                                                !isLoading && !isBlock && data?.trabalhos_por_usuario && file ? <span>Você selecionou o Arquivo: <span className='font-bold'>{file?.name}</span>.</span> : ""
                                             }
                                             {
                                                 isLoading ? <span>CARREGANDO</span> : ""
@@ -352,23 +447,22 @@ export default function Home() {
 
                                         </p>
                                     </div>
-                                    <div className='flex flex-col sm:flex-row items-start sm:items-center space-x-5 '>
-                                        <div className='bg-yellow-200'>
-                                            {
-                                                isLoading ?
-                                                    <button className="bg-[#3E4095] text-white p-2 px-4">CARREGANDO</button>
-                                                    : ""
+                                    <div className='flex flex-col sm:flex-row items-start sm:items-center '>
 
-                                            }
-                                            {
-                                                !isLoading && data ?
-                                                    <Link href={data.link_edital} target='_blank' prefetch={false}>
-                                                        <button className="bg-[#3E4095] text-white p-2 px-4">VER EDITAL</button>
-                                                    </Link>
-                                                    : ""
-                                            }
+                                        {
+                                            isLoading ?
+                                                <button className="bg-[#3E4095] text-white p-2 px-4">CARREGANDO</button>
+                                                : ""
 
-                                        </div>
+                                        }
+                                        {
+                                            !isLoading && data ?
+                                                <Link href={data.link_edital} target='_blank' prefetch={false}>
+                                                    <button className="bg-[#3E4095] text-white p-2 px-4">VER EDITAL</button>
+                                                </Link>
+                                                : ""
+                                        }
+
                                         {
                                             !isBlock ?
                                                 <div className=''>
@@ -376,16 +470,16 @@ export default function Home() {
                                                         <input
                                                             type="file"
                                                             id="file-upload"
-                                                            accept="application/pdf"
+                                                            accept="application/pdf, .doc, .docx, .pptx"
                                                             onChange={(e) => {
                                                                 setFile(e.target.files[0])
                                                                 handleMessage(`Arquivo "${e?.target?.files[0]?.name}" selecionado.`)
                                                             }}
                                                             className='hidden'
                                                         />
-                                                        <label htmlFor='file-upload' className="bg-[#3E4095] text-white p-[9.5px] px-4 cursor-pointer" disabled={isLoadingDeleteOrSend}>{!file ? 'SELECIONAR TRABALHO' : 'TROCAR ARQUIVO'}</label>
+                                                        <label htmlFor='file-upload' className="bg-[#3E4095] text-white p-[9.5px] px-4 cursor-pointer" disabled={isLoadingDeleteOrSend}>{!file ? 'SELECIONAR ARQUIVO' : 'TROCAR ARQUIVO'}</label>
                                                         {file ?
-                                                            <button className="text-white font-extrabold bg-red-500 " onClick={() => handleIsModal(1)} disabled={isLoadingDeleteOrSend}>ENVIAR TRABALHO</button> : ""
+                                                            <button className="text-white font-extrabold bg-red-500 " onClick={() => handleIsModal(1)} disabled={isLoadingDeleteOrSend}>ENVIAR ARQUIVO</button> : ""
                                                         }
                                                     </form>
 

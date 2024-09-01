@@ -1,4 +1,6 @@
 // pages/api/upload.js
+import { GridFSBucket } from 'mongodb';
+
 import { connectToDatabase } from '@/app/lib/mongodb';
 import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0';
 //
@@ -35,7 +37,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
     } catch (err) {
         // console.error(err);
-        return Response.json({ error: err.message }, { status: err.status || 500 });
+        return Response.json({ message: err.message }, { status: err.status || 500 });
     }
 });
 // Função que verifica se a data atual ainda permite que o usuário submeta o trabalho dele.
@@ -85,8 +87,40 @@ const validateFile = (files) => {
     return file;
 };
 
-// Função para processar e inserir o arquivo no banco de dados
 const insertFileIntoDatabase = async (file, userId) => {
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = new Uint8Array(arrayBuffer);
+
+    const { db } = await connectToDatabase();
+
+    // Criando um bucket do GridFS
+    const bucket = new GridFSBucket(db, { bucketName: 'trabalhos' });
+
+    // Criando um stream de upload
+    const uploadStream = bucket.openUploadStream(file.name, {
+        metadata: {
+            user_id: userId,
+            size: file.size,
+        }
+    });
+
+    // Escrevendo o buffer no GridFS
+    uploadStream.end(buffer);
+
+    return new Promise((resolve, reject) => {
+        uploadStream.on('finish', () => {
+            resolve(uploadStream.id);
+        });
+
+        uploadStream.on('error', (err) => {
+            reject(err);
+        });
+    });
+};
+
+
+// Função para processar e inserir o arquivo no banco de dados
+const insertFileIntoDatabaseAntigo = async (file, userId) => {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = new Uint8Array(arrayBuffer);
 

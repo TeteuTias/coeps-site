@@ -1,6 +1,6 @@
 import { connectToDatabase } from '../../../lib/mongodb'
 import { NextResponse } from 'next/server';
-import { getAccessToken,withApiAuthRequired } from '@auth0/nextjs-auth0';
+import { getAccessToken, withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { ObjectId } from 'mongodb';
 import { getSession } from '@auth0/nextjs-auth0';
 //
@@ -19,22 +19,28 @@ export const GET = withApiAuthRequired(async function GET(request, response) {
         //
         // Já vem apenas com o replace.
         const { db } = await connectToDatabase();
-        const colecao = 'trabalhos'
+        const colecao = 'trabalhos.files'
 
         const response = await db.collection(colecao).find(
             {
-                "user_id": userId
+                "metadata.user_id": userId
             },
-            { projection: { 'buffer': 0, 'user_id': 0, 'size': 0 } }
-        ).toArray()
+            { projection: { "filename": 1, "_id": 1 } }
+        ).toArray() // 'buffer': 0, 'user_id': 0, 'size': 0
+
+        // Gambiarra para manter formado
+        const resposta = response.map(value => ({
+            "_id": value['_id'],
+            "name": value['filename']
+        }))
 
         return NextResponse.json({
-            "data": response
+            "data": resposta
         }, { status: 200 });
 
     }
     catch (error) {
-        return NextResponse.json({ "error": error }, { status: 500 })
+        return NextResponse.json({ "message": error }, { status: 500 })
     }
 })
 /*
