@@ -107,7 +107,8 @@ async function pagamentoRecebido(requestData) { // Chame se, somente se, o pagam
       },
       $set: {
         "pagamento.lista_pagamentos.$[elem].status": requestData.event,
-        "pagamento.situacao": 1
+        "pagamento.situacao": 1,
+        "pagamento.tipo_pagamento":"asaas"
       },
 
     };

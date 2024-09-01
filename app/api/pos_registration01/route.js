@@ -38,6 +38,7 @@ export async function POST(request) {
             },
             "pagamento":{
                 "situacao":0,// O zero sinaliza que ainda não há pagamento aprovado.
+                "tipo_pagamento":"",
                 "situacao_animacao":0,
                 "lista_pagamentos":[],
             }
