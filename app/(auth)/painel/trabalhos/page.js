@@ -161,11 +161,13 @@ export default function Home() {
             handleDataEnvios(result.data)
             setFile(null)
             setIsModalError("Arquivo enviado com sucesso!")
-            setMessage("Arquivo enviado com sucesso!");
+            // setMessage("Arquivo enviado com sucesso!");
             setIsLoadingDeleteOrSend(0)
         }
         catch (error) {
             console.log(error)
+            setMessage(error.message || "Ocorreu algum erro. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe COEPS.");
+
         }
         finally {
             setFile(null)

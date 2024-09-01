@@ -36,6 +36,7 @@ export const GET = withApiAuthRequired(async function GET(request, { params }) {
     return new Response(downloadStream, { headers, status: 200 });
 
   } catch (error) {
-    return Response.json({ message: error.message || "Ocorreu um erro desconhecido. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe COEPS." }, { status: error.status || 500 });
+    console.log(error.message)
+    return Response.json({ message: error.message || "Ocorreu um erro desconhecido. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe COEPS." }, { status: 500 });
   }
 });
