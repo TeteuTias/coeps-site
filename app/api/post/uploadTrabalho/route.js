@@ -36,8 +36,8 @@ export const POST = withApiAuthRequired(async function POST(request) {
         }, { status: 200 });
 
     } catch (err) {
-        // console.error(err);
-        return Response.json({ message: err.message }, { status: err.status || 500 });
+        console.error(err);
+        return Response.json({ message: err.message || "Ocorreu um erro desconhecido. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe COEPS."}, { status: err.status || 500 });
     }
 });
 // Função que verifica se a data atual ainda permite que o usuário submeta o trabalho dele.
