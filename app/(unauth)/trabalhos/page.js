@@ -54,7 +54,7 @@ export default function Trabalhos() {
                             <div className="flex flex-col space-y-10 w-[90%] lg:space-y-0 lg:space-x-10 lg:flex-row justify-center content-center items-center">
                                 <CardDatas data={config?.data_limite_submissao ? new Date(config.data_limite_submissao).toLocaleDateString().slice(0, 5) : ""} texto="Limite de Submissão" />
                                 <CardDatas data={config?.trabalhos_por_usuario ? String(config?.trabalhos_por_usuario).padStart(2, '0') : ""} texto="Trabalhos por autor" />
-                                <CardDatas data={config?.autores_por_trabalho ? String(config?.autores_por_trabalho).padStart(2, '0') : ""} texto="Autores por Trabalho" />
+                                
                                 <CardDatas data={config?.data_publicacao_resultados ? new Date(config?.data_publicacao_resultados).toLocaleDateString().slice(0, 5) : ""} texto="Publicação de resultados" />
                             </div>
                         ) :
@@ -137,6 +137,7 @@ export default function Trabalhos() {
         </>
     )
 }
+// <CardDatas data={config?.autores_por_trabalho ? String(config?.autores_por_trabalho).padStart(2, '0') : ""} texto="Autores por Trabalho" />
 const Waves2 = () => {
     return (
         <div className="relative w-full overflow-hidden h-[15vh] min-h-[100px] max-h-[150px]">
