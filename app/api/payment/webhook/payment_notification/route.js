@@ -177,34 +177,39 @@ async function pagamentoVencido(requestData) { // Chame se, somente se, o pagame
   }//ticket | activity
 
   if (paymentType == "ticket") {
-    //
-    // Dando baixa no DB.
     const filter = {
       id_api,
       "pagamento.lista_pagamentos.invoiceNumber": invoiceNumber
     };
-    const update = {
+    
+    // Primeiro, obtenha o documento para verificar o valor atual de pagamento.situacao
+    const document = await db.collection(collection).findOne(filter);
+    
+    // Verifique o valor de pagamento.situacao e prepare a atualização apropriada
+    let update = {
       $push: {
         "pagamento.lista_pagamentos.$[elem]._webhook": requestData
-      },
-      $set: {
+      }
+    };
+    
+    if (document && document.pagamento && document.pagamento.situacao !== 1) {
+      update.$set = {
         "pagamento.lista_pagamentos.$[elem].status": requestData.event,
         "pagamento.situacao": 0
-      },
-
-    };
+      };
+    } else {
+      update.$set = {
+        "pagamento.lista_pagamentos.$[elem].status": requestData.event
+      };
+    }
+    
     const options = {
       arrayFilters: [{ "elem.invoiceNumber": invoiceNumber }]
     };
+    
+    // Finalmente, execute a atualização com a condição
     const result = await db.collection(collection).updateOne(filter, update, options);
-    if (result.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
-      //console.log("result.matchedCount === 0")
-      return Response.json({ "erro": "result.matchedCount - pagamentoRecebido()" }, { status: 200 })
-    }
-    else if (result.modifiedCount === 0) { // Nenhum documento foi modificado.
-      //console.log("result.modifiedCount === 0")
-      return Response.json({ "erro": "result.modifiedCount === 0 - pagamentoRecebido()" }, { status: 200 })
-    }
+    
 
     try {
 
@@ -226,7 +231,7 @@ async function pagamentoVencido(requestData) { // Chame se, somente se, o pagame
 
     }
     catch (error) {
-
+      console.log(error)
     }
 
     return { "message": 'success' }, { status: 200 }

@@ -334,8 +334,23 @@ export default function Pagamentos() {
                                     : ""
                                 }
                                 {data.pagamento.situacao == 2 ?
-                                    <div className="flex justify-center lg:justify-start">
-                                        <button onClick={() => { handlePostClick2() }} className={`bg-[#eb7038] text-white font-extrabold p-4 ${isLoadingFetch || isModalError ? "cursor-not-allowed" : ""}`} disabled={isLoadingFetch || isModalError ? true : false}>REALIZAR INSCRIÇÃO</button>
+                                    <div className="flex flex-col justify-start lg:justify-start space-y-3 md:space-y-3">
+                                        <button onClick={() => { handlePostClick2() }} className={`bg-[#eb7038] text-white font-extrabold p-4 ${isLoadingFetch || isModalError ? "cursor-not-allowed" : ""}`} disabled={isLoadingFetch || isModalError ? true : false}>REALIZAR INSCRIÇÃO
+                                            <p className='text-[10px]'>
+                                                (PIX, CRÉDITO À VISTA, BOLETO)
+                                            </p>
+                                        </button>
+                                        <button onClick={() => { setModalPayment(1) }} className={`bg-[#eb7038] text-white font-extrabold p-4 ${isLoadingFetch || isModalError ? "cursor-not-allowed" : ""}`} disabled={isLoadingFetch || isModalError ? true : false}>
+                                            REALIZAR INSCRIÇÃO
+                                            <p className='text-[10px]'>
+                                                (CRÉDITO PARCELADO)
+                                            </p>
+                                        </button>
+                                        <div>
+                                            <p className='text-white'>
+                                                Após escolher uma opção de pagamento, você terá <span className="font-bold bg-yellow-400 px-1">1 dia útil</span> para realizar o pagamento
+                                            </p>
+                                        </div>
                                     </div>
                                     : ""
                                 }
@@ -760,7 +775,7 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
                             </div>
                             <Cards
                                 locale={{ valid: 'Validade', }}
-                                placeholders={{name:"SEU NOME AQUI"}}
+                                placeholders={{ name: "SEU NOME AQUI" }}
                                 number={cardInfo.number}
                                 expiry={cardInfo.expiry}
                                 cvc={cardInfo.cvc}
