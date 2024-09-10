@@ -45,6 +45,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 'mobilePhone': data.numero_telefone,
                 'observations': userId,
                 'notificationDisabled': true,
+                "externalReference":userId,
             })
         }
         //
