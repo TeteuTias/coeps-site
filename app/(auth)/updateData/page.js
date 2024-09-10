@@ -118,11 +118,6 @@ export default function UpdateData() {
                 throw new Error('Erro ao carregar os dados');
             }
             const data = await response.json();
-            if (!data['sucesso']) {
-                console.log(data)
-                throw new Error(data);
-            }
-            //console.log(data)
             router.push('/pagamentos')// se der tudo certo, ele vai direto pro /painel
         } catch (error) {
             console.error('Erro na requisição:', error);
