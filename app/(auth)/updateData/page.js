@@ -117,7 +117,6 @@ export default function UpdateData() {
                 handleChangeSetIsLoadingForms(0)
                 throw new Error('Erro ao carregar os dados');
             }
-            const data = await response.json();
             router.push('/pagamentos')// se der tudo certo, ele vai direto pro /painel
         } catch (error) {
             console.error('Erro na requisição:', error);
