@@ -53,7 +53,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
         const valor = resultPagamento[0].valorAVista
         const data_vencimento = new Date().toISOString().split("T")[0] // retorna o dia de hoje.
-        const descricao = 'Primeiro lote para entrada no evento IV COEPS.'
+        const descricao = resultPagamento[0].nome// 'Primeiro lote para entrada no evento IV COEPS.'
         const desconto = 0
 
 
