@@ -37,6 +37,7 @@ function PaginaAreaDoCliente() { // como é uma pagina, pega toda a tela para el
             <Link href="painel/minhasInformacoes" prefetch={false}><CardOpcoes texto="Minhas Informações" emoji="ℹ" /></Link>
             <Link href="painel/certificados"><CardOpcoes texto="Meus Certificados" emoji="✉"  prefetch={false}/></Link>
             <Link href="painel/atividades" prefetch={false}><CardOpcoes texto="Atividades" emoji="👩‍🎓" /></Link>
+            <Link className="flex justify-center items-center bg-transparent col-span-full lg:col-span-full" href="painel/brindes" prefetch={false}><CardOpcoes texto="Brindes" emoji="🎁" /></Link>
           </div>
         </div>
       </div>
