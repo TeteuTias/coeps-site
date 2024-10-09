@@ -165,7 +165,7 @@ const App = () => {
                                     return (
                                         <div className='w-full shadow-lg drop-shadow-md' key={index}>
                                             <div className={`bg-white w-full text-center flex items-center justify-center content-center align-middle py-2 ${!index ? "rounded-t-lg" : ""}`} >
-                                                <h1 className='text-slate-800 font-coeps text-center'>{value.toLocaleUpperCase()}S</h1>
+                                                <h1 className='text-slate-800 font-coeps text-center'>{value.toLocaleUpperCase() == "TODOS"? value.toLocaleUpperCase(): value.toLocaleUpperCase()+"S"}</h1>
 
                                             </div>
                                             <div className='w-full'>
