@@ -466,14 +466,21 @@ export default function Home() {
                                         {
                                             !isBlock ?
                                                 <div className=''>
-                                                    <form onSubmit={handleSubmit} className='flex flex-col  space-y-4 lg:space-y-0 space-x-5'>
+                                                    <form onSubmit={
+                                                        (e) => {
+                                                            e.target.reset()
+                                                            handleSubmit(e)
+                                                        }
+                                                        } className='flex flex-col  space-y-4 lg:space-y-0 space-x-5'>
                                                         <input
                                                             type="file"
                                                             id="file-upload"
                                                             accept="application/pdf, .doc, .docx, .pptx"
                                                             onChange={(e) => {
+                                                                console.log(e.target.files)
                                                                 setFile(e.target.files[0])
                                                                 handleMessage(`Arquivo "${e?.target?.files[0]?.name}" selecionado.`)
+                                                                
                                                             }}
                                                             className='hidden'
                                                         />
