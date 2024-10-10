@@ -147,6 +147,17 @@ export default function Home() {
                 console.log("!res.ok")
                 return 0
             }
+            if (res.status == 413) {
+                                /*
+                if (res.status == 500) {
+                    setIsModalError('ERROR 500. Caso o erro persiste, comunique os organizadores.')
+                    return 0
+                }
+                */
+                setIsModalError(result.message || "Ocorreu algum erro desconhecido. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe COEPS.")
+                console.log("!res.ok")
+                return 0
+            }
 
 
             // Depois de dar tudo certo, ele faz algumas coisas..
