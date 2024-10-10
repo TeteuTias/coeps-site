@@ -5,7 +5,8 @@ import { connectToDatabase } from '@/app/lib/mongodb';
 import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0';
 //
 // Variáveis Globais
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 50MB
+
 //
 //
 //
