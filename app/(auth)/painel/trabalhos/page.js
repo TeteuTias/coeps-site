@@ -1,6 +1,8 @@
 'use client'
 import { upload } from '@vercel/blob/client';
-
+import { useAuth0 } from '@auth0/auth0-react';
+import { UserProvider } from '@auth0/nextjs-auth0/client';
+import { useUser } from '@auth0/nextjs-auth0/client';
 // pages/index.js
 import { useEffect, useState } from 'react';
 import CardDatas from '@/app/components/CardDatas';
@@ -9,6 +11,9 @@ import WarningModal from '@/app/components/WarningModal';
 //
 //
 export default function Home() {
+    const { getAccessTokenSilently } = useAuth0();
+    const a = useUser()
+    console.log(a)
     const [file, setFile] = useState(null);
     const [message, setMessage] = useState('Você ainda pode enviar xx trabalhos');
 
@@ -129,12 +134,17 @@ export default function Home() {
                 setMessage('Selecione um arquivo antes de enviar');
                 return;
             }
-
+            const token = await getAccessTokenSilently();
             const newBlob = await upload(file.name, file, {
                 access: 'public',
                 handleUploadUrl: '/api/post/uploadTrabalho2',
+                headers: {
+                    Authorization: `Bearer ${token}`, // Passando o token no cabeçalho
+                },
+
             });
-            
+
+            console.log(newBlob)
 
             const formData = new FormData();
             formData.append('file', file);
@@ -304,225 +314,230 @@ if (res.status == 500) {
     )
     */
     return (
-        <>
-            <WarningModal closeModal={() => { setIsModalError(null) }} message={isModalError} isModal={isModalError} />
-            <LoadingModal isLoading={isLoadingDeleteOrSend} />
-            <div className='min-h-screen'>
-                <div className='bg-[#3E4095] p-5'>
-                    <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Submissão de Trabalhos</h1>
-                </div>
-                <div className="flex flex-col justify-center content-center items-center relative pt-10 pb-20">
-                    <div className="flex flex-col space-y-10 w-[90%] lg:space-y-0 lg:space-x-10 lg:flex-row justify-center content-center items-center">
-                        {
-                            isLoading ? (
-                                <>
-                                    <CardDatas isLoading={isLoading} data={new Date(data.data_limite_submissao).toLocaleDateString().slice(0, 5)} texto="Limite de Submissão" />
-                                    <CardDatas isLoading={isLoading} data={formatNumber(data.trabalhos_por_usuario)} texto="Trabalhos por autor" />
-                                    <CardDatas isLoading={isLoading} data={new Date(data.data_publicacao_resultados).toLocaleDateString().slice(0, 5)} texto="Publicação de Resultados" />
-                                </>
-
-                            ) : !isLoading && isBlock ?
-                                <div className="flex flex-col space-y-10 justify-center content-center items-center">
-                                    <h1 className="text-[#54595f]">
-                                        {messageBlock}
-                                    </h1>
-                                </div>
-                                :
-                                <>
-                                    <CardDatas isLoading={isLoading} data={new Date(data.data_limite_submissao).toLocaleDateString().slice(0, 5)} texto="Limite de Submissão" />
-                                    <CardDatas isLoading={isLoading} data={formatNumber(data.trabalhos_por_usuario)} texto="Trabalhos por autor" />
-                                    <CardDatas isLoading={isLoading} data={new Date(data.data_publicacao_resultados).toLocaleDateString().slice(0, 5)} texto="Publicação de Resultados" />
-                                </>
-                        }
+        <UserProvider>
+            <>
+                <WarningModal closeModal={() => { setIsModalError(null) }} message={isModalError} isModal={isModalError} />
+                <LoadingModal isLoading={isLoadingDeleteOrSend} />
+                <div className='min-h-screen' onClick={async ()=> {
+                    const b= await a.checkSession()
+                    console.log(b)
+                    }}>
+                    <div className='bg-[#3E4095] p-5'>
+                        <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Submissão de Trabalhos</h1>
                     </div>
-                    <div className=" w-[90%]">
-                        <div className="pt-10">
-                            <h1 className="font-semibold text-slate-950 text-[30px] lg:text-[35px]"><span></span>Publicações Oficiais</h1>
-                        </div>
-                        <div>
+                    <div className="flex flex-col justify-center content-center items-center relative pt-10 pb-20">
+                        <div className="flex flex-col space-y-10 w-[90%] lg:space-y-0 lg:space-x-10 lg:flex-row justify-center content-center items-center">
                             {
-                                isLoading ?
-                                    <div className='text-start'>
-                                        <h1 className="text-[#3E4095] hover:text-[#505191] animate-pulse">CARREGANDO</h1>
+                                isLoading ? (
+                                    <>
+                                        <CardDatas isLoading={isLoading} data={new Date(data.data_limite_submissao).toLocaleDateString().slice(0, 5)} texto="Limite de Submissão" />
+                                        <CardDatas isLoading={isLoading} data={formatNumber(data.trabalhos_por_usuario)} texto="Trabalhos por autor" />
+                                        <CardDatas isLoading={isLoading} data={new Date(data.data_publicacao_resultados).toLocaleDateString().slice(0, 5)} texto="Publicação de Resultados" />
+                                    </>
+
+                                ) : !isLoading && isBlock ?
+                                    <div className="flex flex-col space-y-10 justify-center content-center items-center">
+                                        <h1 className="text-[#54595f]">
+                                            {messageBlock}
+                                        </h1>
                                     </div>
-                                    : ""
-                            }
-                            {
-                                !isLoading && data?.resultados?.length > 0 ?
-                                    (
-                                        data.resultados.map((value, index) => {
-                                            const KEY = value._id + Math.floor(Math.random() * (999999999999999999999 - 10 + 1)) + 10
-                                            return (
-                                                <Link href={value?.link ?? ""} target='_blank' key={KEY} prefetch={false}>
-                                                    <h1 className="text-[#3E4095] hover:text-[#505191]">◽ {value.titulo}</h1>
-                                                </Link>
-                                            )
-                                        })
-                                    ) : ""
-
-
-                            }
-                            {
-                                !isLoading && data?.resultados?.length == 0 ?
-                                    <h1 className="text-[#3E4095] hover:text-[#505191]">Ainda não foram postados resultados</h1> : ""
+                                    :
+                                    <>
+                                        <CardDatas isLoading={isLoading} data={new Date(data.data_limite_submissao).toLocaleDateString().slice(0, 5)} texto="Limite de Submissão" />
+                                        <CardDatas isLoading={isLoading} data={formatNumber(data.trabalhos_por_usuario)} texto="Trabalhos por autor" />
+                                        <CardDatas isLoading={isLoading} data={new Date(data.data_publicacao_resultados).toLocaleDateString().slice(0, 5)} texto="Publicação de Resultados" />
+                                    </>
                             }
                         </div>
-                        <div className="pt-10">
-                            {
-                                !isLoading && data?.isOpen ?
-                                    <p className="text-[#54595f] text-justify">
-                                        O Diretório Acadêmico Diogo Guimarães (DADG) do curso de graduação em Medicina do Centro Universitário IMEPAC Araguari apresenta o <span className="text-gray-800 font-bold">VI Congresso dos Estudantes
-                                            e Profissionais de Saúde (COEPS)</span> que possui como tema “Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional”. Com o intuito de
-                                        incentivar a participação dos acadêmicos, profissionais da saúde e áreas afins em atividades de pesquisa, visando complementar a formação acadêmica e
-                                        enriquecer conhecimentos, declara-se aberto o edital para a submissão de trabalhos inéditos pertinentes à área da saúde.
-                                    </p> :
-                                    !isLoading && !data?.isOpen ?
-                                        <p className="text-[#54595f] text-justify">
-                                            O Diretório Acadêmico Diogo Guimarães (DADG) do curso de Medicina do Centro Universitário IMEPAC Araguari está preparando o <span className="text-gray-800 font-bold">VI Congresso dos Estudantes e Profissionais
-                                                de Saúde (COEPS)</span>, com o tema “Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional”.
-                                            <span className="text-gray-800 font-bold">Atualmente, o edital para a submissão de trabalhos inéditos ainda não está aberto</span>. No entanto, em breve, divulgaremos mais
-                                            informações sobre como participar e submeter suas pesquisas. Fique atento ao nosso site e às nossas redes sociais para atualizações e detalhes sobre o processo de submissão.
-                                        </p> : ""
-                            }
-                        </div>
-                    </div>
-                    <div className=" w-[90%]">
-                        <div className="pt-10">
-                            <h1 className="font-semibold text-slate-950 text-[30px] lg:text-[35px]"><span></span>Meus Envios</h1>
-                        </div>
-                        <div className='space-y-2 flex flex-col text-center content-center align-middle justify-center'>
-                            {
-                                isLoading ?
-                                    <div className='text-start'>
-                                        <h1 className="text-[#3E4095] hover:text-[#505191] animate-pulse">CARREGANDO</h1>
-                                    </div>
-                                    : ""
-                            }
-
-                            <div className="pt-2">
+                        <div className=" w-[90%]">
+                            <div className="pt-10">
+                                <h1 className="font-semibold text-slate-950 text-[30px] lg:text-[35px]"><span></span>Publicações Oficiais</h1>
+                            </div>
+                            <div>
                                 {
-                                    !isLoading ?
+                                    isLoading ?
+                                        <div className='text-start'>
+                                            <h1 className="text-[#3E4095] hover:text-[#505191] animate-pulse">CARREGANDO</h1>
+                                        </div>
+                                        : ""
+                                }
+                                {
+                                    !isLoading && data?.resultados?.length > 0 ?
+                                        (
+                                            data.resultados.map((value, index) => {
+                                                const KEY = value._id + Math.floor(Math.random() * (999999999999999999999 - 10 + 1)) + 10
+                                                return (
+                                                    <Link href={value?.link ?? ""} target='_blank' key={KEY} prefetch={false}>
+                                                        <h1 className="text-[#3E4095] hover:text-[#505191]">◽ {value.titulo}</h1>
+                                                    </Link>
+                                                )
+                                            })
+                                        ) : ""
+
+
+                                }
+                                {
+                                    !isLoading && data?.resultados?.length == 0 ?
+                                        <h1 className="text-[#3E4095] hover:text-[#505191]">Ainda não foram postados resultados</h1> : ""
+                                }
+                            </div>
+                            <div className="pt-10">
+                                {
+                                    !isLoading && data?.isOpen ?
                                         <p className="text-[#54595f] text-justify">
-                                            Aqui você pode visualizar todos os seus arquivos já enviados e também tem a opção de enviar novos arquivos. Se precisar remover
-                                            algum arquivo que já foi enviado, basta clicar no botão <span className='font-bold'>x</span> vermelho à esquerda de cada item.
-                                            <span className='bg-yellow-300 px-1'>É possível <span className='font-bold text-gray-800'>baixar</span> seu arquivo enviado clicando sobre ele.</span>
-                                            <span className="text-gray-800 font-bold"> Em caso de dúvidas,
-                                                sinta-se à vontade para entrar em contato com a equipe COEPS</span>. Estamos aqui para ajudar!
-                                        </p>
+                                            O Diretório Acadêmico Diogo Guimarães (DADG) do curso de graduação em Medicina do Centro Universitário IMEPAC Araguari apresenta o <span className="text-gray-800 font-bold">VI Congresso dos Estudantes
+                                                e Profissionais de Saúde (COEPS)</span> que possui como tema “Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional”. Com o intuito de
+                                            incentivar a participação dos acadêmicos, profissionais da saúde e áreas afins em atividades de pesquisa, visando complementar a formação acadêmica e
+                                            enriquecer conhecimentos, declara-se aberto o edital para a submissão de trabalhos inéditos pertinentes à área da saúde.
+                                        </p> :
+                                        !isLoading && !data?.isOpen ?
+                                            <p className="text-[#54595f] text-justify">
+                                                O Diretório Acadêmico Diogo Guimarães (DADG) do curso de Medicina do Centro Universitário IMEPAC Araguari está preparando o <span className="text-gray-800 font-bold">VI Congresso dos Estudantes e Profissionais
+                                                    de Saúde (COEPS)</span>, com o tema “Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional”.
+                                                <span className="text-gray-800 font-bold">Atualmente, o edital para a submissão de trabalhos inéditos ainda não está aberto</span>. No entanto, em breve, divulgaremos mais
+                                                informações sobre como participar e submeter suas pesquisas. Fique atento ao nosso site e às nossas redes sociais para atualizações e detalhes sobre o processo de submissão.
+                                            </p> : ""
+                                }
+                            </div>
+                        </div>
+                        <div className=" w-[90%]">
+                            <div className="pt-10">
+                                <h1 className="font-semibold text-slate-950 text-[30px] lg:text-[35px]"><span></span>Meus Envios</h1>
+                            </div>
+                            <div className='space-y-2 flex flex-col text-center content-center align-middle justify-center'>
+                                {
+                                    isLoading ?
+                                        <div className='text-start'>
+                                            <h1 className="text-[#3E4095] hover:text-[#505191] animate-pulse">CARREGANDO</h1>
+                                        </div>
+                                        : ""
+                                }
+
+                                <div className="pt-2">
+                                    {
+                                        !isLoading ?
+                                            <p className="text-[#54595f] text-justify">
+                                                Aqui você pode visualizar todos os seus arquivos já enviados e também tem a opção de enviar novos arquivos. Se precisar remover
+                                                algum arquivo que já foi enviado, basta clicar no botão <span className='font-bold'>x</span> vermelho à esquerda de cada item.
+                                                <span className='bg-yellow-300 px-1'>É possível <span className='font-bold text-gray-800'>baixar</span> seu arquivo enviado clicando sobre ele.</span>
+                                                <span className="text-gray-800 font-bold"> Em caso de dúvidas,
+                                                    sinta-se à vontade para entrar em contato com a equipe COEPS</span>. Estamos aqui para ajudar!
+                                            </p>
+                                            : ""
+                                    }
+                                </div>
+                                {
+                                    !isLoading && dataEnvios?.length == 0 ?
+                                        <div className='text-start'>
+                                            <h1 className="text-[#3E4095] hover:text-[#505191]">Você ainda não realizou nenhum envio</h1>
+                                        </div>
+                                        : ""
+                                }
+                                {
+                                    !isLoading && dataEnvios?.length > 0 ?
+                                        (
+                                            dataEnvios.map((value, index) => {
+                                                const KEY = Math.floor(Math.random() * (999999999999999999999 - 10 + 1)) + 10
+                                                return (
+                                                    <div className='flex flex-row content-center items-center space-x-2' key={KEY}>
+                                                        <button onClick={() => {
+                                                            //console.log(value)
+                                                            deletePDF(value._id)
+
+                                                        }} className='flex font-semibold bg-red-600 hover:bg-red-500 items-center justify-center  text-white rounded-full w-5 h-5 text-xs' disabled={isLoadingDeleteOrSend}>X</button>
+
+                                                        <h1 className=" cursor-pointer text-[#3E4095] hover:text-[#505191]"
+                                                            onClick={() => { baixarArquivo(value._id) }}
+                                                        >{value?.name}</h1>
+
+                                                    </div>
+                                                )
+                                            })
+                                        )
                                         : ""
                                 }
                             </div>
                             {
-                                !isLoading && dataEnvios?.length == 0 ?
-                                    <div className='text-start'>
-                                        <h1 className="text-[#3E4095] hover:text-[#505191]">Você ainda não realizou nenhum envio</h1>
-                                    </div>
-                                    : ""
-                            }
-                            {
-                                !isLoading && dataEnvios?.length > 0 ?
-                                    (
-                                        dataEnvios.map((value, index) => {
-                                            const KEY = Math.floor(Math.random() * (999999999999999999999 - 10 + 1)) + 10
-                                            return (
-                                                <div className='flex flex-row content-center items-center space-x-2' key={KEY}>
-                                                    <button onClick={() => {
-                                                        //console.log(value)
-                                                        deletePDF(value._id)
-
-                                                    }} className='flex font-semibold bg-red-600 hover:bg-red-500 items-center justify-center  text-white rounded-full w-5 h-5 text-xs' disabled={isLoadingDeleteOrSend}>X</button>
-
-                                                    <h1 className=" cursor-pointer text-[#3E4095] hover:text-[#505191]"
-                                                        onClick={() => { baixarArquivo(value._id) }}
-                                                    >{value?.name}</h1>
-
-                                                </div>
-                                            )
-                                        })
-                                    )
-                                    : ""
-                            }
-                        </div>
-                        {
-                            !isLoading && data?.isOpen ?
-                                <div className="items-start pt-12 space-y-2">
-                                    <div className=''>
-                                        <p className="text-[#3E4095] hover:text-[#505191]">
-                                            {
-                                                !isLoading && !isBlock && data?.trabalhos_por_usuario && !file ? "Você ainda não selecionou um Arquivo." : ""
-                                            }                                            {/*
+                                !isLoading && data?.isOpen ?
+                                    <div className="items-start pt-12 space-y-2">
+                                        <div className=''>
+                                            <p className="text-[#3E4095] hover:text-[#505191]">
+                                                {
+                                                    !isLoading && !isBlock && data?.trabalhos_por_usuario && !file ? "Você ainda não selecionou um Arquivo." : ""
+                                                }                                            {/*
                                                 !isLoading && !isBlock && data?.trabalhos_por_usuario && !file ? `Você ainda pode enviar ${(data.trabalhos_por_usuario - dataEnvios.length).toString().padStart(2, '0')} arquivo(s)`
                                                     : ""
                                             */}
+                                                {
+                                                    !isLoading && !isBlock && data?.trabalhos_por_usuario && file ? <span>Você selecionou o Arquivo: <span className='font-bold'>{file?.name}</span>.</span> : ""
+                                                }
+                                                {
+                                                    isLoading ? <span>CARREGANDO</span> : ""
+
+                                                }
+                                                {
+                                                    !isLoading && isBlock && data?.trabalhos_por_usuario ? "Você atingiu o limite máximo de envios" : ""
+                                                }
+
+                                            </p>
+                                        </div>
+                                        <div className='flex flex-col sm:flex-row items-start sm:items-center '>
+
                                             {
-                                                !isLoading && !isBlock && data?.trabalhos_por_usuario && file ? <span>Você selecionou o Arquivo: <span className='font-bold'>{file?.name}</span>.</span> : ""
+                                                isLoading ?
+                                                    <button className="bg-[#3E4095] text-white p-2 px-4">CARREGANDO</button>
+                                                    : ""
+
                                             }
                                             {
-                                                isLoading ? <span>CARREGANDO</span> : ""
-
+                                                !isLoading && data ?
+                                                    <Link href={data.link_edital} target='_blank' prefetch={false}>
+                                                        <button className="bg-[#3E4095] text-white p-2 px-4">VER EDITAL</button>
+                                                    </Link>
+                                                    : ""
                                             }
+
                                             {
-                                                !isLoading && isBlock && data?.trabalhos_por_usuario ? "Você atingiu o limite máximo de envios" : ""
+                                                !isBlock ?
+                                                    <div className=''>
+                                                        <form onSubmit={
+                                                            (e) => {
+                                                                e.target.reset()
+                                                                handleSubmit(e)
+                                                            }
+                                                        } className='flex flex-col  space-y-4 lg:space-y-0 space-x-5'>
+                                                            <input
+                                                                type="file"
+                                                                id="file-upload"
+                                                                accept="application/pdf, .doc, .docx, .pptx"
+                                                                onChange={(e) => {
+                                                                    console.log(e.target.files)
+                                                                    setFile(e.target.files[0])
+                                                                    handleMessage(`Arquivo "${e?.target?.files[0]?.name}" selecionado.`)
+
+                                                                }}
+                                                                className='hidden'
+                                                            />
+                                                            <label htmlFor='file-upload' className="bg-[#3E4095] text-white p-[9.5px] px-4 cursor-pointer" disabled={isLoadingDeleteOrSend}>{!file ? 'SELECIONAR ARQUIVO' : 'TROCAR ARQUIVO'}</label>
+                                                            {file ?
+                                                                <button className="text-white font-extrabold bg-red-500 " onClick={() => handleIsModal(1)} disabled={isLoadingDeleteOrSend}>ENVIAR ARQUIVO</button> : ""
+                                                            }
+                                                        </form>
+
+                                                        {/* <button className="bg-[#3E4095] text-white p-2 px-4">ENVIAR TRABALHO</button> */}
+                                                    </div> : ""
                                             }
 
-                                        </p>
-                                    </div>
-                                    <div className='flex flex-col sm:flex-row items-start sm:items-center '>
-
-                                        {
-                                            isLoading ?
-                                                <button className="bg-[#3E4095] text-white p-2 px-4">CARREGANDO</button>
-                                                : ""
-
-                                        }
-                                        {
-                                            !isLoading && data ?
-                                                <Link href={data.link_edital} target='_blank' prefetch={false}>
-                                                    <button className="bg-[#3E4095] text-white p-2 px-4">VER EDITAL</button>
-                                                </Link>
-                                                : ""
-                                        }
-
-                                        {
-                                            !isBlock ?
-                                                <div className=''>
-                                                    <form onSubmit={
-                                                        (e) => {
-                                                            e.target.reset()
-                                                            handleSubmit(e)
-                                                        }
-                                                    } className='flex flex-col  space-y-4 lg:space-y-0 space-x-5'>
-                                                        <input
-                                                            type="file"
-                                                            id="file-upload"
-                                                            accept="application/pdf, .doc, .docx, .pptx"
-                                                            onChange={(e) => {
-                                                                console.log(e.target.files)
-                                                                setFile(e.target.files[0])
-                                                                handleMessage(`Arquivo "${e?.target?.files[0]?.name}" selecionado.`)
-
-                                                            }}
-                                                            className='hidden'
-                                                        />
-                                                        <label htmlFor='file-upload' className="bg-[#3E4095] text-white p-[9.5px] px-4 cursor-pointer" disabled={isLoadingDeleteOrSend}>{!file ? 'SELECIONAR ARQUIVO' : 'TROCAR ARQUIVO'}</label>
-                                                        {file ?
-                                                            <button className="text-white font-extrabold bg-red-500 " onClick={() => handleIsModal(1)} disabled={isLoadingDeleteOrSend}>ENVIAR ARQUIVO</button> : ""
-                                                        }
-                                                    </form>
-
-                                                    {/* <button className="bg-[#3E4095] text-white p-2 px-4">ENVIAR TRABALHO</button> */}
-                                                </div> : ""
-                                        }
 
 
-
-                                    </div>
-                                </div> : ""
-                        }
+                                        </div>
+                                    </div> : ""
+                            }
+                        </div>
                     </div>
                 </div>
-            </div>
-        </>
+            </>
+        </UserProvider>
 
     );
 }
