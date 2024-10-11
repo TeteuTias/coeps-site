@@ -134,7 +134,7 @@ export default function Home() {
                 access: 'public',
                 handleUploadUrl: '/api/post/uploadTrabalho2',
             });
-            setBlob(newBlob)
+            
 
             const formData = new FormData();
             formData.append('file', file);
