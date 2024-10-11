@@ -452,9 +452,7 @@ export default function Home() {
                                                 isLoading ? <span>CARREGANDO</span> : ""
 
                                             }
-                                            {
-                                                !isLoading && isBlock && data?.trabalhos_por_usuario ? "Você atingiu o limite máximo de envios" : ""
-                                            }
+                                            
 
                                         </p>
                                     </div>
