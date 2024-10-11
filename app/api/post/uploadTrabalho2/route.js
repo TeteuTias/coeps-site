@@ -3,11 +3,16 @@ import { NextResponse } from 'next/server';
 import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { connectToDatabase } from '../../../lib/mongodb'
 
+async function getUserId() {
+    const session = await getSession();
 
-export const POST = withApiAuthRequired(async function POST(request, response) {
+    return session?.user?.sub.replace("auth0|", "");
+}
 
-    const { user } = await getSession(request,response);
-    const userId = user.sub.replace("auth0|", "");
+export async function POST(request, response) {
+
+
+    const userId = await getUserId()
 
     const body = await request.json();
 
@@ -33,7 +38,7 @@ export const POST = withApiAuthRequired(async function POST(request, response) {
                         userId: userId,         // ID do usuário autenticado
                         role: 'uploader',          // Papel do usuário
                         timestamp: Date.now(),    // Hora do upload
-                        pathname:body.payload.pathname
+                        pathname: body.payload.pathname
                     }),
                 };
             },
@@ -45,7 +50,7 @@ export const POST = withApiAuthRequired(async function POST(request, response) {
 
 
                 try {
-                    const { userId,pathname } = JSON.parse(tokenPayload);
+                    const { userId, pathname } = JSON.parse(tokenPayload);
 
                     const { db } = await connectToDatabase();
                     await db.collection('trabalhos_blob').insertOne({
@@ -53,7 +58,7 @@ export const POST = withApiAuthRequired(async function POST(request, response) {
                         filename: pathname,
                         url: blob.url,
                         userId: userId,
-                        uploadDate:new Date()
+                        uploadDate: new Date()
                     })
                     // Run any logic after the file upload completed
                     // const { userId } = JSON.parse(tokenPayload);
@@ -72,4 +77,4 @@ export const POST = withApiAuthRequired(async function POST(request, response) {
             { status: 400 }, // The webhook will retry 5 times waiting for a status 200
         );
     }
-})
+}
