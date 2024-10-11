@@ -449,14 +449,14 @@ const BannerAtividade = ({ activity, userId, color }) => {
                     </div>
                     <div >
                         <h1 className="font-bold text-center" >{activity.name.toLocaleUpperCase()}</h1>
+                        <div className='text-[13px] font-semibold text-center pt-2'>
+                            <h2>{new Date(activity.timeline[0].date_init).toLocaleString()} às {new Date(activity.timeline[0].date_end).toLocaleString()}</h2>
+                        </div>
                     </div>
                     <div>
                         <h1 className="font-thin text-center">
                             {activity.description}
                         </h1>
-                        <div className='text-[13px] font-semibold text-center pt-2'>
-                            <h2>{new Date(activity.timeline[0].date_init).toLocaleString()} às {new Date(activity.timeline[0].date_end).toLocaleString()}</h2>
-                        </div>
                     </div>
                     <h1>{ }</h1>
                 </div>
