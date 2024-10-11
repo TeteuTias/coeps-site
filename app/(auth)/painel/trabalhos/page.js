@@ -212,11 +212,11 @@ export default function Home() {
 
             // Ajustar a data atual para o fuso horário -03:00
             const offsetAtual = dataAtual.getTimezoneOffset() / 60; // Offset do sistema em horas
-            const dataAtualAjustada = new Date(dataAtual.getTime() + (offsetAtual - fusoOffset) * 3600000);
+            const dataAtualAjustada = dataAtual // new Date(dataAtual.getTime() + (offsetAtual - fusoOffset) * 3600000);
 
             // Ajustar as datas de início e fim da submissão para o fuso horário -03:00
-            const dataInicioSubmissaoAjustada = new Date(dataInicioSubmissaoUTC.getTime() + fusoOffset * 3600000);
-            const dataLimiteSubmissaoAjustada = new Date(dataLimiteSubmissaoUTC.getTime() + fusoOffset * 3600000);
+            const dataInicioSubmissaoAjustada = dataInicioSubmissaoUTC
+            const dataLimiteSubmissaoAjustada = dataLimiteSubmissaoUTC
 
             // Verificar se a data atual está dentro do intervalo ajustado
             if (dataAtualAjustada >= dataInicioSubmissaoAjustada && dataAtualAjustada <= dataLimiteSubmissaoAjustada) {
