@@ -1,4 +1,6 @@
 'use client'
+import { upload } from '@vercel/blob/client';
+
 // pages/index.js
 import { useEffect, useState } from 'react';
 import CardDatas from '@/app/components/CardDatas';
@@ -127,6 +129,13 @@ export default function Home() {
                 setMessage('Selecione um arquivo antes de enviar');
                 return;
             }
+
+            const newBlob = await upload(file.name, file, {
+                access: 'public',
+                handleUploadUrl: '/api/post/uploadTrabalho2',
+            });
+            setBlob(newBlob)
+
             const formData = new FormData();
             formData.append('file', file);
 
@@ -148,12 +157,12 @@ export default function Home() {
                 return 0
             }
             if (res.status == 413) {
-                                /*
-                if (res.status == 500) {
-                    setIsModalError('ERROR 500. Caso o erro persiste, comunique os organizadores.')
-                    return 0
-                }
-                */
+                /*
+if (res.status == 500) {
+    setIsModalError('ERROR 500. Caso o erro persiste, comunique os organizadores.')
+    return 0
+}
+*/
                 setIsModalError(result.message || "Ocorreu algum erro desconhecido. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe COEPS.")
                 console.log("!res.ok")
                 return 0
@@ -482,7 +491,7 @@ export default function Home() {
                                                             e.target.reset()
                                                             handleSubmit(e)
                                                         }
-                                                        } className='flex flex-col  space-y-4 lg:space-y-0 space-x-5'>
+                                                    } className='flex flex-col  space-y-4 lg:space-y-0 space-x-5'>
                                                         <input
                                                             type="file"
                                                             id="file-upload"
@@ -491,7 +500,7 @@ export default function Home() {
                                                                 console.log(e.target.files)
                                                                 setFile(e.target.files[0])
                                                                 handleMessage(`Arquivo "${e?.target?.files[0]?.name}" selecionado.`)
-                                                                
+
                                                             }}
                                                             className='hidden'
                                                         />

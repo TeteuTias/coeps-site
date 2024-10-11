@@ -10,9 +10,10 @@
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^3.5.0",
+    "@vercel/blob": "^0.25.0",
     "luxon": "^3.4.4",
     "mongodb": "^6.8.0",
-    "next": "14.2.4",
+    "next": "^14.2.15",
     "pagarme": "^4.35.2",
     "react": "^18",
     "react-canvas-confetti": "^2.0.7",
