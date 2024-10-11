@@ -86,7 +86,7 @@ export default function Home() {
             }
         }
         // Fazendo o que tem que fazer
-        setDataEnvios((prevItems) => prevItems.filter(item => item._id !== idToRemove));
+        setDataEnvios((prevItems) => prevItems.filter(item => item.url !== idToRemove));
         setFile(null)
 
     };
@@ -134,54 +134,44 @@ export default function Home() {
                 access: 'public',
                 handleUploadUrl: '/api/post/uploadTrabalho2',
             });
-            
 
-            const formData = new FormData();
-            formData.append('file', file);
+            console.log(newBlob)
 
+
+            //const formData = new FormData();
+            //formData.append('file', file);
+            /*
             const res = await fetch('/api/post/uploadTrabalho', {
                 method: 'POST',
                 body: formData,
             });
+            */
             // Verificando se o fetch foi OK
-            const result = await res.json();
+            // const result = await res.json();
+            /*
             if (!res.ok) {
-                /*
+                
                 if (res.status == 500) {
                     setIsModalError('ERROR 500. Caso o erro persiste, comunique os organizadores.')
                     return 0
                 }
-                */
+                
                 setIsModalError(result.message || "Ocorreu algum erro desconhecido. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe COEPS.")
                 console.log("!res.ok")
                 return 0
             }
-            if (res.status == 413) {
-                /*
-if (res.status == 500) {
-    setIsModalError('ERROR 500. Caso o erro persiste, comunique os organizadores.')
-    return 0
-}
-*/
-                setIsModalError(result.message || "Ocorreu algum erro desconhecido. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe COEPS.")
-                console.log("!res.ok")
-                return 0
-            }
+            */
 
-
-            // Depois de dar tudo certo, ele faz algumas coisas..
-            if (dataEnvios.length == data.trabalhos_por_usuario || dataEnvios.length + 1 >= data.trabalhos_por_usuario) { // Bloqueando se preciso
-                if (!isBlock) {
-                    //setIsBlock(1)
-                    // setMessageBlock("Você já atingiu seu limite máximo de envios. Em caso de dúvidas, entre em contato com a equipe COEPS.")
-                }
-            }
 
             // Em fim, fazendo o que ele iria fazer idependente das condições.
-            handleDataEnvios(result.data)
+            handleDataEnvios({
+                "_id": "", // coloquei assim para não tirar pq ja estava aqui, mas acho que nao vou precisar dele
+                "name": newBlob['pathname'],
+                "url": newBlob['url']
+            })
             setFile(null)
             setIsModalError("Arquivo enviado com sucesso!")
-            // setMessage("Arquivo enviado com sucesso!");
+            //setMessage("Arquivo enviado com sucesso!");
             setIsLoadingDeleteOrSend(0)
         }
         catch (error) {
@@ -427,14 +417,15 @@ if (res.status == 500) {
                                             return (
                                                 <div className='flex flex-row content-center items-center space-x-2' key={KEY}>
                                                     <button onClick={() => {
-                                                        //console.log(value)
-                                                        deletePDF(value._id)
+                                                        
+                                                        deletePDF(value.url)
 
                                                     }} className='flex font-semibold bg-red-600 hover:bg-red-500 items-center justify-center  text-white rounded-full w-5 h-5 text-xs' disabled={isLoadingDeleteOrSend}>X</button>
 
-                                                    <h1 className=" cursor-pointer text-[#3E4095] hover:text-[#505191]"
-                                                        onClick={() => { baixarArquivo(value._id) }}
+                                                    <Link href={value.url} prefetch={true} target='_blank'><h1 className=" cursor-pointer text-[#3E4095] hover:text-[#505191]"
+                                                        onClick={() => { console.log(value) }}
                                                     >{value?.name}</h1>
+                                                    </Link>
 
                                                 </div>
                                             )

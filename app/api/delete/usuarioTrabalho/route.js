@@ -1,6 +1,8 @@
 import { ObjectId, GridFSBucket } from 'mongodb';
 import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { connectToDatabase } from '@/app/lib/mongodb';
+import { del } from '@vercel/blob';
+
 
 export const POST = withApiAuthRequired(async function POST(request) {
     try {
@@ -13,26 +15,32 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
         // Pegando IDs
         const id_usuario = user.sub.replace("auth0|", ""); // Retirando o auth0|
-        const id_trabalho = new ObjectId(data.id);
+        const urlBlob = data.id;
 
         // Conectando ao banco de dados e ao GridFS
         const { db } = await connectToDatabase();
-        const bucket = new GridFSBucket(db, { bucketName: 'trabalhos' });
+        // const bucket = new GridFSBucket(db, { bucketName: 'trabalhos' });
 
         // Verificando se o arquivo pertence ao usuário
-        const file = await db.collection('trabalhos.files').findOne({ _id: id_trabalho, "metadata.user_id": id_usuario });
+        console.log(id_usuario)
+        console.log(urlBlob)
+        const file = await db.collection('trabalhos_blob').findOne({ url: urlBlob, "userId": id_usuario });
 
         if (!file) {
             return Response.json({ error: "O arquivo não foi encontrado ou você não tem permissão para excluí-lo." }, { status: 404 });
         }
 
+        await del(urlBlob)
+        await db.collection('trabalhos_blob').deleteOne({ url: urlBlob, "userId": id_usuario });
+
+
         // Apagando o arquivo (incluindo seus chunks) do GridFS
-        await bucket.delete(id_trabalho);
+        // await bucket.delete(id_trabalho);
 
         // Se tudo der certo, retorne sucesso
         return Response.json({ message: 'O arquivo foi excluído com sucesso!' }, { status: 200 });
     } catch (error) {
-        //console.log(error);
+        console.log(error);
         return Response.json({ message: error.message || "Ocorreu um erro desconhecido. Recarregue a página e tente novamente. Caso o problema persista, entre em contato com a equipe COEPS" }, { status: error.status || 403 });
     }
 });
