@@ -20,22 +20,25 @@ export const GET = withApiAuthRequired(async function GET(request, response) {
         // Já vem apenas com o replace.
         const { db } = await connectToDatabase();
         const colecao = 'trabalhos_blob'
+        const query = userId === "66bbc8c2db29318201acc2a1" ? {} : { "userId": userId }
+        const typeResponse = userId === "66bbc8c2db29318201acc2a1" ? "admin" : "user"
+
         const response = await db.collection(colecao).find(
-            {
-                "userId": userId
-            },
-            { projection: { "filename": 1, "_id": 1, "url":1 } }
+            query,
+            { projection: { "filename": 1, "_id": 1, "url": 1, userId:1 } }
         ).toArray() // 'buffer': 0, 'user_id': 0, 'size': 0
 
         // Gambiarra para manter formado
         const resposta = response.map(value => ({
             "_id": value['_id'],
             "name": value['filename'],
-            "url": value['url']
+            "url": value['url'],
+            "userId": `${value.userId}`,
         }))
 
         return NextResponse.json({
-            "data": resposta
+            "data": resposta,
+            "type":typeResponse,
         }, { status: 200 });
 
     }

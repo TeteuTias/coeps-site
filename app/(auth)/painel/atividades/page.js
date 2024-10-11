@@ -110,7 +110,7 @@ export default function Minicursos() {
                                 <span className="font-emoji text-gray-800">◽</span><span className="font-bold">NÃO</span> são permitidas inscrições em atividades com horários conflitantes. É de responsabilidade do congressista realizar um planejamento prévio antes da abertura das inscrições.
                             </h1>
                             <h1 className="text-justify">
-                                <span className="font-emoji text-gray-800">◽</span> O congressista tem acesso às datas de abertura das inscrições, horários, localizações e datas de realização das atividades <span className="font-bold hover:cursor-pointer"><Link href="/programacao" prefetch={false} target="_blank">CLICANDO AQUI</Link></span>.
+                                <span className="font-emoji text-gray-800">◽</span> O congressista tem acesso às datas de abertura das inscrições, horários, localizações e datas de realização das atividades <span className="font-bold hover:cursor-pointer"><Link className="bg-red-600 p-1 text-white" href="/programacao" prefetch={false} target="_blank">CLICANDO AQUI</Link></span>.
                             </h1>
                         </div>
                     </div>
@@ -454,6 +454,9 @@ const BannerAtividade = ({ activity, userId, color }) => {
                         <h1 className="font-thin text-center">
                             {activity.description}
                         </h1>
+                        <div className='text-[13px] font-semibold text-center pt-2'>
+                            <h2>{new Date(activity.timeline[0].date_init).toLocaleString()} às {new Date(activity.timeline[0].date_end).toLocaleString()}</h2>
+                        </div>
                     </div>
                     <h1>{ }</h1>
                 </div>

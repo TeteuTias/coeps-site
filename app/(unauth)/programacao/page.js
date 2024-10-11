@@ -165,8 +165,7 @@ const App = () => {
                                     return (
                                         <div className='w-full shadow-lg drop-shadow-md' key={index}>
                                             <div className={`bg-white w-full text-center flex items-center justify-center content-center align-middle py-2 ${!index ? "rounded-t-lg" : ""}`} >
-                                                <h1 className='text-slate-800 font-coeps text-center'>{value.toLocaleUpperCase() == "TODOS"? value.toLocaleUpperCase(): value.toLocaleUpperCase()+"S"}</h1>
-
+                                                <h1 className='text-slate-800 font-coeps text-center'>{value.toLocaleUpperCase() == "TODOS" ? value.toLocaleUpperCase() : value.toLocaleUpperCase() + "S"}</h1>
                                             </div>
                                             <div className='w-full'>
                                                 {
@@ -179,8 +178,12 @@ const App = () => {
                                                                 }}
                                                             >
                                                                 <div className='px-5 border-r-[1px] text-black text-[20px]'> {value.emoji} </div>
-                                                                <div className='text-white flex items-start justify-center align-middle content-center'>
+                                                                <div className='text-white flex items-start flex-col justify-center align-middle content-center'>
                                                                     <h1 className='font-bold'>{value.name}</h1>
+                                                                    <div className='text-[13px] font-semibold'>
+                                                                        <h2>{new Date(value.timeline[0].date_init).toLocaleString()} às</h2>
+                                                                        <h2>{new Date(value.timeline[0].date_end).toLocaleString()}</h2>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         )
