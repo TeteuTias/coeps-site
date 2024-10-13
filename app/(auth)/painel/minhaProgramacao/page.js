@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { BUILD_ID_FILE } from "next/dist/shared/lib/constants";
 //
 //
 //
@@ -192,18 +193,24 @@ function organizeData(data) {
     if (!organized[date]) {
       organized[date] = [];
     }
-
     organized[date].push({
       ...event,
       date_init: event.date_init//.split('T')[0], // Mantém apenas a data no objeto
     });
   });
-  // Ordenar os eventos por data e por data/hora
+  // Ordenar os eventos por data e por data/hora ANTIGO
+  /*
   Object.keys(organized).forEach(date => {
     // organized[date].sort((a, b) => new Date(a.date_init + 'T' + a.date_init.split('T')[1]) - new Date(b.date_init + 'T' + b.date_init.split('T')[1]));
     organized[date].sort((a, b) => new Date(a.date_init) - new Date(b.date_init));
 
   });
+  */
+  // Ordenar os eventos por data e por data/hora NOVO achoq ue isso e nada é a mesma coisa, mas como tá funcionando, deixa isso assim. nao funcionou essa merda.
+  Object.keys(organized).forEach(date => { 
+    organized[date].sort((a, b) => new Date(b.date_init) - new Date(a.date_init));
+  });
+
 
   return organized;
 }
@@ -331,7 +338,7 @@ function padZeroIfNeeded(number) {
 }
 
 const CardProgramacao = ({ cor_primaria, dateKey, event, handleModal }) => {
-  const DATE = new Date(dateKey + "T13:30:00-03:00")
+  const DATE = new Date(dateKey + "T12:00:00-03:00")
   const daysNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
   const dayName = daysNames[DATE.getDay()]
   const dayMouth = `${padZeroIfNeeded(DATE.getDate())}/${padZeroIfNeeded(DATE.getMonth())}`
@@ -342,7 +349,7 @@ const CardProgramacao = ({ cor_primaria, dateKey, event, handleModal }) => {
         <div className="flex flex-col text-center w-[100%] space-y-3">
 
           <div className={`text-white font-extrabold rounded-t-lg`}>
-            <h1 className="text-start">{dayMouth.toLocaleUpperCase() + " "}{dayName.toLocaleUpperCase()}</h1>
+            <h1 className="text-start">{DATE.toLocaleDateString().slice(0, 5) + " "} {dayName.toLocaleUpperCase()}</h1>
             <div className={`text-white font-extrabold rounded-t-[0.1px] p-1`} />
           </div>
           <div className="space-y-2">
@@ -354,7 +361,7 @@ const CardProgramacao = ({ cor_primaria, dateKey, event, handleModal }) => {
                 //const date_end = new Date(value.timeline[value.timeline.length - 1].date_end).toLocaleTimeString().slice(0, 5)
 
                 return (
-                  <div className="flex flex-col bg-white cursor-pointer" onClick={() => { handleModal(value) }} key={index}>
+                  <div className="flex flex-col bg-white cursor-pointer" onClick={() => { handleModal(value) }} key={Math.floor(Math.random() * 100)*index}>
                     <div className="p-1 bg-green-500" />
                     <div className=" flex flex-row p-2 lg:p-3">
                       <div className="w-[80%] text-start px-2">
