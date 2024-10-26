@@ -20,7 +20,7 @@ export async function connectToDatabase() {
   }
 
   const client = new MongoClient(uri, {
-    maxPoolSize: 100, // Configuração inicial do pool de conexões
+    maxPoolSize: 1000, // Configuração inicial do pool de conexões
     readPreference: 'primary' // Força a leitura da primária
   });
 
