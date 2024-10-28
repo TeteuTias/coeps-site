@@ -116,8 +116,8 @@ export default function MinhaProgramacao() {
           <div className="w-[90%] lg:w-[50%] text-gray-700 text-clip py-16">
             <h1 className="break-words text-start font-bold text-black text-[22px] lg:text-[18px]">O QUE TEMOS AQUI</h1>
             <h1 className="text-justify">Aqui está o seu cronograma de eventos! Todos os eventos obrigatórios e aqueles em que você se inscreveu estão organizados para que você
-              não fique perdido. Não se esqueça de se inscrever nos minicursos! Clicando nos cards, você consegue mais informações sobre o evento presente
-              na sua agenda.
+              não fique perdido. Não se esqueça de se inscrever nos minicursos! <span className="text-[22px] bg-red-400 p-[0.1px] px-1 font-bold text-white">Clicando nos cards, você consegue mais informações sobre o evento presente
+              na sua agenda.</span>
             </h1>
           </div>
         </div>
