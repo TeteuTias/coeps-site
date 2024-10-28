@@ -75,7 +75,7 @@ export default function Minicursos() {
                 <div className="w-[95%] md:w-[50%]">
                     <h1 className="break-words text-start font-bold text-black text-[22px] lg:text-[18px]">O QUE TEMOS AQUI</h1>
                     <h1 className="text-justify">
-                        Aqui, você pode se inscrever em <span className="bg-yellow-300 px-1 font-bold">atividades complementares</span>. É obrigatório que cada participante escolha <span className="font-bold">três</span> dessas atividades. Lembre-se de que cada uma possui um número máximo de participantes, portanto, programe-se para se inscrever a tempo! Não se preocupe, todas as informações necessárias estão disponíveis aqui. Após a inscrição, a atividade será adicionada automaticamente à <span className="bg-yellow-300 px-1 font-bold">Minha Programação</span>. Você consegue ver mais detalhes
+                        Aqui, você pode se inscrever em <span className="bg-yellow-300 px-1 font-bold">atividades complementares</span>. É obrigatório que cada participante escolha atividades que somem no mínimo <span className="font-bold">8 horas</span> (há atividades de 1 hora de duração e outras maiores, como as mesas de especialidades). Lembre-se de que cada uma possui um número máximo de participantes, portanto, programe-se para se inscrever a tempo! Não se preocupe, todas as informações necessárias estão disponíveis aqui. Após a inscrição, a atividade será adicionada automaticamente à <span className="bg-yellow-300 px-1 font-bold">Minha Programação</span>. Você consegue ver mais detalhes
                         sobre as atividades <Link prefetch={false} target="_blank" href="/programacao"><span className="bg-yellow-300 px-1 cursor-pointer font-bold">clicando aqui</span></Link>.
                     </h1>
                 </div>
@@ -104,7 +104,7 @@ export default function Minicursos() {
                         <h1 className="break-words text-start font-bold text-black text-[22px] lg:text-[18px]">REGRAS DE INSCRIÇÃO</h1>
                         <div className="flex flex-col space-y-5">
                             <h1 className="text-justify">
-                                <span className="font-emoji text-gray-800">◽</span> O congressista deve se inscrever <span className="font-bold hover:cursor-pointer">obrigatoriamente</span> em 3 atividades.
+                                <span className="font-emoji text-gray-800">◽</span> A soma das inscrições dos minicursos de ser obrigatóriamente de no mínimo <span className="font-bold hover:cursor-pointer">8 horas</span>.
                             </h1>
                             <h1 className="text-justify">
                                 <span className="font-emoji text-gray-800">◽</span><span className="font-bold">NÃO</span> são permitidas inscrições em atividades com horários conflitantes. É de responsabilidade do congressista realizar um planejamento prévio antes da abertura das inscrições.
@@ -413,7 +413,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
             {
                 !activity.isFree ?
                     <div className="absolute  w-fit p-2" style={{ 'backgroundColor': color }}>
-                        <h1 className="font-emoji text-gray-800">💲</h1>
+                        <h1 className="font-emoji text-gray-800 font-extrabold"><span className=" font-coeps text-[19px] text-orange-600">{activity?.value ? activity?.value : ""}</span>💲</h1>
                     </div> : ""
             }
             <div className="" >
