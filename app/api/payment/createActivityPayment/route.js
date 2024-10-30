@@ -25,7 +25,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
         // Verifica se o usuário tem 4 ou menos inscrições
         const userRegistrationsCount = await db.collection(collection).find(
             {
-                participants: new ObjectId(_id)
+                participants: _id
             },
             { projection: { timeline: 1, _id: [] } }
         ).toArray();
