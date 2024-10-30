@@ -37,9 +37,8 @@ export const GET = withApiAuthRequired(async function GET( request, { params } )
                 "pagamento.lista_pagamentos.value":1,
                 "pagamento.lista_pagamentos.invoiceUrl":1,
                 "pagamento.lista_pagamentos.invoiceNumber":1,
-                "pagamento.lista_pagamentos.description":1,
-                "pagamento.lista_pagamentos._type":1,
-                "pagamento.lista_pagamentos._eventID":1
+                "pagamento.lista_pagamentos.description":1
+
                 
 
 

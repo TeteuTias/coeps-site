@@ -279,9 +279,11 @@ export default function Pagamentos() {
                                             <div className="flex flex-col items-start content-start justify-start pt-10 space-y-7 w-[95%] lg:w-[65%]">
                                                 {
                                                     data.pagamento.lista_pagamentos?.map((value, index) => {
+
+
                                                         return (
                                                             <div key={index} className="">
-                                                                <CardPagamentos eventId={data.pagamento.lista_pagamentos[index]?._eventID || ""} type={data.pagamento.lista_pagamentos[index]?._type || ""} invoiceUrl={value.invoiceUrl} valor={value.value} nome={'nome'} data_formatada={value.dateCreated} invoiceNumber={value.invoiceNumber} status={value.status} description={value.description} />
+                                                                <CardPagamentos invoiceUrl={value.invoiceUrl} valor={value.value} nome={'nome'} data_formatada={value.dateCreated} invoiceNumber={value.invoiceNumber} status={value.status} description={value.description} />
                                                             </div>
                                                         )
                                                     })
@@ -386,41 +388,10 @@ export default function Pagamentos() {
     )
 }
 
-const CardPagamentos = ({ eventId = "", type = "", valor_total = "ERROR", data_formatada = "ERROR", invoiceNumber = "ERROR", status = "ERROR", description = "ERROR", valor = "ERROR", invoiceUrl = "/pagamentos" }) => {
+const CardPagamentos = ({ valor_total = "ERROR", data_formatada = "ERROR", invoiceNumber = "ERROR", status = "ERROR", description = "ERROR", valor = "ERROR", invoiceUrl = "/pagamentos" }) => {
     // Arrumando a DATA
     //
     //
-    const [typeText, setTypeText] = useState("CARREGANDO ATIVIDADE")
-
-    useEffect(() => {
-        // Defina a função assíncrona dentro do `useEffect`
-        async function fetchData() {
-            try {
-                if (type == "activity" && typeText == "CARREGANDO ATIVIDADE") {
-                    // Execute operações assíncronas aqui
-                    const response = await fetch(`/api/get/atividadeNomePeloId/${eventId}`, {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                    });
-                    if (!response.ok) {
-                        setTypeText("ERRO AO CARREGAR NOME")
-                        return;
-                    }
-                    const responseJson = await response.json()
-                    // Faça algo com a resposta, como atualizar o estado
-                    setTypeText(responseJson.data)
-                }
-            } catch (error) {
-                setTypeText("ERRO AO CARREGAR NOME")
-                console.error('Erro ao buscar dados:', error);
-            }
-        }
-
-        // Chame a função assíncrona
-        fetchData();
-    }, [typeText]);
     //
     /*
         Dicionário
@@ -454,11 +425,6 @@ const CardPagamentos = ({ eventId = "", type = "", valor_total = "ERROR", data_f
 
     return (
         <div className="shadow-[0px_0px_5px_7px_rgba(0,0,0,0.02)] p-4 rounded-xl cursor-pointer relative">
-            {
-                type == "activity" ?
-                    <p onClick={() => console.log(typeText)}>{typeText}</p>
-                    : ""
-            }
             <div className="flex flex-row justify-center items-center content-center align-middle absolute z-10 p-1 bg-[#ff8952] top-[-15px] left-[-6px] space-x-[3px] rounded-sm">
                 {
                     valor == "ERROR" ?
