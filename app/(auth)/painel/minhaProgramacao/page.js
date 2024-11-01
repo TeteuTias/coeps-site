@@ -117,7 +117,7 @@ export default function MinhaProgramacao() {
             <h1 className="break-words text-start font-bold text-black text-[22px] lg:text-[18px]">O QUE TEMOS AQUI</h1>
             <h1 className="text-justify">Aqui está o seu cronograma de eventos! Todos os eventos obrigatórios e aqueles em que você se inscreveu estão organizados para que você
               não fique perdido. Não se esqueça de se inscrever nos minicursos! <span className="text-[22px] bg-red-400 p-[0.1px] px-1 font-bold text-white">Clicando nos cards, você consegue mais informações sobre o evento presente
-              na sua agenda.</span>
+                na sua agenda.</span>
             </h1>
           </div>
         </div>
@@ -207,7 +207,7 @@ function organizeData(data) {
   });
   */
   // Ordenar os eventos por data e por data/hora NOVO achoq ue isso e nada é a mesma coisa, mas como tá funcionando, deixa isso assim. nao funcionou essa merda.
-  Object.keys(organized).forEach(date => { 
+  Object.keys(organized).forEach(date => {
     organized[date].sort((a, b) => new Date(b.date_init) - new Date(a.date_init));
   });
 
@@ -264,7 +264,7 @@ const Modal = ({ handleModal, modal }) => {
           </div>
           <div className="text-zinc-700 space-y-2">
             <h1 className="font-bold bg-amber-200">ℹ SOBRE</h1>
-            <p className="text-justify font-extralight">
+            <p className="text-justify font-extralight break-words">
               {modal.descriptionPattern}
             </p>
           </div>
@@ -293,12 +293,13 @@ const Modal = ({ handleModal, modal }) => {
                           </div>
                           <div className="flex flex-row space-x-2">
                             <h1 className="font-emoji">📍 {event.local}</h1>
-                            <h1>{event.local_description}</h1>
+                            <h1 className="break-words">{event.local_description}</h1>
                           </div>
-                          <div className="flex flex-row space-x-2">
+                          <div className="flex flex-row flex-wrap space-x-2 w-full">
                             <h1 className="font-emoji">⭐</h1>
-                            <h1>{event.description}</h1>
+                            <h1 className="break-words overflow-hidden">{event.description}</h1>
                           </div>
+
                         </div>
                       </div>
                       <div className="bg-zinc-700 p-[0.05px] w-[60%]" />
@@ -361,7 +362,7 @@ const CardProgramacao = ({ cor_primaria, dateKey, event, handleModal }) => {
                 //const date_end = new Date(value.timeline[value.timeline.length - 1].date_end).toLocaleTimeString().slice(0, 5)
 
                 return (
-                  <div className="flex flex-col bg-white cursor-pointer" onClick={() => { handleModal(value) }} key={Math.floor(Math.random() * 100)*index}>
+                  <div className="flex flex-col bg-white cursor-pointer" onClick={() => { handleModal(value) }} key={Math.floor(Math.random() * 100) * index}>
                     <div className="p-1 bg-green-500" />
                     <div className=" flex flex-row p-2 lg:p-3">
                       <div className="w-[80%] text-start px-2">
@@ -369,7 +370,7 @@ const CardProgramacao = ({ cor_primaria, dateKey, event, handleModal }) => {
                           <h1 className="break-words text-start font-extrabold text-black text-[13px] lg:text-[16px]">{value.name.toLocaleUpperCase()}</h1>
                         </div>
                         <div>
-                          <p className="text-zinc-700 font-extralight">{value.description}</p>
+                          <p className="text-zinc-700 font-extralight break-words">{value.description}</p>
                         </div>
                       </div>
                       <div className={`flex-1 flex-col content-center items-center justify-center align-middle w-[20%] border-l-4 border-green-300 text-black`}>
