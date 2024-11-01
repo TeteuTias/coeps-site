@@ -454,7 +454,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
                         </div>
                     </div>
                     <div>
-                        <h1 className="font-thin text-center">
+                        <h1 className="font-thin text-center break-words whitespace-normal">
                             {activity.description}
                         </h1>
                     </div>
