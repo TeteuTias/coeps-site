@@ -16,7 +16,7 @@ export const GET = withApiAuthRequired(async function GET(request, { params }) {
 
     const { db } = await connectToDatabase();
 
-    const data = await db.collection('organizadores').find({
+    const data = await db.collection('certificadosAtividades').find({
       _id: new ObjectId(idComponente)
     }).toArray()
 
@@ -26,10 +26,10 @@ export const GET = withApiAuthRequired(async function GET(request, { params }) {
 
     const fileId = data[0].certificateId
 
-    const bucket = new GridFSBucket(db, { bucketName: 'organizadores' });
+    const bucket = new GridFSBucket(db, { bucketName: 'certificadosAtividades' });
 
     // Verifique se o arquivo pertence ao usuário
-    const file = await db.collection('organizadores.files').findOne({ _id: new ObjectId(fileId) });
+    const file = await db.collection('certificadosAtividades.files').findOne({ _id: new ObjectId(fileId) });
 
     if (!file) {
       console.log(fileId)
