@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import CardDatas from '@/app/components/CardDatas';
 import Link from 'next/link';
 import WarningModal from '@/app/components/WarningModal';
+import { useRouter } from 'next/navigation';
 
 import TelaLoading from '@/app/components/TelaLoading';
 //
 //
 export default function Home() {
+    const route = useRouter()
     const [firstLoading, setFirstLoading] = useState(true)
     const [dataOrganizador, setDataOrganizador] = useState([])
     const [dataAtividades, setDataAtividades] = useState([])
@@ -58,7 +60,7 @@ export default function Home() {
     const baixarCertificadoAtividades = async (componentId) => {
         setIsLoadingDeleteOrSend(true)
         try {
-            const response = await fetch(`/api/get/certificadoAtividade/${componentId}`, {
+            const response = await fetch(`/api/get/certificateUrl/${componentId}`, {
                 method: 'GET',
             });
 
@@ -66,31 +68,19 @@ export default function Home() {
                 throw new Error('Erro ao fazer o download do arquivo');
             }
 
-            // Extrair o nome do arquivo do cabeçalho
-            const contentDisposition = response.headers.get('Content-Disposition');
-            const filename = contentDisposition
-                ? contentDisposition.split('filename=')[1]
-                : 'downloaded_file';
+            const responseJson = await response.json()
 
-            // Criar um blob a partir do stream de resposta
-            const blob = await response.blob();
+            route.push(responseJson.message)
+            //window.open(responseJson.message, "_blank");
 
-            // Criar um link temporário para download
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename.replace(/"/g, ''); // Remover aspas do nome do arquivo, se houver
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(url); // Limpar o URL temporário
+
         } catch (error) {
-            // setIsModalError(error.message || "Ocorreu algum erro ao tentar baixar seu arquivo. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe COEPS.")
+            //setIsModalError(error.message || "Ocorreu algum erro ao tentar baixar seu arquivo. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe COEPS.")
             console.error('Erro ao baixar o arquivo:', error);
         }
         finally {
-            // setIsModalError("Seu download foi realizado com sucesso!")
-            // setIsLoadingDeleteOrSend(0)
+            //setIsModalError("Seu download foi realizado com sucesso!")
+            setIsLoadingDeleteOrSend(false)
         }
     };
 
@@ -154,7 +144,7 @@ export default function Home() {
     }, []);
 
 
-    if (firstLoading) {
+    if (firstLoading || isLoadingDeleteOrSend) {
         return (
             <>
                 <TelaLoading />
@@ -219,16 +209,16 @@ export default function Home() {
                                                                 style={{ borderTopColor: value.isOpen ? "#526eff" : "#ff5d52" }}
                                                             >
                                                                 <div>
-                                                                    <p className='text-red-600 font-bold'>{value.type.toLocaleUpperCase() + " - [" + value.name.toLocaleUpperCase() + "]"}</p>
+                                                                    <p className='text-red-600 font-bold'>{value.type.toLocaleUpperCase() + " - [" + value.type.toLocaleUpperCase() + "]"}</p>
                                                                 </div>
                                                                 <div className='text-gray-600'>
                                                                     <p>
                                                                         {
-                                                                            value.isOpen ?
-                                                                                value.certificateId ?
+                                                                            value.isShow ?
+                                                                                value.isOk ?
                                                                                     (
                                                                                         <p className='text-blue-950 cursor-pointer'
-                                                                                            onClick={() => baixarCertificadoOrganizador(value._id)}
+                                                                                            onClick={() => baixarCertificadoAtividades(value._id)/*baixarCertificadoOrganizador(value._id)*/}
                                                                                         >Clique para baixar seu certificado.</p>
                                                                                     )
                                                                                     :
@@ -261,23 +251,23 @@ export default function Home() {
                                                 <h1 className='font-semibold text-slate-950 text-[20px] lg:text-[20px]'>👨‍🎓 CERTIFICADOS ATIVIDADES</h1>
                                             </div>
                                             <div className='space-y-4'>
-                                                {dataAtividades.map((value) => {
+                                                {dataAtividades.map((atividade) => {
                                                     return (
-                                                        <div key={value._id} onClick={() => console.log(value)} className=''>
+                                                        <div key={atividade._id} onClick={() => console.log(atividade)} className=''>
                                                             <div className="bg-white shadow-md w-full md:w-[55%] lg:w-[55%] rounded-xl p-5 border-t-2"
-                                                                style={{ borderTopColor: value.isOpen ? "#526eff" : "#ff5d52" }}
+                                                                style={{ borderTopColor: atividade.isOpen ? "#526eff" : "#ff5d52" }}
                                                             >
                                                                 <div>
-                                                                    <p className='text-red-600 font-bold'>{dicionarioAtividades[`${value.activityId}`] + " - [" + value.name.toLocaleUpperCase() + "]"}</p>
+                                                                    <p className='text-red-600 font-bold'>{atividade['type'] + " - " + atividade.eventName.toLocaleUpperCase()}</p>
                                                                 </div>
                                                                 <div className='text-gray-600'>
                                                                     <p>
                                                                         {
-                                                                            value.isOpen ?
-                                                                                value.certificateId ?
+                                                                            atividade.isShow ?
+                                                                                atividade.isOk ?
                                                                                     (
                                                                                         <p className='text-blue-950 cursor-pointer'
-                                                                                            onClick={() => baixarCertificadoAtividades(value._id)}
+                                                                                            onClick={() => baixarCertificadoAtividades(atividade._id)}
                                                                                         >Clique para baixar seu certificado.</p>
                                                                                     ) :
                                                                                     (
