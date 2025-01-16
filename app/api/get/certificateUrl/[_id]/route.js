@@ -9,6 +9,7 @@ const r2 = new AWS.S3({
     signatureVersion:"v4"
 });
 
+export const dynamic = 'force-dynamic'
 
 export const GET = withApiAuthRequired(async function GET(request, { params }) {
     const idComponente = params["_id"];
