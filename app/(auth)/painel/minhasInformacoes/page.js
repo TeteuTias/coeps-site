@@ -1,11 +1,11 @@
 'use client'
 import { useEffect, useState } from "react"
-import WarningModal from "@/app/components/WarningModal"
+import WarningModal from "@/components/WarningModal"
 import Link from "next/link"
 //
 //
 //
-export const MinhasInformacoes = () => {
+export default function MinhasInformacoes() {
     const [loading, setLoading] = useState(1)
     const [loadingModal, setLoadingModal] = useState(0)
     const [DATA, setData] = useState(undefined)
@@ -114,7 +114,6 @@ export const MinhasInformacoes = () => {
         </>
     )
 }
-export default MinhasInformacoes
 //
 const LoadingModal = ({ isLoading = true }) => {
     if (!isLoading) return null;

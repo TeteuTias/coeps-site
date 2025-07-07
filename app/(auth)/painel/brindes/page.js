@@ -1,9 +1,5 @@
 'use client'
 // pages/index.js
-import { useEffect, useState } from 'react';
-import CardDatas from '@/app/components/CardDatas';
-import Link from 'next/link';
-import WarningModal from '@/app/components/WarningModal';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 //
@@ -50,11 +46,12 @@ export default function Home() {
                         </div>
                         <div className="">
                             <Image
+                                alt="Parceria EasySuture"
                                 src="/images/logos/easysuture.png"
                                 width={150}
                                 height={150}
                                 className='cursor-pointer'
-                                onClick={()=> route.push("https://easysuture.com.br/")}
+                                onClick={() => route.push("https://easysuture.com.br/")}
                             />
                         </div>
                     </div>

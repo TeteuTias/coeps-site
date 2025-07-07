@@ -1,12 +1,9 @@
 'use client'
 // pages/index.js
 import { useEffect, useState } from 'react';
-import CardDatas from '@/app/components/CardDatas';
-import Link from 'next/link';
-import WarningModal from '@/app/components/WarningModal';
 import { useRouter } from 'next/navigation';
 
-import TelaLoading from '@/app/components/TelaLoading';
+import TelaLoading from '@/components/TelaLoading';
 //
 //
 export default function Home() {

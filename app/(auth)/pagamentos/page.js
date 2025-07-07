@@ -4,12 +4,9 @@ import { useUser } from "@auth0/nextjs-auth0/client"
 import { useState, useEffect } from "react"
 import { useRouter } from 'next/navigation';
 import Link from "next/link";
-import Image from "next/image";
-import TelaLoading from "@/app/components/TelaLoading";
-import PaginaErrorPadrao from "@/app/components/PaginaErrorPadrao";
-import HeaderPainel from "@/app/components/HeaderPainel";
+import TelaLoading from "@/components/TelaLoading"
+import HeaderPainel from "@/components/HeaderPainel";
 import Cards from 'react-credit-cards-2';
-import WarningModal from '@/app/components/WarningModal';
 //
 //
 //
@@ -420,7 +417,7 @@ const CardPagamentos = ({ eventId = "", type = "", valor_total = "ERROR", data_f
 
         // Chame a função assíncrona
         fetchData();
-    }, [typeText]);
+    }, [typeText, eventId, type]);
     //
     /*
         Dicionário

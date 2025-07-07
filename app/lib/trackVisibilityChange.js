@@ -19,7 +19,7 @@ export default function TrackVisibilityChange ({toggleState}) {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [toggleState]);
 
   return;
 }

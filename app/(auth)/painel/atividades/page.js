@@ -1,9 +1,7 @@
 'use client'
 import { useEffect, useState } from "react"
-import HeaderPainel from "@/app/components/HeaderPainel"
-import WarningModal from "@/app/components/WarningModal"
+import WarningModal from "@/components/WarningModal"
 import { DateTime } from "luxon"
-import { useRouter } from 'next/navigation';
 import Link from "next/link"
 //
 //

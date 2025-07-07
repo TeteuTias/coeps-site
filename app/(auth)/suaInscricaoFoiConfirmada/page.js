@@ -1,7 +1,7 @@
 'use client'
 import { useState } from "react"
 import TrackVisibilityChange from "@/app/lib/trackVisibilityChange"
-import FireWork from "@/app/components/Fireworks"
+import FireWork from "@/components/Fireworks"
 import { useRouter } from 'next/navigation'
 
 
