@@ -16,6 +16,7 @@ export const GET = withApiAuthRequired(async function GET(request, { params }) {
         ).toArray()
 
         return NextResponse.json({ data: result[0].name || "ERROR" }, { status: 200 });
+        // result[0].name => ILecture["name"]
 
     } catch (error) {
         console.log(error.message);
