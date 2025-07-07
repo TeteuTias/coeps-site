@@ -7,10 +7,8 @@ export default function TrackVisibilityChange ({toggleState}) {
     const handleVisibilityChange = () => {
       if (document.hidden) {
         toggleState(0)
-        // Aqui você pode realizar alguma ação, como salvar o estado ou pausar uma funcionalidade
       } else {
         toggleState(1)
-        // Aqui você pode realizar alguma ação quando o usuário volta, como retomar uma funcionalidade
       }
     };
 

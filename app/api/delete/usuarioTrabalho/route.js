@@ -22,8 +22,6 @@ export const POST = withApiAuthRequired(async function POST(request) {
         // const bucket = new GridFSBucket(db, { bucketName: 'trabalhos' });
 
         // Verificando se o arquivo pertence ao usuário
-        console.log(id_usuario)
-        console.log(urlBlob)
         const file = await db.collection('trabalhos_blob').findOne({ url: urlBlob, "userId": id_usuario });
 
         if (!file) {

@@ -1,1 +1,0 @@
-Ao criar uma conta manualmente pelo auth0 ele não dispara o pos_registration01. assim, se precisar crie voce mesmo indo no site
