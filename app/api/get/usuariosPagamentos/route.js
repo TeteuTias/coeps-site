@@ -45,6 +45,7 @@ export const GET = withApiAuthRequired(async function GET( request, { params } )
 
             }}
         ).toArray()
+        // result[0] => { pagamento: IUser["pagamento"] }
         return NextResponse.json({ "data": result[0] });
         
     }

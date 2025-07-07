@@ -1,5 +1,6 @@
 import { connectToDatabase } from '@/app/lib/mongodb';
 import { NextResponse } from 'next/server';
+
 //
 // Exemplo de return:
 // {"data":{"isPos_registration":0,"informacoes_usuario":{"nome:":"","email":"mateus2.0@icloud.com","data_criacao":"2024-07-08T22:48:41.110Z"}}}
@@ -24,6 +25,8 @@ export async function GET(request, { params }) {
 
             ).toArray(),
         ]);
+        // result 1 == ICourse
+        // result 2 == ILecture
         return NextResponse.json(
             { result1, result2 },
             {

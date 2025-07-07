@@ -1,13 +1,11 @@
 'use client'
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { BUILD_ID_FILE } from "next/dist/shared/lib/constants";
+import { ICourse, ILecture } from "@/lib/types/events/event.t";
 //
 //
 //
 export default function MinhaProgramacao() {
-  const [isFetching, setIsFetching] = useState(1)
+  const [isFetching, setIsFetching] = useState<boolean>(true)
   const [data, setData] = useState(undefined)
   const [modal, setModal] = useState(undefined)
   //
@@ -23,46 +21,6 @@ export default function MinhaProgramacao() {
     setData(event)
   }
   //
-  //
-  function organizeEventsByDate(events) {
-    // Realizando algumas verificações
-    if (!events) return 0;
-    const organizedEvents = {};
-
-    // Helper function to format date as "YYYY-MM-DD"
-    const formatDate = (date) => {
-      const d = new Date(date);
-      return d.toISOString().split('T')[0];
-    };
-
-    // Helper function to compare events by their start date
-    const compareEvents = (a, b) => {
-      const dateA = new Date(a.timeline[0].date_init);
-      const dateB = new Date(b.timeline[0].date_init);
-      return dateA - dateB;
-    };
-
-    const addEventsToDict = (eventsArray) => {
-      eventsArray.forEach(event => {
-        const eventDate = formatDate(event.timeline[0].date_init);
-        if (!organizedEvents[eventDate]) {
-          organizedEvents[eventDate] = [];
-        }
-        organizedEvents[eventDate].push(event);
-      });
-    };
-
-    // Add all events from both minicursos and palestras
-    addEventsToDict(events.minicursos);
-    addEventsToDict(events.palestras);
-
-    // Sort events within each date
-    for (const date in organizedEvents) {
-      organizedEvents[date].sort(compareEvents);
-    }
-
-    return Object.keys(organizedEvents).length ? organizedEvents : undefined;
-  }
   //
   //
   useEffect(() => {
@@ -83,11 +41,11 @@ export default function MinhaProgramacao() {
         }
 
         // Converte a resposta para JSON
-        const responseData = await response.json();
+        const responseData: { minicursos: ICourse[], palestras: ILecture[] } = await response.json();
 
         // Exibe a resposta no console para fins de demonstração
 
-        handleIsFetching(0)
+        handleIsFetching(false)
         // (responseData)
         // console.log("| ============================== |") 
         handleData({ "data": organizeData(responseData) })
@@ -208,34 +166,12 @@ function organizeData(data) {
   */
   // Ordenar os eventos por data e por data/hora NOVO achoq ue isso e nada é a mesma coisa, mas como tá funcionando, deixa isso assim. nao funcionou essa merda.
   Object.keys(organized).forEach(date => {
-    organized[date].sort((a, b) => new Date(b.date_init) - new Date(a.date_init));
+    organized[date].sort((a, b) => new Date(b.date_init).getTime() - new Date(a.date_init).getTime());
   });
 
 
   return organized;
 }
-
-const organizeTimelineByDate = (timeline) => {
-  const organized = {};
-
-  timeline.forEach(event => {
-    const dateInit = new Date(event.date_init);
-    const dateStr = dateInit.toISOString().split('T')[0];
-
-    if (!organized[dateStr]) {
-      organized[dateStr] = [];
-    }
-
-    organized[dateStr].push(event);
-  });
-
-  // Ordenar os eventos por horário de início
-  Object.keys(organized).forEach(date => {
-    organized[date].sort((a, b) => new Date(a.date_init) - new Date(b.date_init));
-  });
-
-  return organized;
-};
 
 
 const Modal = ({ handleModal, modal }) => {

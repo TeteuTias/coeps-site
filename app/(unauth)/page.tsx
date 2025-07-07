@@ -1,9 +1,6 @@
 'use client'
 import Image from "next/image";
-import Header from "../components/Header"
-import { useUser } from "@auth0/nextjs-auth0/client"
 import Link from "next/link";
-import { useState, useEffect } from "react";
 //
 //
 
@@ -237,7 +234,7 @@ function BannerDIV4() {
       <div className=" flex flex-col justify-center items-center lg:items-start content-center lg:flex-row space-y-12 lg:space-y-0 lg:space-x-12 p-7">
         <div className="w-fit text-[#2c3e50]">
           <h1 className="font-bold text-[25px] lg:text-[30px] font-coeps text-[#2c3e50] ">INSCRIÇÕES ANTECIPADAS</h1>
-          <p1>Aproveite o lote inicial com valores especiais</p1>
+          <p>Aproveite o lote inicial com valores especiais</p>
           <h1>--------</h1>
           <button className="bg-[#3e4095] px-5 py-2 font-coeps text-white"><Link href="/inscricoes" prefetch={false}>GARANTA SUA VAGA</Link></button>
         </div>

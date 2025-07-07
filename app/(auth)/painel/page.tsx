@@ -1,10 +1,6 @@
 'use client'
 
 import Link from "next/link";
-import { useState } from "react";
-
-import HeaderPainel from "../../components/HeaderPainel";
-import Image from "next/image";
 //
 //
 //
@@ -35,7 +31,7 @@ function PaginaAreaDoCliente() { // como é uma pagina, pega toda a tela para el
             <Link href="painel/trabalhos" prefetch={false}><CardOpcoes texto="Submissão de Trabalhos" emoji="📚" /></Link>
             <Link href="painel/minhaProgramacao" prefetch={false}><CardOpcoes texto="Minha Programação" emoji="📅" /></Link>
             <Link href="painel/minhasInformacoes" prefetch={false}><CardOpcoes texto="Minhas Informações" emoji="ℹ" /></Link>
-            <Link href="painel/certificados"><CardOpcoes texto="Meus Certificados" emoji="✉"  prefetch={false}/></Link>
+            <Link href="painel/certificados" prefetch={false}><CardOpcoes texto="Meus Certificados" emoji="✉" /></Link>
             <Link href="painel/atividades" prefetch={false}><CardOpcoes texto="Atividades" emoji="👩‍🎓" /></Link>
             <Link className="flex justify-center items-center bg-transparent col-span-full lg:col-span-full" href="painel/brindes" prefetch={false}><CardOpcoes texto="Brindes" emoji="🎁" /></Link>
           </div>

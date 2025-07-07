@@ -30,6 +30,7 @@ export const GET = withApiAuthRequired(async function GET(request, { params }) {
             }
         ).toArray()
         return NextResponse.json({ ...result[0].informacoes_usuario },{status:200});
+        // result[0].informacoes_usuario => IUser['informacoes_usuario']
 
     }
     catch (error) {

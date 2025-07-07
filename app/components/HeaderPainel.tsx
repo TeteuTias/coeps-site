@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-const HeaderPainel = ({ isPayed = true }) => {
+const HeaderPainel = ({ isPayed = true }: { isPayed: boolean }) => {
     const not_payed = "Realize o pagamento para ter acesso ao site completo"
     const [menuAberto, setMenuAberto] = useState(false);
 
@@ -107,7 +107,7 @@ const HeaderPainel = ({ isPayed = true }) => {
                             isPayed ?
                                 <>
                                     <li>
-                                        <Link href="/painel"  prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
+                                        <Link href="/painel" prefetch={false} className='hover:text-red-500 ease-linear duration-150'>
                                             Início
                                         </Link>
                                     </li>

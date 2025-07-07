@@ -3,10 +3,11 @@ import Image from "next/image"
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import TituloBanner from "@/app/components/TituloBanner";
+import { IConferenceProceedings } from "@/lib/types/conferenceProceedings/conferenceProceedings.t";
 //
 //
 export default function Anais() {
-  const [anais, setAnais] = useState(null);
+  const [anais, setAnais] = useState<null | IConferenceProceedings[]>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   //
@@ -22,11 +23,11 @@ export default function Anais() {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
-        const data = await response.json();
+        const data:{data:IConferenceProceedings[]} = await response.json();
         setLoading(false);
         // Ordenar a lista com base em date_update
         const sortedData = data.data.sort((a, b) =>
-          new Date(a.date_update) - new Date(b.date_update)
+          new Date(a.date_update).getTime() - new Date(b.date_update).getTime()
         );
         setAnais(sortedData);
       } catch (error) {

@@ -36,6 +36,7 @@ export const GET = withApiAuthRequired(async function GET(request, { params }) {
     */
 
     return NextResponse.json({ ...result[0] }, { status: 200 });
+    // result[0] => IPaymentConfig
 
   }
   catch (error) {

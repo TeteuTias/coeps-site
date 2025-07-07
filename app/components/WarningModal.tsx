@@ -2,7 +2,21 @@
 
 import React from 'react';
 
-const WarningModal = ({ message = "MENSAGEM NÃO DEFINIDA", textButton = "FECHAR", onClose = () => { }, closeModal = () => { }, isModal = 1 }) => {
+interface WarningModalProps { // deixar tudo com "?" ?
+    message: string;
+    textButton: string;
+    onClose: () => void;
+    closeModal: (value: number) => void;
+    isModal: boolean;
+}
+
+const WarningModal = ({
+    message = "MENSAGEM NÃO DEFINIDA",
+    textButton = "FECHAR",
+    onClose = () => { },
+    closeModal = () => { },
+    isModal = false
+}: WarningModalProps) => {
     return (
         <>
             {

@@ -5,12 +5,13 @@ import Link from "next/link"
 import CardDatas from "../../components/CardDatas"
 import { useEffect, useState } from "react"
 import Waves from "@/app/components/Waves"
+import IAcademicWorks from "@/lib/types/academicWorks/academicWorks.t"
 //
 //
 export default function Trabalhos() {
-    const [config, setConfig] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [config, setConfig] = useState<IAcademicWorks | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
     //
     //
 
@@ -24,7 +25,7 @@ export default function Trabalhos() {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                const data = await response.json();
+                const data: IAcademicWorks = await response.json();
                 setLoading(false);
                 setConfig(data);
             } catch (error) {
@@ -52,10 +53,10 @@ export default function Trabalhos() {
                         <h1 className="font-semibold text-[#3E4095] text-[25px] lg:text-[30px]"><span></span>CARREGANDO</h1>
                         : config?.isOpen ? (
                             <div className="flex flex-col space-y-10 w-[90%] lg:space-y-0 lg:space-x-10 lg:flex-row justify-center content-center items-center">
-                                <CardDatas data={config?.data_limite_submissao ? new Date(config.data_limite_submissao).toLocaleDateString().slice(0, 5) : ""} texto="Limite de Submissão" />
-                                <CardDatas data={config?.trabalhos_por_usuario ? String(config?.trabalhos_por_usuario).padStart(2, '0') : ""} texto="Trabalhos por autor" />
-                                
-                                <CardDatas data={config?.data_publicacao_resultados ? new Date(config?.data_publicacao_resultados).toLocaleDateString().slice(0, 5) : ""} texto="Publicação de resultados" />
+                                <CardDatas isLoading={loading} data={config?.data_limite_submissao ? new Date(config.data_limite_submissao).toLocaleDateString().slice(0, 5) : ""} texto="Limite de Submissão" />
+                                <CardDatas isLoading={loading} data={config?.trabalhos_por_usuario ? String(config?.trabalhos_por_usuario).padStart(2, '0') : ""} texto="Trabalhos por autor" />
+
+                                <CardDatas isLoading={loading} data={config?.data_publicacao_resultados ? new Date(config?.data_publicacao_resultados).toLocaleDateString().slice(0, 5) : ""} texto="Publicação de resultados" />
                             </div>
                         ) :
                             <div className="flex flex-col space-y-10 w-[90%] justify-center content-center items-center">
@@ -99,8 +100,8 @@ export default function Trabalhos() {
                                 </p> :
                                 <p className="text-[#54595f] text-justify">
                                     O Diretório Acadêmico Diogo Guimarães (DADG) do curso de Medicina do Centro Universitário IMEPAC Araguari está preparando o <span className="text-gray-800 font-bold">VI Congresso dos Estudantes e Profissionais
-                                    de Saúde (COEPS)</span>, com o tema “Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional”. <span className="text-gray-800 font-bold"> Atualmente, o edital para a submissão de trabalhos inéditos
-                                    ainda não está aberto</span>. No entanto, em breve, divulgaremos mais
+                                        de Saúde (COEPS)</span>, com o tema “Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional”. <span className="text-gray-800 font-bold"> Atualmente, o edital para a submissão de trabalhos inéditos
+                                            ainda não está aberto</span>. No entanto, em breve, divulgaremos mais
                                     informações sobre como participar e submeter suas pesquisas. Fique atento ao nosso site e às nossas redes sociais para atualizações e detalhes sobre o processo de submissão.
                                 </p>
                         }

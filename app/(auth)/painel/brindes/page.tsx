@@ -108,7 +108,7 @@ function generateHexColor() {
     return color;
 }
 
-const BannerAtividade = ({ activity, userId, color }) => {
+const BannerAtividade = ({ activity, color }) => {
     const route = useRouter()
     const push = (e) => {
         route.push(e)

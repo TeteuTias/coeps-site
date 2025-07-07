@@ -2,15 +2,16 @@
 import { useEffect, useState } from "react"
 import WarningModal from "@/components/WarningModal"
 import Link from "next/link"
+import { IUser } from "@/app/lib/types/user/user.t"
 //
 //
 //
 export default function MinhasInformacoes() {
-    const [loading, setLoading] = useState(1)
-    const [loadingModal, setLoadingModal] = useState(0)
-    const [DATA, setData] = useState(undefined)
-    const [message, setMessage] = useState(undefined)
-    const [isModal, setIsModal] = useState(0)
+    const [loading, setLoading] = useState<boolean>(true)
+    const [loadingModal, setLoadingModal] = useState<boolean>(false)
+    const [DATA, setData] = useState<IUser["informacoes_usuario"] | undefined>(undefined)
+    const [message, setMessage] = useState<string | undefined>(undefined)
+    const [isModal, setIsModal] = useState<boolean>(false)
     //
     //
     useEffect(() => {
@@ -29,14 +30,13 @@ export default function MinhasInformacoes() {
                     throw new Error('Falha ao enviar a requisição GET');
                 }
                 // Converte a resposta para JSON
-                const responseData = await response.json();
-                console.log(responseData)
+                const responseData: IUser["informacoes_usuario"] = await response.json();
                 setData(responseData)
             } catch (error) {
                 console.error('Erro ao enviar a requisição GET:', error);
             }
             finally {
-                setLoading(0)
+                setLoading(false)
             }
         };
         enviarRequisicaoGet();
@@ -47,16 +47,16 @@ export default function MinhasInformacoes() {
         setIsModal(e)
     }
     // 
-    const updateData = async (update) => {
+    const updateData = async (update: { [key: string]: string }) => {
         // update = {campo_a_ser_atualizado: atualizacao}
         if (Object.values(update)[0].trim() == "") {
             setMessage("Preencha o campo antes de realizar a atualização.")
-            setIsModal(1)
+            setIsModal(true)
             return undefined
         }
         console.log(DATA)
         try {
-            setLoadingModal(1)
+            setLoadingModal(true)
             // console.log(update)
             const response = await fetch('/api/put/usuarioConfig', {
                 method: 'PUT',
@@ -68,11 +68,11 @@ export default function MinhasInformacoes() {
             const responseJson = await response.json()
             if (!response.ok) {
                 setMessage(responseJson.message || "Ocorreu um erro desconhecido. Recarregue a página e tente novamente. Caso o erro continue, entre em contato com a equipe COEPS.")
-                setIsModal(1)
+                setIsModal(true)
                 return undefined
             }
             setMessage(responseJson.message)
-            setIsModal(1)
+            setIsModal(true)
             setData(prev => ({
                 ...prev,
                 ...update
@@ -85,26 +85,22 @@ export default function MinhasInformacoes() {
             console.log(erro)
         }
         finally {
-            setLoadingModal(0)
+            setLoadingModal(false)
         }
-    }
-    //
-    const handleAlterarSenha = async () => {
-        setMessage("Para alterar a sua senha, você será redirecionado para a tela de login onde encontrará a opção 'Esqueci minha senha'. Ao clicar nessa opção, você receberá as instruções necessárias para prosseguir. Se desejar continuar após isso, clique em 'Continuar'.")
-        setIsModal(1)
-        return undefined
     }
     //
     return (
         <>
-            <WarningModal message={message} isModal={isModal} closeModal={closeModalMessage} />
+            <WarningModal message={message} isModal={isModal} closeModal={closeModalMessage} textButton={""} onClose={function (): void {
+                throw new Error("Function not implemented.")
+            }} />
             <LoadingModal isLoading={loadingModal} />
             <div className=" bg-zinc-50" onClick={() => { console.log(DATA) }}>
                 <div className='bg-[#3E4095] p-5'>
                     <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Configurações de Usuário</h1>
                 </div>
                 <div className="flex flex-col items-center space-y-5 py-4">
-                    <Card label={"Nome"} placeholder={DATA?.nome ?? ""} labelButton={"Trocar Nome"} loading={loading} onClick={updateData} nomeCampo={'nome'} />
+                    <Card label={"Nome"} placeholder={DATA?.nome ?? ""} labelButton={"Trocar Nome"} loading={loading} onClick={updateData} nomeCampo={'nome'} type={"text"} />
                     <CardAlterarSenha label="Alterar Senha" labelButton="Trocar Senha" loading={loading} />
                     { /*<Card label={"Email"} placeholder={DATA?.email ?? ""} labelButton={"Trocar Email"} loading={loading} onClick={updateData} nomeCampo={'email'} /> */}
                     <Card label={"Cpf"} placeholder={DATA?.cpf ?? ""} labelButton={"Trocar Cpf"} loading={loading} type={"number"} onClick={updateData} nomeCampo={'cpf'} />
@@ -133,7 +129,16 @@ const LoadingModal = ({ isLoading = true }) => {
     );
 };
 //
-const Card = ({ label = "NÃO DEFINIDO", placeholder = "NÃO DEFINIDO", labelButton = "NÃO DEFINIDO", loading = true, type = 'text', onClick = () => { }, nomeCampo }) => {
+const Card = ({ label = "NÃO DEFINIDO", placeholder = "NÃO DEFINIDO", labelButton = "NÃO DEFINIDO", loading = true, type = 'text', onClick, nomeCampo }: {
+    // E esta é a parte da ANOTAÇÃO DE TIPO para o objeto de props
+    label: string;
+    placeholder: string;
+    labelButton: string;
+    loading: boolean;
+    type: 'text' | 'password' | 'email' | 'number' | 'date';
+    onClick: ({ }) => Promise<void>;
+    nomeCampo: string;
+}) => {
     const [inputValue, setInputValue] = useState('');
 
     const handleInputChange = (event) => {
@@ -178,8 +183,8 @@ const Card = ({ label = "NÃO DEFINIDO", placeholder = "NÃO DEFINIDO", labelBut
         </div>
     );
 };
-const CardAlterarSenha = ({ label = "NÃO DEFINIDO", labelButton = "NÃO DEFINIDO", loading = true }) => {
-    const [modal, setModal] = useState('')
+const CardAlterarSenha = ({ label = "NÃO DEFINIDO", labelButton = "NÃO DEFINIDO", loading = true }: { label: string, labelButton: string, loading: boolean }) => {
+    const [modal, setModal] = useState<string>("")
     if (loading) {
         return (
             <div className="border-[1px] border-teal-300 rounded-t-lg w-[95%] lg:w-[30%] pb-3 rounded-b-lg bg-white">
@@ -189,7 +194,9 @@ const CardAlterarSenha = ({ label = "NÃO DEFINIDO", labelButton = "NÃO DEFINID
             </div>
         )
     }
-    const WarningModal = ({ message = "MENSAGEM NÃO DEFINIDA", textButton = "FECHAR", onClose = () => { }, closeModal = () => { }, isModal = 1 }) => {
+    const WarningModal = ({ message = "MENSAGEM NÃO DEFINIDA", textButton = "FECHAR", onClose = () => { }, closeModal = () => { }, isModal = true }
+        : { message: string, textButton: string, onClose: () => void, closeModal: () => void, isModal: boolean }
+    ) => {
         return (
             <>
                 {
@@ -210,7 +217,7 @@ const CardAlterarSenha = ({ label = "NÃO DEFINIDO", labelButton = "NÃO DEFINID
                                             className="bg-red-600 font-bold text-white py-2 px-4 rounded hover:bg-red-400 transition"
                                             onClick={
                                                 () => {
-                                                    closeModal(0)
+                                                    closeModal()
                                                     onClose()
                                                 }
                                             }
@@ -222,7 +229,7 @@ const CardAlterarSenha = ({ label = "NÃO DEFINIDO", labelButton = "NÃO DEFINID
                                         className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-400 transition"
                                         onClick={
                                             () => {
-                                                closeModal(0)
+                                                closeModal()
                                                 onClose()
                                             }
                                         }
@@ -239,7 +246,9 @@ const CardAlterarSenha = ({ label = "NÃO DEFINIDO", labelButton = "NÃO DEFINID
     };
     return (
         <>
-            <WarningModal isModal={modal} closeModal={() => { setModal(0) }} message={modal} />
+            <WarningModal isModal={modal.length == 0 ? false : true} closeModal={() => { setModal("") }} message={modal} textButton={"Obrigado(a)"} onClose={function (): void {
+                throw new Error("Function not implemented.")
+            }} />
             <div className="border-[1px] border-teal-300 rounded-t-lg w-[95%] lg:w-[30%] pb-3 rounded-b-lg bg-white">
                 <div className="text-[1rem] font-semibold text-black p-4 border-b-[1px]">
                     <h1>{label}</h1>

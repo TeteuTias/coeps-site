@@ -7,6 +7,9 @@ import Link from "next/link";
 import TelaLoading from "@/components/TelaLoading"
 import HeaderPainel from "@/components/HeaderPainel";
 import Cards from 'react-credit-cards-2';
+import { ILecture } from '@/lib/types/events/event.t';
+import { IUser } from "@/app/lib/types/user/user.t"
+import { IPaymentConfig } from '@/lib/types/payments/payment.t';
 //
 //
 //
@@ -14,14 +17,14 @@ import Cards from 'react-credit-cards-2';
 export default function Pagamentos() {
     const { user, isLoading } = useUser();
     const route = useRouter()
-    const [isLoadingFetch, setIsLoadingFetch] = useState(0)
-    const [isLoadingPaymentData, setIsLoadingPaymentData] = useState(1)
-    const [dataPaymentConfig, setDataPaymentConfig] = useState(undefined)
+    const [isLoadingFetch, setIsLoadingFetch] = useState<boolean>(false)
+    const [isLoadingPaymentData, setIsLoadingPaymentData] = useState<boolean>(true)
+    const [dataPaymentConfig, setDataPaymentConfig] = useState<IPaymentConfig | undefined>(undefined)
 
-    const [isModalError, setIsModalError] = useState(0) // Pode ser 0 ou alguma string, que sinaliza um erro.
-    const [data, setData] = useState(undefined)
-    const [isFetchingData, setIsFetchingData] = useState(1) // Já começa 01 porque para não renderizar o outro e depois voltar.
-    const [isModalPayment, setModalPayment] = useState(0)
+    const [isModalError, setIsModalError] = useState<boolean>(false) // Pode ser 0 ou alguma string, que sinaliza um erro.
+    const [data, setData] = useState<{ pagamento: IUser["pagamento"] }>(undefined)
+    const [isFetchingData, setIsFetchingData] = useState<boolean>(true) // Já começa 01 porque para não renderizar o outro e depois voltar.
+    const [isModalPayment, setModalPayment] = useState<boolean>(false)
     //
     //
     //
@@ -65,11 +68,7 @@ export default function Pagamentos() {
             // Verifica se a requisição foi bem-sucedida
             if (!response.ok) {
                 try {
-                    const erro_message = await response.json()
-                    console.log("erro_message")
                     throw new Error('Falha ao enviar a requisição POST');
-
-
                 }
                 catch {
                     console.log("!response.ok - catch")
@@ -78,7 +77,7 @@ export default function Pagamentos() {
             }
 
             // Converte a resposta para JSON
-            const responseData = await response.json(); // {link:url_para_o_pagamento}
+            const responseData: { link: string } = await response.json(); // {link:url_para_o_pagamento}
 
             // Exibe a resposta no console para fins de demonstração
             //console.log('Resposta da requisição POST:', responseData);
@@ -120,13 +119,13 @@ export default function Pagamentos() {
         //
     };
     //
-    const url_get_usuariosPagamentos = "/api/get/usuariosPagamentos"
+
     //
     useEffect(() => {
         const enviarRequisicaoGet = async () => {
             try {
                 // Configuração da requisição GET usando fetch
-                const response = await fetch(url_get_usuariosPagamentos, {
+                const response = await fetch("/api/get/usuariosPagamentos", {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -140,7 +139,7 @@ export default function Pagamentos() {
                 }
 
                 // Converte a resposta para JSON
-                const responseData = await response.json();
+                const responseData: { data: { pagamento: IUser["pagamento"] } } = await response.json();
 
                 // Exibe a resposta no console para fins de demonstração
                 console.log('Resposta da requisição GET:', responseData);
@@ -176,7 +175,7 @@ export default function Pagamentos() {
                 }
 
                 // Converte a resposta para JSON
-                const responseData = await response.json();
+                const responseData: IPaymentConfig = await response.json();
                 setDataPaymentConfig(responseData)
 
             } catch (error) {
@@ -184,7 +183,7 @@ export default function Pagamentos() {
                 // Tratar erros conforme necessário
             }
             finally {
-                setIsLoadingPaymentData(0)
+                setIsLoadingPaymentData(false)
             }
         };
         enviarRequisicaoGet();
@@ -196,8 +195,8 @@ export default function Pagamentos() {
     //
     return (
         <>
-            <HeaderPainel isPayed={data?.pagamento?.situacao != 1 ? 0 : 1} />
-            <PaymentForm isModalOpen={isModalPayment} onClose={() => { setModalPayment(0) }} />
+            <HeaderPainel isPayed={data?.pagamento?.situacao != 1 ? false : true} />
+            <PaymentForm isModalOpen={isModalPayment} onClose={() => { setModalPayment(false) }} />
             {
                 !isLoadingFetch && isModalError ?
                     <ModalError handleIsModalError={handleIsModalError} texto={isModalError} />
@@ -278,7 +277,7 @@ export default function Pagamentos() {
                                                     data.pagamento.lista_pagamentos?.map((value, index) => {
                                                         return (
                                                             <div key={index} className="">
-                                                                <CardPagamentos eventId={data.pagamento.lista_pagamentos[index]?._eventID || ""} type={data.pagamento.lista_pagamentos[index]?._type || ""} invoiceUrl={value.invoiceUrl} valor={value.value} nome={'nome'} data_formatada={value.dateCreated} invoiceNumber={value.invoiceNumber} status={value.status} description={value.description} />
+                                                                <CardPagamentos eventId={data.pagamento.lista_pagamentos[index]?._eventID || ""} type={data.pagamento.lista_pagamentos[index]?._type || ""} invoiceUrl={value.invoiceUrl} valor={value.value} data_formatada={value.dateCreated} invoiceNumber={value.invoiceNumber} status={value.status} description={value.description} />
                                                             </div>
                                                         )
                                                     })
@@ -316,7 +315,7 @@ export default function Pagamentos() {
                                                 (PIX, CRÉDITO À VISTA, BOLETO)
                                             </p>
                                         </button>
-                                        <button onClick={() => { setModalPayment(1) }} className={`bg-[#eb7038] text-white font-extrabold p-4 ${isLoadingFetch || isModalError ? "cursor-not-allowed" : ""}`} disabled={isLoadingFetch || isModalError ? true : false}>
+                                        <button onClick={() => { setModalPayment(true) }} className={`bg-[#eb7038] text-white font-extrabold p-4 ${isLoadingFetch || isModalError ? "cursor-not-allowed" : ""}`} disabled={isLoadingFetch || isModalError ? true : false}>
                                             REALIZAR INSCRIÇÃO
                                             <p className='text-[10px]'>
                                                 (CRÉDITO PARCELADO)
@@ -335,7 +334,7 @@ export default function Pagamentos() {
                                                 (PIX, CRÉDITO À VISTA, BOLETO)
                                             </p>
                                         </button>
-                                        <button onClick={() => { setModalPayment(1) }} className={`bg-[#eb7038] text-white font-extrabold p-4 ${isLoadingFetch || isModalError ? "cursor-not-allowed" : ""}`} disabled={isLoadingFetch || isModalError ? true : false}>
+                                        <button onClick={() => { setModalPayment(true) }} className={`bg-[#eb7038] text-white font-extrabold p-4 ${isLoadingFetch || isModalError ? "cursor-not-allowed" : ""}`} disabled={isLoadingFetch || isModalError ? true : false}>
                                             REALIZAR INSCRIÇÃO
                                             <p className='text-[10px]'>
                                                 (CRÉDITO PARCELADO)
@@ -383,11 +382,13 @@ export default function Pagamentos() {
     )
 }
 
-const CardPagamentos = ({ eventId = "", type = "", valor_total = "ERROR", data_formatada = "ERROR", invoiceNumber = "ERROR", status = "ERROR", description = "ERROR", valor = "ERROR", invoiceUrl = "/pagamentos" }) => {
+const CardPagamentos = ({ eventId, type, data_formatada, invoiceNumber, status, description, valor, invoiceUrl }: {
+    eventId: string, type: string, data_formatada: any, invoiceNumber: string, status: string, description: string, valor: number, invoiceUrl: string
+}) => {
     // Arrumando a DATA
     //
     //
-    const [typeText, setTypeText] = useState("CARREGANDO ATIVIDADE")
+    const [typeText, setTypeText] = useState<ILecture["name"]>("CARREGANDO ATIVIDADE")
 
     useEffect(() => {
         // Defina a função assíncrona dentro do `useEffect`
@@ -405,7 +406,7 @@ const CardPagamentos = ({ eventId = "", type = "", valor_total = "ERROR", data_f
                         setTypeText("ERRO AO CARREGAR NOME")
                         return;
                     }
-                    const responseJson = await response.json()
+                    const responseJson: { data: ILecture["name"] } = await response.json()
                     // Faça algo com a resposta, como atualizar o estado
                     setTypeText(responseJson.data)
                 }
@@ -457,15 +458,10 @@ const CardPagamentos = ({ eventId = "", type = "", valor_total = "ERROR", data_f
                     : ""
             }
             <div className="flex flex-row justify-center items-center content-center align-middle absolute z-10 p-1 bg-[#ff8952] top-[-15px] left-[-6px] space-x-[3px] rounded-sm">
-                {
-                    valor == "ERROR" ?
-                        <h1 className="font-bold text-[13px]">{valor}</h1>
-                        :
-                        <div className="text-[white] flex flex-row space-x-[3px]">
-                            <h1 className="font-bold text-[13px]">R$</h1>
-                            <p className="font-serif text-[13px]">{valor}</p>
-                        </div>
-                }
+                <div className="text-[white] flex flex-row space-x-[3px]">
+                    <h1 className="font-bold text-[13px]">R$</h1>
+                    <p className="font-serif text-[13px]">{valor}</p>
+                </div>
             </div>
             <div className="flex flex-row space-x-8">
                 <div className="flex w-[20%]">
@@ -511,7 +507,7 @@ function ModalError({ texto, handleIsModalError }) {
 
 const PaymentForm = ({ isModalOpen, onClose }) => {
     const [step, setStep] = useState(1); // 1 para informações pessoais, 2 para informações do cartão
-    const [data, setData] = useState(undefined)
+    const [data, setData] = useState<IPaymentConfig | undefined>(undefined)
     const [messageModalWarning2, setMessageModalWarning2] = useState("")
     const [messageModalWarning, setMessageModalWarning] = useState("")
     const [textoPagamentoEscolhido, setTextoPagametoEscolhido] = useState("")
@@ -523,7 +519,13 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
         addressNumber: '',
         phone: '',
     });
-    const [cardInfo, setCardInfo] = useState({
+    const [cardInfo, setCardInfo] = useState<{
+        number: string,
+        expiry: string,
+        cvc: string,
+        name: string,
+        focus: "name" | "number" | "expiry" | "cvc" | ""
+    }>({
         number: '',
         expiry: '',
         cvc: '',
@@ -549,7 +551,7 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
                     throw new Error('Erro ao buscar dados');
                 }
 
-                const data = await response.json();
+                const data: IPaymentConfig = await response.json();
                 setData(data)
                 setLoading(false)
                 // console.log('Dados recebidos:', data);
@@ -632,7 +634,7 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
                 },
                 body: JSON.stringify(payload),
             });
-            const result = await response.json();
+            const result: { message: string } = await response.json();
             if (!response.ok) {
                 //console.log(result)
                 throw new Error(result.message || "Aconteceu algum erro desconhecido");
@@ -641,7 +643,7 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
             setLoading(false);
 
             setMessageModalWarning(result.message)
-            setData({
+            setCardInfo({
                 number: '',
                 expiry: '',
                 cvc: '',
@@ -946,7 +948,7 @@ const PaymentForm = ({ isModalOpen, onClose }) => {
     );
 };
 
-const ResponseModal = ({ handleModalClose, handleModalAction, message = "" }) => {
+const ResponseModal = ({ message }: { message: string }) => {
     if (!message) {
         return;
     }
@@ -967,7 +969,7 @@ const ResponseModal = ({ handleModalClose, handleModalAction, message = "" }) =>
     );
 };
 
-const ResponseModal2 = ({ handleModalClose, handleModalAction, message = "" }) => {
+const ResponseModal2 = ({ handleModalClose, message }: { handleModalClose, message: string }) => {
     if (!message) {
         return;
     }

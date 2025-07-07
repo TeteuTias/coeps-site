@@ -36,8 +36,8 @@ export const GET = withApiAuthRequired (async function GET( request, { params } 
             ).toArray(),
           ]);
         return NextResponse.json({ 
-            "minicursos": result1 ?? [],
-            "palestras":result2 ?? [],
+            "minicursos": result1 ?? [], // ICourse
+            "palestras":result2 ?? [], // ILecture
         },{status:200});
 
     }

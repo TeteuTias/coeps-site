@@ -22,6 +22,7 @@ export async function GET(request, { params }) {
             }
         ).toArray()
         return NextResponse.json({ data:result });
+        // result => IConferenceProceedings
     }
     catch (error) {
         //console.log(error)

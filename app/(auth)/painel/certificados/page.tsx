@@ -11,48 +11,7 @@ export default function Home() {
     const [firstLoading, setFirstLoading] = useState(true)
     const [dataOrganizador, setDataOrganizador] = useState([])
     const [dataAtividades, setDataAtividades] = useState([])
-    const [dicionarioAtividades, setDicionarioAtividades] = useState({})
     const [isLoadingDeleteOrSend, setIsLoadingDeleteOrSend] = useState(false)
-    const [err, setErr] = useState()
-
-    const baixarCertificadoOrganizador = async (componentId) => {
-        setIsLoadingDeleteOrSend(true)
-        try {
-            const response = await fetch(`/api/get/certificadoOrganizador/${componentId}`, {
-                method: 'GET',
-            });
-
-            if (!response.ok) {
-                throw new Error('Erro ao fazer o download do arquivo');
-            }
-
-            // Extrair o nome do arquivo do cabeçalho
-            const contentDisposition = response.headers.get('Content-Disposition');
-            const filename = contentDisposition
-                ? contentDisposition.split('filename=')[1]
-                : 'downloaded_file';
-
-            // Criar um blob a partir do stream de resposta
-            const blob = await response.blob();
-
-            // Criar um link temporário para download
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename.replace(/"/g, ''); // Remover aspas do nome do arquivo, se houver
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            window.URL.revokeObjectURL(url); // Limpar o URL temporário
-        } catch (error) {
-            // setIsModalError(error.message || "Ocorreu algum erro ao tentar baixar seu arquivo. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe COEPS.")
-            console.error('Erro ao baixar o arquivo:', error);
-        }
-        finally {
-            // setIsModalError("Seu download foi realizado com sucesso!")
-            // setIsLoadingDeleteOrSend(0)
-        }
-    };
 
     const baixarCertificadoAtividades = async (componentId) => {
         setIsLoadingDeleteOrSend(true)
@@ -119,7 +78,6 @@ export default function Home() {
 
                 const result3Json = await result3.json()
 
-                setDicionarioAtividades(result3Json.data)
                 /*
                 // Aguarda todas as Promises usando Promise.all
                 const results = await Promise.all(fetchPromises);
@@ -129,8 +87,6 @@ export default function Home() {
                 */
             } catch (err) {
                 console.log(err.message)
-                // Armazena o erro no estado
-                setErr(err.message);
             } finally {
                 // Finaliza o carregamento
                 setFirstLoading(false);

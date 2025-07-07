@@ -1,6 +1,6 @@
 'use client'
 
-export default function CardDatas({ data, texto, isLoading }) {
+export default function CardDatas({ data, texto, isLoading }: { data: string, texto: string, isLoading: boolean }) {
     return (
         <div className=" shadow-2xl px-11">
             <div className="">

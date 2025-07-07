@@ -1,49 +1,13 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import Waves from '@/app/components/Waves';
-import { userAgentFromString } from 'next/server';
-import { DateTime } from 'luxon';
-
+import { ILecture, ICourse } from '@/lib/types/events/event.t';
 //
 //
-const organizeByTypeAndDate = (data) => {
-    const mergedData = [...data.result1, ...data.result2];
-
-    const groupedByTypeAndDate = mergedData.reduce((acc, item) => {
-        const type = item.type;
-        const date = item.timeline[0].date_init.split('T')[0]; // Extracting the date part (YYYY-MM-DD)
-
-        if (!acc[type]) {
-            acc[type] = {};
-        }
-
-        if (!acc[type][date]) {
-            acc[type][date] = [];
-        }
-
-        acc[type][date].push(item);
-
-        return acc;
-    }, {});
-
-    for (const type in groupedByTypeAndDate) {
-        for (const date in groupedByTypeAndDate[type]) {
-            groupedByTypeAndDate[type][date].sort((a, b) => {
-                const dateA = new Date(a.timeline[0].date_init);
-                const dateB = new Date(b.timeline[0].date_init);
-                return dateA - dateB;
-            });
-        }
-    }
-
-    return groupedByTypeAndDate;
-};
-
 const App = () => {
-    const [data, setData] = useState(null);
+    const [data, setData] = useState<null | { course: ICourse[], lecture: ILecture[] }>(null);
     const [loading, setLoading] = useState(1)
     const [organizedData, setOrganizedData] = useState({})
-    const [timeLineModal, setTimeLineModal] = useState(undefined)
     //
     const [showModal, setShowModal] = useState(false);
 
@@ -56,8 +20,11 @@ const App = () => {
         const fetchData = async () => {
             try {
                 const response = await fetch('/api/inauthenticated/get/programacao', { cache: 'no-store' });
-                const result = await response.json();
-                setData(result);
+                const result: { result1: ICourse[], result2: ILecture[] } = await response.json();
+                setData({
+                    course: result.result1,
+                    lecture: result.result2
+                });
             } catch (error) {
                 console.error('Error fetching data:', error);
             }
@@ -76,8 +43,8 @@ const App = () => {
     }, [data]);
 
 
-    function organizeData(data) {
-        const combinedResults = [...data.result1, ...data.result2];
+    function organizeData(data: { course: ICourse[], lecture: ILecture[] }) {
+        const combinedResults = [...data.course, ...data.lecture];
         const organized = {};
         combinedResults.forEach((item) => {
             if (!organized[item.type]) {
@@ -86,35 +53,6 @@ const App = () => {
             organized[item.type].push(item)
         })
         return organized
-        /*
-        combinedResults.forEach((item) => {
-            if (!organized[item.type]) {
-                organized[item.type] = {};
-            }
-
-            item.timeline.forEach((timelineItem) => {
-                const date = timelineItem.date_init.split('T')[0]; // Pega somente a data
-                if (!organized[item.type][date]) {
-                    organized[item.type][date] = [];
-                }
-
-                organized[item.type][date].push({
-                    ...timelineItem,
-                    'namePattern': item.name,
-                    'descriptionPattern': item.description,
-                    date_init: timelineItem.date_init.split('T')[0], // Mantém apenas a data no objeto
-                });
-            });
-        });
-
-        // Ordenar os eventos por date_init dentro de cada data
-        for (const type in organized) {
-            for (const date in organized[type]) {
-                organized[type][date].sort((a, b) => new Date(a.date_init) - new Date(b.date_init));
-            }
-        }
-        */
-        return organized;
     }
 
     /*
@@ -211,7 +149,7 @@ const App = () => {
 
 export default App;
 
-const Modal = ({ show, onClose, event }) => {
+const Modal = ({ show, onClose }) => {
 
     if (!show) {
         return null;
