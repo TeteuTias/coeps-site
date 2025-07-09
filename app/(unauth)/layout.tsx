@@ -2,6 +2,7 @@
 // app/layout.jsx
 import Header from '@/app/components/Header';
 import Image from "next/image";
+import './style.home.css';
 //
 //
 export default function RootLayout({ children }) {
@@ -19,16 +20,17 @@ export default function RootLayout({ children }) {
 //
 function Footer() {
   return (
-    <div className="flex justify-center items-center content-center mt-5 mb-5 bg-white">
-      <div className="flex flex-col justify-center items-center content-center">
-        <h1 className="font-bold text-[#3e4095] text-[20px]">Realização</h1>
-        <div className="flex flex-row space-x-5">
-          <div className='bg-black'>
+    <div className="footer-section">
+      <div className="glass-container w-full max-w-6xl mx-auto">
+        <h1 className="letreiro-title">Realização</h1>
+        <div className="flex flex-col md:flex-row justify-center items-center gap-8">
+          <div className='logo-container'>
             <Image
               src="/LogoImepacDADG.png"
               width={300}
               height={300}
-              alt="Picture of the author"
+              alt="Logo IMEPAC DADG"
+              className="footer-logo"
             />
           </div>
         </div>

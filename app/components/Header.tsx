@@ -1,26 +1,41 @@
 'use client'
 
 // components/Header.js
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+
 const Header = () => {
   const [menuAberto, setMenuAberto] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const toggleMenu = () => {
     setMenuAberto(!menuAberto);
   };
 
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      setIsScrolled(scrollTop > 50);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <header className="bg-gray-800 p-4 z-50 w-full sticky top-0">
+    <header className={`bg-gray-800 z-50 w-full sticky top-0 transition-all duration-300 ${
+      isScrolled ? 'p-1' : 'p-4'
+    }`}>
       <nav className="flex items-center justify-between flex-wrap">
         <div className="flex-shrink-0">
           <Link href="/" prefetch={false}>
             <Image
               src="/Logo01.png"
-              width={150}
-              height={150}
+              width={isScrolled ? 60 : 150}
+              height={isScrolled ? 60 : 150}
               alt="Logo"
+              className="transition-all duration-300"
             />
           </Link>
         </div>
@@ -145,8 +160,6 @@ const Header = () => {
         </div>
       )}
     </header>
-
-
   );
 };
 
