@@ -1,47 +1,77 @@
 'use client'
 
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
-//
-//
-//
-// <Header />
+
 export default function Page() {
+  return (
+    <div className="min-h-screen bg-[#3E4095] flex flex-col justify-center content-center items-center">
+      <PaginaAreaDoCliente />
+    </div>
+  );
+}
+
+function PaginaAreaDoCliente() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const irParaQRCode = async () => {
+    try {
+      setLoading(true);
+
+      const res = await fetch('/api/auth/me');
+      const data = await res.json();
+
+      if (!res.ok || !data?.sub) {
+        throw new Error("Usuário não autenticado");
+      }
+
+     
+      const id = data.sub.replace(/^auth0\|/, '');
+
+      router.push(`/qrCode/${id}`);
+    } catch (e) {
+      console.error("Erro ao redirecionar:", e);
+      alert("Erro ao carregar seu QR Code. Faça login novamente.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <>
-      <div className="min-h-screen bg-[#3E4095] flex flex-col justify-center content-center items-center">
-        <PaginaAreaDoCliente />
+    <div className="flex flex-col items-center content-center justify-center w-[100%] h-[100%] text-white">
+      <div className="w-[80%] lg:w-fit">
+        <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Como podemos ajudar hoje?</h1>
       </div>
-    </>
-  )
-}
-//
-//
-function PaginaAreaDoCliente() { // como é uma pagina, pega toda a tela para ele com w-[100%]
-  return (
-    <>
-      <div className="flex flex-col items-center content-center  justify-center w-[100%] h-[100%] text-white">
 
-        <div className="w-[80%] lg:w-fit">
-          <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Como podemos ajudar hoje?</h1>
-        </div>
-        <div className="flex flex-col items-center content-center justify-center lg:w-[65%] p-4 ">
-          <div className="grid grid-cols-2 gap-x-10 gap-y-10 lg:grid-cols-3 lg:gap-2 lg:gap-x-10 lg:gap-y-10">
-            <Link href="pagamentos" prefetch={false}><CardOpcoes texto="Meus Pagamentos" emoji="💳" /></Link>
-            <Link href="painel/trabalhos" prefetch={false}><CardOpcoes texto="Submissão de Trabalhos" emoji="📚" /></Link>
-            <Link href="painel/minhaProgramacao" prefetch={false}><CardOpcoes texto="Minha Programação" emoji="📅" /></Link>
-            <Link href="painel/minhasInformacoes" prefetch={false}><CardOpcoes texto="Minhas Informações" emoji="ℹ" /></Link>
-            <Link href="painel/certificados" prefetch={false}><CardOpcoes texto="Meus Certificados" emoji="✉" /></Link>
-            <Link href="painel/atividades" prefetch={false}><CardOpcoes texto="Atividades" emoji="👩‍🎓" /></Link>
-            <Link className="flex justify-center items-center bg-transparent col-span-full lg:col-span-full" href="painel/brindes" prefetch={false}><CardOpcoes texto="Brindes" emoji="🎁" /></Link>
-          </div>
+      <div className="flex flex-col items-center content-center justify-center lg:w-[65%] p-4">
+        <div className="grid grid-cols-2 gap-x-10 gap-y-10 lg:grid-cols-3 lg:gap-2 lg:gap-x-10 lg:gap-y-10">
+
+          <Link href="pagamentos" prefetch={false}><CardOpcoes texto="Meus Pagamentos" emoji="💳" /></Link>
+          <Link href="painel/trabalhos" prefetch={false}><CardOpcoes texto="Submissão de Trabalhos" emoji="📚" /></Link>
+          <Link href="painel/minhaProgramacao" prefetch={false}><CardOpcoes texto="Minha Programação" emoji="📅" /></Link>
+          <Link href="painel/minhasInformacoes" prefetch={false}><CardOpcoes texto="Minhas Informações" emoji="ℹ" /></Link>
+          <Link href="painel/certificados" prefetch={false}><CardOpcoes texto="Meus Certificados" emoji="✉" /></Link>
+          <Link href="painel/atividades" prefetch={false}><CardOpcoes texto="Atividades" emoji="👩‍🎓" /></Link>
+          <Link className="flex justify-center items-center bg-transparent col-span-full lg:col-span-full" href="painel/brindes" prefetch={false}><CardOpcoes texto="Brindes" emoji="🎁" /></Link>
+
+          {/* ✅ Botão do QR Code */}
+          <button
+            onClick={irParaQRCode}
+            disabled={loading}
+            className="flex justify-center items-center col-span-full lg:col-span-full"
+          >
+            <CardOpcoes texto={loading ? "Carregando..." : "Meu QR Code"} emoji="🔳" />
+          </button>
+
         </div>
       </div>
-    </>
-  )
+    </div>
+  );
 }
-//
-function CardOpcoes({ texto, emoji }) {
+
+function CardOpcoes({ texto, emoji }: { texto: string, emoji: string }) {
   return (
     <div className="flex flex-col w-32 h-32 lg:w-40 lg:h-32 items-center justify-center shadow-xl bg-white text-center p-2 cursor-pointer">
       <h1 className="text-center font-extralight text-[36px] lg:text-[40px] font-emoji text-gray-800">
@@ -51,133 +81,5 @@ function CardOpcoes({ texto, emoji }) {
         {texto}
       </h1>
     </div>
-  )
-}
-//
-//
-//
-/*
-const Header = () => {
-  const [menuAberto, setMenuAberto] = useState(false);
-
-  const toggleMenu = () => {
-    setMenuAberto(!menuAberto);
-  };
-
-  return (
-    <header className="bg-gray-800 p-4 z-50 w-[100%] fixed top-0">
-      <nav className="flex items-center justify-between ">
-        <div>
-          <Link href="/">
-            <Image
-              src="/Logo01.png"
-              width={150}
-              height={150}
-              alt="Picture of the author"
-            />
-          </Link>
-        </div>
-        <div className="hidden space-x-4 lg:flex lg:justify-end  w-[50%]">
-          <ul className="flex flex-row items-center justify-center content-center space-x-4 lg:space-x-10">
-            <li>
-              <Link href="/painel/" className='hover:text-red-500 ease-linear duration-150'>
-                Área do Congressista
-              </Link>
-            </li>
-            <li>
-              <Link href="/organizadores" className='hover:text-red-500 ease-linear duration-150'>
-                Trabalhos
-              </Link>
-            </li>
-            <li>
-              <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
-                Minha programação
-              </Link>
-            </li>
-            <li>
-              <Link href="/anais" className='hover:text-red-500 ease-linear duration-150'>
-                Anais
-              </Link>
-            </li>
-            <li>
-              <Link href="/#ComponenteContados" className='hover:text-red-500 ease-linear duration-150'>
-                Contato
-              </Link>
-            </li>
-            <li>
-              <Link href="/api/auth/login" className='hover:text-red-500 ease-linear duration-150'>
-                <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2 ">LOGOUT</button>
-              </Link>
-            </li>
-          </ul>
-        </div>
-        <div className="lg:hidden">
-          <button
-            onClick={toggleMenu}
-            className="text-white hover:text-gray-300 focus:outline-none"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              {menuAberto ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              )}
-            </svg>
-          </button>
-        </div>
-      </nav>
-      {menuAberto && (
-        <div className="lg:hidden">
-          <ul className="mt-4 space-y-2">
-            <li>
-              <Link href="/painel/" className='hover:text-red-500 ease-linear duration-150'>
-                Área do Congressista
-              </Link>
-            </li>
-            <li>
-              <Link href="/organizadores" className='hover:text-red-500 ease-linear duration-150'>
-                Trabalhos
-              </Link>
-            </li>
-            <li>
-              <Link href="/" className='hover:text-red-500 ease-linear duration-150'>
-                Minha programação
-              </Link>
-            </li>
-            <li>
-              <Link href="/anais" className='hover:text-red-500 ease-linear duration-150'>
-                Anais
-              </Link>
-            </li>
-            <li>
-              <Link href="/#ComponenteContados" className='hover:text-red-500 ease-linear duration-150'>
-                Contato
-              </Link>
-            </li>
-            <li>
-              <Link href="/api/auth/login" className='hover:text-red-500 ease-linear duration-150'>
-                <button className="ease-in duration-150 bg-red-500 px-5 py-2 font-bold border-gray-800 hover:border-red-500 hover:bg-white hover:text-red-500 border-2 ">LOGOUT</button>
-              </Link>
-            </li>
-          </ul>
-        </div>
-      )}
-    </header>
   );
-};
-*/
+}
