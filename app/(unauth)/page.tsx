@@ -18,6 +18,32 @@ export default function Home() {
         />
       </section>
 
+      {/* Letreiro de datas do congresso */}
+      <section className="letreiro-data-section w-full flex justify-center items-center mb-4">
+        <div className="letreiro-data-container">
+          <span className="letreiro-data-text">13 a 16 de Novembro</span>
+        </div>
+      </section>
+
+      {/* INSCRIÇÕES ANTECIPADAS */}
+      <section className="glass-container w-full max-w-6xl mx-auto mt-8">
+        <h1 className="letreiro-title">INSCRIÇÕES ANTECIPADAS</h1>
+        <p className="mb-2">Aproveite o lote inicial com valores especiais</p>
+        <h1>--------</h1>
+        <div className="flex justify-center mt-4">
+          <button className="home-btn">
+            <Link href="/inscricoes" prefetch={false}>
+              <span className="font-coeps text-white">GARANTA SUA VAGA</span>
+            </Link>
+          </button>
+        </div>
+        <div className="text-black p-5 space-y-2 mt-6 bg-white rounded-xl shadow-sm">
+          <h2 className="font-bold">Local do Evento</h2>
+          <h2 className="font-bold">IMEPAC Centro Universitário</h2>
+          <p>Av. Minas Gerais, 1889 – Centro, Araguari – MG, 38444-128. (34) 3249-3900</p>
+        </div>
+      </section>
+
       {/* SOBRE O CONGRESSO */}
       <section className="glass-container w-full max-w-6xl mx-auto mt-8">
         <h1 className="letreiro-title">SOBRE O CONGRESSO</h1>
@@ -68,25 +94,6 @@ export default function Home() {
             <h3 className="text-red-400 mb-2">-----------</h3>
             <p>Com o intuito de incentivar a participação dos acadêmicos, profissionais da saúde e áreas afins em atividades de pesquisa</p>
           </div>
-        </div>
-      </section>
-
-      {/* INSCRIÇÕES ANTECIPADAS */}
-      <section className="glass-container w-full max-w-6xl mx-auto mt-8">
-        <h1 className="letreiro-title">INSCRIÇÕES ANTECIPADAS</h1>
-        <p className="mb-2">Aproveite o lote inicial com valores especiais</p>
-        <h1>--------</h1>
-        <div className="flex justify-center mt-4">
-          <button className="home-btn">
-            <Link href="/inscricoes" prefetch={false}>
-              <span className="font-coeps text-white">GARANTA SUA VAGA</span>
-            </Link>
-          </button>
-        </div>
-        <div className="text-black p-5 space-y-2 mt-6 bg-white rounded-xl shadow-sm">
-          <h2 className="font-bold">Local do Evento</h2>
-          <h2 className="font-bold">IMEPAC Centro Universitário</h2>
-          <p>Av. Minas Gerais, 1889 – Centro, Araguari – MG, 38444-128. (34) 3249-3900</p>
         </div>
       </section>
 

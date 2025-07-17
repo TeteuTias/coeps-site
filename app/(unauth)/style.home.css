@@ -209,3 +209,35 @@ html {
     padding: 12px;
   }
 } 
+
+/* Letreiro de datas do congresso */
+.letreiro-data-container {
+  background: rgba(27, 48, 95, 0.95);
+  border-radius: 18px;
+  box-shadow: 0 4px 32px rgba(84,26,44,0.10);
+  padding: 1.2rem 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #541A2C;
+  margin: 0 auto;
+}
+
+.letreiro-data-text {
+  color: #D8D9DA;
+  font-size: 2.8rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-shadow: 0 2px 12px #1B305F88;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .letreiro-data-container {
+    padding: 0.7rem 1.2rem;
+  }
+  .letreiro-data-text {
+    font-size: 1.5rem;
+  }
+} 
