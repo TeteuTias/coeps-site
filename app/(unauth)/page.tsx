@@ -48,8 +48,8 @@ export default function Home() {
       <section className="glass-container w-full max-w-6xl mx-auto mt-8">
         <h1 className="letreiro-title">SOBRE O CONGRESSO</h1>
         <h1 className="text-black">
-          O VI Congresso dos Estudantes e Profissionais de Saúde (COEPS), evento tradicional em Araguari, organizado pelo Diretório Acadêmico Diogo Guimarães (DADG) do curso de Medicina do Centro Universitário
-          IMEPAC Araguari, acontecerá de 31 de outubro a 03 de novembro de 2024, presencialmente, tendo como tema “Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional”, trazendo amplas discussões
+          O VII Congresso dos Estudantes e Profissionais de Saúde (COEPS), evento tradicional em Araguari, organizado pelo Diretório Acadêmico Diogo Guimarães (DADG) do curso de Medicina do Centro Universitário
+          IMEPAC Araguari, acontecerá de 13 a 16 de novembro de 2024, presencialmente, tendo como tema “Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional”, trazendo amplas discussões
           com profissionais de renome sobre o tema, assim como rodas de conversas para disseminação de conhecimento. Objetivamos ainda entender
           essas abordagens nos diferentes tipos de cenários de saúde, trabalhando um tema de grande importância e que se faz pouco presente dentro da nossa formação. Além disso, teremos minicursos diversos, vivências,
           atividades político culturais, visita técnica, submissão e apresentação de trabalhos, entre outros, além de nossa esperada festa de encerramento. Faça sua inscrição e não perca esse grande evento!
@@ -68,8 +68,8 @@ export default function Home() {
         <h1 className="letreiro-title">EVENTO TRADICIONAL EM ARAGUARI</h1>
         <div className="text-center">
           <p>
-            O VI Congresso dos Estudantes e Profissionais de Saúde (COEPS), evento tradicional em Araguari, organizado pelo Diretório Acadêmico Diogo
-            Guimarães (DADG) do curso de Medicina do Centro Universitário IMEPAC Araguari, acontecerá de 31 de outubro a 03 de novembro de 2024,
+            O VII Congresso dos Estudantes e Profissionais de Saúde (COEPS), evento tradicional em Araguari, organizado pelo Diretório Acadêmico Diogo
+            Guimarães (DADG) do curso de Medicina do Centro Universitário IMEPAC Araguari, acontecerá de 13 a 16 de novembro de 2024,
             presencialmente, tendo como tema “Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional”.
           </p>
         </div>

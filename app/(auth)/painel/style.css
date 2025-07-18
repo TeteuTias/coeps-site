@@ -1,0 +1,338 @@
+/* Estilos customizados para a página do Painel */
+
+/* Gradiente de fundo global */
+.painel-main {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #541A2C 0%, #D8D9DA 50%, #1B305F 100%);
+  background-attachment: fixed;
+  background-size: cover;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Container principal */
+.painel-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem 1rem;
+}
+
+/* Título principal */
+.painel-title {
+  text-align: center;
+  margin-bottom: 3rem;
+  max-width: 600px;
+}
+
+.painel-title h1 {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  letter-spacing: 1px;
+  line-height: 1.2;
+  margin: 0;
+}
+
+/* Grid de cards */
+.painel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  max-width: 1200px;
+  width: 100%;
+  padding: 0 1rem;
+}
+
+/* Card de opção */
+.painel-card {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(27, 48, 95, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  padding: 2rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.painel-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s;
+}
+
+.painel-card:hover::before {
+  left: 100%;
+}
+
+.painel-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 16px 48px rgba(27, 48, 95, 0.25);
+  background: rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Ícone do card */
+.painel-card-icon {
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #541A2C;
+  transition: all 0.3s ease;
+}
+
+.painel-card:hover .painel-card-icon {
+  transform: scale(1.1) rotate(5deg);
+  color: #1B305F;
+}
+
+/* Texto do card */
+.painel-card-text {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #541A2C;
+  margin: 0;
+  line-height: 1.3;
+  transition: color 0.3s ease;
+}
+
+.painel-card:hover .painel-card-text {
+  color: #1B305F;
+}
+
+/* Card especial (Brindes) */
+.painel-card-special {
+  grid-column: 1 / -1;
+  max-width: 400px;
+  margin: 0 auto;
+  background: linear-gradient(135deg, rgba(84, 26, 44, 0.9) 0%, rgba(27, 48, 95, 0.9) 100%);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.painel-card-special .painel-card-icon {
+  color: white;
+}
+
+.painel-card-special .painel-card-text {
+  color: white;
+}
+
+.painel-card-special:hover {
+  background: linear-gradient(135deg, rgba(84, 26, 44, 1) 0%, rgba(27, 48, 95, 1) 100%);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+.painel-card-special:hover .painel-card-icon {
+  color: #D8D9DA;
+}
+
+/* Animação de entrada */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.painel-title {
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.painel-card {
+  animation: fadeInUp 0.8s ease-out;
+  animation-fill-mode: both;
+}
+
+.painel-card:nth-child(1) { animation-delay: 0.1s; }
+.painel-card:nth-child(2) { animation-delay: 0.2s; }
+.painel-card:nth-child(3) { animation-delay: 0.3s; }
+.painel-card:nth-child(4) { animation-delay: 0.4s; }
+.painel-card:nth-child(5) { animation-delay: 0.5s; }
+.painel-card:nth-child(6) { animation-delay: 0.6s; }
+.painel-card:nth-child(7) { animation-delay: 0.7s; }
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .painel-container {
+    padding: 1rem 0.5rem;
+  }
+  
+  .painel-title h1 {
+    font-size: 2rem;
+  }
+  
+  .painel-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    padding: 0 0.5rem;
+  }
+  
+  .painel-card {
+    padding: 1.5rem 1rem;
+    min-height: 180px;
+  }
+  
+  .painel-card-icon {
+    margin-bottom: 0.8rem;
+  }
+  
+  .painel-card-icon svg {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .painel-card-text {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .painel-title h1 {
+    font-size: 1.8rem;
+  }
+  
+  .painel-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .painel-card {
+    padding: 1.2rem 1rem;
+    min-height: 160px;
+  }
+  
+  .painel-card-icon svg {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .painel-card-text {
+    font-size: 0.95rem;
+  }
+}
+
+/* Efeito de partículas de fundo */
+.painel-bg-particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.painel-particle {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+    opacity: 1;
+  }
+}
+
+.painel-particle:nth-child(1) {
+  width: 4px;
+  height: 4px;
+  left: 10%;
+  animation-delay: 0s;
+  animation-duration: 8s;
+}
+
+.painel-particle:nth-child(2) {
+  width: 6px;
+  height: 6px;
+  left: 20%;
+  animation-delay: 2s;
+  animation-duration: 10s;
+}
+
+.painel-particle:nth-child(3) {
+  width: 3px;
+  height: 3px;
+  left: 30%;
+  animation-delay: 4s;
+  animation-duration: 6s;
+}
+
+.painel-particle:nth-child(4) {
+  width: 5px;
+  height: 5px;
+  left: 40%;
+  animation-delay: 6s;
+  animation-duration: 12s;
+}
+
+.painel-particle:nth-child(5) {
+  width: 4px;
+  height: 4px;
+  left: 50%;
+  animation-delay: 8s;
+  animation-duration: 9s;
+}
+
+.painel-particle:nth-child(6) {
+  width: 6px;
+  height: 6px;
+  left: 60%;
+  animation-delay: 10s;
+  animation-duration: 7s;
+}
+
+.painel-particle:nth-child(7) {
+  width: 3px;
+  height: 3px;
+  left: 70%;
+  animation-delay: 12s;
+  animation-duration: 11s;
+}
+
+.painel-particle:nth-child(8) {
+  width: 5px;
+  height: 5px;
+  left: 80%;
+  animation-delay: 14s;
+  animation-duration: 8s;
+}
+
+.painel-particle:nth-child(9) {
+  width: 4px;
+  height: 4px;
+  left: 90%;
+  animation-delay: 16s;
+  animation-duration: 10s;
+} 

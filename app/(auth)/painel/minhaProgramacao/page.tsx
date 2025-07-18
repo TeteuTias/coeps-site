@@ -1,32 +1,29 @@
 'use client'
 import { useEffect, useState } from "react";
 import { ICourse, ILecture } from "@/lib/types/events/event.t";
-//
-//
-//
+import { Calendar, Clock, MapPin, Info, X, Loader2 } from 'lucide-react';
+import './style.css';
+
 export default function MinhaProgramacao() {
   const [isFetching, setIsFetching] = useState<boolean>(true)
   const [data, setData] = useState(undefined)
   const [modal, setModal] = useState(undefined)
-  //
-  //
+
   const handleModal = (event) => {
     setModal(event)
   }
-  // 
+
   const handleIsFetching = (event) => {
     setIsFetching(event)
   }
+
   const handleData = (event) => {
     setData(event)
   }
-  //
-  //
-  //
+
   useEffect(() => {
     const enviarRequisicaoGet = async () => {
       try {
-        // Configuração da requisição GET usando fetch
         const response = await fetch('/api/get/usuariosProgramacao', {
           cache: 'no-cache',
           method: 'GET',
@@ -35,214 +32,168 @@ export default function MinhaProgramacao() {
           },
         });
 
-        // Verifica se a requisição foi bem-sucedida
         if (!response.ok) {
           throw new Error('Falha ao enviar a requisição GET');
         }
 
-        // Converte a resposta para JSON
         const responseData: { minicursos: ICourse[], palestras: ILecture[] } = await response.json();
 
-        // Exibe a resposta no console para fins de demonstração
-
         handleIsFetching(false)
-        // (responseData)
-        // console.log("| ============================== |") 
         handleData({ "data": organizeData(responseData) })
       } catch (error) {
         console.error('Erro ao enviar a requisição GET:', error);
-
-        // Tratar erros conforme necessário
       }
     };
     enviarRequisicaoGet();
   }, []);
-  //
-  //
+
   return (
-    <div className="bg-[#3E4095] min-h-dvh">
-      {
-        modal ? <Modal handleModal={() => { handleModal(0) }} modal={modal} /> : ""
-      }
-      <div className="flex flex-col content-center align-middle items-center justify-center">
-        <div className="bg-[#3E4095] w-full text-center flex items-center justify-center">
-          <div className="w-[90%] lg:w-[60%] text-justify p-5">
-            <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Minha Programação</h1>
-          </div>
+    <div className="programacao-main">
+      {modal && <Modal handleModal={() => handleModal(0)} modal={modal} />}
+      
+      <div className="programacao-container">
+        <div className="programacao-header">
+          <h1 className="programacao-title">Minha Programação</h1>
         </div>
-        <div className="flex justify-center w-full bg-white">
-          <div className="w-[90%] lg:w-[50%] text-gray-700 text-clip py-16">
-            <h1 className="break-words text-start font-bold text-black text-[22px] lg:text-[18px]">O QUE TEMOS AQUI</h1>
-            <h1 className="text-justify">Aqui está o seu cronograma de eventos! Todos os eventos obrigatórios e aqueles em que você se inscreveu estão organizados para que você
-              não fique perdido. Não se esqueça de se inscrever nos minicursos! <span className="text-[22px] bg-red-400 p-[0.1px] px-1 font-bold text-white">Clicando nos cards, você consegue mais informações sobre o evento presente
-                na sua agenda.</span>
-            </h1>
-          </div>
-        </div>
-      </div>
-      <div className="flex flex-col justify-center items-center bg-[#3E4095] p-5">
-        <div className="flex flex-col relative w-[90%] lg:w-[40%]">
-          {
-            isFetching ?
-              (<>
-                <CardProgramacaoLoading responsive={0} cor_primaria={"#FF7F50"} />
-              </>) : ""
-          }
-        </div>
-        <div className=" space-y-10  w-[95%] lg:w-[45%]">
-          {
-            !isFetching && data?.data ?
-              Object.keys(data?.data).map(key => {
-                // key - 2024-07-16
-                // console.log(key)
 
-                return <CardProgramacao dateKey={key} cor_primaria={"#FF7F50"} event={data?.data[key]} key={Math.floor(Math.random() * 100)} handleModal={handleModal} />
-              }) : ""
-          }
-          {
-            !isFetching && (!data?.data || Object.keys(data.data).length == 0) ?
-              <div>
-                <h1 className="break-words text-center font-bold text-white text-[22px] lg:text-[18px]">Você ainda não possui uma programação</h1>
-              </div>
+        <div className="programacao-intro">
+          <h1>O QUE TEMOS AQUI</h1>
+          <p>
+            Aqui está o seu cronograma de eventos! Todos os eventos obrigatórios e aqueles em que você se inscreveu estão organizados para que você
+            não fique perdido. Não se esqueça de se inscrever nos minicursos! 
+            <span className="programacao-highlight">
+              Clicando nos cards, você consegue mais informações sobre o evento presente na sua agenda.
+            </span>
+          </p>
+        </div>
 
-              : ""
-          }
+        <div className="programacao-cards-container">
+          {isFetching ? (
+            <div className="programacao-loading">
+              <h1>CARREGANDO</h1>
+              <div className="programacao-loading-animation"></div>
+            </div>
+          ) : data?.data ? (
+            Object.keys(data?.data).map(key => (
+              <CardProgramacao 
+                dateKey={key} 
+                event={data?.data[key]} 
+                key={Math.floor(Math.random() * 100)} 
+                handleModal={handleModal} 
+              />
+            ))
+          ) : (
+            <div className="programacao-empty">
+              <h1>Você ainda não possui uma programação</h1>
+            </div>
+          )}
         </div>
       </div>
     </div>
-
   )
-
 }
-//
 
 function organizeData(data) {
   const organized = {};
+  
   data['palestras'].map((value1, index) => {
     value1.timeline.map((value2) => {
-      // NAME description
       value2.namePattern = value1.name
       value2.descriptionPattern = value1.description,
-        value2.organization_namePattern = value1.organization_name,
-        value2.timelinePattern = value1.timeline
+      value2.organization_namePattern = value1.organization_name,
+      value2.timelinePattern = value1.timeline
     })
   })
+  
   data['minicursos'].map((value1, index) => {
     value1.timeline.map((value2) => {
-      // NAME description
       value2.namePattern = value1.name
       value2.descriptionPattern = value1.description,
-        value2.organization_namePattern = value1.organization_name,
-        value2.timelinePattern = value1.timeline
+      value2.organization_namePattern = value1.organization_name,
+      value2.timelinePattern = value1.timeline
     })
   })
 
-
-  //console.log(data)
-  // Combine todos os eventos das listas, verificando se as listas existem e são arrays
   const allEvents = [
     ...(Array.isArray(data.minicursos) ? data.minicursos.flatMap(item => item.timeline || []) : []),
     ...(Array.isArray(data.palestras) ? data.palestras.flatMap(item => item.timeline || []) : []),
   ];
 
-  // Organize os eventos por data
   allEvents.forEach(event => {
-    const date = event.date_init.split('T')[0]; // Pega somente a data
+    const date = event.date_init.split('T')[0];
     if (!organized[date]) {
       organized[date] = [];
     }
     organized[date].push({
       ...event,
-      date_init: event.date_init//.split('T')[0], // Mantém apenas a data no objeto
+      date_init: event.date_init
     });
   });
-  // Ordenar os eventos por data e por data/hora ANTIGO
-  /*
-  Object.keys(organized).forEach(date => {
-    // organized[date].sort((a, b) => new Date(a.date_init + 'T' + a.date_init.split('T')[1]) - new Date(b.date_init + 'T' + b.date_init.split('T')[1]));
-    organized[date].sort((a, b) => new Date(a.date_init) - new Date(b.date_init));
 
-  });
-  */
-  // Ordenar os eventos por data e por data/hora NOVO achoq ue isso e nada é a mesma coisa, mas como tá funcionando, deixa isso assim. nao funcionou essa merda.
   Object.keys(organized).forEach(date => {
     organized[date].sort((a, b) => new Date(b.date_init).getTime() - new Date(a.date_init).getTime());
   });
 
-
   return organized;
 }
 
-
 const Modal = ({ handleModal, modal }) => {
-
-  /*
-  
-  
   return (
-    <h1>Sou um modal</h1>
-  )
-  
-  */
-  // const timeline = organizeTimelineByDate(modal.timeline)
-  return (
-    <div className="fixed inset-0 flex items-center justify-center z-50">
-      <div className="fixed inset-0 bg-black opacity-50" onClick={handleModal}></div>
-      <div className="bg-white rounded-lg shadow-lg w-[95%] lg:w-[45%] max-h-[80vh] overflow-y-auto z-10 p-3 lg:p-10 ">
-        <div className="text-white">
-          <button className="bg-red-600 hover:text-gray-700 float-right w-7 h-7 rounded-full" onClick={handleModal}>
-            &#x2715;
-          </button>
-        </div>
-        <div className="space-y-5">
-          <div>
-            <h1 className="break-words text-center font-extrabold text-black text-[15px] lg:text-[16px]">{modal.namePattern.toLocaleUpperCase()}</h1>
-          </div>
-          <div className="text-zinc-700 space-y-2">
-            <h1 className="font-bold bg-amber-200">ℹ SOBRE</h1>
-            <p className="text-justify font-extralight break-words">
+    <div className="programacao-modal-overlay" onClick={handleModal}>
+      <div className="programacao-modal" onClick={(e) => e.stopPropagation()}>
+        <button className="programacao-modal-close" onClick={handleModal}>
+          <X size={20} />
+        </button>
+        
+        <div className="programacao-modal-content">
+          <h2 className="programacao-modal-title">{modal.namePattern.toUpperCase()}</h2>
+          
+          <div className="programacao-modal-section">
+            <h3 className="programacao-modal-section-title">
+              <Info size={16} className="inline mr-2" />
+              SOBRE
+            </h3>
+            <p className="programacao-modal-description">
               {modal.descriptionPattern}
             </p>
           </div>
-          <div className="text-zinc-700 space-y-2">
-            <h1 className="font-bold bg-amber-200">📅 PROGRAMAÇÃO</h1>
-            <div className="space-y-6">
-              {
-                modal.timelinePattern.map(event => {
-
-                  const data = new Date(event.date_init).toLocaleDateString()
-                  const time_init = new Date(event.date_init).toLocaleTimeString()
-                  const time_end = new Date(event.date_end).toLocaleTimeString()
-                  return (
-                    <div className="space-y-3" key={Math.floor(Math.random() * 100)}>
-                      <div>
-                        <div className="flex flex-row space-x-2">
-                          <p className="font-emoji">◽</p>
-                          <p>{event.name.toLocaleUpperCase()}</p>
-                        </div>
-                        <div className="flex flex-col">
-                          <div className="flex flex-row space-x-2">
-                            <h1 className="font-emoji">🕐</h1>
-                            <h1>{data.slice(0, 5)}</h1>
-                            <h1>-</h1>
-                            <h1>{time_init.slice(0, 5)} às {time_end.slice(0, 5)}</h1>
-                          </div>
-                          <div className="flex flex-row space-x-2">
-                            <h1 className="font-emoji">📍 {event.local}</h1>
-                            <h1 className="break-words">{event.local_description}</h1>
-                          </div>
-                          <div className="flex flex-row flex-wrap space-x-2 w-full">
-                            <h1 className="font-emoji">⭐</h1>
-                            <h1 className="break-words overflow-hidden">{event.description}</h1>
-                          </div>
-
-                        </div>
-                      </div>
-                      <div className="bg-zinc-700 p-[0.05px] w-[60%]" />
+          
+          <div className="programacao-modal-section">
+            <h3 className="programacao-modal-section-title">
+              <Calendar size={16} className="inline mr-2" />
+              PROGRAMAÇÃO
+            </h3>
+            <div className="programacao-timeline">
+              {modal.timelinePattern.map((event, index) => {
+                const data = new Date(event.date_init).toLocaleDateString()
+                const time_init = new Date(event.date_init).toLocaleTimeString()
+                const time_end = new Date(event.date_end).toLocaleTimeString()
+                
+                return (
+                  <div className="programacao-timeline-item" key={index}>
+                    <div className="programacao-timeline-event-name">
+                      {event.name.toUpperCase()}
                     </div>
-                  )
-                })
-              }
+                    <div className="programacao-timeline-details">
+                      <div className="programacao-timeline-detail">
+                        <span className="programacao-timeline-detail-icon">🕐</span>
+                        <span>{data.slice(0, 5)} - {time_init.slice(0, 5)} às {time_end.slice(0, 5)}</span>
+                      </div>
+                      <div className="programacao-timeline-detail">
+                        <span className="programacao-timeline-detail-icon">📍</span>
+                        <span>{event.local} - {event.local_description}</span>
+                      </div>
+                      <div className="programacao-timeline-detail">
+                        <span className="programacao-timeline-detail-icon">⭐</span>
+                        <span>{event.description}</span>
+                      </div>
+                    </div>
+                    {index < modal.timelinePattern.length - 1 && (
+                      <div className="programacao-timeline-divider"></div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>
@@ -250,84 +201,59 @@ const Modal = ({ handleModal, modal }) => {
     </div>
   )
 }
-//
-// <CardProgramacao cor_primaria="#FFEBCD"/>
-const CardProgramacaoLoading = ({ cor_primaria, responsive }) => {
-  //
-  //
-  return (
-    <>
-      <div className={`flex flex-col`}>
-        <div className="flex flex-col text-center w-[100%] space-y-3">
-          <div className={`text-white font-extrabold rounded-t-lg `}>
-            <h1 className="text-start">CARREGANDO</h1>
-            <div className={`text-white font-extrabold rounded-t-lg p-1 animate-pulse blur-[0.5px]`} />
-          </div>
-        </div>
-
-      </div>
-    </>
-  )
-}
 
 function padZeroIfNeeded(number) {
   return number < 10 ? '0' + number : number.toString();
 }
 
-const CardProgramacao = ({ cor_primaria, dateKey, event, handleModal }) => {
+const CardProgramacao = ({ dateKey, event, handleModal }) => {
   const DATE = new Date(dateKey + "T12:00:00-03:00")
   const daysNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
   const dayName = daysNames[DATE.getDay()]
-  const dayMouth = `${padZeroIfNeeded(DATE.getDate())}/${padZeroIfNeeded(DATE.getMonth())}`
+  
   return (
-    <>
-      <div className={`flex`} onClick={() => { }}>
-
-        <div className="flex flex-col text-center w-[100%] space-y-3">
-
-          <div className={`text-white font-extrabold rounded-t-lg`}>
-            <h1 className="text-start">{DATE.toLocaleDateString().slice(0, 5) + " "} {dayName.toLocaleUpperCase()}</h1>
-            <div className={`text-white font-extrabold rounded-t-[0.1px] p-1`} />
-          </div>
-          <div className="space-y-2">
-            {
-              event?.map((value, index) => {
-                const dateInit = new Date(value.date_init).toLocaleTimeString()
-                const dateEnd = new Date(value.date_end).toLocaleTimeString()
-                //const date_init = new Date(value.timeline[0].date_init).toLocaleTimeString().slice(0, 5)
-                //const date_end = new Date(value.timeline[value.timeline.length - 1].date_end).toLocaleTimeString().slice(0, 5)
-
-                return (
-                  <div className="flex flex-col bg-white cursor-pointer" onClick={() => { handleModal(value) }} key={Math.floor(Math.random() * 100) * index}>
-                    <div className="p-1 bg-green-500" />
-                    <div className=" flex flex-row p-2 lg:p-3">
-                      <div className="w-[80%] text-start px-2">
-                        <div>
-                          <h1 className="break-words text-start font-extrabold text-black text-[13px] lg:text-[16px]">{value.name.toLocaleUpperCase()}</h1>
-                        </div>
-                        <div>
-                          <p className="text-zinc-700 font-extralight break-words">{value.description}</p>
-                        </div>
-                      </div>
-                      <div className={`flex-1 flex-col content-center items-center justify-center align-middle w-[20%] border-l-4 border-green-300 text-black`}>
-                        <p>{dateInit}</p>
-                        <p>às</p>
-                        <p>{dateEnd}</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-row text-start text-[13px] p-2 lg:p-3 text-zinc-700">
-                      <p className="px-2 font-emoji">👩‍🎓</p>
-                      <p className="px-2">{value.namePattern.toLocaleUpperCase()}</p>
-                    </div>
-                  </div>
-
-                )
-              })
-            }
-          </div>
-        </div>
+    <div className="programacao-date-card">
+      <div className="programacao-date-header">
+        <h2 className="programacao-date-title">
+          {DATE.toLocaleDateString().slice(0, 5)} - {dayName.toUpperCase()}
+        </h2>
       </div>
-    </>
-  )
+      
+      <div className="programacao-events-list">
+        {event?.map((value, index) => {
+          const dateInit = new Date(value.date_init).toLocaleTimeString()
+          const dateEnd = new Date(value.date_end).toLocaleTimeString()
 
+          return (
+            <div 
+              className="programacao-event-card" 
+              onClick={() => handleModal(value)} 
+              key={Math.floor(Math.random() * 100) * index}
+            >
+              <div className="programacao-event-indicator"></div>
+              <div className="programacao-event-content">
+                <div className="programacao-event-info">
+                  <h3 className="programacao-event-title">
+                    {value.name.toUpperCase()}
+                  </h3>
+                  <p className="programacao-event-description">
+                    {value.description}
+                  </p>
+                  <div className="programacao-event-type">
+                    <span className="programacao-event-type-icon">👩‍🎓</span>
+                    <span>{value.namePattern.toUpperCase()}</span>
+                  </div>
+                </div>
+                <div className="programacao-event-time">
+                  <p>{dateInit}</p>
+                  <p>às</p>
+                  <p>{dateEnd}</p>
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
