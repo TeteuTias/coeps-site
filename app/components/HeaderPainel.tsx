@@ -49,8 +49,8 @@ const HeaderPainel = ({ isPayed = true }: { isPayed: boolean }) => {
                             <div className="relative overflow-hidden rounded-lg transition-all duration-300 group-hover:scale-105">
                                 <Image
                                     src="/Logo01.png"
-                                    width={isScrolled ? 35 : 80}
-                                    height={isScrolled ? 35 : 80}
+                                    width={isScrolled ? 60 : 90}
+                                    height={isScrolled ? 60 : 90}
                                     alt="COEPS Logo"
                                     className="transition-all duration-300"
                                 />

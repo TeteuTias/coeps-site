@@ -49,13 +49,17 @@ const Header = () => {
         <div className="flex-shrink-0">
             <Link href="/" prefetch={false} className="flex items-center group">
               <div className="relative overflow-hidden rounded-xl transition-all duration-300 group-hover:scale-105">
-            <Image
-              src="/Logo01.png"
-                  width={isScrolled ? 50 : 120}
-                  height={isScrolled ? 50 : 120}
-                  alt="COEPS Logo"
-              className="transition-all duration-300"
-            />
+                {isScrolled && (
+                  <div className="absolute inset-0 bg-black/60 backdrop-blur-md z-10" style={{borderRadius: 'inherit'}}></div>
+                )}
+                <Image
+                  src="/Logo01.png"
+                  width={isScrolled ? 90 : 150}
+                  height={isScrolled ? 90 : 150}
+                  alt="Logo COEPS"
+                  className={`transition-all duration-300 ${isScrolled ? 'relative z-20' : ''}`}
+                  priority
+                />
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
               </div>
           </Link>
