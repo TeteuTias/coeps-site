@@ -174,7 +174,7 @@ const Trabalhos = () => {
               <>
                 O Diretório Acadêmico Diogo Guimarães (DADG) do curso de graduação em Medicina do Centro Universitário IMEPAC Araguari apresenta o{' '}
                 <span className="description-highlight">VII Congresso dos Estudantes e Profissionais de Saúde (COEPS)</span> que possui como tema 
-                "O Novo Paradigma da Saúde: Burnout, Tecnologia e Ética". Com o intuito de incentivar a participação dos acadêmicos, 
+                &ldquo;O Novo Paradigma da Saúde: Burnout, Tecnologia e Ética&rdquo;. Com o intuito de incentivar a participação dos acadêmicos, 
                 profissionais da saúde e áreas afins em atividades de pesquisa, visando complementar a formação acadêmica e enriquecer conhecimentos, 
                 declara-se aberto o edital para a submissão de trabalhos inéditos pertinentes à área da saúde.
               </>
@@ -182,7 +182,7 @@ const Trabalhos = () => {
               <>
                 O Diretório Acadêmico Diogo Guimarães (DADG) do curso de Medicina do Centro Universitário IMEPAC Araguari está preparando o{' '}
                 <span className="description-highlight">VII Congresso dos Estudantes e Profissionais de Saúde (COEPS)</span>, com o tema 
-                "Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional".{' '}
+                &ldquo;Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional&rdquo;.{' '}
                 <span className="description-highlight">Atualmente, o edital para a submissão de trabalhos inéditos ainda não está aberto</span>. 
                 No entanto, em breve, divulgaremos mais informações sobre como participar e submeter suas pesquisas. Fique atento ao nosso site 
                 e às nossas redes sociais para atualizações e detalhes sobre o processo de submissão.
