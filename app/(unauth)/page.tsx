@@ -5,7 +5,7 @@ import './style.home.css';
 
 export default function Home() {
   return (
-    <main className="home-main-gradient">
+    <main className="home-main-gradient pt-20 lg:pt-24">
       {/* Imagem principal do congresso */}
       <section className="main-image-section">
         <Image

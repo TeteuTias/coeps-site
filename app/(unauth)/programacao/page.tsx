@@ -23,7 +23,10 @@ import {
   Award,
   Gamepad2,
   Brain,
-  Sparkles
+  Sparkles,
+  Loader2,
+  Clock,
+  Info
 } from 'lucide-react';
 import './style.css';
 
@@ -140,15 +143,37 @@ const App = () => {
 
       {/* Seção de status */}
       <section className="status-section">
-        <div className="status-container">
-          {loading && <h2 className="status-text">CARREGANDO</h2>}
-          {!loading && Object.keys(organizedData).length > 0 && (
-            <h2 className="status-text">CLIQUE PARA OBTER MAIS DETALHES</h2>
-          )}
-          {!loading && Object.keys(organizedData).length === 0 && (
-            <h2 className="status-text">AINDA NÃO TEMOS UM CRONOGRAMA DE EVENTOS</h2>
-          )}
+        <div className="status-container glass-container">
+          {loading ? (
+            <div className="loading-container">
+              <div className="loading-spinner">
+                <Loader2 className="spinner-icon" />
+              </div>
+              <h2 className="loading-text">CARREGANDO PROGRAMAÇÃO</h2>
+              <div className="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
             </div>
+          ) : Object.keys(organizedData).length > 0 ? (
+            <div className="details-container">
+              <div className="details-icon">
+                <Info className="info-icon" />
+              </div>
+              <h2 className="details-text">CLIQUE PARA OBTER MAIS DETALHES</h2>
+              <p className="details-subtext">Explore nossa programação completa clicando nas categorias abaixo</p>
+            </div>
+          ) : (
+            <div className="empty-container">
+              <div className="empty-icon">
+                <Clock className="clock-icon" />
+              </div>
+              <h2 className="empty-text">AINDA NÃO TEMOS UM CRONOGRAMA DE EVENTOS</h2>
+              <p className="empty-subtext">Estamos trabalhando para trazer a melhor programação para você!</p>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Seção de eventos */}

@@ -1,0 +1,207 @@
+/* Estilos para a página de Inscrições */
+
+.inscricoes-main {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #541A2C 0%, #D8D9DA 50%, #1B305F 100%);
+  background-attachment: fixed;
+  background-size: cover;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+.inscricoes-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2.5rem 1rem 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.inscricoes-section {
+  background: rgba(255,255,255,0.25);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(27, 48, 95, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255,255,255,0.3);
+  padding: 2.5rem 2rem;
+  margin-bottom: 0.5rem;
+  color: #541A2C;
+  transition: box-shadow 0.3s, transform 0.3s, background 0.3s;
+}
+
+.inscricoes-section h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 1.2rem;
+  color: #541A2C;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px rgba(84,26,44,0.08);
+}
+
+.inscricoes-section p, .inscricoes-section h1.text-justify {
+  font-size: 1.1rem;
+  color: #541A2C;
+  line-height: 1.7;
+  text-align: justify;
+  font-weight: 500;
+}
+
+.inscricoes-section .inscricoes-highlight {
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  color: white;
+  padding: 0.2rem 0.7rem;
+  border-radius: 8px;
+  font-weight: 700;
+  margin: 0 0.2rem;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+  display: inline-block;
+}
+
+.inscricoes-section .inscricoes-btn {
+  background: linear-gradient(135deg, #3E4095 0%, #1B305F 100%);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.1rem;
+  border-radius: 12px;
+  padding: 0.8rem 2.2rem;
+  margin-top: 1.2rem;
+  transition: background 0.3s, transform 0.3s, box-shadow 0.3s;
+  box-shadow: 0 4px 16px rgba(27, 48, 95, 0.12);
+  border: none;
+  outline: none;
+  cursor: pointer;
+}
+.inscricoes-section .inscricoes-btn:hover {
+  background: linear-gradient(135deg, #1B305F 0%, #541A2C 100%);
+  color: #fff;
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 32px rgba(27, 48, 95, 0.18);
+}
+
+.inscricoes-section .inscricoes-link {
+  background: #FDE68A;
+  color: #541A2C;
+  font-weight: 700;
+  padding: 0.1rem 0.5rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.inscricoes-section .inscricoes-link:hover {
+  background: #F59E0B;
+  color: #fff;
+}
+
+.inscricoes-waves {
+  position: relative;
+  width: 100%;
+  min-height: 60px;
+  max-height: 120px;
+  margin-bottom: -1.5rem;
+  z-index: 2;
+}
+
+.inscricoes-contact {
+  background: #3E4095;
+  color: #fff;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(27, 48, 95, 0.15);
+  padding: 2.5rem 2rem;
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.inscricoes-contact h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 1.2rem;
+  color: #fff;
+  letter-spacing: 1px;
+}
+
+.inscricoes-contact .contact-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  align-items: center;
+  justify-content: center;
+}
+@media (min-width: 768px) {
+  .inscricoes-contact .contact-row {
+    flex-direction: row;
+    gap: 2.5rem;
+  }
+}
+
+.inscricoes-contact .contact-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.inscricoes-img-container {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto 2.5rem auto;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  border-radius: 32px;
+  background: #fff;
+  box-shadow: 0 8px 32px rgba(27, 48, 95, 0.10);
+}
+
+.inscricoes-img {
+  width: 100%;
+  max-width: 900px;
+  height: auto;
+  object-fit: cover;
+  display: block;
+  border-radius: 32px;
+  z-index: 1;
+  transition: filter 0.5s, opacity 0.5s;
+}
+
+.inscricoes-img-gradient {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 80px;
+  width: 100%;
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #541A2C 100%);
+  pointer-events: none;
+  border-radius: 0 0 32px 32px;
+}
+
+@media (max-width: 900px) {
+  .inscricoes-img-container, .inscricoes-img {
+    max-width: 100vw;
+    border-radius: 18px;
+  }
+  .inscricoes-img-gradient {
+    border-radius: 0 0 18px 18px;
+    height: 50px;
+  }
+}
+
+@media (max-width: 768px) {
+  .inscricoes-container {
+    padding: 1.2rem 0.3rem 0 0.3rem;
+  }
+  .inscricoes-section {
+    padding: 1.2rem 0.7rem;
+  }
+  .inscricoes-contact {
+    padding: 1.2rem 0.7rem;
+  }
+  .inscricoes-section h1 {
+    font-size: 1.3rem;
+  }
+} 

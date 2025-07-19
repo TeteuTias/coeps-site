@@ -44,7 +44,7 @@ const Header = () => {
         : 'bg-transparent'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <nav className="flex items-center justify-between h-16 lg:h-20">
+        <nav className="flex items-center justify-between h-20 lg:h-24">
           {/* Logo */}
         <div className="flex-shrink-0">
             <Link href="/" prefetch={false} className="flex items-center group">
@@ -52,8 +52,8 @@ const Header = () => {
                 {isScrolled && (
                   <div className="absolute inset-0 bg-black/60 backdrop-blur-md z-10" style={{borderRadius: 'inherit'}}></div>
                 )}
-                <Image
-                  src="/Logo01.png"
+            <Image
+              src="/Logo01.png"
                   width={isScrolled ? 90 : 150}
                   height={isScrolled ? 90 : 150}
                   alt="Logo COEPS"
