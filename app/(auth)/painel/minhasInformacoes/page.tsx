@@ -22,31 +22,31 @@ const MinhasInformacoes = () => {
   const [message, setMessage] = useState<string | undefined>(undefined);
   const [isModal, setIsModal] = useState<boolean>(false);
 
-  useEffect(() => {
-    const enviarRequisicaoGet = async () => {
-      try {
-        const response = await fetch('/api/get/usuariosConfig', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+    useEffect(() => {
+        const enviarRequisicaoGet = async () => {
+            try {
+                const response = await fetch('/api/get/usuariosConfig', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
 
-        if (!response.ok) {
-          throw new Error('Falha ao enviar a requisição GET');
-        }
+                if (!response.ok) {
+                    throw new Error('Falha ao enviar a requisição GET');
+                }
         
-        const responseData: IUser["informacoes_usuario"] = await response.json();
+                const responseData: IUser["informacoes_usuario"] = await response.json();
         setData(responseData);
-      } catch (error) {
-        console.error('Erro ao enviar a requisição GET:', error);
+            } catch (error) {
+                console.error('Erro ao enviar a requisição GET:', error);
       } finally {
         setLoading(false);
-      }
-    };
+            }
+        };
     
-    enviarRequisicaoGet();
-  }, []);
+        enviarRequisicaoGet();
+    }, []);
 
   const closeModalMessage = (e: number) => {
     setIsModal(e === 0);
@@ -62,17 +62,17 @@ const MinhasInformacoes = () => {
     try {
       setLoadingModal(true);
       
-      const response = await fetch('/api/put/usuarioConfig', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(update),
-      });
+            const response = await fetch('/api/put/usuarioConfig', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(update),
+            });
       
       const responseJson = await response.json();
       
-      if (!response.ok) {
+            if (!response.ok) {
         setMessage(responseJson.message || "Ocorreu um erro desconhecido. Recarregue a página e tente novamente. Caso o erro continue, entre em contato com a equipe COEPS.");
         setIsModal(true);
         return undefined;
@@ -80,9 +80,9 @@ const MinhasInformacoes = () => {
       
       setMessage(responseJson.message);
       setIsModal(true);
-      setData(prev => ({
-        ...prev,
-        ...update
+            setData(prev => ({
+                ...prev,
+                ...update
       }));
     } catch (erro) {
       console.log(erro);
@@ -91,7 +91,7 @@ const MinhasInformacoes = () => {
     }
   };
 
-  return (
+    return (
     <div className="informacoes-main">
       <WarningModal 
         message={message} 
@@ -99,11 +99,11 @@ const MinhasInformacoes = () => {
         closeModal={closeModalMessage} 
         textButton={""} 
         onClose={function (): void {
-          throw new Error("Function not implemented.")
+                throw new Error("Function not implemented.")
         }} 
       />
       
-      <LoadingModal isLoading={loadingModal} />
+            <LoadingModal isLoading={loadingModal} />
 
       {/* Header */}
       <section className="informacoes-header">
@@ -128,13 +128,13 @@ const MinhasInformacoes = () => {
             <div className="loading-container">
               <div className="loading-spinner">
                 <Loader2 className="spinner-icon" />
-              </div>
+                </div>
               <h2 className="loading-text">CARREGANDO INFORMAÇÕES</h2>
               <div className="loading-dots">
                 <span></span>
                 <span></span>
                 <span></span>
-              </div>
+                </div>
             </div>
           ) : (
             <div className="details-container">
@@ -197,16 +197,16 @@ const MinhasInformacoes = () => {
 
 // Modal de carregamento
 const LoadingModal = ({ isLoading = true }: { isLoading: boolean }) => {
-  if (!isLoading) return null;
+    if (!isLoading) return null;
 
-  return (
+    return (
     <div className="loading-modal">
       <div className="loading-modal-content">
         <Loader2 className="loading-modal-spinner" />
         <p className="loading-modal-text">Carregando...</p>
-      </div>
-    </div>
-  );
+            </div>
+        </div>
+    );
 };
 
 // Componente de formulário
@@ -220,23 +220,23 @@ const FormCard = ({
   nomeCampo,
   icon
 }: {
-  label: string;
-  placeholder: string;
-  labelButton: string;
-  loading: boolean;
-  type: 'text' | 'password' | 'email' | 'number' | 'date';
+    label: string;
+    placeholder: string;
+    labelButton: string;
+    loading: boolean;
+    type: 'text' | 'password' | 'email' | 'number' | 'date';
   onClick: (update: { [key: string]: string }) => Promise<void>;
-  nomeCampo: string;
+    nomeCampo: string;
   icon: React.ReactNode;
 }) => {
-  const [inputValue, setInputValue] = useState('');
+    const [inputValue, setInputValue] = useState('');
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(event.target.value);
-  };
+        setInputValue(event.target.value);
+    };
 
-  if (loading) {
-    return (
+    if (loading) {
+        return (
       <div className="form-card">
         <div className="form-header">
           <div className="form-icon">
@@ -249,30 +249,30 @@ const FormCard = ({
             <div className="form-label animate-pulse bg-gray-300 h-6 rounded"></div>
             <div className="form-input animate-pulse bg-gray-200 h-12 rounded"></div>
           </div>
-        </div>
-      </div>
-    );
-  }
+                </div>
+            </div>
+        );
+    }
 
-  return (
+    return (
     <div className="form-card">
       <div className="form-header">
         <div className="form-icon">
           {icon}
         </div>
         <h3 className="form-title">{label}</h3>
-      </div>
+            </div>
       <div className="form-content">
         <div className="form-group">
           <label className="form-label">{label}</label>
-          <input
-            type={type}
-            placeholder={placeholder}
+                    <input
+                        type={type}
+                        placeholder={placeholder}
             className="form-input"
-            value={inputValue}
-            onChange={handleInputChange}
-          />
-        </div>
+                        value={inputValue}
+                        onChange={handleInputChange}
+                    />
+                </div>
         <button 
           className="form-button"
           onClick={() => {
@@ -282,11 +282,11 @@ const FormCard = ({
           disabled={!inputValue.trim()}
         >
           <Save size={18} style={{ marginRight: '8px' }} />
-          {labelButton}
-        </button>
-      </div>
-    </div>
-  );
+                    {labelButton}
+                </button>
+            </div>
+        </div>
+    );
 };
 
 // Componente de alteração de senha
@@ -301,8 +301,8 @@ const PasswordCard = ({
 }) => {
   const [modal, setModal] = useState<string>("");
 
-  if (loading) {
-    return (
+    if (loading) {
+        return (
       <div className="password-card">
         <div className="password-header">
           <div className="password-icon">
@@ -315,13 +315,13 @@ const PasswordCard = ({
             <div className="form-label animate-pulse bg-gray-300 h-6 rounded"></div>
             <div className="form-input animate-pulse bg-gray-200 h-12 rounded"></div>
           </div>
-        </div>
-      </div>
+                </div>
+            </div>
     );
-  }
+    }
 
-  return (
-    <>
+        return (
+            <>
       <PasswordWarningModal 
         isModal={modal.length > 0} 
         closeModal={() => setModal("")} 
@@ -334,25 +334,25 @@ const PasswordCard = ({
         <div className="password-header">
           <div className="password-icon">
             <Lock size={20} />
-          </div>
+                                    </div>
           <h3 className="password-title">{label}</h3>
-        </div>
+                                </div>
         <div className="form-content">
           <p className="intro-text">
             Para alterar sua senha, entre em contato com a equipe COEPS através do email: dadg.imepac@gmail.com ou pelo WhatsApp: (15) 98812-3011
           </p>
-          <button 
+                                        <button
             className="password-button"
             onClick={() => setModal("Para alterar sua senha, entre em contato com a equipe COEPS através do email: dadg.imepac@gmail.com ou pelo WhatsApp: (15) 98812-3011")}
           >
             <AlertCircle size={18} style={{ marginRight: '8px' }} />
             {labelButton}
-          </button>
-        </div>
+                                    </button>
+                                </div>
       </div>
-    </>
-  );
-};
+            </>
+        );
+    };
 
 // Modal de aviso para senha
 const PasswordWarningModal = ({ 
@@ -370,7 +370,7 @@ const PasswordWarningModal = ({
 }) => {
   if (!isModal) return null;
 
-  return (
+    return (
     <div className="loading-modal">
       <div className="loading-modal-content">
         <div className="form-content">
@@ -379,7 +379,7 @@ const PasswordWarningModal = ({
               <AlertCircle size={20} />
             </div>
             <h3 className="form-title">Aviso</h3>
-          </div>
+                </div>
           <p className="intro-text">{message}</p>
           <button 
             className="form-button"
@@ -391,9 +391,9 @@ const PasswordWarningModal = ({
             <CheckCircle size={18} style={{ marginRight: '8px' }} />
             {textButton}
           </button>
-        </div>
-      </div>
-    </div>
+                    </div>
+                </div>
+            </div>
   );
 };
 
