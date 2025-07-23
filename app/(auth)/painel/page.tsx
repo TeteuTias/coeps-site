@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   CreditCard, 
@@ -44,6 +44,21 @@ export default function Page() {
 }
 
 function PaginaAreaDoCliente() {
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUserId = async () => {
+      try {
+        const res = await fetch("/api/get/usuariosInformacoes");
+        const data = await res.json();
+        setUserId(data?.data?._id || null);
+      } catch (e) {
+        setUserId(null);
+      }
+    };
+    fetchUserId();
+  }, []);
+
   return (
     <>
       <div className="painel-title">
@@ -72,6 +87,15 @@ function PaginaAreaDoCliente() {
         <Link href="painel/brindes" prefetch={false}>
           <CardOpcoes texto="Brindes" icon={<Sparkles size={48} />} special={true} />
         </Link>
+        {userId ? (
+          <Link href={`/qrCode/${userId}`} prefetch={false}>
+            <CardOpcoes texto="Meu QR Code" icon={<User size={48} />} />
+          </Link>
+        ) : (
+          <div style={{ opacity: 0.5, pointerEvents: 'none' }}>
+            <CardOpcoes texto="Meu QR Code" icon={<User size={48} />} />
+          </div>
+        )}
       </div>
     </>
   )

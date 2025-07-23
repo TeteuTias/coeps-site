@@ -24,7 +24,7 @@ import {
 import './style.css';
 
 const Pagamentos = () => {
-  const { user, isLoading } = useUser();
+    const { user, isLoading } = useUser();
   const route = useRouter();
   const [isLoadingFetch, setIsLoadingFetch] = useState<boolean>(false);
   const [isLoadingPaymentData, setIsLoadingPaymentData] = useState<boolean>(true);
@@ -50,37 +50,37 @@ const Pagamentos = () => {
     setIsLoadingFetch(event);
   };
 
-  const handlePostClick = async () => {
+    const handlePostClick = async () => {
     handleIsLoadingFetch(true);
-    try {
-      const data = {
-        title: 'Título do Post',
-        body: 'Conteúdo do Post',
-        userId: 1,
-      };
+        try {
+            const data = {
+                title: 'Título do Post',
+                body: 'Conteúdo do Post',
+                userId: 1,
+            };
 
-      const response = await fetch('/api/payment/create_payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+            const response = await fetch('/api/payment/create_payment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            });
 
-      if (!response.ok) {
-        throw new Error('Falha ao enviar a requisição POST');
+            if (!response.ok) {
+                    throw new Error('Falha ao enviar a requisição POST');
       }
 
       const responseData: { link: string } = await response.json();
       route.push(responseData.link);
-    } catch (error) {
-      console.error('Erro ao enviar a requisição POST:', error);
+        } catch (error) {
+            console.error('Erro ao enviar a requisição POST:', error);
       handleIsLoadingFetch(false);
       handleIsModalError("Ocorreu algum erro. Tente novamente mais tarde.");
     }
   };
 
-  const handlePostClick2 = async () => {
+    const handlePostClick2 = async () => {
     handleIsLoadingFetch(true);
     try {
       if (!data || !data.pagamento.lista_pagamentos || data?.pagamento?.lista_pagamentos?.length === 0) {
@@ -97,74 +97,74 @@ const Pagamentos = () => {
     }
   };
 
-  useEffect(() => {
-    const enviarRequisicaoGet = async () => {
-      try {
-        const response = await fetch("/api/get/usuariosPagamentos", {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+    useEffect(() => {
+        const enviarRequisicaoGet = async () => {
+            try {
+                const response = await fetch("/api/get/usuariosPagamentos", {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
 
-        if (!response.ok) {
+                if (!response.ok) {
           console.log(response);
-          throw new Error('Falha ao enviar a requisição GET');
-        }
+                    throw new Error('Falha ao enviar a requisição GET');
+                }
 
-        const responseData: { data: { pagamento: IUser["pagamento"] } } = await response.json();
-        console.log('Resposta da requisição GET:', responseData);
+                const responseData: { data: { pagamento: IUser["pagamento"] } } = await response.json();
+                console.log('Resposta da requisição GET:', responseData);
 
         handleIsFetchingData(false);
         handleData(responseData.data);
-      } catch (error) {
-        console.error('Erro ao enviar a requisição GET:', error);
-      }
-    };
+            } catch (error) {
+                console.error('Erro ao enviar a requisição GET:', error);
+            }
+        };
     
-    if (!isLoading) {
-      enviarRequisicaoGet();
-    }
-  }, [isLoading, user]);
-
-  useEffect(() => {
-    const enviarRequisicaoGet = async () => {
-      try {
-        const response = await fetch("/api/payment/paymentConfigs", {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) {
-          console.log(response);
-          throw new Error('Falha ao enviar a requisição GET');
+        if (!isLoading) {
+            enviarRequisicaoGet();
         }
+    }, [isLoading, user]);
 
-        const responseData: IPaymentConfig = await response.json();
+    useEffect(() => {
+        const enviarRequisicaoGet = async () => {
+            try {
+                const response = await fetch("/api/payment/paymentConfigs", {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.ok) {
+          console.log(response);
+                    throw new Error('Falha ao enviar a requisição GET');
+                }
+
+                const responseData: IPaymentConfig = await response.json();
         setDataPaymentConfig(responseData);
-      } catch (error) {
-        console.error('Erro ao enviar a requisição GET:', error);
+            } catch (error) {
+                console.error('Erro ao enviar a requisição GET:', error);
       } finally {
         setIsLoadingPaymentData(false);
       }
     };
     
-    enviarRequisicaoGet();
-  }, []);
+        enviarRequisicaoGet();
+    }, []);
 
-  if (isFetchingData || isLoadingPaymentData) {
+    if (isFetchingData || isLoadingPaymentData) {
     return <LoadingScreen />;
-  }
+    }
 
-  return (
+    return (
     <div className="pagamentos-main">
       <HeaderPainel isPayed={data?.pagamento?.situacao !== 1 ? false : true} />
-      <PaymentForm isModalOpen={isModalPayment} onClose={() => { setModalPayment(false) }} />
+            <PaymentForm isModalOpen={isModalPayment} onClose={() => { setModalPayment(false) }} />
       
       {!isLoadingFetch && isModalError && (
-        <ModalError handleIsModalError={handleIsModalError} texto={isModalError} />
+                    <ModalError handleIsModalError={handleIsModalError} texto={isModalError} />
       )}
       
       {isLoadingFetch && <LoadingModal />}
@@ -173,7 +173,7 @@ const Pagamentos = () => {
       <section className="pagamentos-header">
         <div className="header-content">
           <h1 className="header-title">MEUS PAGAMENTOS</h1>
-        </div>
+                                            </div>
       </section>
 
       {/* Seção de status */}
@@ -183,20 +183,20 @@ const Pagamentos = () => {
             <div className="details-container">
               <div className="details-icon">
                 <ShoppingCart className="info-icon" />
-              </div>
+                                            </div>
               <h2 className="details-text">PAGAMENTO PENDENTE</h2>
               <p className="details-subtext">Complete seu pagamento para acessar todas as funcionalidades do COEPS!</p>
-            </div>
+                                            </div>
           ) : (
             <div className="details-container">
               <div className="details-icon">
                 <CheckCircle className="info-icon" />
-              </div>
+                                                            </div>
               <h2 className="details-text">PAGAMENTO CONFIRMADO</h2>
               <p className="details-subtext">Seu pagamento foi confirmado! Você tem acesso completo ao COEPS.</p>
-            </div>
+                                            </div>
           )}
-        </div>
+                                        </div>
       </section>
 
       {/* Seção de valores */}
@@ -211,7 +211,7 @@ const Pagamentos = () => {
               
               <div className="lot-badge">
                 {dataPaymentConfig.nome.toLocaleUpperCase()}
-              </div>
+                                </div>
 
               <div className="values-grid">
                 <div className="value-card">
@@ -237,7 +237,7 @@ const Pagamentos = () => {
                   <div className="value-type">PIX</div>
                   <div className="value-amount">R$ {dataPaymentConfig.valorAVista.toFixed(2)}</div>
                 </div>
-              </div>
+            </div>
 
               <h3 className="installments-title">OPÇÕES DE PARCELAMENTO</h3>
               
@@ -249,13 +249,13 @@ const Pagamentos = () => {
                       <div className="installment-text">
                         Parcelar em {value.totalParcelas} {value.totalParcelas === 1 ? "vez" : "vezes"} de R$ {value.valorCadaParcela.toFixed(2)}, 
                         totalizando R$ {(value.totalParcelas * value.valorCadaParcela).toFixed(2)}.
-                      </div>
-                    </div>
+                </div>
+            </div>
                   ))}
                 </div>
-              </div>
+                </div>
             </div>
-          </div>
+        </div>
         </section>
       )}
 
@@ -275,19 +275,19 @@ const Pagamentos = () => {
                   <Receipt size={20} />
                   CONTINUAR PAGAMENTO
                   <ArrowRight size={20} />
-                </button>
-              )}
+                        </button>
+                    )}
             </>
           )}
-        </div>
+                            </div>
       </section>
-    </div>
+                                            </div>
   );
 };
 
 // Tela de carregamento com imagem
 const LoadingScreen = () => {
-  return (
+                                                    return (
     <div className="pagamentos-main">
       <div className="status-section">
         <div className="status-container glass-container">
@@ -301,29 +301,29 @@ const LoadingScreen = () => {
               <span></span>
               <span></span>
               <span></span>
-            </div>
-          </div>
-        </div>
-      </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
     </div>
   );
 };
 
 // Modal de carregamento
 const LoadingModal = () => {
-  return (
+    return (
     <div className="loading-modal">
       <div className="loading-modal-content">
         <Loader2 className="loading-modal-spinner" />
         <p className="loading-modal-text">Processando pagamento...</p>
-      </div>
-    </div>
-  );
+            </div>
+        </div>
+    );
 };
 
 // Componente de erro (mantido do código original)
 const ModalError = ({ texto, handleIsModalError }: { texto: string; handleIsModalError: (value: string | false) => void }) => {
-  return (
+    return (
     <div className="loading-modal">
       <div className="loading-modal-content">
         <div className="form-content">
@@ -334,17 +334,17 @@ const ModalError = ({ texto, handleIsModalError }: { texto: string; handleIsModa
             <h3 className="form-title">Erro</h3>
           </div>
           <p className="intro-text">{texto}</p>
-          <button 
+                    <button
             className="form-button"
             onClick={() => handleIsModalError(false)}
-          >
+                    >
             <CheckCircle size={18} style={{ marginRight: '8px' }} />
             OK
-          </button>
+                    </button>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 // Componente de formulário de pagamento (mantido do código original)
