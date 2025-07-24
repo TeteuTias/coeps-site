@@ -163,7 +163,7 @@ export default function Home() {
                                             </div>
                                                 <div className="certificados-card-content">
                                                     {value.isShow ?
-                                                        value.isOk ?
+                                                                                value.isOk ?
                                                             <button className="certificados-download-btn" onClick={() => baixarCertificadoAtividades(value._id)}>
                                                                 Baixar certificado
                                                             </button>
@@ -194,7 +194,7 @@ export default function Home() {
                                             </div>
                                                 <div className="certificados-card-content">
                                                     {atividade.isShow ?
-                                                        atividade.isOk ?
+                                                                                atividade.isOk ?
                                                             <button className="certificados-download-btn" onClick={() => baixarCertificadoAtividades(atividade._id)}>
                                                                 Baixar certificado
                                                             </button>

@@ -3,6 +3,8 @@ import { useEffect, useState } from "react"
 import WarningModal from "@/components/WarningModal"
 import { DateTime } from "luxon"
 import Link from "next/link"
+import { DollarSign, Users, Calendar, Info, XCircle, CheckCircle, Clock, BookOpen, UserCheck, GraduationCap, Presentation, FlaskConical, Music, Award, Gamepad2, Heart, Stethoscope, Sparkles, Brain } from 'lucide-react';
+import './style.css';
 //
 //
 //
@@ -63,99 +65,54 @@ export default function Minicursos() {
      }
     */
     return (
-        <div className="bg-[#3E4095] min-h-screen">
-            <div className=" w-full text-center flex items-center justify-center">
-                <div className="w-[90%] lg:w-[60%] text-justify p-5">
-                    <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Atividades</h1>
+        <div className="atividades-main">
+            <div className="atividades-container">
+                <div className="atividades-header">
+                    <h1 className="atividades-title">Atividades</h1>
                 </div>
-            </div>
-            <div className="flex content-center justify-center w-full text-gray-700 text-clip py-16 bg-white">
-                <div className="w-[95%] md:w-[50%]">
-                    <h1 className="break-words text-start font-bold text-black text-[22px] lg:text-[18px]">O QUE TEMOS AQUI</h1>
-                    <h1 className="text-justify">
-                        Aqui, você pode se inscrever em <span className="bg-yellow-300 px-1 font-bold">atividades complementares</span>. É obrigatório que cada participante escolha atividades que somem no mínimo <span className="font-bold">8 horas</span> (há atividades de 1 hora de duração e outras maiores, como as mesas de especialidades). Lembre-se de que cada uma possui um número máximo de participantes, portanto, programe-se para se inscrever a tempo! Não se preocupe, todas as informações necessárias estão disponíveis aqui. Após a inscrição, a atividade será adicionada automaticamente à <span className="bg-yellow-300 px-1 font-bold">Minha Programação</span>. Você consegue ver mais detalhes
-                        sobre as atividades <Link prefetch={false} target="_blank" href="/programacao"><span className="bg-yellow-300 px-1 cursor-pointer font-bold">clicando aqui</span></Link>.
+                <div className="atividades-intro">
+                    <h1>O QUE TEMOS AQUI</h1>
+                    <p>
+                        Aqui, você pode se inscrever em <span className="atividades-highlight">atividades complementares</span>. É obrigatório que cada participante escolha atividades que somem no mínimo <span className="atividades-highlight">8 horas</span> (há atividades de 1 hora de duração e outras maiores, como as mesas de especialidades). Lembre-se de que cada uma possui um número máximo de participantes, portanto, programe-se para se inscrever a tempo! Não se preocupe, todas as informações necessárias estão disponíveis aqui. Após a inscrição, a atividade será adicionada automaticamente à <span className="atividades-highlight">Minha Programação</span>. Você consegue ver mais detalhes sobre as atividades <Link prefetch={false} target="_blank" href="/programacao"><span className="atividades-highlight" style={{ cursor: 'pointer' }}>clicando aqui</span></Link>.
+                    </p>
+                </div>
+                <div className="atividades-intro">
+                    <h1>PRECISO PAGAR?</h1>
+                    <p>
+                        Grande parte das atividades é <span className="atividades-highlight">gratuita</span>. Entretanto, algumas podem ter cobranças simbólicas para viabilizar o evento. Atividades pagas estão marcadas com <DollarSign size={18} style={{ verticalAlign: 'middle', color: '#541A2C' }} />.
+                    </p>
+                </div>
+                <div className="atividades-intro">
+                    <h1>QUANTAS ATIVIDADES EU POSSO ME INSCREVER?</h1>
+                    <p>
+                        Você pode se inscrever em <span className="atividades-highlight">quantas atividades quiser</span>. Caso queira retirar sua inscrição de algum dos eventos, basta clicar no botão <XCircle size={18} style={{ verticalAlign: 'middle', color: '#EF4444' }} /> presente no canto superior direito dos eventos que você está inscrito. Caso queira retirar sua inscrição de um evento pago, por favor entre em contato com a organização.
+                    </p>
+                </div>
+                <div className="atividades-intro">
+                    <h1>REGRAS DE INSCRIÇÃO</h1>
+                    <p style={{ textAlign: 'left' }}>
+                        <CheckCircle size={16} style={{ color: '#1B305F', marginRight: 6, verticalAlign: 'middle' }} /> A soma das inscrições dos minicursos deve ser obrigatoriamente de no mínimo <span className="atividades-highlight">8 horas</span>.<br />
+                        <Info size={16} style={{ color: '#1B305F', marginRight: 6, verticalAlign: 'middle' }} /> <b>NÃO</b> são permitidas inscrições em atividades com horários conflitantes. É de responsabilidade do congressista realizar um planejamento prévio antes da abertura das inscrições.<br />
+                        <Calendar size={16} style={{ color: '#1B305F', marginRight: 6, verticalAlign: 'middle' }} /> O congressista tem acesso às datas de abertura das inscrições, horários, localizações e datas de realização das atividades <span className="atividades-highlight"><Link className="bg-red-600 p-1 text-white" href="/programacao" prefetch={false} target="_blank">CLICANDO AQUI</Link></span>.
+                    </p>
+                </div>
+                <div className="atividades-status">
+                    <h1>
+                        {loadingData ? <span><Clock size={20} style={{ verticalAlign: 'middle', color: '#1B305F' }} /> CARREGANDO ATIVIDADES</span> : ''}
+                        {!loadingData && data?.listEvents.length === 0 ? <span><Info size={20} style={{ verticalAlign: 'middle', color: '#541A2C' }} /> AINDA NÃO HÁ ATIVIDADES DISPONÍVEIS</span> : ''}
+                        {!loadingData && data?.listEvents.length > 0 ? <span><BookOpen size={20} style={{ verticalAlign: 'middle', color: '#1B305F' }} /> ATIVIDADES DISPONÍVEIS</span> : ''}
                     </h1>
                 </div>
-            </div>
-            <div className="flex content-center justify-center w-full text-white text-clip py-16">
-                <div className="w-[95%] md:w-[50%]">
-                    <h1 className="break-words text-start font-bold text-white text-[22px] lg:text-[18px]">PRECISO PAGAR?</h1>
-                    <h1 className="text-justify">
-                        Grande parte das atividades é <span className="bg-yellow-300 text-gray-800 font-bold px-1">gratuita</span>. Entretanto, algumas podem ter cobranças simbólicas para viabilizar
-                        o evento.  Atividades pagas estão marcadas com <span className="bg-yellow-300 text-gray-800 font-bold px-1 font-emoji">💲</span>.
-                    </h1>
-                </div>
-            </div>
-            <div className="flex content-center justify-center w-full text-gray-700 text-clip py-16 bg-white">
-                <div className="flex flex-col w-[95%] md:w-[50%] space-y-10">
-                    <div>
-                        <h1 className="break-words text-start font-bold text-black text-[22px] lg:text-[18px]">QUANTAS ATIVIDADES EU POSSO ME INSCREVER?</h1>
-                        <div className="flex flex-row space-x-1">
-                            <h1 className="text-justify">
-                                Você pode se inscrever em <span className="bg-yellow-300 text-gray-800 font-bold px-1">quantas atividades quiser</span>. Caso queira retirar sua inscrição de algum dos eventos, basta
-                                clicar no botão <span className="font-extrabold">X</span> presente no canto superior direito dos eventos que você está inscrito. Caso queria retirar sua inscrição de um evento pago, por favor entre em contato com a organização.
-                            </h1>
+                <div className="atividades-cards">
+                    {!loadingData && data?.listEvents.length > 0 && (
+                        <div className="w-full grid grid-cols-1 gap-x-10 gap-y-10 p-4 2xl:grid-cols-3 2xl:gap-2 2xl:gap-x-10 2xl:gap-y-10 lg:grid-cols-2 lg:gap-2 lg:gap-x-10 lg:gap-y-10">
+                            {data?.listEvents.map((value) => (
+                                <div key={value._id} className="atividades-card">
+                                    <BannerAtividade activity={value} color={generateHexColor()} userId={data._id} />
+                                </div>
+                            ))}
                         </div>
-                    </div>
-                    <div>
-                        <h1 className="break-words text-start font-bold text-black text-[22px] lg:text-[18px]">REGRAS DE INSCRIÇÃO</h1>
-                        <div className="flex flex-col space-y-5">
-                            <h1 className="text-justify">
-                                <span className="font-emoji text-gray-800">◽</span> A soma das inscrições dos minicursos de ser obrigatóriamente de no mínimo <span className="font-bold hover:cursor-pointer">8 horas</span>.
-                            </h1>
-                            <h1 className="text-justify">
-                                <span className="font-emoji text-gray-800">◽</span><span className="font-bold">NÃO</span> são permitidas inscrições em atividades com horários conflitantes. É de responsabilidade do congressista realizar um planejamento prévio antes da abertura das inscrições.
-                            </h1>
-                            <h1 className="text-justify">
-                                <span className="font-emoji text-gray-800">◽</span> O congressista tem acesso às datas de abertura das inscrições, horários, localizações e datas de realização das atividades <span className="font-bold hover:cursor-pointer"><Link className="bg-red-600 p-1 text-white" href="/programacao" prefetch={false} target="_blank">CLICANDO AQUI</Link></span>.
-                            </h1>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-            <div className="bg-[#3e4095]">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" preserveAspectRatio="none" fill="#FFFFFF" >
-                    <path className="" d="M761.9,44.1L643.1,27.2L333.8,98L0,3.8V0l1000,0v3.9"></path>
-                </svg>
-            </div>
-            <div className="flex content-center justify-center w-full text-gray-700 text-clip py-16 ">
-                <div className="flex flex-col w-[95%] md:w-[70%]">
-                    <div className="text-center">
-                        <h1 className="break-words font-bold text-white text-[22px] lg:text-[18px]">
-                            {
-                                loadingData ? 'CARREGANDO ATIVIDADES' : ""
-                            }
-                            {
-                                !loadingData && data?.listEvents.length == 0 ? "AINDA NÃO HÁ ATIVIDADES DISPONÍVEIS" : ""
-                            }
-                        </h1>
-                        <h1 className="break-words font-bold text-white text-[22px] lg:text-[18px]">
-                            {!loadingData && data?.listEvents.length > 0 ?
-                                `ATIVIDADES DISPONÍVEIS`
-                                : ""
-                            }
-                        </h1>
-                    </div>
-
-                    <div className="flex items-center content-center justify-center">
-                        {
-                            !loadingData && data?.listEvents.length > 0 &&
-                            <div className="w-[90%] sm:w-[65%] 2xl:w-[90%] grid grid-cols-1 gap-x-10 gap-y-10 p-4 2xl:grid-cols-3 2xl:gap-2 2xl:gap-x-10 2xl:gap-y-10 lg:grid-cols-2 lg:gap-2 lg:gap-x-10 lg:gap-y-10 ">
-                                {
-                                    data?.listEvents.map((value) => {
-
-                                        return (
-                                            <div key={value._id}>
-                                                <BannerAtividade activity={value} color={generateHexColor()} userId={data._id} />
-                                            </div>
-                                        )
-                                    })
-                                }
-                            </div>
-                        }
-                    </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -402,7 +359,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
         }
     };
     return (
-        <div className="relative bg-white min-h-[600px] max-h-[600px] shadow-2xl">
+        <div className="atividades-card-container">
             <WarningModal message={modalMessage} textButton={"FECHAR"} closeModal={() => { setModalMessage(0) }} isModal={modalMessage} />
             <WarningModal message={modalMessage2} textButton={"RECARREGAR PÁGINA"} closeModal={() => { setModalMessage(0) }} isModal={modalMessage2} onClose={() => { window.location.reload() }} />
             <WarningModalPayment href={modal3Link} message={modalMessage3} textButton={"FECHAR"} closeModal={() => { setModalMessage3(0) }} isModal={modalMessage3} />
@@ -410,65 +367,69 @@ const BannerAtividade = ({ activity, userId, color }) => {
 
             {
                 !activity.isFree ?
-                    <div className="absolute  w-fit p-2" style={{ 'backgroundColor': color }}>
-                        <h1 className="font-emoji text-gray-800 font-extrabold"><span className=" font-coeps text-[19px] text-orange-600">{activity?.value ? activity?.value : ""}</span>💲</h1>
+                    <div className="atividades-preco-tag">
+                        <span>{activity?.value ? activity?.value : ""}</span>
+                        <DollarSign size={18} style={{ color: '#541A2C' }} />
                     </div> : ""
             }
-            <div className="" >
-                <div className={`p-[3px]`} style={{ 'backgroundColor': color }} />
-                <div className="p-5 space-y-5 h-[520px] overflow-auto relative">
+            <div className="atividades-card-content">
+                <div className={`atividades-card-header-border`} style={{ 'backgroundColor': color }} />
+                <div className="atividades-card-body">
                     {
                         includesUser && activity.isFree ?
-                            <div className=" absolute top-0 right-0 m-2">
-                                <button className="relative bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center focus:outline-none" onClick={() => { handleRemoveRegister(activity._id) }}>
-                                    <div className="absolute w-[2px] h-4 sm:h-4 bg-white transform rotate-45"></div>
-                                    <div className="absolute w-[2px] h-4 sm:h-4 bg-white transform -rotate-45"></div>
+                            <div className="atividades-remove-button-container">
+                                <button className="atividades-remove-button" onClick={() => { handleRemoveRegister(activity._id) }}>
+                                    <XCircle size={20} />
                                 </button>
                             </div> : ""
                     }
                     {
                         includesUser && !activity.isFree ?
-                            <div className=" absolute top-0 right-0 m-2">
-                                <button className="relative bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center focus:outline-none" onClick={() => { setModalMessage("Para cancelar sua inscrição de um evento PAGO, entre em contato com a equipe COEPS.") }}>
-                                    <div className="absolute w-[2px] h-4 sm:h-4 bg-white transform rotate-45"></div>
-                                    <div className="absolute w-[2px] h-4 sm:h-4 bg-white transform -rotate-45"></div>
+                            <div className="atividades-remove-button-container">
+                                <button className="atividades-remove-button" onClick={() => { setModalMessage("Para cancelar sua inscrição de um evento PAGO, entre em contato com a equipe COEPS.") }}>
+                                    <XCircle size={20} />
                                 </button>
                             </div> : ""
                     }
-                    <h1 className="font-extrabold text-center">
+                    <h1 className="atividades-card-title">
                         {
                             buttonText == "INSCREVER" && !includesUser ?
                                 `[${nVagas} Vagas]` : ""
                         }
 
                     </h1>
-                    <div className="text-center">
-                        <h1 className="text-[100px] font-emoji text-gray-800">{activity.emoji}</h1>
-                    </div>
-                    <div >
+                    <div className="atividades-card-icon">{getActivityIcon(activity)}</div>
+                    <div className="atividades-card-title">
                         <h1 className="font-bold text-center" >{activity.name.toLocaleUpperCase()}</h1>
                         <div className='text-[13px] font-semibold text-center pt-2'>
                             <h2>{new Date(activity.timeline[0].date_init).toLocaleString()} às {new Date(activity.timeline[0].date_end).toLocaleString()}</h2>
                         </div>
                     </div>
-                    <div>
+                    <div className="atividades-card-description">
                         <h1 className="font-thin text-center break-words whitespace-normal">
                             {activity.description}
                         </h1>
                     </div>
                     <h1>{ }</h1>
                 </div>
-                <div className="flex justify-center ">
-                    <button className="p-4 font-bold text-white" onClick={() => {
+                <div className="atividades-card-footer">
+                    <button className="atividades-card-button" onClick={() => {
                         activity.isFree ? handleRegister(activity._id) : handlePayedRegister(activity._id)
                     }} style={{ 'backgroundColor': color }} >
                         {
-                            includesUser ? "INSCRITO" : activity.isOpen ? buttonText : "FECHADO"
+                            includesUser ? "" : activity.isOpen ? buttonText : ""
                         }
 
                     </button> {/* INSCREVER|JÁ INSCRITO|FECHADO  */}
                 </div>
             </div>
+            {
+                (buttonText === 'FECHADO' || !activity.isOpen) &&
+                    <div className="atividades-fechado">FECHADO</div>
+            }
+            {
+                includesUser && <div className="atividades-inscrito">INSCRITO</div>
+            }
         </div>
     )
 }
@@ -538,4 +499,23 @@ const WarningModalPayment = ({ href = "/pagamentos", message = "MENSAGEM NÃO DE
             }
         </>
     );
+};
+
+// No BannerAtividade, trocar o emoji do topo por um ícone Lucide apropriado conforme o tipo de atividade
+const getActivityIcon = (activity) => {
+  if (!activity) return <BookOpen size={48} />;
+  const name = activity.name?.toLowerCase() || '';
+  if (!activity.isFree) return <DollarSign size={48} color="#541A2C" />;
+  if (name.includes('minicurso') || name.includes('workshop') || name.includes('curso')) return <GraduationCap size={48} color="#1B305F" />;
+  if (name.includes('palestra') || name.includes('conferência') || name.includes('apresentação')) return <Presentation size={48} color="#1B305F" />;
+  if (name.includes('pesquisa') || name.includes('científico') || name.includes('estudo')) return <FlaskConical size={48} color="#1B305F" />;
+  if (name.includes('festa') || name.includes('social') || name.includes('confraternização')) return <Music size={48} color="#1B305F" />;
+  if (name.includes('premiação') || name.includes('competição') || name.includes('concurso') || name.includes('premio')) return <Award size={48} color="#1B305F" />;
+  if (name.includes('mesa') || name.includes('grupo') || name.includes('equipe')) return <Users size={48} color="#1B305F" />;
+  if (name.includes('trabalho') || name.includes('artigo') || name.includes('publicação')) return <BookOpen size={48} color="#1B305F" />;
+  if (name.includes('jogo') || name.includes('lúdico') || name.includes('interativo')) return <Gamepad2 size={48} color="#1B305F" />;
+  if (name.includes('saúde') || name.includes('médico') || name.includes('clínico') || name.includes('cardio')) return <Heart size={48} color="#1B305F" />;
+  if (name.includes('inovação') || name.includes('tecnologia') || name.includes('moderno')) return <Brain size={48} color="#1B305F" />;
+  if (name.includes('vivência') || name.includes('atividade') || name.includes('experiência')) return <Sparkles size={48} color="#1B305F" />;
+  return <Calendar size={48} color="#1B305F" />;
 };

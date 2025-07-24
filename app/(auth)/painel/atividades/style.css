@@ -1,0 +1,299 @@
+/* Glassmorphism e paleta para /painel/atividades */
+
+.atividades-main {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #541A2C 0%, #D8D9DA 50%, #1B305F 100%);
+  background-attachment: fixed;
+  background-size: cover;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  overflow-x: hidden;
+}
+
+.atividades-container {
+  padding: 2rem 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.atividades-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.atividades-title {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: white;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  letter-spacing: 1px;
+  margin-bottom: 1rem;
+}
+
+.atividades-intro {
+  background: rgba(255,255,255,0.25);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(27,48,95,0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255,255,255,0.3);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.atividades-intro h1 {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #541A2C;
+  margin-bottom: 1rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #541A2C 0%, #1B305F 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.atividades-intro p {
+  font-size: 1.1rem;
+  color: #541A2C;
+  line-height: 1.7;
+  text-align: justify;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.atividades-highlight {
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 12px;
+  font-weight: 700;
+  display: inline-block;
+  margin: 0.5rem auto 0 auto;
+  box-shadow: 0 4px 12px rgba(239,68,68,0.3);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  border: 1px solid rgba(255,255,255,0.2);
+  text-align: center;
+  max-width: 420px;
+}
+
+.atividades-status {
+  background: rgba(255,255,255,0.25);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(27,48,95,0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255,255,255,0.3);
+  padding: 2rem;
+  text-align: center;
+  max-width: 400px;
+  margin: 0 auto 2rem auto;
+}
+
+.atividades-status h1 {
+  color: white;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.atividades-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  align-items: center;
+}
+
+.atividades-card {
+  background: rgba(255,255,255,0.25);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(27,48,95,0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1.5px solid rgba(255,255,255,0.3);
+  padding: 2rem;
+  width: 100%;
+  max-width: 800px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.atividades-card:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 12px 40px rgba(27,48,95,0.25);
+  background: rgba(255,255,255,0.35);
+}
+
+.atividades-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.atividades-card-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #541A2C;
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+.atividades-card-desc {
+  font-size: 1rem;
+  color: #1B305F;
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.atividades-card-info {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.atividades-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Removido o fundo circular e gradiente */
+  background: none;
+  color: #1B305F;
+  border-radius: 0;
+  width: auto;
+  height: auto;
+  font-size: 2rem;
+  box-shadow: none;
+  margin: 0 auto 1rem auto;
+}
+
+.atividades-btn {
+  padding: 0.8rem 2.2rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(135deg, #541A2C 0%, #1B305F 100%);
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(27,48,95,0.15);
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.atividades-btn:hover {
+  background: linear-gradient(135deg, #1B305F 0%, #541A2C 100%);
+  transform: scale(1.04);
+}
+
+.atividades-vagas {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1B305F;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.atividades-cancel-btn {
+  background: #EF4444;
+  color: white;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  border: none;
+  box-shadow: 0 2px 8px rgba(239,68,68,0.15);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.atividades-cancel-btn:hover {
+  background: #DC2626;
+}
+
+.atividades-preco-tag {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  background: rgba(255,255,255,0.7);
+  color: #541A2C;
+  border: 2px solid #541A2C;
+  border-radius: 14px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  padding: 0.3rem 1.1rem;
+  box-shadow: 0 2px 12px rgba(84,26,44,0.10);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  backdrop-filter: blur(6px);
+}
+
+.atividades-fechado {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #EF4444;
+  font-weight: 800;
+  font-size: 1.2rem;
+  letter-spacing: 1px;
+  background: rgba(255,255,255,0.7);
+  border-radius: 10px;
+  padding: 0.5rem 1.2rem;
+  margin: 1.5rem auto 0 auto;
+  box-shadow: 0 2px 8px rgba(239,68,68,0.10);
+  width: fit-content;
+}
+
+.atividades-inscrito {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #10B981;
+  font-weight: 800;
+  font-size: 1.2rem;
+  letter-spacing: 1px;
+  background: rgba(16,185,129,0.12);
+  border-radius: 10px;
+  padding: 0.5rem 1.2rem;
+  margin: 1.5rem auto 0 auto;
+  box-shadow: 0 2px 8px rgba(16,185,129,0.10);
+  width: fit-content;
+  border: 2px solid #10B98133;
+}
+
+@media (max-width: 900px) {
+  .atividades-container {
+    padding: 1rem 0.5rem;
+  }
+  .atividades-card {
+    padding: 1.2rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .atividades-title {
+    font-size: 1.3rem;
+  }
+  .atividades-card {
+    padding: 0.7rem;
+  }
+  .atividades-card-title {
+    font-size: 1rem;
+  }
+  .atividades-btn {
+    font-size: 1rem;
+    padding: 0.7rem 1.2rem;
+  }
+} 
