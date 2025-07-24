@@ -40,7 +40,15 @@ export const GET = withApiAuthRequired(async (req) => {
     const nome = userDoc.informacoes_usuario?.nome || 'Nome não encontrado';
     const email = userDoc.informacoes_usuario?.email || 'Email não encontrado';
 
-    const qrCodeBase64 = await QRCode.toDataURL(idStr);
+    // Cor carmesim do site (exemplo: #A8323E), fundo branco
+    const qrCodeBase64 = await QRCode.toDataURL(idStr, {
+      color: {
+        dark: '#541A2C', // carmesim do site
+        light: '#FFFFFF', // fundo branco
+      },
+      margin: 2, // margem para quiet zone
+      width: 400 // resolução maior para qualidade
+    });
 
     return NextResponse.json(
       {

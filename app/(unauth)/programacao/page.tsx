@@ -173,7 +173,7 @@ const App = () => {
               <p className="empty-subtext">Estamos trabalhando para trazer a melhor programação para você!</p>
             </div>
           )}
-        </div>
+            </div>
       </section>
 
       {/* Seção de eventos */}

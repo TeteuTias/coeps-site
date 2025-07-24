@@ -16,7 +16,8 @@ import {
   Clock,
   UserCheck,
   Activity,
-  Sparkles
+  Sparkles,
+  QrCode
 } from 'lucide-react';
 import './style.css';
 
@@ -87,15 +88,11 @@ function PaginaAreaDoCliente() {
         <Link href="painel/brindes" prefetch={false}>
           <CardOpcoes texto="Brindes" icon={<Sparkles size={48} />} special={true} />
         </Link>
-        {userId ? (
-          <Link href={`/qrCode/${userId}`} prefetch={false}>
-            <CardOpcoes texto="Meu QR Code" icon={<User size={48} />} />
+        <div style={{ opacity: userId ? 1 : 0.5, pointerEvents: userId ? 'auto' : 'none' }}>
+          <Link href={`/qrCode/${userId ?? 'null'}`} prefetch={false}>
+            <CardOpcoes texto="Meu QR Code" icon={<QrCode size={48} />} />
           </Link>
-        ) : (
-          <div style={{ opacity: 0.5, pointerEvents: 'none' }}>
-            <CardOpcoes texto="Meu QR Code" icon={<User size={48} />} />
-          </div>
-        )}
+        </div>
       </div>
     </>
   )

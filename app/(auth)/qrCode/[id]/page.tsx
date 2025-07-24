@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import './style.css';
+import Link from 'next/link';
 
 interface UsuarioQR {
   id: string;
@@ -32,34 +34,42 @@ export default function MeuQRCodePage() {
 
   if (loading)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white text-black">
-        <p className="text-lg">🔄 Carregando...</p>
+      <div className="qr-main min-h-screen flex items-center justify-center">
+        <div className="qr-loader">
+          <img
+            src="/LetreiroColorido01.png"
+            alt="Logo COEPS VII"
+            className="qr-loader-logo"
+            draggable="false"
+          />
+          <div className="qr-spinner"></div>
+          <p className="qr-loading-text">Carregando seu QR Code...</p>
+        </div>
       </div>
     );
 
   if (erro)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white text-red-600">
-        <p className="text-lg">❌ {erro}</p>
+      <div className="qr-main min-h-screen flex items-center justify-center">
+        <div className="qr-error-card">
+          <p className="qr-error-icon">❌</p>
+          <p className="qr-error-text">{erro}</p>
+        </div>
       </div>
     );
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center bg-white text-black px-4">
-      <h1 className="text-3xl font-bold mb-6">🔳 Meu QR Code</h1>
-
-      <div className="bg-gray-100 p-6 rounded-lg shadow-md text-center w-full max-w-md">
-        <img src={dados?.qrCode} alt="QR Code" className="mx-auto mb-6 w-48 h-48" />
-        <div className="text-left text-lg space-y-2">
-          <p>
-            <strong>ID:</strong> {dados?.id}
-          </p>
-          <p>
-            <strong>Nome:</strong> {dados?.nome}
-          </p>
-          <p>
-            <strong>Email:</strong> {dados?.email}
-          </p>
+    <div className="qr-main min-h-screen flex flex-col justify-center items-center px-4">
+      <Link href="/painel" className="qr-back-btn" aria-label="Voltar para o painel">
+        <span className="qr-back-icon">←</span> <span className="qr-back-text">Voltar</span>
+      </Link>
+      <div className="qr-card bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full flex flex-col items-center">
+        <h1 className="qr-title text-3xl font-bold mb-4">Seu QR Code</h1>
+        <img src={dados?.qrCode} alt="QR Code" className="qr-img mb-6" />
+        <div className="qr-info text-left w-full space-y-2">
+          <p><span className="qr-label">ID:</span> {dados?.id}</p>
+          <p><span className="qr-label">Nome:</span> {dados?.nome}</p>
+          <p><span className="qr-label">Email:</span> {dados?.email}</p>
         </div>
       </div>
     </div>

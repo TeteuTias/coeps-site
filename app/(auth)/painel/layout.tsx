@@ -10,7 +10,7 @@ export default function Layout({ children }) {
             <div className="min-h-screen">
                 <HeaderPainel isPayed={true} />
                 <div className="pt-14 lg:pt-16">
-                    {children}
+                {children}
                 </div>
             </div>
         </>

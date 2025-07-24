@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import TelaLoading from '@/components/TelaLoading';
+import { Award, Medal, FileBadge2, FileWarning, Loader2 } from 'lucide-react';
+import './style.css';
 //
 //
 export default function Home() {
@@ -99,160 +101,117 @@ export default function Home() {
 
     if (firstLoading || isLoadingDeleteOrSend) {
         return (
-            <>
-                <TelaLoading />
-            </>
+            <div className="certificados-main">
+                <div className="certificados-status-section">
+                    <div className="certificados-status-container glass-container">
+                        <div className="certificados-loading-container">
+                            <div className="certificados-loading-spinner">
+                                <Loader2 className="spinner-icon" />
+                            </div>
+                            <h2 className="certificados-loading-text">CARREGANDO CERTIFICADOS</h2>
+                            <div className="certificados-loading-dots">
+                                <span></span><span></span><span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         )
     }
     //
     return (
-        <>
-            <div className='min-h-screen'>
-                <div className='bg-[#3E4095] p-5'>
-                    <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Meus Certificados</h1>
+        <div className="certificados-main">
+            <div className="certificados-container">
+                <div className="certificados-header">
+                    <h1 className="certificados-title">Meus Certificados</h1>
                 </div>
-                <div className="flex flex-col justify-center content-center items-center relative pt-2 pb-20">
-                    <div className=" w-[90%]">
-                        <div className="pt-10">
-                            <h1 className="font-semibold text-slate-950 text-[30px] lg:text-[35px]"><span></span>O QUE TEMOS AQUI?</h1>
-                        </div>
-                        <div>
-                        </div>
-                        <div className="">
-                            <p className="text-[#54595f] text-justify">
-                                Aqui, você encontrará os certificados das atividades em que participou. Seja como organizador, palestrante ou ouvinte, todas as suas
-                                participações
-                                receberão certificações. Esses certificados estarão disponíveis neste espaço para que você possa baixá-los facilmente.
+                <div className="certificados-intro glass-container">
+                    <h2>O QUE TEMOS AQUI?</h2>
+                    <p>
+                        Aqui, você encontrará os certificados das atividades em que participou. Seja como organizador, palestrante ou ouvinte, todas as suas participações receberão certificações. Esses certificados estarão disponíveis neste espaço para que você possa baixá-los facilmente.
                             </p>
                         </div>
-                    </div>
-
-                    <div className=" w-[90%]">
-                        <div className="pt-10" onClick={() => console.log(dataOrganizador)}>
-                            <h1 className="font-semibold text-slate-950 text-[30px] lg:text-[35px]"><span></span>CERTIFICADOS</h1>
-                        </div>
-                        <div>
-                        </div>
-                        <div className=" space-y-5">
+                <div className="certificados-section glass-container">
+                    <h2 className="certificados-section-title"><FileBadge2 size={22} className="certificados-section-icon" /> CERTIFICADOS</h2>
+                    <div className="certificados-cards">
                             {
                                 !dataOrganizador.length && !dataAtividades.length ?
                                     (
-                                        <div className=''>
-                                            <h1 className="text-[#3E4095] hover:text-[#505191]">Você ainda não possui certificados disponíveis.</h1>
-                                            <p className="text-[#54595f] text-justify">
-                                                Seus certificados ainda não estão prontos. Mas não se preocupe! Estamos trabalhando para disponibilizá-los o quanto antes!
-                                                <span className='text-gray-950 font-bold'> Caso possua alguma dúvida, fique a vontade para entrar em contato com a equipe COEPS.</span>
+                                    <div className="certificados-empty">
+                                        <FileWarning size={38} className="certificados-empty-icon" />
+                                        <h3>Você ainda não possui certificados disponíveis.</h3>
+                                        <p>Seus certificados ainda não estão prontos. Mas não se preocupe! Estamos trabalhando para disponibilizá-los o quanto antes!<br/>
+                                            <span className='certificados-empty-highlight'>Caso possua alguma dúvida, fique à vontade para entrar em contato com a equipe COEPS.</span>
                                             </p>
                                         </div>
-                                    )
-                                    : ""
+                                ) : null
                             }
                             {
                                 dataOrganizador.length ?
-                                    (
-                                        <>
-                                            <div>
-                                                <h1 className='font-semibold text-slate-950 text-[20px] lg:text-[20px]'>🗂️ CERTIFICADOS ORGANIZAÇÃO</h1>
+                                <div className="certificados-group">
+                                    <div className="certificados-group-title"><Medal size={20} /> Organização</div>
+                                    <div className="certificados-group-cards">
+                                        {dataOrganizador.map((value) => (
+                                            <div
+                                                key={value._id}
+                                                className={`certificados-card${value.isShow && value.isOk ? ' baixavel' : ''}`}
+                                                style={{ borderTopColor: value.isShow && value.isOk ? '#541A2C' : '#1B305F' }}
+                                            >
+                                                <div className="certificados-card-header">
+                                                    <Award size={18} className="certificados-card-icon" />
+                                                    <span className="certificados-card-type">{value.type.toLocaleUpperCase()}</span>
                                             </div>
-                                            <div className='space-y-4'>
-                                                {dataOrganizador.map((value) => {
-                                                    return (
-                                                        <div key={value._id} onClick={() => console.log(value)} className=''>
-                                                            <div className="bg-white shadow-md w-full md:w-[55%] lg:w-[55%] rounded-xl p-5 border-t-2"
-                                                                style={{ borderTopColor: value.isOpen ? "#526eff" : "#ff5d52" }}
-                                                            >
-                                                                <div>
-                                                                    <p className='text-red-600 font-bold'>{value.type.toLocaleUpperCase() + " - [" + value.type.toLocaleUpperCase() + "]"}</p>
-                                                                </div>
-                                                                <div className='text-gray-600'>
-                                                                    <p>
-                                                                        {
-                                                                            value.isShow ?
-                                                                                value.isOk ?
-                                                                                    (
-                                                                                        <p className='text-blue-950 cursor-pointer'
-                                                                                            onClick={() => baixarCertificadoAtividades(value._id)/*baixarCertificadoOrganizador(value._id)*/}
-                                                                                        >Clique para baixar seu certificado.</p>
-                                                                                    )
-                                                                                    :
-                                                                                    (
-                                                                                        <p className='text-blue-950'>Seu certificado ainda não está pronto.</p>
-                                                                                    )
-                                                                                :
-                                                                                (
-                                                                                    <p>
-                                                                                        Ainda não disponível.
-                                                                                    </p>
-                                                                                )
-                                                                        }
-                                                                    </p>
-                                                                </div>
-                                                            </div>
+                                                <div className="certificados-card-content">
+                                                    {value.isShow ?
+                                                        value.isOk ?
+                                                            <button className="certificados-download-btn" onClick={() => baixarCertificadoAtividades(value._id)}>
+                                                                Baixar certificado
+                                                            </button>
+                                                            : <span className="certificados-card-status">Seu certificado ainda não está pronto.</span>
+                                                        : <span className="certificados-card-status">Ainda não disponível.</span>
+                                                    }
                                                         </div>
-                                                    )
-                                                })}
                                             </div>
-                                        </>
-                                    )
-                                    : ""
+                                        ))}
+                                    </div>
+                                </div>
+                                : null
                             }
                             {
                                 dataAtividades.length ?
-                                    (
-                                        <>
-                                            <div>
-                                                <h1 className='font-semibold text-slate-950 text-[20px] lg:text-[20px]'>👨‍🎓 CERTIFICADOS ATIVIDADES</h1>
+                                <div className="certificados-group">
+                                    <div className="certificados-group-title"><FileBadge2 size={20} /> Atividades</div>
+                                    <div className="certificados-group-cards">
+                                        {dataAtividades.map((atividade) => (
+                                            <div
+                                                key={atividade._id}
+                                                className={`certificados-card${atividade.isShow && atividade.isOk ? ' baixavel' : ''}`}
+                                                style={{ borderTopColor: atividade.isShow && atividade.isOk ? '#541A2C' : '#1B305F' }}
+                                            >
+                                                <div className="certificados-card-header">
+                                                    <Medal size={18} className="certificados-card-icon" />
+                                                    <span className="certificados-card-type">{atividade['type']} - {atividade.eventName.toLocaleUpperCase()}</span>
                                             </div>
-                                            <div className='space-y-4'>
-                                                {dataAtividades.map((atividade) => {
-                                                    return (
-                                                        <div key={atividade._id} onClick={() => console.log(atividade)} className=''>
-                                                            <div className="bg-white shadow-md w-full md:w-[55%] lg:w-[55%] rounded-xl p-5 border-t-2"
-                                                                style={{ borderTopColor: atividade.isOpen ? "#526eff" : "#ff5d52" }}
-                                                            >
-                                                                <div>
-                                                                    <p className='text-red-600 font-bold'>{atividade['type'] + " - " + atividade.eventName.toLocaleUpperCase()}</p>
-                                                                </div>
-                                                                <div className='text-gray-600'>
-                                                                    <p>
-                                                                        {
-                                                                            atividade.isShow ?
-                                                                                atividade.isOk ?
-                                                                                    (
-                                                                                        <p className='text-blue-950 cursor-pointer'
-                                                                                            onClick={() => baixarCertificadoAtividades(atividade._id)}
-                                                                                        >Clique para baixar seu certificado.</p>
-                                                                                    ) :
-                                                                                    (
-                                                                                        <p className='text-blue-950'
-                                                                                        >Seu certificado ainda não está pronto.</p>
-                                                                                    )
-                                                                                :
-                                                                                (
-                                                                                    <p>
-                                                                                        Ainda não disponível.
-                                                                                    </p>
-                                                                                )
-                                                                        }
-                                                                    </p>
-                                                                </div>
-                                                            </div>
+                                                <div className="certificados-card-content">
+                                                    {atividade.isShow ?
+                                                        atividade.isOk ?
+                                                            <button className="certificados-download-btn" onClick={() => baixarCertificadoAtividades(atividade._id)}>
+                                                                Baixar certificado
+                                                            </button>
+                                                            : <span className="certificados-card-status">Seu certificado ainda não está pronto.</span>
+                                                        : <span className="certificados-card-status">Ainda não disponível.</span>
+                                                    }
                                                         </div>
-                                                    )
-                                                })}
                                             </div>
-                                        </>
-                                    )
-                                    : ""
-                            }
+                                        ))}
                         </div>
+                                </div>
+                                : null
+                        }
                     </div>
-
-
                 </div>
             </div>
-        </>
-
+        </div>
     );
 
 }
