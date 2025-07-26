@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Menu, X, LogOut, Home, FileText, Calendar, Activity, CreditCard, User } from 'lucide-react';
+import { Menu, X, LogOut, Home, FileText, Calendar, Activity, CreditCard, User, Award } from 'lucide-react';
 
 const HeaderPainel = ({ isPayed = true }: { isPayed: boolean }) => {
     const not_payed = "Realize o pagamento para ter acesso ao site completo"
@@ -34,29 +34,27 @@ const HeaderPainel = ({ isPayed = true }: { isPayed: boolean }) => {
     ];
 
     return (
-        <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-            isScrolled 
-                ? 'bg-[#541A2C] shadow-lg border-b border-[#541A2C]/20' 
-                : 'bg-[#541A2C]'
-        }`}>
+        <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
+            ? 'bg-[#541A2C] shadow-lg border-b border-[#541A2C]/20'
+            : 'bg-[#541A2C]'
+            }`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <nav className={`flex items-center justify-between transition-all duration-300 ${
-                    isScrolled ? 'h-12 lg:h-14' : 'h-14 lg:h-16'
-                }`}>
+                <nav className={`flex items-center justify-between transition-all duration-300 ${isScrolled ? 'h-12 lg:h-14' : 'h-14 lg:h-16'
+                    }`}>
                     {/* Logo */}
-                <div className="flex-shrink-0">
+                    <div className="flex-shrink-0">
                         <Link href="/" prefetch={false} className="flex items-center group">
                             <div className="relative overflow-hidden rounded-lg transition-all duration-300 group-hover:scale-105">
-                        <Image
-                            src="/Logo01.png"
+                                <Image
+                                    src="/Logo01.png"
                                     width={isScrolled ? 60 : 90}
                                     height={isScrolled ? 60 : 90}
                                     alt="COEPS Logo"
                                     className="transition-all duration-300"
-                        />
+                                />
                             </div>
-                    </Link>
-                </div>
+                        </Link>
+                    </div>
 
                     {/* Desktop Menu */}
                     <div className="hidden lg:flex items-center space-x-1">
@@ -67,39 +65,53 @@ const HeaderPainel = ({ isPayed = true }: { isPayed: boolean }) => {
                                         key={item.name}
                                         href={item.href}
                                         prefetch={false}
-                                        className={`relative px-3 py-2 font-medium text-white hover:text-[#D8D9DA] transition-all duration-300 group flex items-center gap-2 ${
-                                            isScrolled ? 'text-xs' : 'text-sm'
-                                        }`}
+                                        className={`relative px-3 py-2 font-medium text-white hover:text-[#D8D9DA] transition-all duration-300 group flex items-center gap-2 ${isScrolled ? 'text-xs' : 'text-sm'
+                                            }`}
                                     >
                                         <span className="opacity-80 group-hover:opacity-100 transition-opacity duration-300">
                                             {item.icon}
                                         </span>
                                         <span className="relative z-10">{item.name}</span>
                                         <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-[#D8D9DA] group-hover:w-full group-hover:left-0 transition-all duration-300"></div>
-                                        </Link>
+                                    </Link>
                                 ))}
                             </>
                         ) : (
-                            <div className="px-3 py-2 text-sm font-medium text-[#541A2C] bg-yellow-100 rounded-lg border border-yellow-200">
-                                        {not_payed}
+                            <div className='flex flex-row space-x-2 items-center content-center justify-center'>
+                                <div className="px-3 py-2 text-sm font-medium text-[#541A2C] bg-yellow-100 rounded-lg border border-yellow-200">
+                                    {not_payed}
+                                </div>
+                                <div>
+                                    <Link
+                                        href={"/painel/certificados"}
+                                        prefetch={false}
+                                        className={`relative px-3 py-2 font-medium text-white hover:text-[#D8D9DA] transition-all duration-300 group flex items-center gap-2 ${isScrolled ? 'text-xs' : 'text-sm'
+                                            }`}
+                                    >
+                                        <span className="opacity-80 group-hover:opacity-100 transition-opacity duration-300">
+                                            <Award width={15} />
+                                        </span>
+                                        <span className="relative z-10">Meus Certificados</span>
+                                        <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-[#D8D9DA] group-hover:w-full group-hover:left-0 transition-all duration-300"></div>
+                                    </Link>
+                                </div>
                             </div>
                         )}
 
                         {/* Logout Button */}
                         <Link href="/api/auth/logout" prefetch={false}>
-                            <button className={`ml-3 px-4 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-all duration-300 flex items-center gap-2 ${
-                                isScrolled ? 'text-xs px-3 py-1.5' : 'text-sm px-4 py-2'
-                            }`}>
+                            <button className={`ml-3 px-4 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-all duration-300 flex items-center gap-2 ${isScrolled ? 'text-xs px-3 py-1.5' : 'text-sm px-4 py-2'
+                                }`}>
                                 <LogOut size={isScrolled ? 14 : 16} />
                                 LOGOUT
                             </button>
-                            </Link>
-                </div>
+                        </Link>
+                    </div>
 
                     {/* Mobile Menu Button */}
                     <div className="lg:hidden">
-                    <button
-                        onClick={toggleMenu}
+                        <button
+                            onClick={toggleMenu}
                             className="p-2 rounded-lg bg-[#541A2C]/20 hover:bg-[#541A2C]/30 transition-all duration-300"
                         >
                             {menuAberto ? (
@@ -107,14 +119,14 @@ const HeaderPainel = ({ isPayed = true }: { isPayed: boolean }) => {
                             ) : (
                                 <Menu size={20} className="text-white" />
                             )}
-                    </button>
-                </div>
-            </nav>
+                        </button>
+                    </div>
+                </nav>
 
                 {/* Mobile Menu */}
-            {menuAberto && (
-                <div className="lg:hidden">
-                        <div className="px-2 pt-2 pb-3 space-y-1 bg-white rounded-lg mt-2 border border-gray-200 shadow-lg">
+                {menuAberto && (
+                    <div className="lg:hidden">
+                        <div className="px-2 pt-2 pb-3 space-y-1 rounded-lg mt-2 shadow-lg">
                             {isPayed ? (
                                 <>
                                     {menuItems.map((item) => (
@@ -129,25 +141,41 @@ const HeaderPainel = ({ isPayed = true }: { isPayed: boolean }) => {
                                             {item.name}
                                         </Link>
                                     ))}
-                                    
+
                                     {/* Mobile Logout Button */}
                                     <div className="px-3 py-2">
                                         <Link href="/api/auth/logout" prefetch={false} onClick={() => setMenuAberto(false)}>
                                             <button className="w-full px-4 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-all duration-300 flex items-center justify-center gap-2">
                                                 <LogOut size={16} />
-                                            LOGOUT
+                                                LOGOUT
                                             </button>
                                         </Link>
                                     </div>
                                 </>
                             ) : (
-                                <div className="px-3 py-3 text-sm font-medium text-gray-600 bg-yellow-100 rounded-lg border border-yellow-200">
+                                <div className='flex flex-col space-x-2 items-center content-center justify-center'>
+                                    <div className="px-3 py-2 text-sm font-medium text-[#541A2C] bg-yellow-100 rounded-lg border border-yellow-200">
                                         {not_payed}
+                                    </div>
+                                    <div>
+                                        <Link
+                                            href={"/painel/certificados"}
+                                            prefetch={false}
+                                            className={`relative px-3 py-2 font-medium text-white hover:text-[#D8D9DA] transition-all duration-300 group flex items-center gap-2 ${isScrolled ? 'text-xs' : 'text-sm'
+                                                }`}
+                                        >
+                                            <span className="opacity-80 group-hover:opacity-100 transition-opacity duration-300">
+                                                <Award width={15} />
+                                            </span>
+                                            <span className="relative z-10">Meus Certificados</span>
+                                            <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-[#D8D9DA] group-hover:w-full group-hover:left-0 transition-all duration-300"></div>
+                                        </Link>
+                                    </div>
                                 </div>
                             )}
                         </div>
-                </div>
-            )}
+                    </div>
+                )}
             </div>
         </header>
     );
