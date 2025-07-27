@@ -20,7 +20,12 @@ import {
   CheckCircle,
   AlertCircle,
   ShoppingCart,
-  ArrowRight
+  ArrowRight,
+  Landmark,
+  FileText,
+  Sparkles,
+  BarChart3,
+  Clock
 } from 'lucide-react';
 import './style.css';
 
@@ -216,27 +221,46 @@ const Pagamentos = () => {
 
               <div className="values-grid">
                 <div className="value-card">
-                  <div className="value-icon">💳</div>
+                  <div className="value-icon value-icon-large"><CreditCard size={40} /></div>
                   <div className="value-type">CRÉDITO À VISTA</div>
                   <div className="value-amount">R$ {dataPaymentConfig.valorAVista.toFixed(2)}</div>
                 </div>
 
                 <div className="value-card">
-                  <div className="value-icon">💴</div>
+                  <div className="value-icon value-icon-large"><Landmark size={40} /></div>
                   <div className="value-type">DÉBITO</div>
                   <div className="value-amount">R$ {dataPaymentConfig.valorAVista.toFixed(2)}</div>
                 </div>
 
                 <div className="value-card">
-                  <div className="value-icon">📑</div>
+                  <div className="value-icon value-icon-large"><FileText size={40} /></div>
                   <div className="value-type">BOLETO</div>
                   <div className="value-amount">R$ {dataPaymentConfig.valorAVista.toFixed(2)}</div>
                 </div>
 
                 <div className="value-card">
-                  <div className="value-icon">🌟</div>
+                  <div className="value-icon value-icon-large"><Sparkles size={40} /></div>
                   <div className="value-type">PIX</div>
                   <div className="value-amount">R$ {dataPaymentConfig.valorAVista.toFixed(2)}</div>
+                </div>
+              </div>
+
+              {/* Informações importantes sobre prazos */}
+              <div className="payment-info-section">
+                <div className="payment-info-card">
+                  <div className="payment-info-icon"><Clock size={24} /></div>
+                  <div className="payment-info-content">
+                    <h4 className="payment-info-title">Prazo de Pagamento</h4>
+                    <p className="payment-info-text">Você terá 1 dia útil para realizar o pagamento após criar um novo pagamento (PIX, BOLETO ou CRÉDITO À VISTA).</p>
+                  </div>
+                </div>
+                
+                <div className="payment-info-card">
+                  <div className="payment-info-icon"><CheckCircle size={24} /></div>
+                  <div className="payment-info-content">
+                    <h4 className="payment-info-title">Confirmação</h4>
+                    <p className="payment-info-text">O pagamento será confirmado em até 3 dias úteis após o processamento.</p>
+                  </div>
                 </div>
               </div>
 
@@ -260,10 +284,10 @@ const Pagamentos = () => {
               </div>
               <div className='w-full flex items-center content-center justify-center'>
 
-                <button className='bg-red-500 p-5 font-extrabold text-white' onClick={() => {
+                <button className='parcelado-button' onClick={() => {
                   setModalPayment(true)
                 }}>
-                  PAGAR PACELADO
+                  PAGAR PARCELADO
                 </button>
               </div>
             </div>
@@ -272,7 +296,6 @@ const Pagamentos = () => {
       )}
 
       <section className="buttons-section">
-        <p> COLOCAR EM QUALQUER LUGAR QUE QUISER QUE: NOVO PAGAMENTO (COLOCAR AQUI OU EM OUTRO LUGAR QUE ESSE BOTÃO É SOMENTE PARA: PIX, BOLETO E CRÉDITO AVISTA; CONTINUAR PAGAMENTO: VOLTA PARA A PARTE DO PAGAMENTO PRE CRIADO DE: PIX, BOLETO OU CREDITO AVISTA</p>
         <div className="buttons-container">
           {data?.pagamento?.situacao !== 1 && (
             <>
@@ -290,61 +313,49 @@ const Pagamentos = () => {
                     <ArrowRight size={20} />
                   </button>
               }
-
-              {
-                /* Retirei pois não entendi a parte: "data.pagamento.lista_pagamentos.length > 0"
-                data?.pagamento?.lista_pagamentos && data.pagamento.lista_pagamentos.length > 0 && (
-                  <button className="action-button" onClick={handlePostClick2}>
-                    <Receipt size={20} />
-                    CONTINUAR PAGAMENTO
-                    <ArrowRight size={20} />
-                  </button>
-                )
-                  */
-              }
             </>
           )}
         </div>
       </section >
 
-      <div className='bg-red-600'>
-        <p>COLOCAR QUE O PAGAMENTO É CONFIRMADO EM ATÉ 3 DIAS</p>
-        <p>COLOCAR QUE TERÁ 1 DIA ÚTIL PARA PAGAR SE CRIAR UM NOVO PAGAMENTO PARA: PIX, BOLETO E CREDITO AVISTA</p>
-        <p>PODE COLOCAR EM QUALQUER LUGAR QUE ACHAR MELHOR PARA O USUÁRIO</p>
-      </div>
-
-      <section className='w-full bg-white flex flex-col items-center content-center justify-center'>
-        <div>
-          <p className='font-extrabold text-black'>
-            Design meramente ilustrativo
-          </p>
-          <p className='text-black text-semibold'>
-            Deve estar presente mesmo que o usuário tenha pago ou não o a inscrição
-          </p>
-          <p className='text-black text-semibold'>
-            Pode colocar essa bomba em qualquer lugar que achar melhor
-          </p>
-        </div>
-        <div className="text-gray-800 font-bold">
-          <h1 className="text-[20px] lg:text-[20px] font-emoji">{"ℹHISTÓRICO DE PAGAMENTOS"}</h1>
-          <p className="text-red-700 font-semibold">{data.pagamento.lista_pagamentos?.length ? "- " + data.pagamento.lista_pagamentos?.length.toString().padStart(2, '0') + " pagamentos encontrados" : "Você ainda não realizou nenhum pagamento."}</p>
-          <div className="flex flex-col ">
-            {
-              data.pagamento.lista_pagamentos.length ?
-                <div className="flex flex-col items-start content-start justify-start pt-10 space-y-7 w-[95%] lg:w-[65%]">
-                  {
-                    data.pagamento.lista_pagamentos?.map((value, index) => {
-                      return (
-                        <div key={index} className="">
-                          <CardPagamentos eventId={data.pagamento.lista_pagamentos[index]?._eventID || ""} type={data.pagamento.lista_pagamentos[index]?._type || ""} invoiceUrl={value.invoiceUrl} valor={value.value} data_formatada={value.dateCreated} invoiceNumber={value.invoiceNumber} status={value.status} description={value.description} />
-                        </div>
-                      )
-                    })
+      <section className="history-section">
+        <div className="history-container">
+          <h2 className="history-title">HISTÓRICO DE PAGAMENTOS</h2>
+          <div className="glass-container">
+            <p className="intro-text">
+              Acompanhe todos os seus pagamentos realizados e mantenha o controle das suas transações.
+            </p>
+            
+            <div className="history-summary">
+              <div className="summary-icon"><BarChart3 size={28} /></div>
+              <div className="summary-content">
+                <h3 className="summary-title">Resumo</h3>
+                <p className="summary-text">
+                  {data.pagamento.lista_pagamentos?.length ? 
+                    `${data.pagamento.lista_pagamentos?.length.toString().padStart(2, '0')} pagamentos encontrados` : 
+                    "Você ainda não realizou nenhum pagamento."
                   }
-                </div>
-                :
-                ""
-            }
+                </p>
+              </div>
+            </div>
+
+            {data.pagamento.lista_pagamentos.length > 0 && (
+              <div className="history-list">
+                {data.pagamento.lista_pagamentos?.map((value, index) => (
+                  <CardPagamentos 
+                    key={index}
+                    eventId={data.pagamento.lista_pagamentos[index]?._eventID || ""} 
+                    type={data.pagamento.lista_pagamentos[index]?._type || ""} 
+                    invoiceUrl={value.invoiceUrl} 
+                    valor={value.value} 
+                    data_formatada={value.dateCreated} 
+                    invoiceNumber={value.invoiceNumber} 
+                    status={value.status} 
+                    description={value.description} 
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -969,40 +980,60 @@ const CardPagamentos = ({ eventId, type, data_formatada, invoiceNumber, status, 
   }
 
   return (
-    <div className="shadow-[0px_0px_5px_7px_rgba(0,0,0,0.02)] p-4 rounded-xl cursor-pointer relative">
-      {
-        type == "activity" ?
-          <p onClick={() => console.log(typeText)}>{typeText}</p>
-          : ""
-      }
-      <div className="flex flex-row justify-center items-center content-center align-middle absolute z-10 p-1 bg-[#ff8952] top-[-15px] left-[-6px] space-x-[3px] rounded-sm">
-        <div className="text-[white] flex flex-row space-x-[3px]">
-          <h1 className="font-bold text-[13px]">R$</h1>
-          <p className="font-serif text-[13px]">{valor}</p>
+    <div className="history-card">
+      <div className="card-header">
+        <div className="card-value-badge">
+          <span className="currency">R$</span>
+          <span className="amount">{valor}</span>
+        </div>
+        <div className="card-status">
+          <span className={`status-badge status-${status.toLowerCase().replace(/\s+/g, '-')}`}>
+            {status}
+          </span>
         </div>
       </div>
-      <div className="flex flex-row space-x-8">
-        <div className="flex w-[20%]">
-          <p className="text-red-600 font-mono text-[13px] lg:text-[13px]">{data_formatada}</p>
+      
+      <div className="card-content">
+        {type === "activity" && (
+          <div className="activity-name">
+            <h4 className="activity-title">{typeText}</h4>
+          </div>
+        )}
+        
+        <div className="card-details">
+          <div className="detail-row">
+            <div className="detail-item">
+              <span className="detail-label">Data:</span>
+              <span className="detail-value">{data_formatada}</span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">Descrição:</span>
+              <span className="detail-value">{description}</span>
+            </div>
+          </div>
+          
+          <div className="detail-row">
+            <div className="detail-item">
+              <span className="detail-label">Número:</span>
+              <span className="detail-value">#{invoiceNumber}</span>
+            </div>
+          </div>
         </div>
-        <div className="flex">
-          <p className="text-red-600 font-mono text-[13px] lg:text-[13px]">{description}</p>
-        </div>
+        
+        {status !== "CANCELADO" && (
+          <div className="card-actions">
+            <Link 
+              target="_blank" 
+              prefetch={false} 
+              href={invoiceUrl} 
+              className="invoice-link"
+            >
+              <span className="link-text">Ver comprovante</span>
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+        )}
       </div>
-      <div className="flex flex-row justify-start items-center content-center">
-        <div className="flex-1 w-[80%]">
-          <p>#{invoiceNumber}</p>
-        </div>
-        <div className="flex flex-row">
-          <h1>{status}</h1>
-        </div>
-      </div>
-      {
-        status != "PAYMENT_OVERDUE" ?
-          <Link target="_blank" prefetch={false} href={invoiceUrl} className="">
-            <p className="text-[13px] font-thin">Clique aqui para acessar</p>
-          </Link> : ""
-      }
     </div>
   )
 }
