@@ -1,0 +1,226 @@
+/* Estilos específicos para a página de Organizadores */
+
+.organizadores-main-gradient {
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 2rem;
+  overflow-x: hidden;
+}
+
+/* Container principal "Em breve" */
+.em-breve-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 2rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  border: 2px solid rgba(84, 26, 44, 0.2);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  margin: 2rem 0;
+  transition: all 0.3s ease;
+}
+
+.em-breve-container:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(84, 26, 44, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(84, 26, 44, 0.15);
+}
+
+/* Ícone do relógio */
+.em-breve-icon {
+  color: #541A2C;
+  margin-bottom: 1.5rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+/* Título "EM BREVE" */
+.em-breve-title {
+  font-size: 3.5rem;
+  font-weight: 900;
+  color: #541A2C;
+  margin-bottom: 1.5rem;
+  letter-spacing: 3px;
+  text-shadow: 0 2px 8px rgba(84, 26, 44, 0.2);
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+/* Descrição */
+.em-breve-description {
+  font-size: 1.2rem;
+  color: #1B305F;
+  line-height: 1.6;
+  max-width: 600px;
+  margin-bottom: 2rem;
+  font-weight: 500;
+}
+
+/* Decoração */
+.em-breve-decoration {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.decoration-line {
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #541A2C, transparent);
+  border-radius: 2px;
+}
+
+.decoration-dot {
+  width: 12px;
+  height: 12px;
+  background: #541A2C;
+  border-radius: 50%;
+  animation: bounce 1.5s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* Subtítulo da seção */
+.section-subtitle {
+  background: #1B305F;
+  color: #D8D9DA;
+  border-radius: 12px;
+  padding: 0.7em 1.5em;
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-bottom: 2rem;
+  text-align: center;
+  box-shadow: 0 4px 24px rgba(27, 48, 95, 0.18);
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Grid de informações */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+/* Cards de informação */
+.info-card {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  border: 1px solid rgba(84, 26, 44, 0.1);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.info-card:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(84, 26, 44, 0.15);
+  border-color: rgba(84, 26, 44, 0.2);
+}
+
+.info-card h3 {
+  color: #541A2C;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 0.8rem;
+  letter-spacing: 0.5px;
+}
+
+.info-card p {
+  color: #1B305F;
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 500;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .em-breve-container {
+    padding: 2rem 1rem;
+    margin: 1rem 0;
+  }
+  
+  .em-breve-title {
+    font-size: 2.5rem;
+    letter-spacing: 2px;
+  }
+  
+  .em-breve-description {
+    font-size: 1.1rem;
+    padding: 0 1rem;
+  }
+  
+  .section-subtitle {
+    font-size: 1.4rem;
+    padding: 0.5em 1em;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .info-card {
+    padding: 1.2rem;
+  }
+  
+  .info-card h3 {
+    font-size: 1.2rem;
+  }
+  
+  .info-card p {
+    font-size: 0.95rem;
+  }
+  
+  .decoration-line {
+    width: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .em-breve-title {
+    font-size: 2rem;
+    letter-spacing: 1px;
+  }
+  
+  .em-breve-description {
+    font-size: 1rem;
+  }
+  
+  .section-subtitle {
+    font-size: 1.2rem;
+  }
+} 
