@@ -423,10 +423,10 @@ const BannerAtividade = ({ activity, userId, color }) => {
                         activity.isFree ? handleRegister(activity._id) : handlePayedRegister(activity._id)
                     }} style={{ 'backgroundColor': color }} >
                         {
-                            includesUser ? "" : activity.isOpen ? buttonText : ""
+                            includesUser ? "" : ""
                         }
 
-                    </button> {/* INSCREVER|JÁ INSCRITO|FECHADO  */}
+                    </button> {/* JÁ INSCRITO|FECHADO  */}
                 </div>
             </div>
             {
@@ -436,6 +436,17 @@ const BannerAtividade = ({ activity, userId, color }) => {
             {
                 includesUser && <div className="atividades-inscrito">INSCRITO</div>
             }
+            {
+                buttonText === 'INSCREVER' && !includesUser && activity.isOpen &&
+                    <div 
+                        className="atividades-inscrever" 
+                        onClick={() => {
+                            activity.isFree ? handleRegister(activity._id) : handlePayedRegister(activity._id)
+                        }}
+                    >
+                        INSCREVA-SE
+                    </div>
+            }
         </div>
     )
 }
@@ -444,15 +455,23 @@ const LoadingModal = ({ isLoading }) => {
     if (!isLoading) return null;
 
     return (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 z-[200]">
-            <div className="flex flex-row content-center items-center justify-center p-5 rounded shadow-lg text-center bg-white">
-
-                <svg className="flex flex-row content-center items-center justify-center animate-spin h-10 w-10 text-blue-500" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 100 8v4a8 8 0 01-8-8z" />
-                </svg>
-
-                <p className="text-lg font-semibold p-4 text-black">Carregando</p>
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm z-[200] modal-overlay">
+            <div className="flex flex-col items-center justify-center p-8 rounded-2xl shadow-2xl text-center bg-white/90 backdrop-blur-xl border border-white/30 max-w-sm mx-4 modal-content modal-animate-in">
+                {/* Spinner personalizado com cores do site */}
+                <div className="relative mb-6">
+                    <div className="w-16 h-16 border-4 border-[#D8D9DA] border-t-[#541A2C] rounded-full animate-spin"></div>
+                </div>
+                
+                {/* Texto estilizado */}
+                <div className="text-center">
+                    <h3 className="text-xl font-bold text-[#541A2C] mb-2">Processando...</h3>
+                    <p className="text-[#1B305F] font-medium">Aguarde um momento</p>
+                </div>
+                
+                {/* Indicador de progresso animado */}
+                <div className="mt-6 w-full bg-[#D8D9DA] rounded-full h-2 overflow-hidden">
+                    <div className="h-full progress-bar" style={{width: '60%'}}></div>
+                </div>
             </div>
         </div>
     );
@@ -465,42 +484,48 @@ const WarningModalPayment = ({ href = "/pagamentos", message = "MENSAGEM NÃO DE
         <>
             {
                 isModal ?
-                    <div className=" fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-                        < div className="w-[85%] sm:w-full bg-white p-6 rounded-lg shadow-lg max-w-md " >
-                            <div className="flex items-center justify-between">
+                    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50 backdrop-blur-sm modal-overlay">
+                        <div className="w-[90%] sm:w-full bg-white/95 backdrop-blur-xl p-8 rounded-2xl shadow-2xl max-w-md mx-4 border border-white/30 modal-content modal-animate-in">
+                            {/* Header com ícone e título */}
+                            <div className="flex items-center justify-between mb-6">
                                 <div className="flex items-center">
-                                    <span className="text-yellow-500 text-2xl mr-2">⚠️</span>
-                                    <h2 className="text-xl font-semibold text-gray-800">Aviso</h2>
+                                    <div className="w-12 h-12 bg-gradient-to-br from-[#541A2C] to-[#1B305F] rounded-full flex items-center justify-center mr-4">
+                                        <span className="text-white text-2xl">⚠️</span>
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-[#541A2C]">Aviso</h2>
                                 </div>
-
                             </div>
-                            <p className="mt-4 text-gray-600">{message}</p>
-                            <div className="flex flex-row justify-end space-x-2 mt-6 text-right">
+
+                            {/* Mensagem */}
+                            <div className="mb-8">
+                                <p className="text-[#1B305F] text-lg leading-relaxed font-medium">{message}</p>
+                            </div>
+
+                            {/* Botões */}
+                            <div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4">
                                 <button
-                                    className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-400 transition"
-                                    onClick={
-                                        () => {
-                                            closeModal(0)
-                                            onClose()
-                                        }
-                                    }
+                                    className="modal-button-primary"
+                                    onClick={() => {
+                                        closeModal(0)
+                                        onClose()
+                                    }}
                                 >
-                                    <Link href={href} prefetch={false} target="_blank">PAGAR</Link>
+                                    <Link href={href} prefetch={false} target="_blank" className="flex items-center justify-center">
+                                        <span>PAGAR</span>
+                                    </Link>
                                 </button>
                                 <button
-                                    className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-400 transition"
-                                    onClick={
-                                        () => {
-                                            closeModal(0)
-                                            onClose()
-                                        }
-                                    }
+                                    className="modal-button-secondary"
+                                    onClick={() => {
+                                        closeModal(0)
+                                        onClose()
+                                    }}
                                 >
                                     {textButton}
                                 </button>
                             </div>
-                        </div >
-                    </div >
+                        </div>
+                    </div>
                     : ""
             }
         </>
