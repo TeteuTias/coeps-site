@@ -11,7 +11,11 @@ import { connectToDatabase } from '@/app/lib/mongodb';
 //
 export const POST = withApiAuthRequired(async function POST(request) {
     try {
-
+        //
+        const dataPayment = await request.json()
+        if (!dataPayment.typePayment) {
+            throw new Error("TypePayment not defined.")
+        }
         // Verificando se ele está logado
         // 
         const { user } = await getSession();
@@ -37,8 +41,13 @@ export const POST = withApiAuthRequired(async function POST(request) {
         //
         const colecao = "ingressos_config"
         const resultPagamento = await db.collection(colecao).find(
-          {_id: new ObjectId("66bcfceedc9c7250e85b2ac6")},
+            { _id: new ObjectId("66bcfceedc9c7250e85b2ac6") },
         ).toArray()
+
+
+        if (!resultPagamento[0]?.pagamentosAceitos?.includes(dataPayment?.typePayment)) {
+            throw new Error("Desculpe, esse método de pagamento não é aceito.")
+        }
 
         //
         // Tentando Criar Pagamento Checkout.
@@ -51,11 +60,24 @@ export const POST = withApiAuthRequired(async function POST(request) {
         const redirect_url = process.env.ASAAS_URL_REDIRECT
 
 
-        const valor = resultPagamento[0].valorAVista
+        let valor = null
+        if (dataPayment.typePayment === "PIX") {
+            valor = resultPagamento[0].valorPix
+        } else if (dataPayment.typePayment === "DEBIT_CARD") {
+            valor = resultPagamento[0].valorDebito
+        } else if (dataPayment.typePayment === "BOLETO") {
+            valor = resultPagamento[0].valorBoleto
+        } else if (dataPayment.typePayment === "CREDIT_CARD") {
+            valor = resultPagamento[0].valorAVista
+        }
+        if (valor === null) {
+            throw new Error("O valor de seu pagamento não foi encontrado.")
+        }
+
+        valor = resultPagamento[0].valorAVista
         const data_vencimento = new Date().toISOString().split("T")[0] // retorna o dia de hoje.
         const descricao = resultPagamento[0].nome// 'Primeiro lote para entrada no evento IV COEPS.'
         const desconto = 0
-
 
         const options = {
             method: 'POST',
@@ -66,12 +88,12 @@ export const POST = withApiAuthRequired(async function POST(request) {
             },
             body: JSON.stringify({
                 customer: id_api,
-                name:"Primeiro Lote COEPS",
-                billingType: 'UNDEFINED',
+                name: resultPagamento[0].nome,
+                billingType: dataPayment?.typePayment,
                 value: valor,
                 dueDate: data_vencimento,
                 description: descricao,
-                dueDateLimitDays:3,
+                dueDateLimitDays: 3,
                 discount: { value: desconto },
                 callback: { successUrl: urlCallback, autoRedirect: false },
 
@@ -93,7 +115,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 _id
             },
             {
-                "$push": { 'pagamento.lista_pagamentos': { ...responseJson, _webhook: [], _type:"ticket", _userId:userId } },
+                "$push": { 'pagamento.lista_pagamentos': { ...responseJson, _webhook: [], _type: "ticket", _userId: userId } },
                 "$set": { 'pagamento.situacao': 2 }
             }
         )
@@ -103,15 +125,15 @@ export const POST = withApiAuthRequired(async function POST(request) {
             return Response.json({ "erro": "result.matchedCount - dbUpdateOne" }, { status: 404 })
         }
         else if (dbUpdateOne.modifiedCount === 0) { // Nenhum documento foi modificado.
-            
+
             return Response.json({ "erro": "result.modifiedCount === 0 - dbUpdateOne" }, { status: 400 })
         }
 
         return Response.json({ "link": responseJson.invoiceUrl }, { status: 200 })
     }
     catch (error) {
-        
-        return Response.json({ "erro": error }, { status: 403 })
+
+        return Response.json({ "message": error instanceof Error ? error.message : "Desculpe. Ocorreu um erro desconhecido. Recarregue a página e tente novamente." }, { status: 403 })
     }
 })
 //

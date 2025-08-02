@@ -56,13 +56,11 @@ const Pagamentos = () => {
     setIsLoadingFetch(event);
   };
 
-  const handlePostClick = async () => {
+  const handlePostClick = async (paymentType: string) => {
     handleIsLoadingFetch(true);
     try {
       const data = {
-        title: 'Título do Post',
-        body: 'Conteúdo do Post',
-        userId: 1,
+        typePayment: paymentType
       };
 
       const response = await fetch('/api/payment/create_payment', {
@@ -254,7 +252,7 @@ const Pagamentos = () => {
                     <p className="payment-info-text">Você terá 1 dia útil para realizar o pagamento após criar um novo pagamento (PIX, BOLETO ou CRÉDITO À VISTA).</p>
                   </div>
                 </div>
-                
+
                 <div className="payment-info-card">
                   <div className="payment-info-icon"><CheckCircle size={24} /></div>
                   <div className="payment-info-content">
@@ -301,11 +299,28 @@ const Pagamentos = () => {
             <>
               {
                 data.pagamento.situacao === 0 ?
-                  <button className="action-button" onClick={handlePostClick}>
-                    <CreditCard size={20} />
-                    NOVO PAGAMENTO
-                    <ArrowRight size={20} />
-                  </button>
+                  <div className='flex flex-col'>
+                    <div className="history-container">
+                      <h2 className="history-title">NOVO PAGAMENTO</h2>
+                    </div>
+                    <div className='flex flex-row space-x-5'>
+                      <button className="action-button w-fit" onClick={()=>handlePostClick("PIX")}>
+                        <Sparkles size={20} />
+                        PIX
+                        <ArrowRight size={20} />
+                      </button>
+                      <button className="action-button w-fit" onClick={()=>handlePostClick("BOLETO")}>
+                        <FileText size={20} />
+                        BOLETO
+                        <ArrowRight size={20} />
+                      </button>
+                      <button className="action-button w-fit" onClick={()=>handlePostClick("DEBIT_CARD")}>
+                        <Landmark size={20} />
+                        DÉBITO
+                        <ArrowRight size={20} />
+                      </button>
+                    </div>
+                  </div>
                   :
                   <button className="action-button" onClick={handlePostClick2}>
                     <Receipt size={20} />
@@ -325,14 +340,14 @@ const Pagamentos = () => {
             <p className="intro-text">
               Acompanhe todos os seus pagamentos realizados e mantenha o controle das suas transações.
             </p>
-            
+
             <div className="history-summary">
               <div className="summary-icon"><BarChart3 size={28} /></div>
               <div className="summary-content">
                 <h3 className="summary-title">Resumo</h3>
                 <p className="summary-text">
-                  {data.pagamento.lista_pagamentos?.length ? 
-                    `${data.pagamento.lista_pagamentos?.length.toString().padStart(2, '0')} pagamentos encontrados` : 
+                  {data.pagamento.lista_pagamentos?.length ?
+                    `${data.pagamento.lista_pagamentos?.length.toString().padStart(2, '0')} pagamentos encontrados` :
                     "Você ainda não realizou nenhum pagamento."
                   }
                 </p>
@@ -342,16 +357,16 @@ const Pagamentos = () => {
             {data.pagamento.lista_pagamentos.length > 0 && (
               <div className="history-list">
                 {data.pagamento.lista_pagamentos?.map((value, index) => (
-                  <CardPagamentos 
+                  <CardPagamentos
                     key={index}
-                    eventId={data.pagamento.lista_pagamentos[index]?._eventID || ""} 
-                    type={data.pagamento.lista_pagamentos[index]?._type || ""} 
-                    invoiceUrl={value.invoiceUrl} 
-                    valor={value.value} 
-                    data_formatada={value.dateCreated} 
-                    invoiceNumber={value.invoiceNumber} 
-                    status={value.status} 
-                    description={value.description} 
+                    eventId={data.pagamento.lista_pagamentos[index]?._eventID || ""}
+                    type={data.pagamento.lista_pagamentos[index]?._type || ""}
+                    invoiceUrl={value.invoiceUrl}
+                    valor={value.value}
+                    data_formatada={value.dateCreated}
+                    invoiceNumber={value.invoiceNumber}
+                    status={value.status}
+                    description={value.description}
                   />
                 ))}
               </div>
@@ -992,14 +1007,14 @@ const CardPagamentos = ({ eventId, type, data_formatada, invoiceNumber, status, 
           </span>
         </div>
       </div>
-      
+
       <div className="card-content">
         {type === "activity" && (
           <div className="activity-name">
             <h4 className="activity-title">{typeText}</h4>
           </div>
         )}
-        
+
         <div className="card-details">
           <div className="detail-row">
             <div className="detail-item">
@@ -1011,7 +1026,7 @@ const CardPagamentos = ({ eventId, type, data_formatada, invoiceNumber, status, 
               <span className="detail-value">{description}</span>
             </div>
           </div>
-          
+
           <div className="detail-row">
             <div className="detail-item">
               <span className="detail-label">Número:</span>
@@ -1019,13 +1034,13 @@ const CardPagamentos = ({ eventId, type, data_formatada, invoiceNumber, status, 
             </div>
           </div>
         </div>
-        
+
         {status !== "CANCELADO" && (
           <div className="card-actions">
-            <Link 
-              target="_blank" 
-              prefetch={false} 
-              href={invoiceUrl} 
+            <Link
+              target="_blank"
+              prefetch={false}
+              href={invoiceUrl}
               className="invoice-link"
             >
               <span className="link-text">Ver comprovante</span>
