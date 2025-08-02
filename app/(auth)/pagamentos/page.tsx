@@ -302,29 +302,39 @@ const Pagamentos = () => {
               </div>
 
               <div className="values-grid">
-                <div className="value-card">
-                  <div className="value-icon value-icon-large"><CreditCard size={40} /></div>
-                  <div className="value-type">CRÉDITO À VISTA</div>
-                  <div className="value-amount">R$ {dataPaymentConfig.valorAVista.toFixed(2)}</div>
-                </div>
+                {
+                  dataPaymentConfig.pagamentosAceitos.includes("CREDIT_CARD") &&
+                  <div className="value-card">
+                    <div className="value-icon value-icon-large"><CreditCard size={40} /></div>
+                    <div className="value-type">CRÉDITO À VISTA</div>
+                    <div className="value-amount">R$ {dataPaymentConfig.valorAVista.toFixed(2)}</div>
+                  </div>
+                }
+                {
+                  dataPaymentConfig.pagamentosAceitos.includes("DEBIT_CARD") &&
+                  <div className="value-card">
+                    <div className="value-icon value-icon-large"><Landmark size={40} /></div>
+                    <div className="value-type">DÉBITO</div>
+                    <div className="value-amount">R$ {dataPaymentConfig.valorDebito.toFixed(2)}</div>
+                  </div>
+                }
+                {
+                  dataPaymentConfig.pagamentosAceitos.includes("BOLETO") &&
+                  <div className="value-card">
+                    <div className="value-icon value-icon-large"><FileText size={40} /></div>
+                    <div className="value-type">BOLETO</div>
+                    <div className="value-amount">R$ {dataPaymentConfig.valorBoleto.toFixed(2)}</div>
+                  </div>
+                }
 
-                <div className="value-card">
-                  <div className="value-icon value-icon-large"><Landmark size={40} /></div>
-                  <div className="value-type">DÉBITO</div>
-                  <div className="value-amount">R$ {dataPaymentConfig.valorDebito.toFixed(2)}</div>
-                </div>
-
-                <div className="value-card">
-                  <div className="value-icon value-icon-large"><FileText size={40} /></div>
-                  <div className="value-type">BOLETO</div>
-                  <div className="value-amount">R$ {dataPaymentConfig.valorBoleto.toFixed(2)}</div>
-                </div>
-
-                <div className="value-card">
-                  <div className="value-icon value-icon-large"><Sparkles size={40} /></div>
-                  <div className="value-type">PIX</div>
-                  <div className="value-amount">R$ {dataPaymentConfig.valorPix.toFixed(2)}</div>
-                </div>
+                {
+                  dataPaymentConfig.pagamentosAceitos.includes("PIX") &&
+                  <div className="value-card">
+                    <div className="value-icon value-icon-large"><Sparkles size={40} /></div>
+                    <div className="value-type">PIX</div>
+                    <div className="value-amount">R$ {dataPaymentConfig.valorPix.toFixed(2)}</div>
+                  </div>
+                }
               </div>
 
               {/* Informações importantes sobre prazos */}
