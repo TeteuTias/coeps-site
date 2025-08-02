@@ -89,7 +89,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
             body: JSON.stringify({
                 customer: id_api,
                 name: resultPagamento[0].nome,
-                billingType: dataPayment?.typePayment,
+                billingType: dataPayment?.typePayment === "DEBIT_CARD" ? "UNDEFINED" : dataPayment?.typePayment,
                 value: valor,
                 dueDate: data_vencimento,
                 description: descricao,
