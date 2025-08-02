@@ -9,6 +9,9 @@ export interface IPaymentConfig {
     }[],
     "nome": string, // exemplo => "Terceiro Lote - COEPS",
     "valorAVista": number,
+    "valorBoleto": number,
+    "valorDebito": number,
+    "valorPix": number,
     "pagamentosAceitos": ("PIX" | "BOLETO" | "CREDIT_CARD" | "DEBIT_CARD")[]
 }
 
