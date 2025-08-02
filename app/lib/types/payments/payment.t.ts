@@ -8,7 +8,8 @@ export interface IPaymentConfig {
         "totalParcelas": number
     }[],
     "nome": string, // exemplo => "Terceiro Lote - COEPS",
-    "valorAVista": number
+    "valorAVista": number,
+    "pagamentosAceitos": ("PIX" | "BOLETO" | "CREDIT_CARD" | "DEBIT_CARD")[]
 }
 
 

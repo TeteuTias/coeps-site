@@ -92,6 +92,8 @@ const Pagamentos = () => {
       }
       const statusFiltro = ["PENDING"];
       const filtroLinks = data.pagamento.lista_pagamentos.filter(item => statusFiltro.includes(item.status)).map(item => item.invoiceUrl)[0];
+      console.log(data.pagamento)
+      return
       handleIsLoadingFetch(false);
       route.push(filtroLinks);
     } catch (error) {
@@ -202,6 +204,88 @@ const Pagamentos = () => {
           )}
         </div>
       </section>
+      <section className="values-section">
+        <div className="values-container">
+          {
+            data?.pagamento?.situacao === 2 && (
+              <div>
+                <div className='flex flex-col items-center content-center justify-center space-x-5 glass-container space-y-5'>
+                  <div className="history-container">
+                    <h2 className="history-title">PAGAMENTO EM ABERTO</h2>
+                    <h4 className="payment-info-title w-full text-center">Você possui pagamentos em aberto. Você pode pagar qualquer um deles OU gerar um novo pagamento</h4>
+                  </div>
+                  <div className='flex flex-col items-center justify-center space-y-5 md:space-y-0 md:flex-row md:space-x-5'>
+                    {
+                      data.pagamento.lista_pagamentos.filter(item => ["PENDING"].includes(item.status)).map((value) => {
+                        return (
+                          <button key={`${value._id}`} className="action-button w-fit" onClick={() => { route.push(value.invoiceUrl) }}>
+                            {
+                              value.billingType === "PIX" ? (
+                                <Sparkles size={20} />
+                              ) : value.billingType === "BOLETO" || value.billingType === "UNDEFINED" ? (
+                                <FileText size={20} />
+                              ) : value.billingType === "CREDIT_CARD" ? (
+                                <Landmark size={20} />
+                              ) : value.billingType === "DEBIT_CARD" ? (
+                                <Landmark size={40} />
+                              ) : (
+                                ""
+                              )
+                            }
+                            {
+                              value?.billingType === "CREDIT_CARD" ? "CRÉDITO A VISTA" : value?.billingType === "DEBIT_CARD" ? "DÉBITO" : value?.billingType === "UNDEFINED" ? "DÉBITO" : value?.billingType?.toLocaleUpperCase()
+                            }
+                            <ArrowRight size={20} />
+                          </button>
+                        )
+                      })
+                    }
+                  </div>
+                  <div className="history-container">
+                    <h2 className="history-title">GERAR OUTRO TIPO DE PAGAMENTO</h2>
+                    <h4 className="payment-info-title w-full text-center">Se quiser, pode abrir um novo pagamento</h4>
+                    <div className='flex flex-col items-center justify-center space-y-5 md:space-y-0 md:flex-row md:space-x-5'>
+                      {
+                        dataPaymentConfig.pagamentosAceitos.filter((value) => !data.pagamento.lista_pagamentos.filter(item => ["PENDING"].includes(item.status)).map((value) => value.billingType).includes(value)).map((pagamento) =>
+                          <button key={pagamento} className="action-button w-fit" onClick={() => handlePostClick(pagamento)}>
+                            {
+                              pagamento === "PIX" ? (
+                                <Sparkles size={20} />
+                              ) : pagamento === "BOLETO" ? (
+                                <FileText size={20} />
+                              ) : pagamento === "CREDIT_CARD" ? (
+                                <Landmark size={20} />
+                              ) : pagamento === "DEBIT_CARD" ? (
+                                <Landmark size={40} />
+                              ) : (
+                                ""
+                              )
+                            }
+                            {pagamento === "CREDIT_CARD" ? "CRÉDITO A VISTA" : pagamento === "DEBIT_CARD" ? "DÉBITO" : pagamento.toLocaleUpperCase()}
+                            <ArrowRight size={20} />
+                          </button>
+                        )
+                      }
+                      <button className='action-button' onClick={() => {
+                        setModalPayment(true)
+                      }}>
+                        PAGAR PARCELADO
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                {/*
+                    <button className="action-button" onClick={handlePostClick2}>
+                      <Receipt size={20} />
+                      CONTINUAR PAGAMENTO
+                      <ArrowRight size={20} />
+                    </button>
+                      */}
+              </div>
+            )
+          }
+        </div>
+      </section>
 
       {/* Seção de valores */}
       {data?.pagamento?.situacao !== 1 && dataPaymentConfig && (
@@ -269,24 +353,13 @@ const Pagamentos = () => {
                   {dataPaymentConfig?.parcelamentos?.map((value) => (
                     <div className="installment-item" key={value.codigo}>
                       <div className="installment-bullet"></div>
-                      <div className="installment-text" onClick={() => {
-                        console.log("asdofasjdfoaisjdf")
-                      }
-                      }>
+                      <div className="installment-text">
                         Parcelar em {value.totalParcelas} {value.totalParcelas === 1 ? "vez" : "vezes"} de R$ {value.valorCadaParcela.toFixed(2)},
                         totalizando R$ {(value.totalParcelas * value.valorCadaParcela).toFixed(2)}.
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
-              <div className='w-full flex items-center content-center justify-center'>
-
-                <button className='parcelado-button' onClick={() => {
-                  setModalPayment(true)
-                }}>
-                  PAGAR PARCELADO
-                </button>
               </div>
             </div>
           </div>
@@ -303,30 +376,37 @@ const Pagamentos = () => {
                     <div className="history-container">
                       <h2 className="history-title">NOVO PAGAMENTO</h2>
                     </div>
-                    <div className='flex flex-row space-x-5'>
-                      <button className="action-button w-fit" onClick={()=>handlePostClick("PIX")}>
-                        <Sparkles size={20} />
-                        PIX
-                        <ArrowRight size={20} />
-                      </button>
-                      <button className="action-button w-fit" onClick={()=>handlePostClick("BOLETO")}>
-                        <FileText size={20} />
-                        BOLETO
-                        <ArrowRight size={20} />
-                      </button>
-                      <button className="action-button w-fit" onClick={()=>handlePostClick("DEBIT_CARD")}>
-                        <Landmark size={20} />
-                        DÉBITO
-                        <ArrowRight size={20} />
+                    <div className='flex items-center justify-center space-y-5 flex-col lg:flex-row lg:space-y-0 lg:space-x-5'>
+                      {
+                        dataPaymentConfig.pagamentosAceitos.map((pagamento) =>
+                          <button key={pagamento} className="action-button w-fit" onClick={() => handlePostClick(pagamento)}>
+                            {
+                              pagamento === "PIX" ? (
+                                <Sparkles size={20} />
+                              ) : pagamento === "BOLETO" ? (
+                                <FileText size={20} />
+                              ) : pagamento === "CREDIT_CARD" ? (
+                                <Landmark size={20} />
+                              ) : pagamento === "DEBIT_CARD" ? (
+                                <Landmark size={40} />
+                              ) : (
+                                ""
+                              )
+                            }
+                            {pagamento === "CREDIT_CARD" ? "CRÉDITO A VISTA" : pagamento === "DEBIT_CARD" ? "DÉBITO" : pagamento.toLocaleUpperCase()}
+                            <ArrowRight size={20} />
+                          </button>
+                        )
+                      }
+                      <button className='action-button' onClick={() => {
+                        setModalPayment(true)
+                      }}>
+                        PAGAR PARCELADO
                       </button>
                     </div>
                   </div>
                   :
-                  <button className="action-button" onClick={handlePostClick2}>
-                    <Receipt size={20} />
-                    CONTINUAR PAGAMENTO
-                    <ArrowRight size={20} />
-                  </button>
+                  undefined
               }
             </>
           )}

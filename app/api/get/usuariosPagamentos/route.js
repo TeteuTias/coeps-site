@@ -1,6 +1,6 @@
 import { connectToDatabase } from '../../../lib/mongodb'
 import { NextResponse } from 'next/server';
-import { getAccessToken,withApiAuthRequired } from '@auth0/nextjs-auth0';
+import { getAccessToken, withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { execOnce } from 'next/dist/shared/lib/utils';
 import { ObjectId } from 'mongodb';
 
@@ -16,42 +16,45 @@ import { getSession } from '@auth0/nextjs-auth0';
 export const dynamic = 'force-dynamic'
 
 
-export const GET = withApiAuthRequired(async function GET( request, { params } ) {
-    try{
-        
+export const GET = withApiAuthRequired(async function GET(request, { params }) {
+    try {
+
         // Verificando se há sessão    
         // Puxando informações
         const { user } = await getSession();
-        const userId = user.sub.replace("auth0|",""); // Retirando o auth0|  
+        const userId = user.sub.replace("auth0|", ""); // Retirando o auth0|  
         //
         // Puxando informações de DB
         const { db } = await connectToDatabase();
-        const query  = {"_id":new ObjectId(userId) }
+        const query = { "_id": new ObjectId(userId) }
         const result = await db.collection('usuarios').find(
             query,
-            { projection: { 
-                "_id":0,
-                "pagamento.situacao":1,
-                "pagamento.lista_pagamentos.dateCreated":1,
-                "pagamento.lista_pagamentos.status":1,
-                "pagamento.lista_pagamentos.value":1,
-                "pagamento.lista_pagamentos.invoiceUrl":1,
-                "pagamento.lista_pagamentos.invoiceNumber":1,
-                "pagamento.lista_pagamentos.description":1,
-                "pagamento.lista_pagamentos._type":1,
-                "pagamento.lista_pagamentos._eventID":1
-                
+            {
+                projection: {
+                    "_id": 0,
+                    "pagamento.situacao": 1,
+                    "pagamento.lista_pagamentos.dateCreated": 1,
+                    "pagamento.lista_pagamentos.status": 1,
+                    "pagamento.lista_pagamentos.value": 1,
+                    "pagamento.lista_pagamentos.invoiceUrl": 1,
+                    "pagamento.lista_pagamentos.invoiceNumber": 1,
+                    "pagamento.lista_pagamentos.description": 1,
+                    "pagamento.lista_pagamentos.billingType": 1,
+                    "pagamento.lista_pagamentos._type": 1,
+                    "pagamento.lista_pagamentos._eventID": 1,
 
 
-            }}
+
+                }
+            }
         ).toArray()
         // result[0] => { pagamento: IUser["pagamento"] }
         return NextResponse.json({ "data": result[0] });
-        
+
     }
-    catch (error){
+    catch (error) {
         console.log(error)
-        return NextResponse.json({"error": error}, {status:500})
+        return NextResponse.json({ "error": error }, { status: 500 })
     }
 })
 /*
