@@ -133,7 +133,7 @@ const App = () => {
       <section className="glass-container programacao-intro">
         <h1 className="section-title">NOSSA PROGRAMAÇÃO</h1>
         <p className="intro-text">
-          O VII COEPS contará com uma extensa programação durante os 04 dias de eventos, sendo todas as atividades presencialmente de 13 a 16 de novembro de 2024.
+          O VII COEPS contará com uma extensa programação durante os 04 dias de eventos, sendo todas as atividades presencialmente de 13 a 16 de novembro de 2025.
           Teremos palestras, minicursos, atividades político culturais, vivências e visita técnicas, apresentação de trabalhos,
           entre outras, buscando fornecer diferentes possibilidades ao aluno participante. Fique ligado no site e em nossos
           meios de comunicação oficiais!
