@@ -574,7 +574,7 @@ const PaymentForm = ({ isModalOpen, onClose }: { isModalOpen: boolean; onClose: 
   const [isLoading, setLoading] = useState(true);
   const [idPagamento, setIdPagamento] = useState(undefined)
   const [dataModalProps, setDataModalProps] = useState<ModalProps>({
-    isOpen: true,
+    isOpen: false,
     onClose: () => {
       setDataModalProps((prev) => ({ ...prev, isOpen: false }))
     },
