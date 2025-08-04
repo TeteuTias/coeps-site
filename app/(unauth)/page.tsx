@@ -77,7 +77,7 @@ export default function Home() {
           <div className="glass-container flex-1 min-w-[220px]">
             <h2 className="font-extrabold text-[22px] lg:text-[20px] mb-2">Local do Evento</h2>
             <h3 className="text-red-400 mb-2">-----------</h3>
-            <p>O Evento será realizado entre os dias 31 de outubro a 03 de novembro de 2025 no IMEPAC Centro Universitário</p>
+            <p>O Evento será realizado entre os dias 13 a 16 de novembro de 2025 no IMEPAC Centro Universitário</p>
           </div>
           <div className="glass-container flex-1 min-w-[220px]">
             <h2 className="font-extrabold text-[22px] lg:text-[20px] mb-2">Programação</h2>
