@@ -56,6 +56,7 @@ const Pagamentos = () => {
   const handlePostClick = async (paymentType: string) => {
     setDataModalProps((prev) => ({
       ...prev,
+      isOpen: true,
       onConfirm: async () => {
         handleIsLoadingFetch(true);
         setDataModalProps((prev) => ({ ...prev, isOpen: false }))
@@ -572,7 +573,14 @@ const PaymentForm = ({ isModalOpen, onClose }: { isModalOpen: boolean; onClose: 
   const [isConfirmationOpen, setConfirmationOpen] = useState(false);
   const [isLoading, setLoading] = useState(true);
   const [idPagamento, setIdPagamento] = useState(undefined)
-
+  const [dataModalProps, setDataModalProps] = useState<ModalProps>({
+    isOpen: true,
+    onClose: () => {
+      setDataModalProps((prev) => ({ ...prev, isOpen: false }))
+    },
+    onConfirm: () => { }
+  })
+  //
 
   useEffect(() => {
     const fetchData = async () => {
@@ -651,57 +659,63 @@ const PaymentForm = ({ isModalOpen, onClose }: { isModalOpen: boolean; onClose: 
   };
 
   const handleConfirm = async () => {
-    setConfirmationOpen(false);
-    setLoading(true);
+    // …………
+    setDataModalProps((prev) => ({
+      ...prev,
+      isOpen: true,
+      onConfirm: async () => {
+        setConfirmationOpen(false);
+        setLoading(true);
+        setDataModalProps((prev) => ({ ...prev, isOpen: false }))
+        try {
+          // Crie o payload com as informações pessoais e de pagamento
+          const payload = {
+            personalInfo,
+            cardInfo,
+            idPagamento,
+            _id: data._id
+          };
 
-    try {
-      // Crie o payload com as informações pessoais e de pagamento
-      const payload = {
-        personalInfo,
-        cardInfo,
-        idPagamento,
-        _id: data._id
-      };
+          // Envie o POST request com o JSON
+          const response = await fetch('/api/payment/createCreditCardPayment', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          });
+          const result: { message: string } = await response.json();
+          if (!response.ok) {
+            //console.log(result)
+            throw new Error(result.message || "Aconteceu algum erro desconhecido");
+          }
 
-      // Envie o POST request com o JSON
-      const response = await fetch('/api/payment/createCreditCardPayment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-      const result: { message: string } = await response.json();
-      if (!response.ok) {
-        //console.log(result)
-        throw new Error(result.message || "Aconteceu algum erro desconhecido");
+          setLoading(false);
+
+          setMessageModalWarning(result.message)
+          setCardInfo({
+            number: '',
+            expiry: '',
+            cvc: '',
+            name: '',
+            focus: '',
+          });
+          // Feche o modal e faça o que for necessário após o sucesso
+        } catch (error) {
+          // AQUI
+          setLoading(false);
+          // Verificando se o erro é o CEP
+          if ("Informe o endereço do titular do cartão.".includes(error.message)) {
+            error.message = "Informe um CEP válido."
+          }
+
+          setMessageModalWarning2(`${error.message}`)
+          // Lide com erros de forma apropriada
+
+        }
+
       }
-
-      setLoading(false);
-
-      setMessageModalWarning(result.message)
-      setCardInfo({
-        number: '',
-        expiry: '',
-        cvc: '',
-        name: '',
-        focus: '',
-      });
-      // Feche o modal e faça o que for necessário após o sucesso
-    } catch (error) {
-      // AQUI
-      setLoading(false);
-      // Verificando se o erro é o CEP
-      if ("Informe o endereço do titular do cartão.".includes(error.message)) {
-        error.message = "Informe um CEP válido."
-      }
-
-      setMessageModalWarning2(`${error.message}`)
-      // Lide com erros de forma apropriada
-
-    } finally {
-
-    }
+    }))
 
   };
 
@@ -732,13 +746,14 @@ const PaymentForm = ({ isModalOpen, onClose }: { isModalOpen: boolean; onClose: 
       cardInfo.name.length > 0;
   };
 
+
   if (!isModalOpen) return null;
 
   return (
     <>
+      <TermModal {...dataModalProps} />
       <ResponseModal message={messageModalWarning} />
       <ResponseModal2 message={messageModalWarning2} handleModalClose={() => { setMessageModalWarning2("") }} />
-
       <div className='fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50'>
         <div className='relative bg-white p-6 rounded-lg shadow-lg w-full max-w-lg overflow-auto h-[90%]'>
           <button

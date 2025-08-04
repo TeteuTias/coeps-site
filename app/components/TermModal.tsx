@@ -16,7 +16,7 @@ const TermModal: React.FC<ModalProps> = ({ isOpen, onClose, onConfirm }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-75 overflow-y-auto h-full w-full flex items-center justify-center z-50 p-4 animate-fade-in">
+        <div className="fixed inset-0 bg-gray-800 bg-opacity-75 overflow-y-auto h-full w-full flex items-center justify-center z-[51] p-4 animate-fade-in">
             <div className="relative bg-white w-full max-w-xl mx-auto rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-95 md:scale-100 animate-slide-up-fade">
 
                 {/* Botão de Fechar */}
