@@ -179,10 +179,7 @@ const Pagamentos = () => {
     <div className="pagamentos-main">
       <HeaderPainel isPayed={data?.pagamento?.situacao !== 1 ? false : true} />
       <PaymentForm isModalOpen={isModalPayment} onClose={() => { setModalPayment(false) }} />
-      <TermModal isOpen={true}
-        onClose={() => { }}
-        onConfirm={() => { }}
-      />
+      <TermModal {...dataModalProps} />
       {!isLoadingFetch && isModalError && (
         <ModalError handleIsModalError={handleIsModalError} texto={isModalError} />
       )}
