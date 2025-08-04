@@ -49,7 +49,7 @@ export default function Home() {
         <h1 className="letreiro-title">SOBRE O CONGRESSO</h1>
         <h1 className="text-black">
           O VII Congresso dos Estudantes e Profissionais de Saúde (COEPS), evento tradicional em Araguari, organizado pelo Diretório Acadêmico Diogo Guimarães (DADG) do curso de Medicina do Centro Universitário
-          IMEPAC Araguari, acontecerá de 13 a 16 de novembro de 2024, presencialmente, tendo como tema “Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional”, trazendo amplas discussões
+          IMEPAC Araguari, acontecerá de 13 a 16 de novembro de 2025, presencialmente, tendo como tema “O Novo Paradigma da Saúde: Burnout, Tecnologia e Ética”, trazendo amplas discussões
           com profissionais de renome sobre o tema, assim como rodas de conversas para disseminação de conhecimento. Objetivamos ainda entender
           essas abordagens nos diferentes tipos de cenários de saúde, trabalhando um tema de grande importância e que se faz pouco presente dentro da nossa formação. Além disso, teremos minicursos diversos, vivências,
           atividades político culturais, visita técnica, submissão e apresentação de trabalhos, entre outros, além de nossa esperada festa de encerramento. Faça sua inscrição e não perca esse grande evento!
@@ -69,15 +69,15 @@ export default function Home() {
         <div className="text-center">
           <p>
             O VII Congresso dos Estudantes e Profissionais de Saúde (COEPS), evento tradicional em Araguari, organizado pelo Diretório Acadêmico Diogo
-            Guimarães (DADG) do curso de Medicina do Centro Universitário IMEPAC Araguari, acontecerá de 13 a 16 de novembro de 2024,
-            presencialmente, tendo como tema “Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional”.
+            Guimarães (DADG) do curso de Medicina do Centro Universitário IMEPAC Araguari, acontecerá de 13 a 16 de novembro de 2025,
+            presencialmente, tendo como tema “O Novo Paradigma da Saúde: Burnout, Tecnologia e Ética”.
           </p>
         </div>
         <div className="flex flex-col md:flex-row gap-6 justify-center items-stretch mt-8">
           <div className="glass-container flex-1 min-w-[220px]">
             <h2 className="font-extrabold text-[22px] lg:text-[20px] mb-2">Local do Evento</h2>
             <h3 className="text-red-400 mb-2">-----------</h3>
-            <p>O Evento será realizado entre os dias 31 de outubro a 03 de novembro de 2024 no IMEPAC Centro Universitário</p>
+            <p>O Evento será realizado entre os dias 31 de outubro a 03 de novembro de 2025 no IMEPAC Centro Universitário</p>
           </div>
           <div className="glass-container flex-1 min-w-[220px]">
             <h2 className="font-extrabold text-[22px] lg:text-[20px] mb-2">Programação</h2>
