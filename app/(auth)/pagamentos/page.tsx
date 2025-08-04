@@ -10,13 +10,10 @@ import Cards from 'react-credit-cards-2';
 import { ILecture } from '@/lib/types/events/event.t';
 import { IUser } from "@/app/lib/types/user/user.t"
 import { IPaymentConfig } from '@/lib/types/payments/payment.t';
+import TermModal, { ModalProps } from '@/components/TermModal';
 import {
   Loader2,
   CreditCard,
-  DollarSign,
-  Receipt,
-  QrCode,
-  Calendar,
   CheckCircle,
   AlertCircle,
   ShoppingCart,
@@ -57,31 +54,37 @@ const Pagamentos = () => {
   };
 
   const handlePostClick = async (paymentType: string) => {
-    handleIsLoadingFetch(true);
-    try {
-      const data = {
-        typePayment: paymentType
-      };
+    setDataModalProps((prev) => ({
+      ...prev,
+      onConfirm: async () => {
+        handleIsLoadingFetch(true);
+        setDataModalProps((prev) => ({ ...prev, isOpen: false }))
+        try {
+          const data = {
+            typePayment: paymentType
+          };
+          const response = await fetch('/api/payment/create_payment', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+          });
 
-      const response = await fetch('/api/payment/create_payment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+          if (!response.ok) {
+            throw new Error('Falha ao enviar a requisição POST');
+          }
 
-      if (!response.ok) {
-        throw new Error('Falha ao enviar a requisição POST');
+          const responseData: { link: string } = await response.json();
+          route.push(responseData.link);
+        } catch (error) {
+          console.error('Erro ao enviar a requisição POST:', error);
+          handleIsLoadingFetch(false);
+          handleIsModalError("Ocorreu algum erro. Tente novamente mais tarde.");
+        }
       }
+    }))
 
-      const responseData: { link: string } = await response.json();
-      route.push(responseData.link);
-    } catch (error) {
-      console.error('Erro ao enviar a requisição POST:', error);
-      handleIsLoadingFetch(false);
-      handleIsModalError("Ocorreu algum erro. Tente novamente mais tarde.");
-    }
   };
 
   const handlePostClick2 = async () => {
@@ -102,6 +105,14 @@ const Pagamentos = () => {
       handleIsLoadingFetch(false);
     }
   };
+
+  const [dataModalProps, setDataModalProps] = useState<ModalProps>({
+    isOpen: false,
+    onClose: () => {
+      setDataModalProps((prev) => ({ ...prev, isOpen: false }))
+    },
+    onConfirm: () => { }
+  })
 
   useEffect(() => {
     const enviarRequisicaoGet = async () => {
@@ -168,7 +179,10 @@ const Pagamentos = () => {
     <div className="pagamentos-main">
       <HeaderPainel isPayed={data?.pagamento?.situacao !== 1 ? false : true} />
       <PaymentForm isModalOpen={isModalPayment} onClose={() => { setModalPayment(false) }} />
-
+      <TermModal isOpen={true}
+        onClose={() => { }}
+        onConfirm={() => { }}
+      />
       {!isLoadingFetch && isModalError && (
         <ModalError handleIsModalError={handleIsModalError} texto={isModalError} />
       )}
