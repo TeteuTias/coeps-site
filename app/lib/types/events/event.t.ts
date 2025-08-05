@@ -1,6 +1,6 @@
 export interface ICourse { // considere como MINICURSOS
-
     "_id": string & { readonly __brand: 'ObjectId' },
+    "showToUser": boolean,
     "name": string,
     "description": string,
     "maxParticipants": number,
@@ -31,6 +31,7 @@ export interface ICourse { // considere como MINICURSOS
 
 export interface ILecture { // considere como PALESTRAS
     "_id": string & { readonly __brand: 'ObjectId' },
+    "showToUser": boolean,
     "name": string,
     "description": string,
     "timeline":

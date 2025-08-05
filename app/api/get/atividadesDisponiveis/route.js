@@ -12,11 +12,8 @@ import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0';
 // 
 
 export const dynamic = 'force-dynamic'
-// é a mesma coisa que seu irmao "getAtividades". A diferenca é que get/atividades retorna todas as atividades
-// decidi fazer outra rota porque fiquei com medo de mexer na get/atividades porque acho que outras partes do site usam ela
-// e quando eu digo isso é que provavelmente tem outras partes do site que precisam de todas as atividades para evitar bugs fiz
-// uma rota bem parecida mas que só apenas retorna as atividades estão disponíveis, ou seja, showToUser = true.
-
+// Retorna TODAS as atividades. dispoíveis ou não!
+// diferente de sua irma 'get/atividadesDisponiveis' que retorna apenas com showToUser = true
 export const GET = withApiAuthRequired(async function GET(request, { params }) {
   try {
     // Verificando se está logado
@@ -25,7 +22,9 @@ export const GET = withApiAuthRequired(async function GET(request, { params }) {
     const { db } = await connectToDatabase();
     const colecao = "minicursos"
     const result = await db.collection(colecao).find(
-      {},
+      {
+        showToUser: true,
+      },
 
     ).toArray()
 

@@ -50,7 +50,7 @@ export default function MinhaProgramacao() {
   return (
     <div className="programacao-main">
       {modal && <Modal handleModal={() => handleModal(0)} modal={modal} />}
-      
+
       <div className="programacao-container">
         <div className="programacao-header">
           <h1 className="programacao-title">Minha Programação</h1>
@@ -60,7 +60,7 @@ export default function MinhaProgramacao() {
           <h1>O QUE TEMOS AQUI</h1>
           <p>
             Aqui está o seu cronograma de eventos! Todos os eventos obrigatórios e aqueles em que você se inscreveu estão organizados para que você
-            não fique perdido. Não se esqueça de se inscrever nos minicursos! 
+            não fique perdido. Não se esqueça de se inscrever nos minicursos!
             <span className="programacao-highlight">
               Clicando nos cards, você consegue mais informações sobre o evento presente na sua agenda.
             </span>
@@ -73,13 +73,13 @@ export default function MinhaProgramacao() {
               <h1>CARREGANDO</h1>
               <div className="programacao-loading-animation"></div>
             </div>
-          ) : data?.data ? (
+          ) : Object.keys(data?.data).length ? (
             Object.keys(data?.data).map(key => (
-              <CardProgramacao 
-                dateKey={key} 
-                event={data?.data[key]} 
-                key={Math.floor(Math.random() * 100)} 
-                handleModal={handleModal} 
+              <CardProgramacao
+                dateKey={key}
+                event={data?.data[key]}
+                key={Math.floor(Math.random() * 100)}
+                handleModal={handleModal}
               />
             ))
           ) : (
@@ -95,22 +95,22 @@ export default function MinhaProgramacao() {
 
 function organizeData(data) {
   const organized = {};
-  
+
   data['palestras'].map((value1, index) => {
     value1.timeline.map((value2) => {
       value2.namePattern = value1.name
       value2.descriptionPattern = value1.description,
-      value2.organization_namePattern = value1.organization_name,
-      value2.timelinePattern = value1.timeline
+        value2.organization_namePattern = value1.organization_name,
+        value2.timelinePattern = value1.timeline
     })
   })
-  
+
   data['minicursos'].map((value1, index) => {
     value1.timeline.map((value2) => {
       value2.namePattern = value1.name
       value2.descriptionPattern = value1.description,
-      value2.organization_namePattern = value1.organization_name,
-      value2.timelinePattern = value1.timeline
+        value2.organization_namePattern = value1.organization_name,
+        value2.timelinePattern = value1.timeline
     })
   })
 
@@ -144,10 +144,10 @@ const Modal = ({ handleModal, modal }) => {
         <button className="programacao-modal-close" onClick={handleModal}>
           <X size={20} />
         </button>
-        
+
         <div className="programacao-modal-content">
           <h2 className="programacao-modal-title">{modal.namePattern.toUpperCase()}</h2>
-          
+
           <div className="programacao-modal-section">
             <h3 className="programacao-modal-section-title">
               <Info size={16} className="inline mr-2" />
@@ -157,7 +157,7 @@ const Modal = ({ handleModal, modal }) => {
               {modal.descriptionPattern}
             </p>
           </div>
-          
+
           <div className="programacao-modal-section">
             <h3 className="programacao-modal-section-title">
               <Calendar size={16} className="inline mr-2" />
@@ -168,7 +168,7 @@ const Modal = ({ handleModal, modal }) => {
                 const data = new Date(event.date_init).toLocaleDateString()
                 const time_init = new Date(event.date_init).toLocaleTimeString()
                 const time_end = new Date(event.date_end).toLocaleTimeString()
-                
+
                 return (
                   <div className="programacao-timeline-item" key={index}>
                     <div className="programacao-timeline-event-name">
@@ -210,7 +210,7 @@ const CardProgramacao = ({ dateKey, event, handleModal }) => {
   const DATE = new Date(dateKey + "T12:00:00-03:00")
   const daysNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
   const dayName = daysNames[DATE.getDay()]
-  
+
   return (
     <div className="programacao-date-card">
       <div className="programacao-date-header">
@@ -218,16 +218,15 @@ const CardProgramacao = ({ dateKey, event, handleModal }) => {
           {DATE.toLocaleDateString().slice(0, 5)} - {dayName.toUpperCase()}
         </h2>
       </div>
-      
       <div className="programacao-events-list">
         {event?.map((value, index) => {
           const dateInit = new Date(value.date_init).toLocaleTimeString()
           const dateEnd = new Date(value.date_end).toLocaleTimeString()
 
           return (
-            <div 
-              className="programacao-event-card" 
-              onClick={() => handleModal(value)} 
+            <div
+              className="programacao-event-card"
+              onClick={() => handleModal(value)}
               key={Math.floor(Math.random() * 100) * index}
             >
               <div className="programacao-event-indicator"></div>

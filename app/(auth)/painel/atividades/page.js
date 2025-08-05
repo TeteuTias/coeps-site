@@ -18,7 +18,7 @@ export default function Minicursos() {
         const fetchData = async () => {
             try {
 
-                const response = await fetch('/api/get/atividades', { cache: 'no-cache' })
+                const response = await fetch('/api/get/atividadesDisponiveis', { cache: 'no-cache' })
                 const jsonResponse = await response.json()
                 if (!response.ok) {
                     console.log(jsonResponse)

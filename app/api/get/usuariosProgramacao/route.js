@@ -13,36 +13,39 @@ import { getSession } from '@auth0/nextjs-auth0';
 
 export const dynamic = 'force-dynamic'
 
-export const GET = withApiAuthRequired (async function GET( request, { params } ) {
-    try{
+export const GET = withApiAuthRequired(async function GET(request, { params }) {
+    try {
         const { user } = await getSession();
-        const userId = user.sub.replace("auth0|",""); // Retirando o auth0|  
+        const userId = user.sub.replace("auth0|", ""); // Retirando o auth0|  
         //
         // Já vem apenas com o replace.
         const { db } = await connectToDatabase();
 
         const [result1, result2, result3] = await Promise.all([
             db.collection('minicursos').find(
-                { 
+                {
                     $or: [
-                      { participants:{$in:[userId]} },
-                      { "timeline.speakers": { $in: [userId] } }
-                    ]
+                        { participants: { $in: [userId] } },
+                        { "timeline.speakers": { $in: [userId] } }
+                    ],
+                    showToUser: true
                 },
-                { projection: { 'participants':0 }}
+                { projection: { 'participants': 0 } }
             ).toArray(),
             db.collection('palestras').find(
-                {}
+                {
+                    showToUser: true
+                }
             ).toArray(),
-          ]);
-        return NextResponse.json({ 
+        ]);
+        return NextResponse.json({
             "minicursos": result1 ?? [], // ICourse
-            "palestras":result2 ?? [], // ILecture
-        },{status:200});
+            "palestras": result2 ?? [], // ILecture
+        }, { status: 200 });
 
     }
-    catch (error){
-        return NextResponse.json({"error": error})
+    catch (error) {
+        return NextResponse.json({ "error": error })
     }
 })
 /*

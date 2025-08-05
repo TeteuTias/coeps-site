@@ -6,10 +6,11 @@ import { NextResponse } from 'next/server';
 // {"data":{"isPos_registration":0,"informacoes_usuario":{"nome:":"","email":"mateus2.0@icloud.com","data_criacao":"2024-07-08T22:48:41.110Z"}}}
 // Exemplo de return erro:
 // 
-
 export const dynamic = 'force-dynamic'
 
 
+// creio eu que não há problema de colocar aqui só possuem showToUser igual a true.
+// Assim, agora a ideia é retornar apenas os minicursos que possuem showToUser igual a true
 export async function GET(request, { params }) {
     try {
         // Puxando configs
@@ -18,11 +19,15 @@ export async function GET(request, { params }) {
         const colecao2 = "minicursos"
         const [result1, result2] = await Promise.all([
             db.collection(colecao1).find(
-                {},
+                {
+                    showToUser: true,
+                },
 
             ).toArray(),
             db.collection(colecao2).find(
-
+                {
+                    showToUser: true,
+                },
             ).toArray(),
         ]);
         // result 1 == ICourse
