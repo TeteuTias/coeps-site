@@ -14,10 +14,10 @@ export async function POST(request) {
 
 
     const { searchParams } = new URL(request.url)
-    const requestData = await request.json() 
+    const requestData = await request.json()
     const email = requestData.usuario_email;
-    const nome  = requestData.usuario_nome;
-    const user_id = requestData.usuario_id.replace("auth0|","");
+    const nome = requestData.usuario_nome;
+    const user_id = requestData.usuario_id.replace("auth0|", "");
     const data_criacao = new Date() // ele manda a data criação mas eu nao estou usando.
 
 
@@ -25,28 +25,28 @@ export async function POST(request) {
         const { db } = await connectToDatabase();
 
         const result = await db.collection('usuarios').insertOne({
-            "_id":new ObjectId(user_id),
-            "id_api":"",
-            "isPos_registration":0,
-            "informacoes_usuario":{
-                "cpf":"",
-                "numero_telefone":"",
-                "nome":"",
-                "email":email,
-                "data_criacao":data_criacao,
-                "titulo_honorario":""
+            "_id": new ObjectId(user_id),
+            "id_api": "",
+            "isPos_registration": false,
+            "informacoes_usuario": {
+                "cpf": "",
+                "numero_telefone": "",
+                "nome": "",
+                "email": email,
+                "data_criacao": data_criacao,
+                "titulo_honorario": ""
             },
-            "pagamento":{
-                "situacao":0,// O zero sinaliza que ainda não há pagamento aprovado.
-                "tipo_pagamento":"",
-                "situacao_animacao":0,
-                "lista_pagamentos":[],
+            "pagamento": {
+                "situacao": 0,// O zero sinaliza que ainda não há pagamento aprovado.
+                "tipo_pagamento": "",
+                "situacao_animacao": false,
+                "lista_pagamentos": [],
             }
-            
+
         });
-        return Response.json({ "sucesso":"Ocorreu tudo certo" })
+        return Response.json({ "sucesso": "Ocorreu tudo certo" })
     }
     catch (error) {
-        return Response.json({"erro":error})
+        return Response.json({ "erro": error })
     }
 }

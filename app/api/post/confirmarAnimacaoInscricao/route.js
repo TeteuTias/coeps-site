@@ -17,7 +17,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
         const userId = user.sub.replace("auth0|", ""); // Retirando o auth0|  
 
         if (!userId) {
-            return Response.json({ "message": "!userId" }, {status:500})
+            return Response.json({ "message": "!userId" }, { status: 500 })
         }
 
 
@@ -29,12 +29,12 @@ export const POST = withApiAuthRequired(async function POST(request) {
         //  "isPos_registration": 0 - tava na query
         await db.collection('usuarios').findOneAndUpdate({ "_id": b }, {
             "$set": {
-                "pagamento.situacao_animacao":1
+                "pagamento.situacao_animacao": true
             }
         })
 
 
-        return Response.json({ "message": "Ocorreu Tudo Certo!" },{status:200})
+        return Response.json({ "message": "Ocorreu Tudo Certo!" }, { status: 200 })
     }
     catch (error) {
         console.log(error)
