@@ -62,19 +62,24 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
         let valor = null
         if (dataPayment.typePayment === "PIX") {
+            console.log("PIX")
             valor = resultPagamento[0].valorPix
         } else if (dataPayment.typePayment === "DEBIT_CARD") {
+            console.log("DEBIT_CARD")
             valor = resultPagamento[0].valorDebito
         } else if (dataPayment.typePayment === "BOLETO") {
+            console.log("BOLETO")
             valor = resultPagamento[0].valorBoleto
         } else if (dataPayment.typePayment === "CREDIT_CARD") {
+            console.log("CREDIT_CARD")
             valor = resultPagamento[0].valorAVista
         }
         if (valor === null) {
             throw new Error("O valor de seu pagamento não foi encontrado.")
         }
 
-        valor = resultPagamento[0].valorAVista
+        // valor = resultPagamento[0].valorAVista => o safado do bug aqui
+
         const data_vencimento = new Date().toISOString().split("T")[0] // retorna o dia de hoje.
         const descricao = resultPagamento[0].nome// 'Primeiro lote para entrada no evento IV COEPS.'
         const desconto = 0
