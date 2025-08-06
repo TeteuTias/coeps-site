@@ -18,7 +18,7 @@ export interface ICourse { // considere como MINICURSOS
         "local_description": string,
         "local": string,
         "_idPattern": string & { readonly __brand: 'ObjectId' }
-    },
+    }[],
     "isOpen": boolean,
     "dateOpen": string,
     "type": string,
