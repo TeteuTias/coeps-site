@@ -1066,8 +1066,13 @@ const CardPagamentos = ({ eventId, type, data_formatada, invoiceNumber, status, 
             setTypeText("ERRO AO CARREGAR NOME")
             return;
           }
-          const responseJson: { data: ILecture["name"] } = await response.json()
-          // Faça algo com a resposta, como atualizar o estado
+          const responseJson: { data: ILecture["name"] | null | undefined } = await response.json()
+          if (!responseJson.data || Object.keys(responseJson.data).length === 0) {
+            // Se o dado for null, undefined ou um objeto vazio, saia.
+            setTypeText("Minicurso não encontrado")
+            return;
+          }
+
           setTypeText(responseJson.data)
         }
       } catch (error) {
