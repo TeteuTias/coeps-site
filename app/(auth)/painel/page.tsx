@@ -4,20 +4,16 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
-  CreditCard, 
-  FileText, 
-  Calendar, 
-  User, 
-  Award, 
-  GraduationCap, 
-  Gift,
   DollarSign,
   BookOpen,
   Clock,
   UserCheck,
   Activity,
   Sparkles,
-  QrCode
+  QrCode,
+  Award,
+  Upload, // 👈 1. Importe o ícone de Upload
+  BookCheck
 } from 'lucide-react';
 import './style.css';
 
@@ -70,8 +66,19 @@ function PaginaAreaDoCliente() {
         <Link href="pagamentos" prefetch={false}>
           <CardOpcoes texto="Meus Pagamentos" icon={<DollarSign size={48} />} />
         </Link>
+
+        {/* 👇 2. BOTÃO ADICIONADO PARA A PÁGINA DE UPLOAD 👇 */}
+        <Link href="/upload" prefetch={false}>
+          <CardOpcoes texto="Enviar Trabalhos" icon={<Upload size={48} />} />
+        </Link>
+        {/* --- Fim do botão adicionado --- */}
+
+        <Link href="painel/works" prefetch={false}>
+  <CardOpcoes texto="Ver status da submissão" icon={<BookCheck size={48} />} />
+    </Link>
+
         <Link href="painel/trabalhos" prefetch={false}>
-          <CardOpcoes texto="Submissão de Trabalhos" icon={<BookOpen size={48} />} />
+          <CardOpcoes texto="Consultar Submissões" icon={<BookOpen size={48} />} />
         </Link>
         <Link href="painel/minhaProgramacao" prefetch={false}>
           <CardOpcoes texto="Minha Programação" icon={<Clock size={48} />} />
@@ -98,7 +105,7 @@ function PaginaAreaDoCliente() {
   )
 }
 
-function CardOpcoes({ texto, icon, special = false }) {
+function CardOpcoes({ texto, icon, special = false }: { texto: string, icon: React.ReactNode, special?: boolean }) {
   return (
     <div className={`painel-card ${special ? 'painel-card-special' : ''}`}>
       <div className="painel-card-icon">

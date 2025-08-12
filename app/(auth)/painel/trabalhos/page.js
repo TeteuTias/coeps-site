@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import CardDatas from '@/app/components/CardDatas';
 import Link from 'next/link';
 import WarningModal from '@/app/components/WarningModal';
+import { BlobChunker } from '@/app/utils/blobChunking';
 //
 //
 export default function Home() {
@@ -30,6 +31,9 @@ export default function Home() {
     const [isModalError, setIsModalError] = useState(null)
     //
     const [isLoadingDeleteOrSend, setIsLoadingDeleteOrSend] = useState(0)
+    // Estados para progresso de upload
+    const [uploadProgress, setUploadProgress] = useState(0)
+    const [isUploading, setIsUploading] = useState(false)
 
 
     const baixarArquivo = async (fileId) => {
@@ -115,73 +119,58 @@ export default function Home() {
     }
     //
     const handleSubmit = async (e) => {
-        if (isLoadingDeleteOrSend) { return 0 }
+        if (isLoadingDeleteOrSend || isUploading) { return 0 }
+        
+        e.preventDefault();
+
+        if (!file) {
+            setIsModalError('Selecione um arquivo antes de enviar')
+            setMessage('Selecione um arquivo antes de enviar');
+            return;
+        }
+
         setIsLoadingDeleteOrSend(1)
+        setIsUploading(true)
+        setUploadProgress(0)
+
         try {
-            // Colocando que tá carregando  
-            //
-            const MAX_FILE_SIZE = 10 * 1024 * 1024;
+            const blobChunker = new BlobChunker();
+            
+            // Callback para progresso
+            const onProgress = (progressData) => {
+                setUploadProgress(progressData.percentage);
+                console.log(`Progresso: ${progressData.percentage}% (${progressData.uploadedChunks}/${progressData.totalChunks} chunks)`);
+            };
 
-            e.preventDefault();
+            // Callback para erro
+            const onError = (error) => {
+                console.error('Erro no upload:', error);
+                setIsModalError(error.message || "Ocorreu algum erro durante o upload. Tente novamente.");
+            };
 
-            if (!file) {
-                setIsModalError('Selecione um arquivo antes de enviar')
-                setMessage('Selecione um arquivo antes de enviar');
-                return;
+            // Fazer upload com chunking usando Vercel Blob
+            const result = await blobChunker.uploadFile(file, true, onProgress, onError);
+
+            if (result.success) {
+                // Adicionar arquivo à lista
+                handleDataEnvios({
+                    "_id": result.data._id,
+                    "name": result.data.name,
+                    "url": result.data.url // Usando URL do blob
+                });
+                
+                setFile(null);
+                setIsModalError("Arquivo enviado com sucesso!");
+                setUploadProgress(100);
             }
 
-            const newBlob = await upload(file.name, file, {
-                access: 'public',
-                handleUploadUrl: '/api/post/uploadTrabalho2',
-            });
-
-            console.log(newBlob)
-
-
-            //const formData = new FormData();
-            //formData.append('file', file);
-            /*
-            const res = await fetch('/api/post/uploadTrabalho', {
-                method: 'POST',
-                body: formData,
-            });
-            */
-            // Verificando se o fetch foi OK
-            // const result = await res.json();
-            /*
-            if (!res.ok) {
-                
-                if (res.status == 500) {
-                    setIsModalError('ERROR 500. Caso o erro persiste, comunique os organizadores.')
-                    return 0
-                }
-                
-                setIsModalError(result.message || "Ocorreu algum erro desconhecido. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe COEPS.")
-                console.log("!res.ok")
-                return 0
-            }
-            */
-
-
-            // Em fim, fazendo o que ele iria fazer idependente das condições.
-            handleDataEnvios({
-                "_id": "", // coloquei assim para não tirar pq ja estava aqui, mas acho que nao vou precisar dele
-                "name": newBlob['pathname'],
-                "url": newBlob['url']
-            })
-            setFile(null)
-            setIsModalError("Arquivo enviado com sucesso!")
-            //setMessage("Arquivo enviado com sucesso!");
-            setIsLoadingDeleteOrSend(0)
-        }
-        catch (error) {
-            console.log(error)
-            setMessage(error.message || "Ocorreu algum erro. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe COEPS.");
-
-        }
-        finally {
-            setFile(null)
-            setIsLoadingDeleteOrSend(0)
+        } catch (error) {
+            console.error('Erro no upload:', error);
+            setIsModalError(error.message || "Ocorreu algum erro. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe COEPS.");
+        } finally {
+            setIsLoadingDeleteOrSend(0);
+            setIsUploading(false);
+            setTimeout(() => setUploadProgress(0), 2000); // Reset progress after 2 seconds
         }
     };
     // carregando data
@@ -296,7 +285,7 @@ export default function Home() {
     return (
         <>
             <WarningModal closeModal={() => { setIsModalError(null) }} message={isModalError} isModal={isModalError} />
-            <LoadingModal isLoading={isLoadingDeleteOrSend} />
+            <LoadingModal isLoading={isLoadingDeleteOrSend} uploadProgress={uploadProgress} isUploading={isUploading} />
             <div className='min-h-screen'>
                 <div className='bg-[#3E4095] p-5'>
                     <h1 className="break-words text-center font-extrabold text-white text-[22px] lg:text-[35px]">Submissão de Trabalhos</h1>
@@ -518,19 +507,33 @@ export default function Home() {
 //{'<CardDatas isLoading={isLoading} data={formatNumber(data.autores_por_trabalho)} texto="Autores por trabalho" />'}
 // {'<CardDatas isLoading={isLoading} data={formatNumber(data.autores_por_trabalho)} texto="Autores por trabalho" />'}
 
-const LoadingModal = ({ isLoading }) => {
+const LoadingModal = ({ isLoading, uploadProgress = 0, isUploading = false }) => {
     if (!isLoading) return null;
 
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 z-[200]">
-            <div className="flex flex-row content-center items-center justify-center p-5 rounded shadow-lg text-center bg-white">
-
-                <svg className="flex flex-row content-center items-center justify-center animate-spin h-10 w-10 text-blue-500" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 100 8v4a8 8 0 01-8-8z" />
-                </svg>
-
-                <p className="text-lg font-semibold p-4 text-black">Carregando</p>
+            <div className="flex flex-col content-center items-center justify-center p-5 rounded shadow-lg text-center bg-white min-w-[300px]">
+                <div className="flex flex-row content-center items-center justify-center mb-4">
+                    <svg className="flex flex-row content-center items-center justify-center animate-spin h-10 w-10 text-blue-500" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 100 8v4a8 8 0 01-8-8z" />
+                    </svg>
+                    <p className="text-lg font-semibold p-4 text-black">
+                        {isUploading ? 'Enviando arquivo...' : 'Carregando'}
+                    </p>
+                </div>
+                
+                {isUploading && (
+                    <div className="w-full">
+                        <div className="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+                            <div 
+                                className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
+                                style={{ width: `${uploadProgress}%` }}
+                            ></div>
+                        </div>
+                        <p className="text-sm text-gray-600">{uploadProgress}% concluído</p>
+                    </div>
+                )}
             </div>
         </div>
     );
