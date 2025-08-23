@@ -42,6 +42,23 @@ async function verificarSeExisteAutorPagante(db, autores) {
     return !!paganteEncontrado;
 }
 
+interface IPayload {
+    titulo: string,
+    modalidadeId: string, // é um ObjectId mas vem no payload como uma string, por isso, deve ser validada corretamente
+    autores: IAcademicWorks["autores"],
+    fileId: string, // é um ObjectId mas vem no payload como uma string, por isso, deve ser validada corretamente
+    topicos: {
+        resumo: string,
+        introducao: string,
+        objetivo: string,
+        metodo: string,
+        discussaoResultados: string,
+        conclusao: string,
+        palavrasChave: string,
+        referencias: string
+    },
+}
+
 export const POST = withApiAuthRequired(async function POST(request) {
     //@ts-ignore: Chatisse do ts :|
     const session = await getSession(request);
@@ -65,20 +82,29 @@ export const POST = withApiAuthRequired(async function POST(request) {
             return NextResponse.json({ temPagante: temPagante });
         }
 
+        // Organizando body
         const { titulo, autores, fileId, topicos, modalidadeId } = body;
-
-        if (!titulo || !Array.isArray(autores) || autores.length === 0 || !fileId || !ObjectId.isValid(modalidadeId)) {
+        const payload: IPayload = {
+            titulo,
+            autores,
+            fileId,
+            topicos,
+            modalidadeId
+        }
+        //
+        // Verificando tipos
+        if (!payload.titulo || !Array.isArray(payload.autores) || payload.autores.length === 0 || !payload.fileId || !ObjectId.isValid(payload.modalidadeId)) {
             return NextResponse.json({ error: 'Dados do formulário inválidos ou incompletos.' }, { status: 400 });
         }
 
         // Selecionando a configuração da modalidade
-        const modalidadeConfig = trabalhosConfig.modalidades.find((mod) => `${mod._id}` === `${modalidadeId}`)
+        const modalidadeConfig = trabalhosConfig.modalidades.find((mod) => `${mod._id}` === `${payload.modalidadeId}`)
         if (!modalidadeConfig) {
             throw new Error("As configurações da modalidade não foram encontradas")
         }
         //
 
-        const temPagante = await verificarSeExisteAutorPagante(db, autores);
+        const temPagante = await verificarSeExisteAutorPagante(db, payload.autores);
         if (!temPagante) {
             return NextResponse.json(
                 { error: 'A submissão requer que pelo menos um dos autores esteja cadastrado e com pagamento confirmado.' },
@@ -87,7 +113,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
         }
 
         const arquivoInfo = await db.collection('trabalhos_blob').findOne({
-            _id: new ObjectId(fileId),
+            _id: new ObjectId(payload.fileId),
             userId: userId
         });
         if (!arquivoInfo) {
@@ -96,23 +122,23 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
         const dadosDoTrabalho: IAcademicWorks = {
             userId,
-            titulo,
+            titulo: payload.titulo,
             modalidade: modalidadeConfig.modalidade,
-            autores: autores.map(({ isPagante, ...resto }) => resto),
+            autores: payload.autores.map(({ isPagante, ...resto }) => resto),
             arquivo: {
                 fileId: arquivoInfo._id,
                 fileName: arquivoInfo.filename,
                 url: arquivoInfo.url
             },
-            topicos: topicos ? {
-                resu: topicos.resumo?.substring(0, 1000) || '',
-                intro: topicos.introducao?.substring(0, 1000) || '',
-                obj: topicos.objetivo?.substring(0, 500) || '',
-                met: topicos.metodo?.substring(0, 1000) || '',
-                disc: topicos.discussaoResultados?.substring(0, 1500) || '',
-                conc: topicos.conclusao?.substring(0, 800) || '',
-                pchave: topicos.palavrasChave?.substring(0, 200) || '',
-                ref: topicos.referencias?.substring(0, 2000) || ''
+            topicos: payload.topicos ? {
+                resu: payload.topicos.resumo?.substring(0, 1000) || '',
+                intro: payload.topicos.introducao?.substring(0, 1000) || '',
+                obj: payload.topicos.objetivo?.substring(0, 500) || '',
+                met: payload.topicos.metodo?.substring(0, 1000) || '',
+                disc: payload.topicos.discussaoResultados?.substring(0, 1500) || '',
+                conc: payload.topicos.conclusao?.substring(0, 800) || '',
+                pchave: payload.topicos.palavrasChave?.substring(0, 200) || '',
+                ref: payload.topicos.referencias?.substring(0, 2000) || ''
             } : null,
             status: "Em Avaliação",
             dataSubmissao: new Date(),
@@ -126,7 +152,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
             success: true,
             message: "Trabalho submetido com sucesso!",
             data: { insertedId: result.insertedId }
-        });
+        }, {status:500});
     } catch (error) {
         console.error('Erro detalhado na submissão do trabalho:', error);
         return NextResponse.json({ error: error instanceof Error ? error.message : 'Ocorreu um erro inesperado no servidor.' }, { status: 500 });

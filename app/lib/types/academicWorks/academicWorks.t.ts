@@ -33,6 +33,7 @@ export interface IAcademicWorks {
         email: string,
         cpf: string
         isOrientador: boolean,
+        isPagante?: boolean
     }[],
     arquivo: {
         fileId: ObjectId,

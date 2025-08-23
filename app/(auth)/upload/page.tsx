@@ -543,7 +543,9 @@ function SubmissionForm() {
               <UserPlus size={16} className="mr-1" />
               Adicionar Autor
             </button>
+
           </div>
+          <p className='w-full text-center font-extrabold bg-red-400'>LEMBRE-SE DE ADICIONAR SEU PRÓPRIO NOME AOS AUTORES</p>
 
           <div className="space-y-4">
             {autores.map((autor, index) => (
