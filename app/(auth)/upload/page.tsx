@@ -494,7 +494,7 @@ function SubmissionForm() {
               trabalhosProps.modalidades.find((value) => `${value._id}` === `${e.target.value}`)
             )} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900">
               {
-                trabalhosProps?.modalidades?.map((mod) => <option value={`${mod._id}`}>{mod.modalidade}</option>)
+                trabalhosProps?.modalidades?.map((mod) => <option key={`${mod._id}`} value={`${mod._id}`}>{mod.modalidade}</option>)
               }
             </select>
           </div>

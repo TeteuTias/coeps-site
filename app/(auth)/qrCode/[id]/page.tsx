@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import './style.css';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface UsuarioQR {
   id: string;
@@ -36,7 +37,7 @@ export default function MeuQRCodePage() {
     return (
       <div className="qr-main min-h-screen flex items-center justify-center">
         <div className="qr-loader">
-          <img
+          <Image
             src="/LetreiroColorido01.png"
             alt="Logo COEPS VII"
             className="qr-loader-logo"

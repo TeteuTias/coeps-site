@@ -106,17 +106,7 @@ const Trabalhos = () => {
               </div>
               <div className="card-text">Limite de Submissão</div>
             </div>
-
-            <div className="data-card glass-container">
-              <div className="card-data">
-                {config?.trabalhos_por_usuario ?
-                  String(config.trabalhos_por_usuario).padStart(2, '0') :
-                  '--'
-                }
-              </div>
-              <div className="card-text">Trabalhos por Autor</div>
-            </div>
-
+            
             <div className="data-card glass-container">
               <div className="card-data">
                 {config?.data_publicacao_resultados ?
