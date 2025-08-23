@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import Link from "next/link";
-import IAcademicWorks from "@/lib/types/academicWorks/academicWorks.t";
+import { IAcademicWorksProps } from '@/lib/types/academicWorks/academicWorks.t';
 import {
   Loader2,
   Clock,
@@ -16,30 +16,30 @@ import {
 import './style.css';
 
 const Trabalhos = () => {
-    const [config, setConfig] = useState<IAcademicWorks | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
+  const [config, setConfig] = useState<IAcademicWorksProps | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchConfig = async () => {
-            try {
-                const response = await fetch('/api/inauthenticated/get/trabalhosConfig');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data: IAcademicWorks = await response.json();
-                setConfig(data);
-            } catch (error) {
-                setError(error.message);
-            } finally {
-                    setLoading(false);
-            }
-        };
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const response = await fetch('/api/inauthenticated/get/trabalhosConfig');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data: IAcademicWorksProps = await response.json();
+        setConfig(data);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-        fetchConfig();
+    fetchConfig();
   }, []);
 
-    return (
+  return (
     <div className="trabalhos-main">
       {/* Header */}
       <section className="trabalhos-header">
@@ -52,8 +52,8 @@ const Trabalhos = () => {
       <section className="glass-container trabalhos-intro">
         <h1 className="section-title">SUBMISSÃO DE TRABALHOS</h1>
         <p className="intro-text">
-          O VII COEPS convida acadêmicos, profissionais da saúde e áreas afins a participarem 
-          da submissão de trabalhos inéditos. Esta é uma oportunidade única para compartilhar 
+          O VII COEPS convida acadêmicos, profissionais da saúde e áreas afins a participarem
+          da submissão de trabalhos inéditos. Esta é uma oportunidade única para compartilhar
           suas pesquisas e contribuir para o avanço da ciência na área da saúde.
         </p>
       </section>
@@ -71,7 +71,7 @@ const Trabalhos = () => {
                 <span></span>
                 <span></span>
                 <span></span>
-                </div>
+              </div>
             </div>
           ) : config?.isOpen ? (
             <div className="details-container">
@@ -88,9 +88,9 @@ const Trabalhos = () => {
               </div>
               <h2 className="empty-text">SUBMISSÕES EM BREVE</h2>
               <p className="empty-subtext">Ainda não definimos a data para a abertura das submissões. Fique atento às nossas atualizações!</p>
-                            </div>
+            </div>
           )}
-                            </div>
+        </div>
       </section>
 
       {/* Seção de cards de dados */}
@@ -99,34 +99,34 @@ const Trabalhos = () => {
           <div className="cards-container">
             <div className="data-card glass-container">
               <div className="card-data">
-                {config?.data_limite_submissao ? 
-                  new Date(config.data_limite_submissao).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : 
+                {config?.data_limite_submissao ?
+                  new Date(config.data_limite_submissao).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) :
                   '--/--'
                 }
               </div>
               <div className="card-text">Limite de Submissão</div>
-                    </div>
+            </div>
 
             <div className="data-card glass-container">
               <div className="card-data">
-                {config?.trabalhos_por_usuario ? 
-                  String(config.trabalhos_por_usuario).padStart(2, '0') : 
+                {config?.trabalhos_por_usuario ?
+                  String(config.trabalhos_por_usuario).padStart(2, '0') :
                   '--'
-                        }
-                    </div>
+                }
+              </div>
               <div className="card-text">Trabalhos por Autor</div>
             </div>
 
             <div className="data-card glass-container">
               <div className="card-data">
-                {config?.data_publicacao_resultados ? 
-                  new Date(config.data_publicacao_resultados).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : 
+                {config?.data_publicacao_resultados ?
+                  new Date(config.data_publicacao_resultados).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) :
                   '--/--'
-                        }
-                    </div>
+                }
+              </div>
               <div className="card-text">Publicação de Resultados</div>
-                                </div>
-                            </div>
+            </div>
+          </div>
         </section>
       )}
 
@@ -134,14 +134,14 @@ const Trabalhos = () => {
       <section className="publications-section">
         <div className="publications-container">
           <h2 className="publications-title">PUBLICAÇÕES</h2>
-          
+
           {loading ? (
             <div className="loading-container">
               <div className="loading-spinner">
                 <Loader2 className="spinner-icon" />
               </div>
               <h3 className="loading-text">CARREGANDO PUBLICAÇÕES</h3>
-                </div>
+            </div>
           ) : config?.resultados && config.resultados.length > 0 ? (
             <div className="publications-list">
               {config.resultados.map((publication, index) => (
@@ -158,7 +158,7 @@ const Trabalhos = () => {
             <div className="empty-container">
               <div className="empty-icon">
                 <Award className="clock-icon" />
-                </div>
+              </div>
               <h3 className="empty-text">NENHUMA PUBLICAÇÃO DISPONÍVEL</h3>
               <p className="empty-subtext">As publicações serão divulgadas em breve!</p>
             </div>
@@ -173,18 +173,18 @@ const Trabalhos = () => {
             {!loading && config?.isOpen ? (
               <>
                 O Diretório Acadêmico Diogo Guimarães (DADG) do curso de graduação em Medicina do Centro Universitário IMEPAC Araguari apresenta o{' '}
-                <span className="description-highlight">VII Congresso dos Estudantes e Profissionais de Saúde (COEPS)</span> que possui como tema 
-                &ldquo;O Novo Paradigma da Saúde: Burnout, Tecnologia e Ética&rdquo;. Com o intuito de incentivar a participação dos acadêmicos, 
-                profissionais da saúde e áreas afins em atividades de pesquisa, visando complementar a formação acadêmica e enriquecer conhecimentos, 
+                <span className="description-highlight">VII Congresso dos Estudantes e Profissionais de Saúde (COEPS)</span> que possui como tema
+                &ldquo;O Novo Paradigma da Saúde: Burnout, Tecnologia e Ética&rdquo;. Com o intuito de incentivar a participação dos acadêmicos,
+                profissionais da saúde e áreas afins em atividades de pesquisa, visando complementar a formação acadêmica e enriquecer conhecimentos,
                 declara-se aberto o edital para a submissão de trabalhos inéditos pertinentes à área da saúde.
               </>
             ) : (
               <>
                 O Diretório Acadêmico Diogo Guimarães (DADG) do curso de Medicina do Centro Universitário IMEPAC Araguari está preparando o{' '}
-                <span className="description-highlight">VII Congresso dos Estudantes e Profissionais de Saúde (COEPS)</span>, com o tema 
+                <span className="description-highlight">VII Congresso dos Estudantes e Profissionais de Saúde (COEPS)</span>, com o tema
                 &ldquo;Inovação em saúde: Conectando Ciência Moderna ao Cuidado Tradicional&rdquo;.{' '}
-                <span className="description-highlight">Atualmente, o edital para a submissão de trabalhos inéditos ainda não está aberto</span>. 
-                No entanto, em breve, divulgaremos mais informações sobre como participar e submeter suas pesquisas. Fique atento ao nosso site 
+                <span className="description-highlight">Atualmente, o edital para a submissão de trabalhos inéditos ainda não está aberto</span>.
+                No entanto, em breve, divulgaremos mais informações sobre como participar e submeter suas pesquisas. Fique atento ao nosso site
                 e às nossas redes sociais para atualizações e detalhes sobre o processo de submissão.
               </>
             )}
@@ -213,8 +213,8 @@ const Trabalhos = () => {
           </div>
         </section>
       )}
-        </div>
-    );
+    </div>
+  );
 };
 
 export default Trabalhos;

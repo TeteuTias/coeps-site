@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { getAccessToken } from '@auth0/nextjs-auth0';
 import { execOnce } from 'next/dist/shared/lib/utils';
 import { ObjectId } from 'mongodb';
-import { getSession,withApiAuthRequired } from '@auth0/nextjs-auth0';
+import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0';
 //
 //
 // Exemplo de return:
@@ -24,12 +24,12 @@ export const GET = withApiAuthRequired(async function GET(request, { params }) {
             {},
 
         ).toArray()
-        return NextResponse.json({ ...result[0] },{status:200});
+        return NextResponse.json({ ...result[0] }, { status: 200 });
 
     }
     catch (error) {
         //console.log(error)
-        return NextResponse.json({ "error": error },{status:500})
+        return NextResponse.json({ "error": error, "message": error?.message }, { status: 500 })
     }
 })
 /*             { projection: { _id: 0 } }

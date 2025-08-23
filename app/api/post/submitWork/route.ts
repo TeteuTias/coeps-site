@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { connectToDatabase } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
+import { ObjectId } from 'bson';
+import { IAcademicWorks, IAcademicWorksProps } from '@/lib/types/academicWorks/academicWorks.t';
 
 async function verificarSeExisteAutorPagante(db, autores) {
     if (!autores || autores.length === 0) {
@@ -29,10 +30,12 @@ async function verificarSeExisteAutorPagante(db, autores) {
     const finalQuery = {
         $and: [
             { $or: queryConditions },
-            { $or: [
-                { "pagamento.situacao": 1 },
-                { "pagamento.situacao_animacao": 1 }
-            ]}
+            {
+                $or: [
+                    { "pagamento.situacao": 1 },
+                    { "pagamento.situacao_animacao": 1 }
+                ]
+            }
         ]
     };
     const paganteEncontrado = await db.collection("usuarios").findOne(finalQuery);
@@ -40,6 +43,7 @@ async function verificarSeExisteAutorPagante(db, autores) {
 }
 
 export const POST = withApiAuthRequired(async function POST(request) {
+    //@ts-ignore: Chatisse do ts :|
     const session = await getSession(request);
     if (!session || !session.user) {
         return NextResponse.json({ error: 'Acesso não autorizado.' }, { status: 401 });
@@ -49,17 +53,30 @@ export const POST = withApiAuthRequired(async function POST(request) {
     try {
         const body = await request.json();
         const { db } = await connectToDatabase();
+        const trabalhosConfig: IAcademicWorksProps = await db.collection("trabalhos_config").findOne(
+            {},
+        )
+        if (!trabalhosConfig) {
+            throw new Error("Não foi encontrado nenhuma configuração de trabalhos")
+        }
 
         if (body.action === 'validate') {
             const temPagante = await verificarSeExisteAutorPagante(db, body.autores);
             return NextResponse.json({ temPagante: temPagante });
         }
 
-        const { titulo, modalidade, autores, fileId, topicos } = body;
+        const { titulo, modalidade, autores, fileId, topicos, modalidadeId } = body;
 
-        if (!titulo || !modalidade || !Array.isArray(autores) || autores.length === 0 || !fileId) {
+        if (!titulo || !modalidade || !Array.isArray(autores) || autores.length === 0 || !fileId || !ObjectId.isValid(modalidadeId)) {
             return NextResponse.json({ error: 'Dados do formulário inválidos ou incompletos.' }, { status: 400 });
         }
+
+        // Selecionando a configuração da modalidade
+        const modalidadeConfig = trabalhosConfig.modalidades.find((mod) => `${mod._id}` === `${modalidadeId}`)
+        if (!modalidadeConfig) {
+            throw new Error("As configurações da modalidade não foram encontradas")
+        }
+        //
 
         const temPagante = await verificarSeExisteAutorPagante(db, autores);
         if (!temPagante) {
@@ -69,19 +86,19 @@ export const POST = withApiAuthRequired(async function POST(request) {
             );
         }
 
-        const arquivoInfo = await db.collection('trabalhos_blob').findOne({ 
+        const arquivoInfo = await db.collection('trabalhos_blob').findOne({
             _id: new ObjectId(fileId),
-            userId: userId 
+            userId: userId
         });
         if (!arquivoInfo) {
             return NextResponse.json({ error: 'Arquivo associado não encontrado ou não pertence ao usuário.' }, { status: 404 });
         }
 
-        const dadosDoTrabalho = {
+        const dadosDoTrabalho: IAcademicWorks = {
             userId,
             titulo,
             modalidade,
-            autores: autores.map(({ isPagante, ...resto }) => resto), 
+            autores: autores.map(({ isPagante, ...resto }) => resto),
             arquivo: {
                 fileId: arquivoInfo._id,
                 fileName: arquivoInfo.filename,
@@ -99,18 +116,19 @@ export const POST = withApiAuthRequired(async function POST(request) {
             } : null,
             status: "Em Avaliação",
             dataSubmissao: new Date(),
-            avaliadorComentarios: ""
+            configuracaoTrabalho: modalidadeConfig,
+            avaliadorComentarios: []
         };
 
         const result = await db.collection('Dados_do_trabalho').insertOne(dadosDoTrabalho);
 
-        return NextResponse.json({ 
-            success: true, 
+        return NextResponse.json({
+            success: true,
             message: "Trabalho submetido com sucesso!",
-            data: { insertedId: result.insertedId } 
+            data: { insertedId: result.insertedId }
         });
     } catch (error) {
         console.error('Erro detalhado na submissão do trabalho:', error);
-        return NextResponse.json({ error: 'Ocorreu um erro inesperado no servidor.' }, { status: 500 });
+        return NextResponse.json({ error: error instanceof Error ? error.message : 'Ocorreu um erro inesperado no servidor.' }, { status: 500 });
     }
 });

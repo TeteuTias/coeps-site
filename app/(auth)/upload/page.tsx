@@ -4,27 +4,27 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { Upload, FileText, CheckCircle, AlertCircle, Loader, Info, UserPlus, Trash2, BookOpen, Target, Microscope, MessageSquare, Award, Hash, BookMarked, Save, ArrowLeft } from 'lucide-react';
-
+import { IAcademicWorksProps } from '@/lib/types/academicWorks/academicWorks.t';
 // Interface do Autor simplificada: O front-end não precisa saber quem é pagante.
-interface Autor { 
-  id: number; 
-  nome: string; 
-  email: string; 
-  cpf: string; 
+interface Autor {
+  id: number;
+  nome: string;
+  email: string;
+  cpf: string;
   isOrientador: boolean;
 }
 
 // Interface para o progresso do upload.
-interface UploadProgress { 
-  fileName: string; 
-  progress: number; 
-  status: 'uploading' | 'completed' | 'error' | 'pending'; 
-  error?: string; 
+interface UploadProgress {
+  fileName: string;
+  progress: number;
+  status: 'uploading' | 'completed' | 'error' | 'pending';
+  error?: string;
 }
 
 // Interface para os tópicos do trabalho.
 interface TopicosTrabalho {
-  resumo:string;
+  resumo: string;
   introducao: string;
   objetivo: string;
   metodo: string;
@@ -45,7 +45,7 @@ const generateUniqueFileName = (originalName: string): string => {
   const randomString = Math.random().toString(36).substring(2, 8);
   const extension = originalName.split('.').pop();
   const nameWithoutExtension = originalName.replace(/\.[^/.]+$/, '');
-  
+
   return `${nameWithoutExtension}_${timestamp}_${randomString}.${extension}`;
 };
 
@@ -104,22 +104,21 @@ export default function UploadPage() {
 function SubmissionForm() {
   const [currentStep, setCurrentStep] = useState<'dados' | 'topicos'>('dados');
   const [titulo, setTitulo] = useState('');
-  const [modalidade, setModalidade] = useState<'Artigo' | 'Banner' | 'Resumo'>('Artigo');
+  const [modalidade, setModalidade] = useState<IAcademicWorksProps["modalidades"][0]["modalidade"]>("Selecionar Modalidade");
   const [autores, setAutores] = useState<Autor[]>([{ id: Date.now(), nome: '', email: '', cpf: '', isOrientador: false }]);
   const [arquivoId, setArquivoId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [trabalhosProps, setTrabalhosProps] = useState<IAcademicWorksProps | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const [topicos, setTopicos] = useState<TopicosTrabalho>({
     resumo: '', introducao: '', objetivo: '', metodo: '', discussaoResultados: '', conclusao: '', palavrasChave: '', referencias: ''
   });
-  
+
   const [isUserLogadoPagante, setIsUserLogadoPagante] = useState<boolean | null>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
   const [isValidatingAuthors, setIsValidatingAuthors] = useState(false);
 
-  const MAX_AUTORES = 8;
-  const MAX_ORIENTADORES = 2;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Efeito para verificar o status do usuário logado e preencher seus dados.
@@ -127,20 +126,32 @@ function SubmissionForm() {
     const verificarStatusUsuario = async () => {
       setIsLoadingStatus(true);
       try {
+        const responseTrabalhosProps = await fetch(`/api/get/trabalhosConfig/`)
+        if (!responseTrabalhosProps.ok) {
+          const error: { message: string } = await responseTrabalhosProps.json()
+          alert(error.message)
+          throw new Error(error.message)
+        }
+
+        //
+        const responseTrabalhosJson: IAcademicWorksProps = await responseTrabalhosProps.json()
+        setTrabalhosProps(responseTrabalhosJson)
+        setModalidade(responseTrabalhosJson.modalidades?.[0].modalidade || "Não há Modalidades")
+        //
+        //
         const response = await fetch('/api/get/verificacaoUsuario');
         if (!response.ok) throw new Error('Falha ao verificar o status do usuário.');
-        
         const data = await response.json();
         const temPagamento = data.pagamento?.situacao === 1 || data.pagamento?.situacao_animacao === 1;
         setIsUserLogadoPagante(temPagamento);
 
         // Preenche os dados do primeiro autor com as informações do usuário logado
         setAutores(prev => {
-            const primeiroAutor = { ...prev[0] };
-            primeiroAutor.nome = data.informacoes_usuario?.nome || '';
-            primeiroAutor.email = data.informacoes_usuario?.email || '';
-            primeiroAutor.cpf = data.informacoes_usuario?.cpf || '';
-            return [primeiroAutor, ...prev.slice(1)];
+          const primeiroAutor = { ...prev[0] };
+          primeiroAutor.nome = data.informacoes_usuario?.nome || '';
+          primeiroAutor.email = data.informacoes_usuario?.email || '';
+          primeiroAutor.cpf = data.informacoes_usuario?.cpf || '';
+          return [primeiroAutor, ...prev.slice(1)];
         });
 
       } catch (error) {
@@ -162,7 +173,7 @@ function SubmissionForm() {
     formData.append('file', file);
     const uniqueFileName = generateUniqueFileName(fileName);
     formData.append('originalFileName', uniqueFileName);
-    
+
     try {
       onProgress(30);
       const response = await fetchWithRetry('/api/post/uploadBlobSingle', { method: 'POST', body: formData });
@@ -188,35 +199,35 @@ function SubmissionForm() {
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
     const chunkIds: string[] = [];
     const uniqueFileName = generateUniqueFileName(fileName);
-    
+
     try {
       for (let i = 0; i < totalChunks; i++) {
         const start = i * CHUNK_SIZE;
         const end = Math.min(start + CHUNK_SIZE, file.size);
         const chunk = file.slice(start, end);
-        
+
         const formData = new FormData();
         formData.append('chunk', chunk);
         formData.append('chunkIndex', i.toString());
         formData.append('totalChunks', totalChunks.toString());
         formData.append('fileName', uniqueFileName);
-        
+
         const response = await fetchWithRetry('/api/post/uploadBlobChunk', { method: 'POST', body: formData });
         if (!response.ok) throw new Error(`Erro no upload do chunk ${i + 1}`);
-        
+
         const result = await response.json();
         chunkIds.push(result.chunkId);
         onProgress(((i + 1) / totalChunks) * 90);
       }
-      
+
       const reconstructResponse = await fetchWithRetry('/api/post/reconstructBlobFile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chunkFileName: uniqueFileName, finalFileName: uniqueFileName, chunkIds, totalSize: file.size }),
       });
-      
+
       if (!reconstructResponse.ok) throw new Error('Erro na reconstrução do arquivo');
-      
+
       const result = await reconstructResponse.json();
       if (!result.data || !result.data._id) throw new Error('A API de reconstrução não retornou um ID válido.');
       onProgress(100);
@@ -271,7 +282,7 @@ function SubmissionForm() {
       }
 
       const result = await response.json();
-      
+
       if (!result.temPagante) {
         setFormError('Para prosseguir, pelo menos um dos autores deve estar cadastrado no sistema com pagamento confirmado.');
         return false;
@@ -301,15 +312,15 @@ function SubmissionForm() {
       return;
     }
     if (uploadProgress?.status !== 'completed') {
-        setFormError('Por favor, aguarde a conclusão do upload do arquivo.');
-        return;
+      setFormError('Por favor, aguarde a conclusão do upload do arquivo.');
+      return;
     }
     if (!autores.some(a => a.isOrientador)) {
       setFormError("É necessário indicar pelo menos um orientador.");
       return;
     }
-    if (autores.filter(a => a.isOrientador).length > MAX_ORIENTADORES) {
-      setFormError(`O número máximo de orientadores permitido é ${MAX_ORIENTADORES}.`);
+    if (autores.filter(a => a.isOrientador).length > trabalhosProps?.modalidades?.find((value) => value.modalidade === modalidade).maximo_orientadores) {
+      setFormError(`O número máximo de orientadores permitido é ${trabalhosProps?.modalidades?.find((value) => value.modalidade === modalidade).maximo_orientadores}.`);
       return;
     }
 
@@ -320,73 +331,78 @@ function SubmissionForm() {
     }
   };
 
-  const handleAddAutor = () => { 
-    if (autores.length < MAX_AUTORES) { 
-      setAutores([...autores, { id: Date.now(), nome: '', email: '', cpf: '', isOrientador: false }]); 
-    } 
+  const handleAddAutor = () => {
+    if (autores.length < trabalhosProps?.modalidades?.find((value) => value.modalidade === modalidade).autores_por_trabalho) {
+      setAutores([...autores, { id: Date.now(), nome: '', email: '', cpf: '', isOrientador: false }]);
+    }
   };
-  
-  const handleRemoveAutor = (id: number) => { 
-    setAutores(autores.filter(autor => autor.id !== id)); 
-  };
-  
-  const handleAutorChange = (id: number, field: keyof Autor, value: string | boolean) => { 
-    setAutores(autores.map(autor => autor.id === id ? { ...autor, [field]: value } : autor)); 
-  };
-  
-  const handleOrientadorChange = (id: number) => { 
-    setAutores(autores.map(autor => ({ ...autor, isOrientador: autor.id === id ? !autor.isOrientador : autor.isOrientador }))); 
-  };
-  
-  const handleTopicoChange = (field: keyof TopicosTrabalho, value: string) => { 
-    setTopicos(prev => ({ ...prev, [field]: value })); 
-  };
-  
-  const voltarParaDados = () => { 
-    setCurrentStep('dados'); 
-  };
-  
-  const handleTopicosSubmit = async (e: React.FormEvent) => { 
-    e.preventDefault(); 
-    setFormError(null); 
-    setIsSubmitting(true); 
-    
-    try { 
-      const response = await fetch('/api/post/submitWork', { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ 
-          titulo, 
-          modalidade, 
-          autores: autores.map(({ id, ...rest }) => rest), // Envia a lista limpa, sem o ID do front-end
-          fileId: arquivoId, 
-          topicos 
-        }), 
-      }); 
-      
-      if (!response.ok) { 
-        const errorData = await response.json(); 
-        throw new Error(errorData.error || `Erro ${response.status}`); 
-      } 
-      
-      const result = await response.json();
-      alert(result.message || 'Trabalho submetido com sucesso!'); 
-      
-      // Reset do formulário para o estado inicial
-      setTitulo(''); 
-      setModalidade('Artigo'); 
-      setAutores([{ id: Date.now(), nome: '', email: '', cpf: '', isOrientador: false }]); 
-      setArquivoId(null); 
-      setUploadProgress(null); 
-      setTopicos({ resumo: '', introducao: '', objetivo: '', metodo: '', discussaoResultados: '', conclusao: '', palavrasChave: '', referencias: '' }); 
-      setCurrentStep('dados'); 
 
-    } catch (error) { 
-      setFormError(error instanceof Error ? error.message : 'Ocorreu um erro desconhecido.'); 
-    } finally { 
-      setIsSubmitting(false); 
-    } 
+  const handleRemoveAutor = (id: number) => {
+    setAutores(autores.filter(autor => autor.id !== id));
   };
+
+  const handleAutorChange = (id: number, field: keyof Autor, value: string | boolean) => {
+    setAutores(autores.map(autor => autor.id === id ? { ...autor, [field]: value } : autor));
+  };
+
+  const handleOrientadorChange = (id: number) => {
+    setAutores(autores.map(autor => ({ ...autor, isOrientador: autor.id === id ? !autor.isOrientador : autor.isOrientador })));
+  };
+
+  const handleTopicoChange = (field: keyof TopicosTrabalho, value: string) => {
+    setTopicos(prev => ({ ...prev, [field]: value }));
+  };
+
+  const voltarParaDados = () => {
+    setCurrentStep('dados');
+  };
+
+  const handleTopicosSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch('/api/post/submitWork', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          modalidadeId: trabalhosProps.modalidades.find((mod) => mod.modalidade === modalidade)._id,
+          titulo,
+          modalidade,
+          autores: autores.map(({ id, ...rest }) => rest), // Envia a lista limpa, sem o ID do front-end
+          fileId: arquivoId,
+          topicos
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Erro ${response.status}`);
+      }
+
+      const result = await response.json();
+      alert(result.message || 'Trabalho submetido com sucesso!');
+
+      // Reset do formulário para o estado inicial
+      setTitulo('');
+      setModalidade('Selecionar Modalidade');
+      setAutores([{ id: Date.now(), nome: '', email: '', cpf: '', isOrientador: false }]);
+      setArquivoId(null);
+      setUploadProgress(null);
+      setTopicos({ resumo: '', introducao: '', objetivo: '', metodo: '', discussaoResultados: '', conclusao: '', palavrasChave: '', referencias: '' });
+      setCurrentStep('dados');
+
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'Ocorreu um erro desconhecido.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (!trabalhosProps) {
+    return <h1 className='bg-red-500 w-full text-center'>Carregando Propriedades Trabalhos</h1>
+  }
 
   if (currentStep === 'topicos') {
     return (
@@ -474,10 +490,10 @@ function SubmissionForm() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Modalidade *</label>
-            <select value={modalidade} onChange={(e) => setModalidade(e.target.value as 'Artigo' | 'Banner' | 'Resumo')} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900">
-              <option value="Artigo">Artigo</option>
-              <option value="Banner">Banner</option>
-              <option value="Resumo">Resumo</option>
+            <select value={modalidade} onChange={(e) => setModalidade(e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900">
+              {
+                trabalhosProps?.modalidades?.map((mod) => <option value={mod.modalidade}>{mod.modalidade}</option>)
+              }
             </select>
           </div>
         </div>
@@ -520,8 +536,8 @@ function SubmissionForm() {
 
         <div>
           <div className="flex items-center justify-between mb-4">
-            <label className="block text-sm font-medium text-gray-700">Autores * (máximo {MAX_AUTORES})</label>
-            <button type="button" onClick={handleAddAutor} disabled={autores.length >= MAX_AUTORES} className="flex items-center text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed">
+            <label className="block text-sm font-medium text-gray-700">Autores * (máximo {trabalhosProps?.modalidades?.find((value) => value.modalidade === modalidade).autores_por_trabalho})</label>
+            <button type="button" onClick={handleAddAutor} disabled={autores.length >= trabalhosProps?.modalidades?.find((value) => value.modalidade === modalidade).autores_por_trabalho} className="flex items-center text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed">
               <UserPlus size={16} className="mr-1" />
               Adicionar Autor
             </button>
@@ -554,7 +570,7 @@ function SubmissionForm() {
           </div>
 
           <div className="mt-4 text-sm text-gray-600 space-y-1">
-            <div><Info size={14} className="inline mr-1" />É necessário indicar pelo menos um orientador (máximo {MAX_ORIENTADORES}).</div>
+            <div><Info size={14} className="inline mr-1" />É necessário indicar pelo menos um orientador (máximo {trabalhosProps?.modalidades?.find((value) => value.modalidade === modalidade).maximo_orientadores}).</div>
             <div><Info size={14} className="inline mr-1" />Para prosseguir, pelo menos um dos autores deve estar cadastrado no sistema com pagamento confirmado.</div>
           </div>
         </div>
