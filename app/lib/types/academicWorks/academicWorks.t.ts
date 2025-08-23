@@ -2,12 +2,10 @@ import { ObjectId } from "bson"
 
 
 export interface IAcademicWorksProps {
-    "data_inicio_submissao": string,
-    "data_limite_submissao": string,
+    "data_inicio_submissao": string, // essa data está em string, já com o fuso -03:00
+    "data_limite_submissao": string, // essa data está em string, já com o fuso -03:00
     "data_publicacao_resultados": string,
-    //"autores_por_trabalho": number, 
-    //"trabalhos_por_usuario": number, 
-    // ambos os comentados acima, ainda estão no banco de dados. Tirei aqui porque provavelmente vão pedir pra gente fazer isso de uma forma dinâmica de acordo com o tipo de trabalho!!!
+    "maximo_postagem_por_usuario": number, // temos um bloqueio geral, que fala quanto o usuário pode postar de trabalho AO TODO, e lá embaixo, temos um bloqueio específico de quanto o usuario pode postar por tema 
     "resultados": {
         link: string,
         titulo: string,
@@ -24,6 +22,7 @@ export interface IAcademicWorksProps {
     "isOpen": boolean
 }
 export interface IAcademicWorks {
+    _id: ObjectId,
     userId: ObjectId,
     titulo: string,
     modalidade: string,

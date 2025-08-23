@@ -3,7 +3,10 @@ import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'bson';
 import { IAcademicWorks, IAcademicWorksProps } from '@/lib/types/academicWorks/academicWorks.t';
+import { isTodayBetweenDates } from '@/lib/isTodayBetweenDates';
 
+
+//
 async function verificarSeExisteAutorPagante(db, autores) {
     if (!autores || autores.length === 0) {
         return false;
@@ -70,16 +73,13 @@ export const POST = withApiAuthRequired(async function POST(request) {
     try {
         const body = await request.json();
         const { db } = await connectToDatabase();
+
+        // Puxando configurações gerais
         const trabalhosConfig: IAcademicWorksProps = await db.collection("trabalhos_config").findOne(
             {},
         )
         if (!trabalhosConfig) {
             throw new Error("Não foi encontrado nenhuma configuração de trabalhos")
-        }
-
-        if (body.action === 'validate') {
-            const temPagante = await verificarSeExisteAutorPagante(db, body.autores);
-            return NextResponse.json({ temPagante: temPagante });
         }
 
         // Organizando body
@@ -104,12 +104,49 @@ export const POST = withApiAuthRequired(async function POST(request) {
         }
         //
 
+        // Antes de tudo, dá tempo de postar mais um trabalho?
+        /* LEMBRAR DE DESCOMENTAR ISSO!!!
+        if (!isTodayBetweenDates(trabalhosConfig.data_inicio_submissao, trabalhosConfig.data_limite_submissao)) {
+            throw new Error("Desculpe. O prazo para a postagem de trabalhos expirou.")
+        }
+        */
+        // Agora, será que ele pode postar mais um, levando em consideração á quantidade total de postagens? 
+        const trabalhosPostadosUsuario: IAcademicWorks[] = await db.collection("Dados_do_trabalho").find(
+            {
+                userId: new ObjectId(userId)
+            },
+        ).toArray()
+        // ele atingiu o limite geral por postagem ?
+        if (trabalhosPostadosUsuario.length >= trabalhosConfig.maximo_postagem_por_usuario) {
+            throw new Error(`Desculpe, mas não é possível postar mais um trabalho, já que você já possui ${trabalhosPostadosUsuario.length} postados, e o limite total é de ${trabalhosConfig.maximo_postagem_por_usuario} postagens.`)
+        }
+        // Certo, agora por último, ele atingiu o limite por tipo de modalidade ?
+        if (trabalhosPostadosUsuario.reduce((acc, value) => `${value._id}` === `${modalidadeConfig._id}` ? acc + 1 : acc, 0) >= modalidadeConfig.trabalhos_por_usuario) {
+            throw new Error(`Desculpe, mas não é possível postar mais um trabalho, já que você já possui ${modalidadeConfig.trabalhos_por_usuario} postados na modalidade "${modalidadeConfig.modalidade}", e o limite total é de ${modalidadeConfig.trabalhos_por_usuario} postagens.`)
+        }
+        // Se chegou até aqui, é porque ele pode postar um trabalho. Agora, vamos para a validação dos dados
+
+        // Usuário pagante ?
+        if (body.action === 'validate') {
+            const temPagante = await verificarSeExisteAutorPagante(db, body.autores);
+            return NextResponse.json({ temPagante: temPagante });
+        }
+
+        // Usuário pagante ? - esse é quando realmente o usuário vai enviar um arquivo
         const temPagante = await verificarSeExisteAutorPagante(db, payload.autores);
         if (!temPagante) {
             return NextResponse.json(
                 { error: 'A submissão requer que pelo menos um dos autores esteja cadastrado e com pagamento confirmado.' },
                 { status: 402 }
             );
+        }
+
+        // os dados (autores_por_trabalho e maximo_orientadores) respeitam o modalidade ?
+        if (payload.autores.length > modalidadeConfig.autores_por_trabalho) {
+            throw new Error(`O número de autores deve ser no máximo${modalidadeConfig.autores_por_trabalho}.`)
+        }
+        if (payload.autores.reduce((acc, value) => value.isOrientador ? acc + 1 : acc, 0) > modalidadeConfig.maximo_orientadores) {
+            throw new Error(`O número de orientadores deve ser no máximo ${modalidadeConfig.maximo_orientadores}.`)
         }
 
         const arquivoInfo = await db.collection('trabalhos_blob').findOne({
@@ -120,8 +157,8 @@ export const POST = withApiAuthRequired(async function POST(request) {
             return NextResponse.json({ error: 'Arquivo associado não encontrado ou não pertence ao usuário.' }, { status: 404 });
         }
 
-        const dadosDoTrabalho: IAcademicWorks = {
-            userId,
+        const dadosDoTrabalho: Omit<IAcademicWorks, '_id'> = {
+            userId: new ObjectId(userId),
             titulo: payload.titulo,
             modalidade: modalidadeConfig.modalidade,
             autores: payload.autores.map(({ isPagante, ...resto }) => resto),
@@ -152,7 +189,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
             success: true,
             message: "Trabalho submetido com sucesso!",
             data: { insertedId: result.insertedId }
-        }, {status:500});
+        }, { status: 200 });
     } catch (error) {
         console.error('Erro detalhado na submissão do trabalho:', error);
         return NextResponse.json({ error: error instanceof Error ? error.message : 'Ocorreu um erro inesperado no servidor.' }, { status: 500 });
