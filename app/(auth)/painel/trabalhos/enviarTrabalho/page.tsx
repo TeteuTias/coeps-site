@@ -71,26 +71,6 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = 3): P
 
 // Componente principal da página de Upload.
 export default function UploadPage() {
-  const { user, error, isLoading } = useUser();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoading && !user) {
-      router.push('/api/auth/login?returnTo=/upload');
-    }
-  }, [user, isLoading, router]);
-
-  if (isLoading) {
-    return <div className="flex justify-center items-center min-h-screen"><Loader className="animate-spin h-10 w-10" /></div>;
-  }
-  if (error) {
-    router.push('/api/auth/login?returnTo=/upload');
-    return null;
-  }
-  if (!user) {
-    return null;
-  }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 p-4 sm:p-6">
       <div className="max-w-4xl mx-auto">
