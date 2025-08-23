@@ -1,36 +1,55 @@
 'use client';
 
-// Importações do React e Next.js
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@auth0/nextjs-auth0/client';
+import { Upload, FileText, CheckCircle, AlertCircle, Loader, Info, UserPlus, Trash2, BookOpen, Target, Microscope, MessageSquare, Award, Hash, BookMarked, Save, ArrowLeft } from 'lucide-react';
 
-// Importações de ícones
-import { Upload, FileText, CheckCircle, AlertCircle, X, Download, Loader, Info, FileUp } from 'lucide-react';
-
-// --- Interfaces e Constantes ---
-interface UploadedFile {
-  _id: string;
-  name: string;
-  url: string;
-  pathname: string;
-  user_id: string;
-  size: number;
-  uploadDate: string;
+// Interface do Autor simplificada: O front-end não precisa saber quem é pagante.
+interface Autor { 
+  id: number; 
+  nome: string; 
+  email: string; 
+  cpf: string; 
+  isOrientador: boolean;
 }
 
-interface UploadProgress {
-  fileName: string;
-  progress: number;
-  status: 'uploading' | 'completed' | 'error' | 'pending';
-  error?: string;
-  previewUrl?: string;
+// Interface para o progresso do upload.
+interface UploadProgress { 
+  fileName: string; 
+  progress: number; 
+  status: 'uploading' | 'completed' | 'error' | 'pending'; 
+  error?: string; 
 }
 
+// Interface para os tópicos do trabalho.
+interface TopicosTrabalho {
+  resumo:string;
+  introducao: string;
+  objetivo: string;
+  metodo: string;
+  discussaoResultados: string;
+  conclusao: string;
+  palavrasChave: string;
+  referencias: string;
+}
+
+// Constantes de configuração para o upload.
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
-const CHUNK_THRESHOLD = 10 * 1024 * 1024; // 10MB - Limite para iniciar o chunking
+const CHUNK_THRESHOLD = 10 * 1024 * 1024; // 10MB
 
-// --- Função Auxiliar para Retry com Tipagem Correta ---
+// Função para gerar um nome de arquivo único, evitando conflitos no armazenamento.
+const generateUniqueFileName = (originalName: string): string => {
+  const timestamp = Date.now();
+  const randomString = Math.random().toString(36).substring(2, 8);
+  const extension = originalName.split('.').pop();
+  const nameWithoutExtension = originalName.replace(/\.[^/.]+$/, '');
+  
+  return `${nameWithoutExtension}_${timestamp}_${randomString}.${extension}`;
+};
+
+// Função de fetch com retentativas para maior resiliência da rede.
 async function fetchWithRetry(url: string, options: RequestInit, retries = 3): Promise<Response> {
   for (let i = 0; i < retries; i++) {
     try {
@@ -47,261 +66,509 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = 3): P
       await new Promise(res => setTimeout(res, delay));
     }
   }
-  throw new Error("A operação falhou após múltiplas tentativas.");
+  throw new Error("A operação de rede falhou após múltiplas tentativas.");
 }
 
-// ===================================================================
-// COMPONENTE PRINCIPAL DA PÁGINA (Apenas Autenticação e Layout)
-// ===================================================================
+// Componente principal da página de Upload.
 export default function UploadPage() {
-  const [showUploader, setShowUploader] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const { user, error, isLoading } = useUser();
   const router = useRouter();
 
   useEffect(() => {
-    const checkAuthStatus = async () => {
-      try {
-        const res = await fetch('/api/get/history');
-        if (res.ok) {
-          setIsAuthenticated(true);
-        } else {
-          setIsAuthenticated(false);
-          router.push('/api/auth/login?returnTo=/upload');
-        }
-      } catch (error) {
-        setIsAuthenticated(false);
-        router.push('/api/auth/login?returnTo=/upload');
-      }
-    };
-    checkAuthStatus();
-  }, [router]);
+    if (!isLoading && !user) {
+      router.push('/api/auth/login?returnTo=/upload');
+    }
+  }, [user, isLoading, router]);
 
-  if (isAuthenticated === null) {
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-gray-50">
-        <Loader className="h-8 w-8 text-gray-400 animate-spin" />
-        <p className="ml-4 text-gray-600">Verificando...</p>
-      </div>
-    );
+  if (isLoading) {
+    return <div className="flex justify-center items-center min-h-screen"><Loader className="animate-spin h-10 w-10" /></div>;
   }
-
-  if (isAuthenticated === false) {
+  if (error) {
+    router.push('/api/auth/login?returnTo=/upload');
+    return null;
+  }
+  if (!user) {
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 p-4 sm:p-6">
       <div className="max-w-4xl mx-auto">
-        {!showUploader ? (
-          <div className="bg-white rounded-xl shadow-lg p-8 text-center animate-fade-in">
-            <Info className="mx-auto h-16 w-16 text-blue-500 mb-4" />
-            <h1 className="text-3xl font-bold text-gray-800 mb-4">Submissão de Trabalhos</h1>
-            <p className="text-gray-600 max-w-2xl mx-auto mb-8">
-              Bem-vindo. Certifique-se de que seu arquivo está no formato correto antes de continuar.
-            </p>
-            <button 
-              onClick={() => setShowUploader(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-lg font-bold text-lg transition-transform transform hover:scale-105"
-            >
-              <FileUp className="inline-block mr-2" />
-              Iniciar Envio
-            </button>
-          </div>
-        ) : (
-          <UploaderInterface />
-        )}
+        <SubmissionForm />
       </div>
     </div>
   );
 }
 
-// ===================================================================
-// COMPONENTE PARA A INTERFACE DE UPLOAD (Com toda a sua lógica)
-// ===================================================================
-function UploaderInterface() {
-  const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([]);
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [isDragOver, setIsDragOver] = useState(false);
+// Componente que contém toda a lógica do formulário de submissão.
+function SubmissionForm() {
+  const [currentStep, setCurrentStep] = useState<'dados' | 'topicos'>('dados');
+  const [titulo, setTitulo] = useState('');
+  const [modalidade, setModalidade] = useState<'Artigo' | 'Banner' | 'Resumo'>('Artigo');
+  const [autores, setAutores] = useState<Autor[]>([{ id: Date.now(), nome: '', email: '', cpf: '', isOrientador: false }]);
+  const [arquivoId, setArquivoId] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
+  const [topicos, setTopicos] = useState<TopicosTrabalho>({
+    resumo: '', introducao: '', objetivo: '', metodo: '', discussaoResultados: '', conclusao: '', palavrasChave: '', referencias: ''
+  });
+  
+  const [isUserLogadoPagante, setIsUserLogadoPagante] = useState<boolean | null>(null);
+  const [isLoadingStatus, setIsLoadingStatus] = useState(true);
+  const [isValidatingAuthors, setIsValidatingAuthors] = useState(false);
+
+  const MAX_AUTORES = 8;
+  const MAX_ORIENTADORES = 2;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Efeito para verificar o status do usuário logado e preencher seus dados.
   useEffect(() => {
-    const fetchHistory = async () => {
+    const verificarStatusUsuario = async () => {
+      setIsLoadingStatus(true);
       try {
-        const response = await fetch('/api/get/history');
-        if (response.ok) {
-          setUploadedFiles(await response.json());
-        }
+        const response = await fetch('/api/get/verificacaoUsuario');
+        if (!response.ok) throw new Error('Falha ao verificar o status do usuário.');
+        
+        const data = await response.json();
+        const temPagamento = data.pagamento?.situacao === 1 || data.pagamento?.situacao_animacao === 1;
+        setIsUserLogadoPagante(temPagamento);
+
+        // Preenche os dados do primeiro autor com as informações do usuário logado
+        setAutores(prev => {
+            const primeiroAutor = { ...prev[0] };
+            primeiroAutor.nome = data.informacoes_usuario?.nome || '';
+            primeiroAutor.email = data.informacoes_usuario?.email || '';
+            primeiroAutor.cpf = data.informacoes_usuario?.cpf || '';
+            return [primeiroAutor, ...prev.slice(1)];
+        });
+
       } catch (error) {
-        console.error("Falha ao carregar histórico:", error);
+        console.error(error);
+        setFormError("Não foi possível carregar seus dados. Por favor, recarregue a página.");
+      } finally {
+        setIsLoadingStatus(false);
       }
     };
-    fetchHistory();
+    verificarStatusUsuario();
   }, []);
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  const updateProgress = (fileName: string, progress: number, status: UploadProgress['status'], error?: string) => {
+    setUploadProgress({ fileName, progress, status, error });
   };
 
-  const updateProgress = (fileName: string, progress: number, status: 'uploading' | 'completed' | 'error' | 'pending', error?: string, previewUrl?: string) => {
-    setUploadProgress(prev => {
-      const existingIndex = prev.findIndex(p => p.fileName === fileName);
-      if (existingIndex > -1) {
-        return prev.map((p, index) =>
-          index === existingIndex ? { ...p, progress, status, error: error || p.error, previewUrl: previewUrl || p.previewUrl } : p
-        );
-      }
-      return [...prev, { fileName, progress, status, error, previewUrl }];
-    });
-  };
-
-  const uploadSingleFile = async (file: File, originalFileName: string): Promise<void> => {
+  const uploadSingleFile = async (file: File, fileName: string, onProgress: (progress: number) => void): Promise<string | null> => {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('originalFileName', originalFileName);
+    const uniqueFileName = generateUniqueFileName(fileName);
+    formData.append('originalFileName', uniqueFileName);
+    
     try {
+      onProgress(30);
       const response = await fetchWithRetry('/api/post/uploadBlobSingle', { method: 'POST', body: formData });
+      onProgress(70);
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro no upload');
+        throw new Error(errorData.error || `Erro no upload: ${response.statusText}`);
       }
+
       const result = await response.json();
-      updateProgress(originalFileName, 100, 'completed');
-      setUploadedFiles(prevState => [result.data, ...prevState]);
+      if (!result.data || !result.data._id) throw new Error('A API de upload não retornou um ID de arquivo válido.');
+      onProgress(100);
+      return result.data._id;
     } catch (error) {
-      updateProgress(originalFileName, 0, 'error', error instanceof Error ? error.message : 'Erro desconhecido');
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido.';
+      updateProgress(fileName, uploadProgress?.progress || 0, 'error', errorMessage);
+      return null;
     }
   };
 
-  const uploadChunkedFile = async (file: File, originalFileName: string): Promise<void> => {
+  const uploadChunkedFile = async (file: File, fileName: string, onProgress: (progress: number) => void): Promise<string | null> => {
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
     const chunkIds: string[] = [];
-    const chunkFileName = file.name;
+    const uniqueFileName = generateUniqueFileName(fileName);
+    
     try {
-      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-        const start = chunkIndex * CHUNK_SIZE;
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * CHUNK_SIZE;
         const end = Math.min(start + CHUNK_SIZE, file.size);
         const chunk = file.slice(start, end);
+        
         const formData = new FormData();
         formData.append('chunk', chunk);
-        formData.append('chunkIndex', chunkIndex.toString());
+        formData.append('chunkIndex', i.toString());
         formData.append('totalChunks', totalChunks.toString());
-        formData.append('fileName', chunkFileName);
+        formData.append('fileName', uniqueFileName);
+        
         const response = await fetchWithRetry('/api/post/uploadBlobChunk', { method: 'POST', body: formData });
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `Erro no upload do chunk ${chunkIndex + 1}`);
-        }
+        if (!response.ok) throw new Error(`Erro no upload do chunk ${i + 1}`);
+        
         const result = await response.json();
         chunkIds.push(result.chunkId);
-        updateProgress(originalFileName, ((chunkIndex + 1) / totalChunks) * 90, 'uploading');
+        onProgress(((i + 1) / totalChunks) * 90);
       }
+      
       const reconstructResponse = await fetchWithRetry('/api/post/reconstructBlobFile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chunkFileName, finalFileName: originalFileName, chunkIds, totalSize: file.size }),
+        body: JSON.stringify({ chunkFileName: uniqueFileName, finalFileName: uniqueFileName, chunkIds, totalSize: file.size }),
       });
-      if (!reconstructResponse.ok) {
-        const errorData = await reconstructResponse.json();
-        throw new Error(errorData.error || 'Erro na reconstrução');
-      }
+      
+      if (!reconstructResponse.ok) throw new Error('Erro na reconstrução do arquivo');
+      
       const result = await reconstructResponse.json();
-      updateProgress(originalFileName, 100, 'completed');
-      setUploadedFiles(prevState => [result.data, ...prevState]);
+      if (!result.data || !result.data._id) throw new Error('A API de reconstrução não retornou um ID válido.');
+      onProgress(100);
+      return result.data._id;
     } catch (error) {
-      updateProgress(originalFileName, 0, 'error', error instanceof Error ? error.message : 'Erro desconhecido');
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido.';
+      updateProgress(fileName, uploadProgress?.progress || 0, 'error', errorMessage);
+      return null;
     }
   };
 
-  const handleFileUpload = async (files: FileList): Promise<void> => {
-    for (const file of Array.from(files)) {
-      const originalFileName = file.name;
-      const fileToUpload = file;
-      updateProgress(originalFileName, 0, 'pending');
-      if (fileToUpload.size > MAX_FILE_SIZE) {
-        updateProgress(originalFileName, 0, 'error', 'Arquivo excede o limite de 100MB');
-        continue;
-      }
-      updateProgress(originalFileName, 0, 'uploading');
-      if (fileToUpload.size > CHUNK_THRESHOLD) {
-        await uploadChunkedFile(fileToUpload, originalFileName);
-      } else {
-        await uploadSingleFile(fileToUpload, originalFileName);
-      }
+  const handleFileUpload = async (file: File) => {
+    if (!file) return;
+    setArquivoId(null);
+    setFormError(null);
+    updateProgress(file.name, 0, 'pending');
+
+    if (file.size > MAX_FILE_SIZE) {
+      updateProgress(file.name, 0, 'error', 'Arquivo excede o limite de 100MB');
+      return;
+    }
+
+    updateProgress(file.name, 0, 'uploading');
+    const uploadFunction = file.size > CHUNK_THRESHOLD ? uploadChunkedFile : uploadSingleFile;
+    const uploadedFileId = await uploadFunction(file, file.name, (progress) => updateProgress(file.name, progress, 'uploading'));
+
+    if (uploadedFileId) {
+      updateProgress(file.name, 100, 'completed');
+      setArquivoId(uploadedFileId);
     }
   };
 
-  const handleDrop = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragOver(false); if (e.dataTransfer.files.length > 0) handleFileUpload(e.dataTransfer.files); }, [handleFileUpload]);
-  const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragOver(true); }, []);
-  const handleDragLeave = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragOver(false); }, []);
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files) handleFileUpload(e.target.files); };
-  const removeProgress = (fileName: string) => setUploadProgress(prev => prev.filter(p => p.fileName !== fileName));
-  const removeUploadedFile = (fileId: string) => setUploadedFiles(prev => prev.filter(f => f._id !== fileId));
+  // Função para validar autores pagantes antes de prosseguir
+  const validarAutoresPagantes = async (): Promise<boolean> => {
+    setIsValidatingAuthors(true);
+    setFormError(null);
+
+    try {
+      const response = await fetch('/api/post/submitWork', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'validate',
+          autores: autores.map(({ id, ...rest }) => rest) // Remove o ID do frontend
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setFormError(errorData.error || 'Erro na validação dos autores.');
+        return false;
+      }
+
+      const result = await response.json();
+      
+      if (!result.temPagante) {
+        setFormError('Para prosseguir, pelo menos um dos autores deve estar cadastrado no sistema com pagamento confirmado.');
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Erro na validação de autores:', error);
+      setFormError('Erro ao validar autores. Tente novamente.');
+      return false;
+    } finally {
+      setIsValidatingAuthors(false);
+    }
+  };
+
+  const handleDadosSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+
+    // Validações básicas
+    if (!titulo || !modalidade || autores.some(a => !a.nome || !a.email || !a.cpf)) {
+      setFormError('Todos os campos de informações do trabalho e dos autores devem ser preenchidos.');
+      return;
+    }
+    if (!arquivoId) {
+      setFormError('O upload do arquivo é obrigatório.');
+      return;
+    }
+    if (uploadProgress?.status !== 'completed') {
+        setFormError('Por favor, aguarde a conclusão do upload do arquivo.');
+        return;
+    }
+    if (!autores.some(a => a.isOrientador)) {
+      setFormError("É necessário indicar pelo menos um orientador.");
+      return;
+    }
+    if (autores.filter(a => a.isOrientador).length > MAX_ORIENTADORES) {
+      setFormError(`O número máximo de orientadores permitido é ${MAX_ORIENTADORES}.`);
+      return;
+    }
+
+    // Validar se há pelo menos um autor pagante antes de prosseguir
+    const autoresValidos = await validarAutoresPagantes();
+    if (autoresValidos) {
+      setCurrentStep('topicos');
+    }
+  };
+
+  const handleAddAutor = () => { 
+    if (autores.length < MAX_AUTORES) { 
+      setAutores([...autores, { id: Date.now(), nome: '', email: '', cpf: '', isOrientador: false }]); 
+    } 
+  };
+  
+  const handleRemoveAutor = (id: number) => { 
+    setAutores(autores.filter(autor => autor.id !== id)); 
+  };
+  
+  const handleAutorChange = (id: number, field: keyof Autor, value: string | boolean) => { 
+    setAutores(autores.map(autor => autor.id === id ? { ...autor, [field]: value } : autor)); 
+  };
+  
+  const handleOrientadorChange = (id: number) => { 
+    setAutores(autores.map(autor => ({ ...autor, isOrientador: autor.id === id ? !autor.isOrientador : autor.isOrientador }))); 
+  };
+  
+  const handleTopicoChange = (field: keyof TopicosTrabalho, value: string) => { 
+    setTopicos(prev => ({ ...prev, [field]: value })); 
+  };
+  
+  const voltarParaDados = () => { 
+    setCurrentStep('dados'); 
+  };
+  
+  const handleTopicosSubmit = async (e: React.FormEvent) => { 
+    e.preventDefault(); 
+    setFormError(null); 
+    setIsSubmitting(true); 
+    
+    try { 
+      const response = await fetch('/api/post/submitWork', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ 
+          titulo, 
+          modalidade, 
+          autores: autores.map(({ id, ...rest }) => rest), // Envia a lista limpa, sem o ID do front-end
+          fileId: arquivoId, 
+          topicos 
+        }), 
+      }); 
+      
+      if (!response.ok) { 
+        const errorData = await response.json(); 
+        throw new Error(errorData.error || `Erro ${response.status}`); 
+      } 
+      
+      const result = await response.json();
+      alert(result.message || 'Trabalho submetido com sucesso!'); 
+      
+      // Reset do formulário para o estado inicial
+      setTitulo(''); 
+      setModalidade('Artigo'); 
+      setAutores([{ id: Date.now(), nome: '', email: '', cpf: '', isOrientador: false }]); 
+      setArquivoId(null); 
+      setUploadProgress(null); 
+      setTopicos({ resumo: '', introducao: '', objetivo: '', metodo: '', discussaoResultados: '', conclusao: '', palavrasChave: '', referencias: '' }); 
+      setCurrentStep('dados'); 
+
+    } catch (error) { 
+      setFormError(error instanceof Error ? error.message : 'Ocorreu um erro desconhecido.'); 
+    } finally { 
+      setIsSubmitting(false); 
+    } 
+  };
+
+  if (currentStep === 'topicos') {
+    return (
+      <div className="bg-white p-8 rounded-2xl shadow-lg space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Tópicos do Trabalho</h1>
+            <p className="text-gray-900 mt-1">Preencha os tópicos principais do seu trabalho acadêmico.</p>
+          </div>
+          <button type="button" onClick={voltarParaDados} className="flex items-center text-gray-900 hover:text-black px-3 py-2 rounded-md">
+            <ArrowLeft size={20} className="mr-2" />
+            Voltar
+          </button>
+        </div>
+
+        <form onSubmit={handleTopicosSubmit} className="space-y-6">
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="font-semibold text-gray-900 mb-2">Resumo da Submissão:</h3>
+            <p className="text-sm text-gray-900">
+              <strong>Título:</strong> {titulo}<br />
+              <strong>Modalidade:</strong> {modalidade}<br />
+              <strong>Arquivo:</strong> {uploadProgress?.fileName}<br />
+            </p>
+          </div>
+
+          <div className="grid gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2"><BookOpen className="inline mr-2" size={16} />Resumo</label>
+              <textarea value={topicos.resumo} onChange={(e) => handleTopicoChange('resumo', e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" rows={4} placeholder="Escreva o resumo do trabalho..." />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2"><BookOpen className="inline mr-2" size={16} />Introdução</label>
+              <textarea value={topicos.introducao} onChange={(e) => handleTopicoChange('introducao', e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" rows={4} placeholder="Descreva a introdução do seu trabalho..." />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2"><Target className="inline mr-2" size={16} />Objetivo</label>
+              <textarea value={topicos.objetivo} onChange={(e) => handleTopicoChange('objetivo', e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" rows={3} placeholder="Qual é o objetivo do seu trabalho?" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2"><Microscope className="inline mr-2" size={16} />Método</label>
+              <textarea value={topicos.metodo} onChange={(e) => handleTopicoChange('metodo', e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" rows={4} placeholder="Descreva a metodologia utilizada..." />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2"><MessageSquare className="inline mr-2" size={16} />Discussão e Resultados</label>
+              <textarea value={topicos.discussaoResultados} onChange={(e) => handleTopicoChange('discussaoResultados', e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" rows={4} placeholder="Apresente os resultados e discussão..." />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2"><Award className="inline mr-2" size={16} />Conclusão</label>
+              <textarea value={topicos.conclusao} onChange={(e) => handleTopicoChange('conclusao', e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" rows={3} placeholder="Apresente suas conclusões..." />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2"><Hash className="inline mr-2" size={16} />Palavras-chave</label>
+              <input type="text" value={topicos.palavrasChave} onChange={(e) => handleTopicoChange('palavrasChave', e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" placeholder="Palavras-chave separadas por vírgula..." />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2"><BookMarked className="inline mr-2" size={16} />Referências</label>
+              <textarea value={topicos.referencias} onChange={(e) => handleTopicoChange('referencias', e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" rows={6} placeholder="Liste as referências bibliográficas..." />
+            </div>
+          </div>
+
+          <div className="border-t pt-6">
+            {formError && (<div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">{formError}</div>)}
+            <button type="submit" disabled={isSubmitting} className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center">
+              {isSubmitting ? <Loader className="animate-spin mr-2" /> : <Save className="mr-2" />}
+              {isSubmitting ? 'Submetendo...' : 'Submeter Trabalho'}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
 
   return (
-    <div className="animate-fade-in">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-gray-800 mb-2">Upload de Trabalhos</h1>
-        <p className="text-gray-600">Arraste e solte ou clique para selecionar os arquivos.</p>
-      </div>
-      <div
-        className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-all ${isDragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300 bg-white'}`}
-        onDrop={handleDrop} onDragOver={handleDragOver} onDragLeave={handleDragLeave}
-      >
-        <Upload className="mx-auto h-16 w-16 text-gray-400 mb-4" />
-        <h3 className="text-xl font-semibold text-gray-700">Arraste e solte seus arquivos aqui</h3>
-        <p className="text-gray-500 mb-6">ou clique no botão abaixo</p>
-        <button onClick={() => fileInputRef.current?.click()} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium">
-            Selecionar Arquivos
-        </button>
-        <input ref={fileInputRef} type="file" multiple onChange={handleFileSelect} className="hidden" />
+    <div className="bg-white p-8 rounded-2xl shadow-lg space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Submissão de Trabalho</h1>
+        <p className="text-gray-900 mt-1">Preencha as informações do seu trabalho acadêmico.</p>
       </div>
 
-      {uploadProgress.length > 0 && (
-        <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Progresso do Upload</h3>
+      <form onSubmit={handleDadosSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Título do Trabalho *</label>
+            <input type="text" value={titulo} onChange={(e) => setTitulo(e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" placeholder="Digite o título do trabalho..." />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Modalidade *</label>
+            <select value={modalidade} onChange={(e) => setModalidade(e.target.value as 'Artigo' | 'Banner' | 'Resumo')} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900">
+              <option value="Artigo">Artigo</option>
+              <option value="Banner">Banner</option>
+              <option value="Resumo">Resumo</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Upload do Arquivo *</label>
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+            <input ref={fileInputRef} type="file" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} className="hidden" accept=".pdf,.doc,.docx" />
+            <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+            <p className="text-gray-600 mb-2">Clique para fazer upload ou arraste o arquivo aqui</p>
+            <p className="text-sm text-gray-500">PDF, DOC, DOCX (máx. 100MB)</p>
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+              Selecionar Arquivo
+            </button>
+          </div>
+
+          {uploadProgress && (
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">{uploadProgress.fileName}</span>
+                <span className="text-sm text-gray-500">{uploadProgress.progress}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress.progress}%` }}></div>
+              </div>
+              <div className="flex items-center mt-2">
+                {uploadProgress.status === 'completed' && <CheckCircle className="h-4 w-4 text-green-500 mr-2" />}
+                {uploadProgress.status === 'error' && <AlertCircle className="h-4 w-4 text-red-500 mr-2" />}
+                {uploadProgress.status === 'uploading' && <Loader className="h-4 w-4 text-blue-500 mr-2 animate-spin" />}
+                <span className="text-sm text-gray-600">
+                  {uploadProgress.status === 'completed' && 'Upload concluído'}
+                  {uploadProgress.status === 'error' && (uploadProgress.error || 'Erro no upload')}
+                  {uploadProgress.status === 'uploading' && 'Fazendo upload...'}
+                  {uploadProgress.status === 'pending' && 'Aguardando...'}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <label className="block text-sm font-medium text-gray-700">Autores * (máximo {MAX_AUTORES})</label>
+            <button type="button" onClick={handleAddAutor} disabled={autores.length >= MAX_AUTORES} className="flex items-center text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed">
+              <UserPlus size={16} className="mr-1" />
+              Adicionar Autor
+            </button>
+          </div>
+
           <div className="space-y-4">
-            {uploadProgress.map((p) => (
-              <div key={p.fileName} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2"><FileText className="h-5 w-5 text-gray-500" /><span className="font-medium text-gray-700">{p.fileName}</span></div>
-                  <div className="flex items-center space-x-2">
-                    {p.status === 'completed' && <CheckCircle className="h-5 w-5 text-green-500" />}
-                    {p.status === 'error' && <AlertCircle className="h-5 w-5 text-red-500" />}
-                    <button onClick={() => removeProgress(p.fileName)} className="text-gray-400 hover:text-gray-600"><X className="h-4 w-4" /></button>
-                  </div>
+            {autores.map((autor, index) => (
+              <div key={autor.id} className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="font-medium text-gray-900">Autor {index + 1}</h4>
+                  {autores.length > 1 && (
+                    <button type="button" onClick={() => handleRemoveAutor(autor.id)} className="text-red-600 hover:text-red-700">
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
-                {p.status === 'uploading' && (<div className="w-full bg-gray-200 rounded-full h-2"><div className="bg-blue-600 h-2 rounded-full" style={{ width: `${p.progress}%` }}></div></div>)}
-                {p.status === 'error' && <div className="text-red-600 text-sm">{p.error}</div>}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {uploadedFiles.length > 0 && (
-        <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Seus Envios Recentes</h3>
-          <div className="space-y-3">
-            {uploadedFiles.map((file) => (
-              <div key={file._id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-                <div className="flex items-center space-x-3"><FileText className="h-6 w-6 text-blue-500" />
-                  <div>
-                    <div className="font-medium text-gray-800">{file.name}</div>
-                    <div className="text-sm text-gray-500">{formatFileSize(file.size)} • {new Date(file.uploadDate).toLocaleString('pt-BR')}</div>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <input type="text" placeholder="Nome completo" value={autor.nome} onChange={(e) => handleAutorChange(autor.id, 'nome', e.target.value)} className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" />
+                  <input type="email" placeholder="E-mail" value={autor.email} onChange={(e) => handleAutorChange(autor.id, 'email', e.target.value)} className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" />
+                  <input type="text" placeholder="CPF" value={autor.cpf} onChange={(e) => handleAutorChange(autor.id, 'cpf', e.target.value)} className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" />
                 </div>
-                <div className="flex items-center space-x-2">
-                  <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 p-2 rounded-lg hover:bg-blue-50" title="Baixar"><Download className="h-4 w-4" /></a>
-                  <button onClick={() => removeUploadedFile(file._id)} className="text-gray-400 hover:text-red-600 p-2 rounded-lg hover:bg-red-50" title="Remover"><X className="h-4 w-4" /></button>
+                <div className="mt-3">
+                  <label className="flex items-center cursor-pointer">
+                    <input type="checkbox" checked={autor.isOrientador} onChange={() => handleOrientadorChange(autor.id)} className="mr-2 h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300" />
+                    <span className="text-sm text-gray-700">Este autor é orientador</span>
+                  </label>
                 </div>
               </div>
             ))}
           </div>
+
+          <div className="mt-4 text-sm text-gray-600 space-y-1">
+            <div><Info size={14} className="inline mr-1" />É necessário indicar pelo menos um orientador (máximo {MAX_ORIENTADORES}).</div>
+            <div><Info size={14} className="inline mr-1" />Para prosseguir, pelo menos um dos autores deve estar cadastrado no sistema com pagamento confirmado.</div>
+          </div>
         </div>
-      )}
+
+        <div className="border-t pt-6">
+          {formError && (
+            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">{formError}</div>
+          )}
+          <button type="submit" disabled={isLoadingStatus || isValidatingAuthors} className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center">
+            {(isLoadingStatus || isValidatingAuthors) ? <Loader className="animate-spin mr-2" /> : <FileText className="mr-2" />}
+            {isLoadingStatus ? 'Carregando...' : isValidatingAuthors ? 'Validando autores...' : 'Prosseguir para Tópicos'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

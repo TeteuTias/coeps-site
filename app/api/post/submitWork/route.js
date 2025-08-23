@@ -3,103 +3,99 @@ import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
+async function verificarSeExisteAutorPagante(db, autores) {
+    if (!autores || autores.length === 0) {
+        return false;
+    }
+    const cpfs = autores.map(a => a.cpf?.replace(/[^\d]/g, "")).filter(Boolean);
+    const emails = autores.map(a => a.email?.toLowerCase()).filter(Boolean);
 
-async function verificarPagantes(db, autores) {
-    // extrai os CPFs limpos 
-    const cpfsDosAutores = autores.map(a => a.cpf.replace(/[^\d]/g, ""));
+    if (cpfs.length === 0 && emails.length === 0) {
+        return false;
+    }
 
+    const queryConditions = [];
+    if (cpfs.length > 0) {
+        queryConditions.push({ "informacoes_usuario.cpf": { $in: cpfs } });
+    }
+    if (emails.length > 0) {
+        queryConditions.push({ "informacoes_usuario.email": { $in: emails } });
+    }
 
-    const consultaPagantes = {
-        // busca pelo CPF dentro 
-        "informacoes_usuario.cpf": { $in: cpfsDosAutores },
-        "pagamento.situacao": 1 
+    if (queryConditions.length === 0) {
+        return false;
+    }
+
+    const finalQuery = {
+        $and: [
+            { $or: queryConditions },
+            { $or: [
+                { "pagamento.situacao": 1 },
+                { "pagamento.situacao_animacao": 1 }
+            ]}
+        ]
     };
-
-    
-    const pagantesEncontrados = await db.collection('usuarios').find(consultaPagantes).toArray();
-    const cpfsDePagantes = pagantesEncontrados.map(p => p.informacoes_usuario.cpf);
-
-    // isPagante'
-    return autores.map(autor => {
-        const cpfLimpo = autor.cpf.replace(/[^\d]/g, "");
-        return {
-            ...autor,
-            isPagante: cpfsDePagantes.includes(cpfLimpo)
-        };
-    });
+    const paganteEncontrado = await db.collection("usuarios").findOne(finalQuery);
+    return !!paganteEncontrado;
 }
 
 export const POST = withApiAuthRequired(async function POST(request) {
-    const { user } = await getSession(request);
-    const userId = user.sub.replace("auth0|", "");
+    const session = await getSession(request);
+    if (!session || !session.user) {
+        return NextResponse.json({ error: 'Acesso não autorizado.' }, { status: 401 });
+    }
+    const userId = session.user.sub.replace("auth0|", "");
 
     try {
         const body = await request.json();
-        const { titulo, modalidade, autores, fileId, topicos } = body;
-
-        if (!titulo || !modalidade || !autores || !autores.length || !fileId) {
-            return NextResponse.json({ error: 'Dados do formulário incompletos.' }, { status: 400 });
-        }
-
         const { db } = await connectToDatabase();
 
-        // Validação Nome e CPF
-       
-        const condicoesDeBusca = autores.map(autor => ({
-            "informacoes_usuario.nome": new RegExp(`^${autor.nome.trim()}$`, 'i'),
-            "informacoes_usuario.cpf": autor.cpf.replace(/[^\d]/g, "")
-        }));
-
-        const consultaExistencia = { $or: condicoesDeBusca };
-        const autoresCadastradosCount = await db.collection('usuarios').countDocuments(consultaExistencia);
-
-        if (autoresCadastradosCount === 0) {
-            return NextResponse.json(
-                { error: 'A submissão requer que pelo menos um dos autores (com nome e CPF correspondentes) esteja cadastrado no sistema.' },
-                { status: 403 }
-            );
+        if (body.action === 'validate') {
+            const temPagante = await verificarSeExisteAutorPagante(db, body.autores);
+            return NextResponse.json({ temPagante: temPagante });
         }
 
-       
-        const autoresComStatusPagamento = await verificarPagantes(db, autores);
-        const temPagante = autoresComStatusPagamento.some(a => a.isPagante);
+        const { titulo, modalidade, autores, fileId, topicos } = body;
 
+        if (!titulo || !modalidade || !Array.isArray(autores) || autores.length === 0 || !fileId) {
+            return NextResponse.json({ error: 'Dados do formulário inválidos ou incompletos.' }, { status: 400 });
+        }
+
+        const temPagante = await verificarSeExisteAutorPagante(db, autores);
         if (!temPagante) {
             return NextResponse.json(
-                { error: 'A submissão do trabalho requer que pelo menos um dos autores tenha o pagamento confirmado.' },
-                { status: 402 } // 402 Payment Required
+                { error: 'A submissão requer que pelo menos um dos autores esteja cadastrado e com pagamento confirmado.' },
+                { status: 402 }
             );
         }
 
-       
         const arquivoInfo = await db.collection('trabalhos_blob').findOne({ 
             _id: new ObjectId(fileId),
             userId: userId 
         });
-
         if (!arquivoInfo) {
-            return NextResponse.json({ error: 'Arquivo associado não encontrado.' }, { status: 404 });
+            return NextResponse.json({ error: 'Arquivo associado não encontrado ou não pertence ao usuário.' }, { status: 404 });
         }
 
         const dadosDoTrabalho = {
             userId,
             titulo,
             modalidade,
-            autores: autoresComStatusPagamento,
+            autores: autores.map(({ isPagante, ...resto }) => resto), 
             arquivo: {
                 fileId: arquivoInfo._id,
                 fileName: arquivoInfo.filename,
                 url: arquivoInfo.url
             },
-            // Tópicos do trabalho (otimizados para economia de espaço)
             topicos: topicos ? {
-                intro: topicos.introducao?.substring(0, 1000) || '', // Lim  1000 cars
-                obj: topicos.objetivo?.substring(0, 500) || '',      // Lim 500 cars
-                met: topicos.metodo?.substring(0, 1000) || '',       // Lim a 1000 cars
-                disc: topicos.discussaoResultados?.substring(0, 1500) || '', // Lim 1500 cars
-                conc: topicos.conclusao?.substring(0, 800) || '',    // Lim 800 cars
-                pchave: topicos.palavrasChave?.substring(0, 200) || '', // Lim 200 cars
-                ref: topicos.referencias?.substring(0, 2000) || ''   // Lim 2000 cars
+                resu: topicos.resumo?.substring(0, 1000) || '',
+                intro: topicos.introducao?.substring(0, 1000) || '',
+                obj: topicos.objetivo?.substring(0, 500) || '',
+                met: topicos.metodo?.substring(0, 1000) || '',
+                disc: topicos.discussaoResultados?.substring(0, 1500) || '',
+                conc: topicos.conclusao?.substring(0, 800) || '',
+                pchave: topicos.palavrasChave?.substring(0, 200) || '',
+                ref: topicos.referencias?.substring(0, 2000) || ''
             } : null,
             status: "Em Avaliação",
             dataSubmissao: new Date(),
@@ -108,13 +104,13 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
         const result = await db.collection('Dados_do_trabalho').insertOne(dadosDoTrabalho);
 
-        return NextResponse.json({ success: true, data: { insertedId: result.insertedId } });
-
+        return NextResponse.json({ 
+            success: true, 
+            message: "Trabalho submetido com sucesso!",
+            data: { insertedId: result.insertedId } 
+        });
     } catch (error) {
-        console.error('Erro na submissão do trabalho:', error);
-        return NextResponse.json(
-            { error: error.message || 'Erro interno do servidor' },
-            { status: 500 }
-        );
+        console.error('Erro detalhado na submissão do trabalho:', error);
+        return NextResponse.json({ error: 'Ocorreu um erro inesperado no servidor.' }, { status: 500 });
     }
 });
