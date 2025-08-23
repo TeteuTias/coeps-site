@@ -369,7 +369,7 @@ function SubmissionForm() {
         body: JSON.stringify({
           modalidadeId: modalidade?._id,
           titulo,
-          modalidade,
+          // modalidade, não é necessário mais a modalidade, pois estamos enviando o _id, e a partir dele, faremos a validação e pegaremos o nome atualizado do banco de dados.
           autores: autores.map(({ id, ...rest }) => rest), // Envia a lista limpa, sem o ID do front-end
           fileId: arquivoId,
           topicos

@@ -65,9 +65,9 @@ export const POST = withApiAuthRequired(async function POST(request) {
             return NextResponse.json({ temPagante: temPagante });
         }
 
-        const { titulo, modalidade, autores, fileId, topicos, modalidadeId } = body;
+        const { titulo, autores, fileId, topicos, modalidadeId } = body;
 
-        if (!titulo || !modalidade || !Array.isArray(autores) || autores.length === 0 || !fileId || !ObjectId.isValid(modalidadeId)) {
+        if (!titulo || !Array.isArray(autores) || autores.length === 0 || !fileId || !ObjectId.isValid(modalidadeId)) {
             return NextResponse.json({ error: 'Dados do formulário inválidos ou incompletos.' }, { status: 400 });
         }
 
@@ -97,7 +97,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
         const dadosDoTrabalho: IAcademicWorks = {
             userId,
             titulo,
-            modalidade,
+            modalidade: modalidadeConfig.modalidade,
             autores: autores.map(({ isPagante, ...resto }) => resto),
             arquivo: {
                 fileId: arquivoInfo._id,
