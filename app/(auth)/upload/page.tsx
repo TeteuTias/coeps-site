@@ -104,7 +104,7 @@ export default function UploadPage() {
 function SubmissionForm() {
   const [currentStep, setCurrentStep] = useState<'dados' | 'topicos'>('dados');
   const [titulo, setTitulo] = useState('');
-  const [modalidade, setModalidade] = useState<IAcademicWorksProps["modalidades"][0]["modalidade"]>("Selecionar Modalidade");
+  const [modalidade, setModalidade] = useState<IAcademicWorksProps["modalidades"][0]>();
   const [autores, setAutores] = useState<Autor[]>([{ id: Date.now(), nome: '', email: '', cpf: '', isOrientador: false }]);
   const [arquivoId, setArquivoId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -136,7 +136,7 @@ function SubmissionForm() {
         //
         const responseTrabalhosJson: IAcademicWorksProps = await responseTrabalhosProps.json()
         setTrabalhosProps(responseTrabalhosJson)
-        setModalidade(responseTrabalhosJson.modalidades?.[0].modalidade || "Não há Modalidades")
+        setModalidade(responseTrabalhosJson.modalidades?.[0])
         //
         //
         const response = await fetch('/api/get/verificacaoUsuario');
@@ -319,8 +319,8 @@ function SubmissionForm() {
       setFormError("É necessário indicar pelo menos um orientador.");
       return;
     }
-    if (autores.filter(a => a.isOrientador).length > trabalhosProps?.modalidades?.find((value) => value.modalidade === modalidade).maximo_orientadores) {
-      setFormError(`O número máximo de orientadores permitido é ${trabalhosProps?.modalidades?.find((value) => value.modalidade === modalidade).maximo_orientadores}.`);
+    if (autores.filter(a => a.isOrientador).length > modalidade.maximo_orientadores) {
+      setFormError(`O número máximo de orientadores permitido é ${modalidade.maximo_orientadores}.`);
       return;
     }
 
@@ -332,7 +332,7 @@ function SubmissionForm() {
   };
 
   const handleAddAutor = () => {
-    if (autores.length < trabalhosProps?.modalidades?.find((value) => value.modalidade === modalidade).autores_por_trabalho) {
+    if (autores.length < modalidade?.autores_por_trabalho) {
       setAutores([...autores, { id: Date.now(), nome: '', email: '', cpf: '', isOrientador: false }]);
     }
   };
@@ -367,7 +367,7 @@ function SubmissionForm() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          modalidadeId: trabalhosProps.modalidades.find((mod) => mod.modalidade === modalidade)._id,
+          modalidadeId: modalidade?._id,
           titulo,
           modalidade,
           autores: autores.map(({ id, ...rest }) => rest), // Envia a lista limpa, sem o ID do front-end
@@ -386,7 +386,7 @@ function SubmissionForm() {
 
       // Reset do formulário para o estado inicial
       setTitulo('');
-      setModalidade('Selecionar Modalidade');
+      // setModalidade();
       setAutores([{ id: Date.now(), nome: '', email: '', cpf: '', isOrientador: false }]);
       setArquivoId(null);
       setUploadProgress(null);
@@ -423,7 +423,7 @@ function SubmissionForm() {
             <h3 className="font-semibold text-gray-900 mb-2">Resumo da Submissão:</h3>
             <p className="text-sm text-gray-900">
               <strong>Título:</strong> {titulo}<br />
-              <strong>Modalidade:</strong> {modalidade}<br />
+              <strong>Modalidade:</strong> {modalidade.modalidade}<br />
               <strong>Arquivo:</strong> {uploadProgress?.fileName}<br />
             </p>
           </div>
@@ -490,9 +490,11 @@ function SubmissionForm() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Modalidade *</label>
-            <select value={modalidade} onChange={(e) => setModalidade(e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900">
+            <select value={`${modalidade._id}`} onChange={(e) => setModalidade(
+              trabalhosProps.modalidades.find((value) => `${value._id}` === `${e.target.value}`)
+            )} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900">
               {
-                trabalhosProps?.modalidades?.map((mod) => <option value={mod.modalidade}>{mod.modalidade}</option>)
+                trabalhosProps?.modalidades?.map((mod) => <option value={`${mod._id}`}>{mod.modalidade}</option>)
               }
             </select>
           </div>
@@ -536,8 +538,8 @@ function SubmissionForm() {
 
         <div>
           <div className="flex items-center justify-between mb-4">
-            <label className="block text-sm font-medium text-gray-700">Autores * (máximo {trabalhosProps?.modalidades?.find((value) => value.modalidade === modalidade).autores_por_trabalho})</label>
-            <button type="button" onClick={handleAddAutor} disabled={autores.length >= trabalhosProps?.modalidades?.find((value) => value.modalidade === modalidade).autores_por_trabalho} className="flex items-center text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed">
+            <label className="block text-sm font-medium text-gray-700">Autores * (máximo {modalidade.autores_por_trabalho})</label>
+            <button type="button" onClick={handleAddAutor} disabled={autores.length >= modalidade.autores_por_trabalho} className="flex items-center text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed">
               <UserPlus size={16} className="mr-1" />
               Adicionar Autor
             </button>
@@ -570,7 +572,7 @@ function SubmissionForm() {
           </div>
 
           <div className="mt-4 text-sm text-gray-600 space-y-1">
-            <div><Info size={14} className="inline mr-1" />É necessário indicar pelo menos um orientador (máximo {trabalhosProps?.modalidades?.find((value) => value.modalidade === modalidade).maximo_orientadores}).</div>
+            <div><Info size={14} className="inline mr-1" />É necessário indicar pelo menos um orientador (máximo {modalidade.maximo_orientadores}).</div>
             <div><Info size={14} className="inline mr-1" />Para prosseguir, pelo menos um dos autores deve estar cadastrado no sistema com pagamento confirmado.</div>
           </div>
         </div>
