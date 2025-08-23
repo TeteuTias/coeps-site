@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@auth0/nextjs-auth0/client';
 import { Upload, FileText, CheckCircle, AlertCircle, Loader, Info, UserPlus, Trash2, BookOpen, Target, Microscope, MessageSquare, Award, Hash, BookMarked, Save, ArrowLeft } from 'lucide-react';
 import { IAcademicWorksProps } from '@/lib/types/academicWorks/academicWorks.t';
+import { isTodayBetweenDates } from '@/lib/isTodayBetweenDates';
 // Interface do Autor simplificada: O front-end não precisa saber quem é pagante.
 interface Autor {
   id: number;
@@ -455,120 +456,129 @@ function SubmissionForm() {
     );
   }
 
-  return (
-    <div className="bg-white p-8 rounded-2xl shadow-lg space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Submissão de Trabalho</h1>
-        <p className="text-gray-900 mt-1">Preencha as informações do seu trabalho acadêmico.</p>
+  if (!trabalhosProps.isOpen || !isTodayBetweenDates(trabalhosProps.data_inicio_submissao, trabalhosProps.data_limite_submissao)) {
+    return (
+      <div className='bg-red-500 text-center'>
+          <h1>O período de publicação foi já terminou.</h1>
+          <p>Caso tenha realizado alguma submissão, você pode acompanha-la em {`"Consultar Submissões"`}</p>
       </div>
+    )
+  }
 
-      <form onSubmit={handleDadosSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Título do Trabalho *</label>
-            <input type="text" value={titulo} onChange={(e) => setTitulo(e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" placeholder="Digite o título do trabalho..." />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Modalidade *</label>
-            <select value={`${modalidade._id}`} onChange={(e) => setModalidade(
-              trabalhosProps.modalidades.find((value) => `${value._id}` === `${e.target.value}`)
-            )} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900">
-              {
-                trabalhosProps?.modalidades?.map((mod) => <option key={`${mod._id}`} value={`${mod._id}`}>{mod.modalidade}</option>)
-              }
-            </select>
-          </div>
+    return (
+      <div className="bg-white p-8 rounded-2xl shadow-lg space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Submissão de Trabalho</h1>
+          <p className="text-gray-900 mt-1">Preencha as informações do seu trabalho acadêmico.</p>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Upload do Arquivo *</label>
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-            <input ref={fileInputRef} type="file" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} className="hidden" accept=".pdf,.doc,.docx" />
-            <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-            <p className="text-gray-600 mb-2">Clique para fazer upload ou arraste o arquivo aqui</p>
-            <p className="text-sm text-gray-500">PDF, DOC, DOCX (máx. 100MB)</p>
-            <button type="button" onClick={() => fileInputRef.current?.click()} className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
-              Selecionar Arquivo
-            </button>
-          </div>
-
-          {uploadProgress && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700">{uploadProgress.fileName}</span>
-                <span className="text-sm text-gray-500">{uploadProgress.progress}%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress.progress}%` }}></div>
-              </div>
-              <div className="flex items-center mt-2">
-                {uploadProgress.status === 'completed' && <CheckCircle className="h-4 w-4 text-green-500 mr-2" />}
-                {uploadProgress.status === 'error' && <AlertCircle className="h-4 w-4 text-red-500 mr-2" />}
-                {uploadProgress.status === 'uploading' && <Loader className="h-4 w-4 text-blue-500 mr-2 animate-spin" />}
-                <span className="text-sm text-gray-600">
-                  {uploadProgress.status === 'completed' && 'Upload concluído'}
-                  {uploadProgress.status === 'error' && (uploadProgress.error || 'Erro no upload')}
-                  {uploadProgress.status === 'uploading' && 'Fazendo upload...'}
-                  {uploadProgress.status === 'pending' && 'Aguardando...'}
-                </span>
-              </div>
+        <form onSubmit={handleDadosSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Título do Trabalho *</label>
+              <input type="text" value={titulo} onChange={(e) => setTitulo(e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" placeholder="Digite o título do trabalho..." />
             </div>
-          )}
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <label className="block text-sm font-medium text-gray-700">Autores * (máximo {modalidade.autores_por_trabalho})</label>
-            <button type="button" onClick={handleAddAutor} disabled={autores.length >= modalidade.autores_por_trabalho} className="flex items-center text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed">
-              <UserPlus size={16} className="mr-1" />
-              Adicionar Autor
-            </button>
-
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Modalidade *</label>
+              <select value={`${modalidade._id}`} onChange={(e) => setModalidade(
+                trabalhosProps.modalidades.find((value) => `${value._id}` === `${e.target.value}`)
+              )} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900">
+                {
+                  trabalhosProps?.modalidades?.map((mod) => <option key={`${mod._id}`} value={`${mod._id}`}>{mod.modalidade}</option>)
+                }
+              </select>
+            </div>
           </div>
-          <p className='w-full text-center font-extrabold bg-red-400'>LEMBRE-SE DE ADICIONAR SEU PRÓPRIO NOME AOS AUTORES</p>
 
-          <div className="space-y-4">
-            {autores.map((autor, index) => (
-              <div key={autor.id} className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-gray-900">Autor {index + 1}</h4>
-                  {autores.length > 1 && (
-                    <button type="button" onClick={() => handleRemoveAutor(autor.id)} className="text-red-600 hover:text-red-700">
-                      <Trash2 size={16} />
-                    </button>
-                  )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Upload do Arquivo *</label>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+              <input ref={fileInputRef} type="file" onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} className="hidden" accept=".pdf,.doc,.docx" />
+              <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <p className="text-gray-600 mb-2">Clique para fazer upload ou arraste o arquivo aqui</p>
+              <p className="text-sm text-gray-500">PDF, DOC, DOCX (máx. 100MB)</p>
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                Selecionar Arquivo
+              </button>
+            </div>
+
+            {uploadProgress && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">{uploadProgress.fileName}</span>
+                  <span className="text-sm text-gray-500">{uploadProgress.progress}%</span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <input type="text" placeholder="Nome completo" value={autor.nome} onChange={(e) => handleAutorChange(autor.id, 'nome', e.target.value)} className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" />
-                  <input type="email" placeholder="E-mail" value={autor.email} onChange={(e) => handleAutorChange(autor.id, 'email', e.target.value)} className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" />
-                  <input type="text" placeholder="CPF" value={autor.cpf} onChange={(e) => handleAutorChange(autor.id, 'cpf', e.target.value)} className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" />
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${uploadProgress.progress}%` }}></div>
                 </div>
-                <div className="mt-3">
-                  <label className="flex items-center cursor-pointer">
-                    <input type="checkbox" checked={autor.isOrientador} onChange={() => handleOrientadorChange(autor.id)} className="mr-2 h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300" />
-                    <span className="text-sm text-gray-700">Este autor é orientador</span>
-                  </label>
+                <div className="flex items-center mt-2">
+                  {uploadProgress.status === 'completed' && <CheckCircle className="h-4 w-4 text-green-500 mr-2" />}
+                  {uploadProgress.status === 'error' && <AlertCircle className="h-4 w-4 text-red-500 mr-2" />}
+                  {uploadProgress.status === 'uploading' && <Loader className="h-4 w-4 text-blue-500 mr-2 animate-spin" />}
+                  <span className="text-sm text-gray-600">
+                    {uploadProgress.status === 'completed' && 'Upload concluído'}
+                    {uploadProgress.status === 'error' && (uploadProgress.error || 'Erro no upload')}
+                    {uploadProgress.status === 'uploading' && 'Fazendo upload...'}
+                    {uploadProgress.status === 'pending' && 'Aguardando...'}
+                  </span>
                 </div>
               </div>
-            ))}
+            )}
           </div>
 
-          <div className="mt-4 text-sm text-gray-600 space-y-1">
-            <div><Info size={14} className="inline mr-1" />É necessário indicar pelo menos um orientador (máximo {modalidade.maximo_orientadores}).</div>
-            <div><Info size={14} className="inline mr-1" />Para prosseguir, pelo menos um dos autores deve estar cadastrado no sistema com pagamento confirmado.</div>
-          </div>
-        </div>
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <label className="block text-sm font-medium text-gray-700">Autores * (máximo {modalidade.autores_por_trabalho})</label>
+              <button type="button" onClick={handleAddAutor} disabled={autores.length >= modalidade.autores_por_trabalho} className="flex items-center text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed">
+                <UserPlus size={16} className="mr-1" />
+                Adicionar Autor
+              </button>
 
-        <div className="border-t pt-6">
-          {formError && (
-            <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">{formError}</div>
-          )}
-          <button type="submit" disabled={isLoadingStatus || isValidatingAuthors} className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center">
-            {(isLoadingStatus || isValidatingAuthors) ? <Loader className="animate-spin mr-2" /> : <FileText className="mr-2" />}
-            {isLoadingStatus ? 'Carregando...' : isValidatingAuthors ? 'Validando autores...' : 'Prosseguir para Tópicos'}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
+            </div>
+            <p className='w-full text-center font-extrabold bg-red-400'>LEMBRE-SE DE ADICIONAR SEU PRÓPRIO NOME AOS AUTORES</p>
+
+            <div className="space-y-4">
+              {autores.map((autor, index) => (
+                <div key={autor.id} className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-medium text-gray-900">Autor {index + 1}</h4>
+                    {autores.length > 1 && (
+                      <button type="button" onClick={() => handleRemoveAutor(autor.id)} className="text-red-600 hover:text-red-700">
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <input type="text" placeholder="Nome completo" value={autor.nome} onChange={(e) => handleAutorChange(autor.id, 'nome', e.target.value)} className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" />
+                    <input type="email" placeholder="E-mail" value={autor.email} onChange={(e) => handleAutorChange(autor.id, 'email', e.target.value)} className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" />
+                    <input type="text" placeholder="CPF" value={autor.cpf} onChange={(e) => handleAutorChange(autor.id, 'cpf', e.target.value)} className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" />
+                  </div>
+                  <div className="mt-3">
+                    <label className="flex items-center cursor-pointer">
+                      <input type="checkbox" checked={autor.isOrientador} onChange={() => handleOrientadorChange(autor.id)} className="mr-2 h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-gray-300" />
+                      <span className="text-sm text-gray-700">Este autor é orientador</span>
+                    </label>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 text-sm text-gray-600 space-y-1">
+              <div><Info size={14} className="inline mr-1" />É necessário indicar pelo menos um orientador (máximo {modalidade.maximo_orientadores}).</div>
+              <div><Info size={14} className="inline mr-1" />Para prosseguir, pelo menos um dos autores deve estar cadastrado no sistema com pagamento confirmado.</div>
+            </div>
+          </div>
+
+          <div className="border-t pt-6">
+            {formError && (
+              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">{formError}</div>
+            )}
+            <button type="submit" disabled={isLoadingStatus || isValidatingAuthors} className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center">
+              {(isLoadingStatus || isValidatingAuthors) ? <Loader className="animate-spin mr-2" /> : <FileText className="mr-2" />}
+              {isLoadingStatus ? 'Carregando...' : isValidatingAuthors ? 'Validando autores...' : 'Prosseguir para Tópicos'}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
 }
