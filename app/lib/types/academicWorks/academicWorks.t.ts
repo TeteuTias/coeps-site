@@ -38,7 +38,7 @@ export interface IAcademicWorks {
         fileId: ObjectId,
         fileName: string,
         url: string,
-    },
+    }[],
     topicos: {
         resu: string,
         intro: string,
