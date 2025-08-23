@@ -1,7 +1,7 @@
 import { connectToDatabase } from '../../../lib/mongodb'
 import { NextResponse } from 'next/server';
 import { getAccessToken, withApiAuthRequired } from '@auth0/nextjs-auth0';
-import { ObjectId } from 'mongodb';
+import { ObjectId } from 'bson';
 import { getSession } from '@auth0/nextjs-auth0';
 //
 //
@@ -19,6 +19,16 @@ export const GET = withApiAuthRequired(async function GET(request, response) {
         //
         // Já vem apenas com o replace.
         const { db } = await connectToDatabase();
+        const response = await db.collection("Dados_do_trabalho").find(
+            {
+                userId: new ObjectId(userId)
+            },
+        ).toArray() // 'buffer': 0, 'user_id': 0, 'size': 0
+
+        return NextResponse.json({
+            data: response
+        });
+        /*
         const colecao = 'trabalhos_blob'
         const query = userId === "66bbc8c2db29318201acc2a1" ? {} : { "userId": userId }
         const typeResponse = userId === "66bbc8c2db29318201acc2a1" ? "admin" : "user"
@@ -40,6 +50,7 @@ export const GET = withApiAuthRequired(async function GET(request, response) {
             "data": resposta,
             "type":typeResponse,
         }, { status: 200 });
+        */
 
     }
     catch (error) {

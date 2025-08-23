@@ -67,7 +67,7 @@ function PaginaAreaDoCliente() {
         </Link>
 
         {/* 👇 2. BOTÃO ADICIONADO PARA A PÁGINA DE UPLOAD 👇 */}
-        <Link href="/upload" prefetch={false}>
+        <Link href="/painel/trabalhos/enviarTrabalho" prefetch={false}>
           <CardOpcoes texto="Enviar Trabalhos" icon={<Upload size={48} />} />
         </Link>
         {/* --- Fim do botão adicionado --- */}

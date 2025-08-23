@@ -10,9 +10,12 @@
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^3.5.0",
+    "@types/lodash": "^4.17.20",
     "@vercel/blob": "^0.25.0",
     "aws-sdk": "^2.1692.0",
+    "file-type": "^21.0.0",
     "framer-motion": "^12.23.6",
+    "lodash": "^4.17.21",
     "lucide-react": "^0.525.0",
     "luxon": "^3.4.4",
     "mongodb": "^6.8.0",
