@@ -105,11 +105,9 @@ export const POST = withApiAuthRequired(async function POST(request) {
         //
 
         // Antes de tudo, dá tempo de postar mais um trabalho?
-        /* LEMBRAR DE DESCOMENTAR ISSO!!!
         if (!isTodayBetweenDates(trabalhosConfig.data_inicio_submissao, trabalhosConfig.data_limite_submissao)) {
             throw new Error("Desculpe. O prazo para a postagem de trabalhos expirou.")
         }
-        */
         // Agora, será que ele pode postar mais um, levando em consideração á quantidade total de postagens? 
         const trabalhosPostadosUsuario: IAcademicWorks[] = await db.collection("Dados_do_trabalho").find(
             {
