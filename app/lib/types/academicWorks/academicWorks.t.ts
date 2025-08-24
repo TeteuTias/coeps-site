@@ -18,8 +18,12 @@ export interface IAcademicWorksProps {
         autores_por_trabalho: number,
         trabalhos_por_usuario: number,
         maximo_orientadores: number,
+        postagens_maximas: number,
+        chunk_limite: number,
+        chunk_tamanho: number,
+        limite_maximo_de_postagem: number,
     }[]
-    "isOpen": boolean
+    "isOpen": boolean,
 }
 export interface IAcademicWorks {
     _id: ObjectId,
