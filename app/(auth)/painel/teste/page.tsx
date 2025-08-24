@@ -254,7 +254,7 @@ function SubmissionForm() {
         // Criar objetos de arquivo para cada arquivo selecionado
         Array.from(files).forEach(file => {
             if (file.size > modalidade.limite_maximo_de_postagem) {
-                setFormError(`O arquivo "${file.name}" excede o limite de ${modalidade.limite_maximo_de_postagem/1024/1024}MB.`);
+                setFormError(`O arquivo "${file.name}" excede o limite de ${modalidade.limite_maximo_de_postagem / 1024 / 1024}MB.`);
                 return;
             }
 
@@ -425,7 +425,7 @@ function SubmissionForm() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     titulo,
-                    modalidade: modalidade?.modalidade,
+                    modalidadeId: modalidade?._id,
                     autores: autores.map(({ id, ...rest }) => rest),
                     fileIds: fileIds, // MODIFICAÇÃO: Enviar array de IDs
                     topicos
@@ -613,7 +613,7 @@ function SubmissionForm() {
                                 <Plus size={16} className="mr-2" />
                                 {arquivos.length === 0 ? 'Selecionar arquivos' : 'Adicionar mais arquivos'}
                             </button>
-                            <p className="text-sm text-gray-500 mt-2">PDF, DOC ou DOCX até {modalidade.limite_maximo_de_postagem/1024/1024}MB cada</p>
+                            <p className="text-sm text-gray-500 mt-2">PDF, DOC ou DOCX até {modalidade.limite_maximo_de_postagem / 1024 / 1024}MB cada</p>
                             <p className="text-xs text-gray-400 mt-1">
                                 {arquivos.length}/{modalidade.postagens_maximas} arquivos selecionados
                             </p>

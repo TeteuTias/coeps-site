@@ -30,7 +30,7 @@ export interface IAcademicWorks {
     userId: ObjectId,
     titulo: string,
     modalidade: string,
-    configuracaoTrabalho: IAcademicWorksProps["modalidades"][0], // vamos gravar a configuracão inicial do trabalho;
+    configuracaoModalidade: IAcademicWorksProps["modalidades"][0], // vamos gravar a configuracão inicial do trabalho;
     autores: {
         nome: string,
         email: string,
@@ -38,11 +38,7 @@ export interface IAcademicWorks {
         isOrientador: boolean,
         isPagante?: boolean
     }[],
-    arquivo: {
-        fileId: ObjectId,
-        fileName: string,
-        url: string,
-    }[],
+    arquivos: File[],
     topicos: {
         resu: string,
         intro: string,
@@ -55,5 +51,7 @@ export interface IAcademicWorks {
     } | null,
     status: "Em Avaliação" | "Aceito" | "Recusado" | "Correção de Erros",
     dataSubmissao: Date,
-    avaliadorComentarios: string[]
+    avaliadorComentarios: string[],
+    totalArquivos: number,
+    tamanhoTotalBytes: number,
 }

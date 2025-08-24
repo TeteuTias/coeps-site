@@ -3,7 +3,8 @@
 import { NextResponse } from 'next/server';
 import { getSession, withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { connectToDatabase } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
+import { ObjectId } from 'bson';
+import { IAcademicWorks, IAcademicWorksProps } from '@/lib/types/academicWorks/academicWorks.t';
 
 async function verificarSeExisteAutorPagante(db, autores) {
     if (!autores || autores.length === 0) {
@@ -92,11 +93,23 @@ export const POST = withApiAuthRequired(async function POST(request) {
         }
 
         // MODIFICAÇÃO: Aceitar tanto fileId (compatibilidade) quanto fileIds (novo)
-        const { titulo, modalidade, autores, fileId, fileIds, topicos } = body;
+        const { titulo, modalidadeId, autores, fileId, fileIds, topicos } = body;
 
-        if (!titulo || !modalidade || !Array.isArray(autores) || autores.length === 0) {
+        //return Response.json({ message: "" }, { status: 500 })
+
+        if (!titulo || !ObjectId.isValid(modalidadeId) || !Array.isArray(autores) || autores.length === 0) {
             return NextResponse.json({ error: 'Dados do formulário inválidos ou incompletos.' }, { status: 400 });
         }
+        // Vamos puxar diretamente o DB as informações confiáveis sobre as propriedades da modalidade
+        const trabalhoProps: IAcademicWorksProps = await db.collection("trabalhos_config").findOne({}); // só tem uma configuração, então ele só vai retornar uma...
+        if (!trabalhoProps) {
+            return NextResponse.json({ message: 'As configurações dos trabalhos não foram encontradas.' }, { status: 404 });
+        }
+        const modalidadeAtual = trabalhoProps.modalidades.find(m => `${m._id}` === `${modalidadeId}`);
+        if (!modalidadeAtual) {
+            return NextResponse.json({ message: 'A modalidade selecionada não foi encontrada. Caso o erro persista, entre em contato com o Suporte.' }, { status: 404 });
+        }
+        //
 
         // MODIFICAÇÃO: Determinar quais IDs de arquivo usar
         let arquivosIds;
@@ -134,16 +147,14 @@ export const POST = withApiAuthRequired(async function POST(request) {
         // MODIFICAÇÃO: Gerar um ID único para a submissão
         const submissionId = new ObjectId();
 
-        const dadosDoTrabalho = {
+        const dadosDoTrabalho: IAcademicWorks = {
             _id: submissionId, // ID único da submissão
             userId,
             titulo,
-            modalidade,
+            modalidade: modalidadeAtual.modalidade,
             autores: autores.map(({ isPagante, ...resto }) => resto),
             // MODIFICAÇÃO: Armazenar múltiplos arquivos
-            arquivos: arquivosData,
-            // MODIFICAÇÃO: Manter compatibilidade com código existente
-            arquivo: arquivosData[0], // Primeiro arquivo para compatibilidade
+            arquivos: [...arquivosData],
             topicos: topicos ? {
                 resu: topicos.resumo?.substring(0, 1000) || '',
                 intro: topicos.introducao?.substring(0, 1000) || '',
@@ -156,10 +167,11 @@ export const POST = withApiAuthRequired(async function POST(request) {
             } : null,
             status: "Em Avaliação",
             dataSubmissao: new Date(),
-            avaliadorComentarios: "",
+            avaliadorComentarios: [],
             // MODIFICAÇÃO: Metadados adicionais
             totalArquivos: arquivosData.length,
-            tamanhoTotalBytes: arquivosData.reduce((total, arquivo) => total + (arquivo.size || 0), 0)
+            tamanhoTotalBytes: arquivosData.reduce((total, arquivo) => total + (arquivo.size || 0), 0),
+            configuracaoModalidade: modalidadeAtual // Será preenchido posteriormente se necessário
         };
 
         const result = await db.collection('Dados_do_trabalho').insertOne(dadosDoTrabalho);
