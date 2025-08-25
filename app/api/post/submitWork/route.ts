@@ -76,6 +76,7 @@ async function validarArquivos(db, fileIds, userId) {
 }
 
 export const POST = withApiAuthRequired(async function POST(request) {
+    // @ts-expect-error: ts chato da porra kk
     const session = await getSession(request);
     if (!session || !session.user) {
         return NextResponse.json({ error: 'Acesso não autorizado.' }, { status: 401 });
@@ -149,7 +150,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
         const dadosDoTrabalho: IAcademicWorks = {
             _id: submissionId, // ID único da submissão
-            userId,
+            userId: new ObjectId(userId),
             titulo,
             modalidade: modalidadeAtual.modalidade,
             autores: autores.map(({ isPagante, ...resto }) => resto),

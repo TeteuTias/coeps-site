@@ -38,7 +38,14 @@ export interface IAcademicWorks {
         isOrientador: boolean,
         isPagante?: boolean
     }[],
-    arquivos: File[],
+    arquivos: {
+        fileId: ObjectId,
+        fileName: string,
+        originalName: string,
+        size: number,
+        uploadDate: Date,
+        url: string
+    }[],
     topicos: {
         resu: string,
         intro: string,

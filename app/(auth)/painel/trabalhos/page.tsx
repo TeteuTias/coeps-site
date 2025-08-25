@@ -139,7 +139,7 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
         titulo,
         modalidade,
         autores,
-        arquivo,
+        arquivos,
         topicos,
         status,
         dataSubmissao,
@@ -236,22 +236,45 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
             <hr className="my-6" />
 
             {/* Seção de Arquivo */}
-            <div className="mt-4">
-                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-3">
-                    <File className="h-5 w-5" /> Arquivo
-                </h3>
-                <div className="flex items-center gap-2 text-gray-700">
-                    <p className="flex-1">{arquivo?.fileName}fileName arquivo</p>
-                    <a
-                        href={arquivo?.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-blue-600 hover:underline"
-                    >
-                        <Link className="h-4 w-4" />
-                        Visualizar
-                    </a>
+            <div className="mt-4 space-y-5">
+                <div className='w-full flex items-center justify-center flex-row'>
+                    <File className="h-5 w-5" /> Arquivos Postados
                 </div>
+                {
+                    arquivos.map((arquivo) => {
+                        return (
+                            <div className='bg-gray-100 p-2' key={`${arquivo.fileId}`}>
+                                <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-3" onClick={() => console.log(arquivo)}>
+                                    <File className="h-5 w-5" /> Arquivo
+                                </h3>
+                                <div className="flex items-center gap-2 text-gray-700">
+                                    <p className="flex-1">{arquivo?.fileName}</p>
+                                    <a
+                                        href={arquivo?.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1 text-blue-600 hover:underline"
+                                    >
+                                        <Link className="h-4 w-4" />
+                                        Visualizar
+                                    </a>
+                                </div>
+                                <div className="flex items-center gap-2 text-gray-700">
+                                    Postado em: <p className="flex-1">{new Date(arquivo?.uploadDate).toDateString()}</p>
+                                </div>
+
+                            </div>
+                        )
+                    })
+                }
+                {
+                    propsTrabalho.arquivos.length === 0 && (
+                        <div>
+                            <h1>Você ainda não submeteu nenhum trabalho.</h1>
+                        </div>
+                    )
+                }
+
             </div>
 
             {/* Seção de Tópicos (se houver) */}
