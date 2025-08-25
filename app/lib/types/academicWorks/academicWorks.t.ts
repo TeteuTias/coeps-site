@@ -1,15 +1,64 @@
-export default interface IAcademicWorks {
-    "data_inicio_submissao": string,
-    "data_limite_submissao": string,
+import { ObjectId } from "bson"
+
+
+export interface IAcademicWorksProps {
+    "data_inicio_submissao": string, // essa data está em string, já com o fuso -03:00
+    "data_limite_submissao": string, // essa data está em string, já com o fuso -03:00
     "data_publicacao_resultados": string,
-    "autores_por_trabalho": number,
-    "trabalhos_por_usuario": number,
+    "maximo_postagem_por_usuario": number, // temos um bloqueio geral, que fala quanto o usuário pode postar de trabalho AO TODO, e lá embaixo, temos um bloqueio específico de quanto o usuario pode postar por tema 
     "resultados": {
         link: string,
         titulo: string,
         data_publicacao: string
     }[],
     "link_edital": string,
-    "isOpen": boolean
+    "modalidades"?: { // Coloquei como opcional pois pode acontecer de apaguarem todas as modalidades
+        _id: ObjectId,
+        modalidade: string,
+        autores_por_trabalho: number,
+        trabalhos_por_usuario: number,
+        maximo_orientadores: number,
+        postagens_maximas: number,
+        chunk_limite: number,
+        chunk_tamanho: number,
+        limite_maximo_de_postagem: number,
+    }[]
+    "isOpen": boolean,
 }
-
+export interface IAcademicWorks {
+    _id: ObjectId,
+    userId: ObjectId,
+    titulo: string,
+    modalidade: string,
+    configuracaoModalidade: IAcademicWorksProps["modalidades"][0], // vamos gravar a configuracão inicial do trabalho;
+    autores: {
+        nome: string,
+        email: string,
+        cpf: string
+        isOrientador: boolean,
+        isPagante?: boolean
+    }[],
+    arquivos: {
+        fileId: ObjectId,
+        fileName: string,
+        originalName: string,
+        size: number,
+        uploadDate: Date,
+        url: string
+    }[],
+    topicos: {
+        resu: string,
+        intro: string,
+        obj: string,
+        met: string,
+        disc: string,
+        conc: string,
+        pchave: string,
+        ref: string,
+    } | null,
+    status: "Em Avaliação" | "Aceito" | "Recusado" | "Correção de Erros",
+    dataSubmissao: Date,
+    avaliadorComentarios: string[],
+    totalArquivos: number,
+    tamanhoTotalBytes: number,
+}
