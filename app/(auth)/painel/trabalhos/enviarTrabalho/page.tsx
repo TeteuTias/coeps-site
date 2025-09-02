@@ -9,6 +9,7 @@ import { isTodayBetweenDates } from '@/lib/isTodayBetweenDates';
 // --- Função Auxiliar para Retry com Tipagem Correta ---
 import { Upload, FileText, CheckCircle, AlertCircle, Loader, Info, UserPlus, Trash2, BookOpen, Target, Microscope, MessageSquare, Award, Hash, BookMarked, Save, ArrowLeft, X, Plus } from 'lucide-react';
 import { IAcademicWorksProps } from '@/lib/types/academicWorks/academicWorks.t';
+import './style.css';
 
 // Interface do Autor simplificada: O front-end não precisa saber quem é pagante.
 interface Autor {
@@ -87,8 +88,8 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = 3): P
 // ===================================================================
 export default function UploadPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-200 p-4 sm:p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="enviar-trabalho-main">
+      <div className="enviar-trabalho-container">
         <SubmissionForm />
       </div>
     </div>
@@ -461,11 +462,11 @@ function SubmissionForm() {
 
   //
   if (!trabalhosProps) {
-    return <h1 className='bg-red-500 w-full text-center'>Carregando Propriedades Trabalhos</h1>
+    return <h1 className='periodo-fechado'>Carregando Propriedades Trabalhos</h1>
   }
   if (!trabalhosProps.isOpen || !isTodayBetweenDates(trabalhosProps.data_inicio_submissao, trabalhosProps.data_limite_submissao)) {
     return (
-      <div className='bg-red-500 text-center'>
+      <div className='periodo-fechado'>
         <h1>O período de publicação foi já terminou.</h1>
         <p>Caso tenha realizado alguma submissão, você pode acompanha-la em {`"Consultar Submissões"`}</p>
       </div>
@@ -476,62 +477,62 @@ function SubmissionForm() {
 
   if (currentStep === 'topicos') {
     return (
-      <div className="bg-white p-8 rounded-2xl shadow-lg">
+      <div className="formulario-principal">
         <div className="flex items-center justify-between mb-6">
-          <button onClick={voltarParaDados} className="flex items-center text-blue-600 hover:text-blue-700">
+          <button onClick={voltarParaDados} className="btn-voltar">
             <ArrowLeft className="mr-2" size={16} />
             Voltar
           </button>
-          <h2 className="text-2xl font-bold text-gray-900">Tópicos do Trabalho</h2>
+          <h2 className="form-title">Tópicos do Trabalho</h2>
           <div></div>
         </div>
 
         <form onSubmit={handleTopicosSubmit} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="topicos-grid">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2"><BookOpen className="inline mr-2" size={16} />Resumo</label>
-              <textarea value={topicos.resumo} onChange={(e) => handleTopicoChange('resumo', e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" rows={4} placeholder="Digite o resumo do seu trabalho..." />
+              <label className="form-label"><BookOpen className="inline mr-2" size={16} />Resumo</label>
+              <textarea value={topicos.resumo} onChange={(e) => handleTopicoChange('resumo', e.target.value)} className="form-textarea" rows={4} placeholder="Digite o resumo do seu trabalho..." />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2"><BookOpen className="inline mr-2" size={16} />Introdução</label>
-              <textarea value={topicos.introducao} onChange={(e) => handleTopicoChange('introducao', e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" rows={4} placeholder="Digite a introdução do seu trabalho..." />
+              <label className="form-label"><BookOpen className="inline mr-2" size={16} />Introdução</label>
+              <textarea value={topicos.introducao} onChange={(e) => handleTopicoChange('introducao', e.target.value)} className="form-textarea" rows={4} placeholder="Digite a introdução do seu trabalho..." />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2"><Target className="inline mr-2" size={16} />Objetivo</label>
-              <textarea value={topicos.objetivo} onChange={(e) => handleTopicoChange('objetivo', e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" rows={3} placeholder="Qual é o objetivo do seu trabalho?" />
+              <label className="form-label"><Target className="inline mr-2" size={16} />Objetivo</label>
+              <textarea value={topicos.objetivo} onChange={(e) => handleTopicoChange('objetivo', e.target.value)} className="form-textarea" rows={3} placeholder="Qual é o objetivo do seu trabalho?" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2"><Microscope className="inline mr-2" size={16} />Método</label>
-              <textarea value={topicos.metodo} onChange={(e) => handleTopicoChange('metodo', e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" rows={4} placeholder="Descreva a metodologia utilizada..." />
+              <label className="form-label"><Microscope className="inline mr-2" size={16} />Método</label>
+              <textarea value={topicos.metodo} onChange={(e) => handleTopicoChange('metodo', e.target.value)} className="form-textarea" rows={4} placeholder="Descreva a metodologia utilizada..." />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2"><MessageSquare className="inline mr-2" size={16} />Discussão e Resultados</label>
-              <textarea value={topicos.discussaoResultados} onChange={(e) => handleTopicoChange('discussaoResultados', e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" rows={4} placeholder="Apresente os resultados e discussão..." />
+              <label className="form-label"><MessageSquare className="inline mr-2" size={16} />Discussão e Resultados</label>
+              <textarea value={topicos.discussaoResultados} onChange={(e) => handleTopicoChange('discussaoResultados', e.target.value)} className="form-textarea" rows={4} placeholder="Apresente os resultados e discussão..." />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2"><Award className="inline mr-2" size={16} />Conclusão</label>
-              <textarea value={topicos.conclusao} onChange={(e) => handleTopicoChange('conclusao', e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" rows={3} placeholder="Quais são as conclusões do trabalho?" />
+              <label className="form-label"><Award className="inline mr-2" size={16} />Conclusão</label>
+              <textarea value={topicos.conclusao} onChange={(e) => handleTopicoChange('conclusao', e.target.value)} className="form-textarea" rows={3} placeholder="Quais são as conclusões do trabalho?" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2"><Hash className="inline mr-2" size={16} />Palavras-chave</label>
-              <textarea value={topicos.palavrasChave} onChange={(e) => handleTopicoChange('palavrasChave', e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" rows={2} placeholder="Liste as palavras-chave separadas por vírgula..." />
+              <label className="form-label"><Hash className="inline mr-2" size={16} />Palavras-chave</label>
+              <textarea value={topicos.palavrasChave} onChange={(e) => handleTopicoChange('palavrasChave', e.target.value)} className="form-textarea" rows={2} placeholder="Liste as palavras-chave separadas por vírgula..." />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2"><BookMarked className="inline mr-2" size={16} />Referências</label>
-              <textarea value={topicos.referencias} onChange={(e) => handleTopicoChange('referencias', e.target.value)} className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900" rows={4} placeholder="Liste as referências bibliográficas..." />
+              <label className="form-label"><BookMarked className="inline mr-2" size={16} />Referências</label>
+              <textarea value={topicos.referencias} onChange={(e) => handleTopicoChange('referencias', e.target.value)} className="form-textarea" rows={4} placeholder="Liste as referências bibliográficas..." />
             </div>
           </div>
 
-          <div className="border-t pt-6">
+          <div className="botoes-acoes">
             {formError && (
-              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+              <div className="mensagem-erro">
                 {formError}
               </div>
             )}
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold text-xl disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+              className="btn-secundario"
             >
               {isSubmitting ? <Loader className="animate-spin mr-2" /> : <Save className="mr-2" />}
               {isSubmitting ? 'Enviando...' : 'Finalizar Submissão'}
@@ -544,23 +545,23 @@ function SubmissionForm() {
 
   if (isLoadingStatus) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-[400px] bg-white p-8 rounded-2xl shadow-lg">
-        <Loader className="animate-spin h-12 w-12 text-blue-600" />
-        <p className="mt-4 text-gray-700">Carregando configurações...</p>
+      <div className="loading-container">
+        <Loader className="loading-spinner h-12 w-12" />
+        <p className="loading-text">Carregando configurações...</p>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleDadosSubmit} className="bg-white p-8 rounded-2xl shadow-lg space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Submissão de Trabalho</h1>
-        <p className="text-gray-900 mt-1">Preencha os dados abaixo e anexe os arquivos do seu trabalho.</p>
+    <form onSubmit={handleDadosSubmit} className="formulario-principal">
+      <div className="form-header">
+        <h1 className="form-title">Submissão de Trabalho</h1>
+        <p className="form-subtitle">Preencha os dados abaixo e anexe os arquivos do seu trabalho.</p>
       </div>
 
       <div className="space-y-6">
-        <div>
-          <label htmlFor="titulo" className="block text-sm font-medium text-gray-700 mb-2">
+        <div className="form-group">
+          <label htmlFor="titulo" className="form-label">
             Título do Trabalho *
           </label>
           <input
@@ -568,13 +569,13 @@ function SubmissionForm() {
             id="titulo"
             value={titulo}
             onChange={(e) => setTitulo(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+            className="form-input"
             placeholder="Digite o título do seu trabalho"
           />
         </div>
 
-        <div>
-          <label htmlFor="modalidade" className="block text-sm font-medium text-gray-700 mb-2">
+        <div className="form-group">
+          <label htmlFor="modalidade" className="form-label">
             Modalidade *
           </label>
           <select
@@ -586,7 +587,7 @@ function SubmissionForm() {
               const selectedModalidade = trabalhosProps?.modalidades.find(m => m._id.toString() === e.target.value);
               setModalidade(selectedModalidade);
             }}
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+            className="form-select"
           >
             {trabalhosProps?.modalidades.map((mod) => (
               // CORREÇÃO 2: Converte o ObjectId para string para as props 'key' e 'value' da option.
@@ -599,13 +600,13 @@ function SubmissionForm() {
 
 
         {/* NOVA SEÇÃO: Upload de múltiplos arquivos */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+        <div className="form-group">
+          <label className="form-label">
             Arquivos do Trabalho * (máximo {modalidade.postagens_maximas} arquivos)
           </label>
 
           {/* Área de upload */}
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+          <div className="upload-area">
             <input
               ref={fileInputRef}
               type="file"
@@ -620,18 +621,18 @@ function SubmissionForm() {
             />
 
             <div className="text-center">
-              <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <Upload className="upload-icon h-12 w-12 mb-4" />
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="text-blue-600 hover:text-blue-700 font-medium flex items-center justify-center mx-auto"
+                className="upload-button"
                 disabled={arquivos.length >= modalidade.postagens_maximas}
               >
                 <Plus size={16} className="mr-2" />
                 {arquivos.length === 0 ? 'Selecionar arquivos' : 'Adicionar mais arquivos'}
               </button>
-              <p className="text-sm text-gray-500 mt-2">PDF, DOC ou DOCX até {modalidade.limite_maximo_de_postagem / 1024 / 1024}MB cada</p>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="upload-info">PDF, DOC ou DOCX até {modalidade.limite_maximo_de_postagem / 1024 / 1024}MB cada</p>
+              <p className="upload-count">
                 {arquivos.length}/{modalidade.postagens_maximas} arquivos selecionados
               </p>
             </div>
@@ -639,21 +640,21 @@ function SubmissionForm() {
 
           {/* Lista de arquivos */}
           {arquivos.length > 0 && (
-            <div className="mt-4 space-y-3">
-              <h4 className="font-medium text-gray-900">Arquivos anexados:</h4>
+            <div className="arquivos-lista">
+              <h4 className="arquivos-titulo">Arquivos anexados:</h4>
               {arquivos.map((arquivo, index) => (
-                <div key={arquivo.id} className={`bg-gray-50 p-4 rounded-lg`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                <div key={arquivo.id} className="arquivo-item">
+                  <div className="arquivo-header">
+                    <div className="arquivo-info">
+                      <p className="arquivo-nome">
                         {arquivo.originalName}
                       </p>
-                      <p className="text-xs text-gray-500">
+                      <p className="arquivo-tamanho">
                         {formatFileSize(arquivo.size)}
                       </p>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="arquivo-acoes">
                       {arquivo.status === 'uploading' && (
                         <Loader className="animate-spin text-blue-500" size={16} />
                       )}
@@ -667,7 +668,7 @@ function SubmissionForm() {
                       <button
                         type="button"
                         onClick={() => removeFile(arquivo.id)}
-                        className="text-red-600 hover:text-red-700"
+                        className="remover-arquivo"
                       >
                         <X size={16} />
                       </button>
@@ -676,9 +677,9 @@ function SubmissionForm() {
 
                   {/* Barra de progresso */}
                   {arquivo.status === 'uploading' && (
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="progress-bar">
                       <div
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        className="progress-fill"
                         style={{ width: `${arquivo.progress}%` }}
                       ></div>
                     </div>
@@ -691,8 +692,8 @@ function SubmissionForm() {
 
                   {/* Status */}
                   <div className="flex items-center mt-2">
-                    <span className={`text-xs ${arquivo.status === 'completed' ? 'text-green-600' :
-                      arquivo.status === 'error' ? 'text-red-600' : 'text-blue-600'
+                    <span className={`text-xs ${arquivo.status === 'completed' ? 'status-completed' :
+                      arquivo.status === 'error' ? 'status-error' : 'status-uploading'
                       }`}>
                       {arquivo.status === 'uploading' && `Enviando... ${arquivo.progress}%`}
                       {arquivo.status === 'completed' && 'Upload concluído!'}
@@ -706,97 +707,97 @@ function SubmissionForm() {
         </div>
 
         {/* Seção de autores (mantida igual) */}
-        <div>
+        <div className="form-group">
           <div className="flex items-center justify-between mb-4">
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="form-label">
               Autores * (máximo {modalidade?.autores_por_trabalho})
             </label>
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="form-label">
               Orientadores * (máximo {modalidade?.maximo_orientadores})
             </label>
             <button
               type="button"
               onClick={handleAddAutor}
               disabled={autores.length >= (modalidade?.autores_por_trabalho)}
-              className="flex items-center text-blue-600 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+              className="adicionar-autor-btn"
             >
               <UserPlus size={16} className="mr-1" />
               Adicionar Autor
             </button>
           </div>
 
-          <div className="space-y-4">
+          <div className="autores-section">
             {autores.map((autor, index) => (
-              <div key={autor.id} className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-medium text-gray-900">Autor {index + 1}</h4>
+              <div key={autor.id} className="autor-item">
+                <div className="autor-header">
+                  <h4 className="autor-titulo">Autor {index + 1}</h4>
                   {autores.length > 1 && (
                     <button
                       type="button"
                       onClick={() => handleRemoveAutor(autor.id)}
-                      className="text-red-600 hover:text-red-700"
+                      className="remover-autor"
                     >
                       <Trash2 size={16} />
                     </button>
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="autor-grid">
                   <input
                     type="text"
                     placeholder="Nome completo"
                     value={autor.nome}
                     onChange={(e) => handleAutorChange(autor.id, 'nome', e.target.value)}
-                    className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    className="form-input"
                   />
                   <input
                     type="email"
                     placeholder="E-mail"
                     value={autor.email}
                     onChange={(e) => handleAutorChange(autor.id, 'email', e.target.value)}
-                    className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    className="form-input"
                   />
                   <input
                     type="text"
                     placeholder="CPF"
                     value={autor.cpf}
                     onChange={(e) => handleAutorChange(autor.id, 'cpf', e.target.value)}
-                    className="p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                    className="form-input"
                   />
                 </div>
 
                 <div className="mt-3">
-                  <label className="flex items-center">
+                  <label className="autor-checkbox">
                     <input
                       type="checkbox"
                       checked={autor.isOrientador}
                       onChange={() => handleOrientadorChange(autor.id)}
                       className="mr-2 rounded focus:ring-2 focus:ring-blue-500"
                     />
-                    <span className="text-sm text-gray-700">Este autor é orientador</span>
+                    <span>Este autor é orientador</span>
                   </label>
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="mt-2 text-sm text-gray-600">
+          <div className="info-ajuda">
             <Info size={14} className="inline mr-1" />
             É necessário indicar pelo menos um orientador (máximo {modalidade?.maximo_orientadores}).
           </div>
         </div>
       </div>
 
-      <div className="border-t pt-6">
+      <div className="botoes-acoes">
         {formError && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+          <div className="mensagem-erro">
             {formError}
           </div>
         )}
         <button
           type="submit"
           disabled={isValidatingAuthors}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center"
+          className="btn-principal"
         >
           {isValidatingAuthors ? <Loader className="animate-spin mr-2" /> : <FileText className="mr-2" />}
           {isValidatingAuthors ? 'Validando...' : 'Prosseguir para Tópicos'}
