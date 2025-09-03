@@ -12,6 +12,7 @@ export interface IAcademicWorksProps {
         data_publicacao: string
     }[],
     "link_edital": string,
+    "link_guia"?: string,
     "modalidades"?: { // Coloquei como opcional pois pode acontecer de apaguarem todas as modalidades
         _id: ObjectId,
         modalidade: string,

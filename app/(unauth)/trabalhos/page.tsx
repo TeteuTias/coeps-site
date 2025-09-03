@@ -11,7 +11,8 @@ import {
   Users,
   Award,
   ExternalLink,
-  Send
+  Send,
+  Compass
 } from 'lucide-react';
 import './style.css';
 
@@ -106,7 +107,7 @@ const Trabalhos = () => {
               </div>
               <div className="card-text">Limite de Submissão</div>
             </div>
-            
+
             <div className="data-card glass-container">
               <div className="card-data">
                 {config?.data_publicacao_resultados ?
@@ -191,6 +192,14 @@ const Trabalhos = () => {
                 <button className="action-button">
                   <FileText size={20} style={{ marginRight: '8px' }} />
                   VER EDITAL
+                </button>
+              </Link>
+            )}
+            {config?.link_guia && (
+              <Link href={config.link_guia} target="_blank">
+                <button className="action-button">
+                  <Compass size={20} style={{ marginRight: '8px' }} />
+                  VER GUIA
                 </button>
               </Link>
             )}
