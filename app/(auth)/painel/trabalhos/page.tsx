@@ -151,14 +151,6 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
     } = propsTrabalho;
 
     // Lógica para definir a cor do status
-    const statusClass =
-        status === "Aceito"
-            ? 'status-aceito'
-            : status === "Recusado"
-                ? 'status-recusado'
-                : status === "Em Avaliação"
-                    ? 'status-avaliacao'
-                    : 'status-correcao';
 
     const statusIcon =
         status === "Aceito" ? (
@@ -180,7 +172,7 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
                     <FileText className="h-6 w-6" />
                     {titulo}
                 </h2>
-                <div className={`card-status ${statusClass}`}>
+                <div className={`card-status ${propsTrabalho.status}`}>
                     {statusIcon}
                     <span>{status}</span>
                 </div>
