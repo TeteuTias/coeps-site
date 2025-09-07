@@ -172,12 +172,11 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
                     <FileText className="h-6 w-6" />
                     {titulo}
                 </h2>
-                <div className={`card-status ${propsTrabalho.status}`}>
+                <div className={`card-status ${propsTrabalho.status} text-orange-500`}>
                     {statusIcon}
                     <span>{status}</span>
                 </div>
             </div>
-
             {/* Grid de Informações Principais */}
             <div className="info-grid">
                 <div className="info-item">
@@ -299,22 +298,54 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
                     <button className='btn-toggle' onClick={() => setExpandirComentariosBanca((prev) => !prev)}>{expandirComentariosBanca ? `Expandir` : `Recolher`}</button>
                 </div>
                 <div>
-                    {/* Seção de Comentários do Avaliador (se houver) */}
-                    {(avaliadorComentarios && avaliadorComentarios.length > 0 && expandirComentariosBanca) && (
-                        <ul className="comentarios-list">
-                            {avaliadorComentarios.map((comentario, index) => (
-                                <li key={index} className="comentario-item">
-                                    {comentario}
-                                </li>
-                            ))}
-                        </ul>
+                    {propsTrabalho.avaliadorComentarios.length === 0 ? (
+                        <p className="text-gray-500 text-sm">Nenhuma avaliação foi feita ainda.</p>
+                    ) : (
+                        <div className='space-y-5'>
+                            <p className='w-full text-center text-gray-500'>Avaliações já realizadas</p>
+                            {
+                                propsTrabalho.avaliadorComentarios.map((comentario, index) => (
+                                    <div
+                                        key={index}
+                                        className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 transition-all duration-300 hover:shadow-md"
+                                    >
+                                        <p className="text-gray-800 font-normal leading-relaxed mb-3">
+                                            {comentario.comentario}
+                                        </p>
+                                        <div className="flex flex-wrap items-center text-sm text-gray-500 gap-x-4 gap-y-2">
+                                            <p>
+                                                <span className="font-medium text-gray-700">Data:</span>{' '}
+                                                {new Date(comentario.date).toLocaleDateString('pt-BR', {
+                                                    year: 'numeric',
+                                                    month: 'long',
+                                                    day: 'numeric',
+                                                })} às {new Date(comentario.date).toLocaleTimeString('pt-BR')}
+                                            </p>
+                                            <span
+                                                className={`
+        px-3 py-1 rounded-full text-xs font-semibold
+        ${comentario.status === 'Aceito'
+                                                        ? 'bg-green-100 text-green-800'
+                                                        : comentario.status === 'Recusado'
+                                                            ? 'bg-red-100 text-red-800'
+                                                            : 'bg-yellow-100 text-yellow-800'
+                                                    }
+      `}
+                                            >
+                                                {comentario.status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))
+                            }
+                        </div>
                     )}
                 </div>
             </div>
-            
+
             <div className='w-full pt-10'>
                 {
-                    propsTrabalho.status === "Correção de Erros" &&
+                    propsTrabalho.status === "Necessita de Alteração" &&
                     <button className='btn-correcao' onClick={() => router.push(`/painel/trabalhos/correcao/${propsTrabalho._id}`)}>Realizar Correção</button>
                 }
             </div>

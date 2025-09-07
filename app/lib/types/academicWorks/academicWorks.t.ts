@@ -27,18 +27,17 @@ export interface IAcademicWorksProps {
     "isOpen": boolean,
 }
 export interface IAcademicWorks {
-    _id: ObjectId,
-    userId: ObjectId,
-    titulo: string,
-    modalidade: string,
-    configuracaoModalidade: IAcademicWorksProps["modalidades"][0], // vamos gravar a configuracão inicial do trabalho;
+    _id: ObjectId;
+    userId: ObjectId;
+    titulo: string;
+    modalidade: string;
     autores: {
-        nome: string,
-        email: string,
-        cpf: string
-        isOrientador: boolean,
-        isPagante?: boolean
-    }[],
+        nome: string;
+        email: string;
+        cpf: string;
+        isOrientador: boolean;
+        isPagante: boolean;
+    }[];
     arquivos: {
         fileId: ObjectId,
         fileName: string,
@@ -46,7 +45,7 @@ export interface IAcademicWorks {
         size: number,
         uploadDate: Date,
         url: string
-    }[],
+    }[];
     topicos: {
         resu: string,
         intro: string,
@@ -56,12 +55,20 @@ export interface IAcademicWorks {
         conc: string,
         pchave: string,
         ref: string,
-    } | null,
-    status: "Em Avaliação" | "Aceito" | "Recusado" | "Correção de Erros",
-    dataSubmissao: Date,
-    avaliadorComentarios: string[],
+    };
+    status: "Em Avaliação" | "Aceito" | "Recusado" | "Necessita de Alteração";
+    dataSubmissao: Date;
+    avaliadorComentarios: {
+        comentario: string;
+        avaliadorId: ObjectId;
+        date: Date;
+        status: "Em Avaliação" | "Aceito" | "Recusado" | "Necessita de Alteração";
+    }[];
     totalArquivos: number,
     tamanhoTotalBytes: number,
     dataAvaliacao?: string;
-    avaliadorId?: string;
+    avaliadorId?: ObjectId;
+    configuracaoModalidade: IAcademicWorksProps["modalidades"][0];
 }
+
+
