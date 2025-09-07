@@ -23,6 +23,14 @@ export interface IAcademicWorksProps {
         chunk_limite: number,
         chunk_tamanho: number,
         limite_maximo_de_postagem: number,
+        ficha_avalicao: {
+            _id: ObjectId,
+            nome: string,
+            notaMinima: number,
+            notaMaxima: number,
+            peso: number,
+            justificativa: string,
+        }[],
     }[]
     "isOpen": boolean,
 }
