@@ -29,7 +29,8 @@ export interface IAcademicWorksProps {
             notaMinima: number,
             notaMaxima: number,
             peso: number,
-            justificativa: string,
+            notasRecebidas: number[],
+            justificativa: string[],
         }[],
     }[]
     "isOpen": boolean,
