@@ -62,4 +62,6 @@ export interface IAcademicWorks {
     avaliadorComentarios: string[],
     totalArquivos: number,
     tamanhoTotalBytes: number,
+    dataAvaliacao?: string;
+    avaliadorId?: string;
 }
