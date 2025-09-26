@@ -99,13 +99,13 @@ const HeaderPainel = ({ isPayed = true }: { isPayed: boolean }) => {
                         )}
 
                         {/* Logout Button */}
-                        <Link href="/api/auth/logout" prefetch={false}>
+                        <a href="/api/auth/logout">
                             <button className={`ml-3 px-4 py-2 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition-all duration-300 flex items-center gap-2 ${isScrolled ? 'text-xs px-3 py-1.5' : 'text-sm px-4 py-2'
                                 }`}>
                                 <LogOut size={isScrolled ? 14 : 16} />
                                 LOGOUT
                             </button>
-                        </Link>
+                        </a>
                     </div>
 
                     {/* Mobile Menu Button */}
