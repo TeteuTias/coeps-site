@@ -81,11 +81,11 @@ export default function Home() {
                                             <div className='datas-grid'>
                                                 <div className='data-item'>
                                                     <p>Início</p>
-                                                    <p>{new Date(trabalhosConfigs.data_inicio_submissao).getDate() + "-" + new Date(trabalhosConfigs.data_inicio_submissao).getMonth() + "-" + new Date(trabalhosConfigs.data_inicio_submissao).getFullYear()}</p>
+                                                    <p>{new Date(trabalhosConfigs.data_inicio_submissao).getDate() + "-" + new Date(trabalhosConfigs.data_inicio_submissao).getMonth() + 1 + "-" + new Date(trabalhosConfigs.data_inicio_submissao).getFullYear()}</p>
                                                 </div>
                                                 <div className='data-item'>
                                                     <p>Fim</p>
-                                                    <p>{new Date(trabalhosConfigs.data_limite_submissao).getDate() + "-" + new Date(trabalhosConfigs.data_limite_submissao).getMonth() + "-" + new Date(trabalhosConfigs.data_limite_submissao).getFullYear()}</p>
+                                                    <p>{new Date(trabalhosConfigs.data_limite_submissao).getDate() + "-" + new Date(trabalhosConfigs.data_limite_submissao).getMonth() + 1 + "-" + new Date(trabalhosConfigs.data_limite_submissao).getFullYear()}</p>
                                                 </div>
                                             </div>
                                         </div>
