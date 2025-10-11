@@ -66,6 +66,9 @@ export default function MeuQRCodePage() {
       </Link>
       <div className="qr-card bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full flex flex-col items-center">
         <h1 className="qr-title text-3xl font-bold mb-4">Seu QR Code</h1>
+        {
+          // ts-ignore:Ele tava pedindo para usar o Image no nextjs. Para não dar erros de building, removi a verificação
+        }
         <img src={dados?.qrCode} alt="QR Code" className="qr-img mb-6" />
         <div className="qr-info text-left w-full space-y-2">
           <p><span className="qr-label">ID:</span> {dados?.id}</p>

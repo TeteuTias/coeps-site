@@ -72,7 +72,7 @@ export default function Page({ params }: { params: Promise<{ trabalhoId: string 
             }
         }
         fetchData()
-    }, [])
+    }, [params])
 
     return (
         <main className="min-h-screen min-w-screen">
@@ -313,7 +313,7 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
                         {
                             trabalho.autores.map((trabalho) => {
                                 return (
-                                    <div className="relative bg-red-100 p-5">
+                                    <div className="relative bg-red-100 p-5" key={trabalho.nome + trabalho.cpf + trabalho.email}>
                                         <div className="absolute inset-0 bg-red-500 px-3 rounded-2xl font-extrabold text-white w-fit h-fit p-1 -top-[10px]">
                                             <p>{trabalho.isOrientador ? "Orientador" : ""}</p>
                                         </div>
