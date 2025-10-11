@@ -26,7 +26,7 @@ export const PUT = withApiAuthRequired(async function (req) {
         }
 
         //
-        const workData:IAcademicWorks = await db.collection(collection).findOne(
+        const workData: IAcademicWorks = await db.collection(collection).findOne(
             {
                 userId: new ObjectId(userId),
                 _id: new ObjectId(academicWork._id)
@@ -38,6 +38,7 @@ export const PUT = withApiAuthRequired(async function (req) {
         if (workData.status !== "Necessita de Alteração") {
             throw new Error("Não é possível realizar uma nova avaliação agora.")
         }
+
         //
         // Realizando Alteração
         await db.collection(collection).updateOne(

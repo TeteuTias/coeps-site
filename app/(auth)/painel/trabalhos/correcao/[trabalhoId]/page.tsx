@@ -107,13 +107,13 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
     //
     const updateFileProgress = (fileId: string, progress: number, status: ArquivoUpload['status'], error?: string) => {
         setArquivos(prev => prev.map(arquivo =>
-            arquivo.id === fileId
+            arquivo.fileId === fileId
                 ? { ...arquivo, progress, status, error }
                 : arquivo
         ));
     };
 
-    const uploadSingleFile = async (file: File, fileName: string, fileId: string): Promise<string | null> => {
+    const uploadSingleFile = async (file: File, fileName: string, fileId: string): Promise<{ id: string, url: string } | null> => {
         const formData = new FormData();
         formData.append('file', file);
         const uniqueFileName = generateUniqueFileName(fileName);
@@ -131,9 +131,12 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
 
             const result = await response.json();
             if (!result.data || !result.data._id) throw new Error('A API de upload não retornou um ID de arquivo válido.');
+            console.log("=== UPLOADSINGLEFILE ===")
+            console.log(result)
+            console.log("=== === ===")
 
             updateFileProgress(fileId, 100, 'completed');
-            return result.data._id;
+            return { id: result.data._id, url: result.data.url };
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido.';
             updateFileProgress(fileId, 0, 'error', errorMessage);
@@ -141,7 +144,7 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
         }
     };
 
-    const uploadChunkedFile = async (file: File, fileName: string, fileId: string): Promise<string | null> => {
+    const uploadChunkedFile = async (file: File, fileName: string, fileId: string): Promise<{ id: string, url: string } | null> => {
         const totalChunks = Math.ceil(file.size / trabalho.configuracaoModalidade.chunk_tamanho);
         const chunkIds: string[] = [];
         const uniqueFileName = generateUniqueFileName(fileName);
@@ -175,10 +178,14 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
             if (!reconstructResponse.ok) throw new Error('Erro na reconstrução do arquivo');
 
             const result = await reconstructResponse.json();
+            console.log("=== UPLOADCHUNKEDFILE ===")
+            console.log(result)
+            console.log("=== === ===")
+
             if (!result.data || !result.data._id) throw new Error('A API de reconstrução não retornou um ID válido.');
 
             updateFileProgress(fileId, 100, 'completed');
-            return result.data._id;
+            return { id: result.data._id, url: result.data.url };
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido.';
             updateFileProgress(fileId, 0, 'error', errorMessage);
@@ -206,7 +213,7 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
 
             const fileId = `file_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
             newFiles.push({
-                id: fileId,
+                fileId: fileId,
                 fileName: file.name,
                 originalName: file.name,
                 size: file.size,
@@ -221,20 +228,20 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
 
         // Processar uploads em paralelo
         const uploadPromises = Array.from(files).map(async (file, index) => {
-            const fileId = newFiles[index]?.id;
+            const fileId = newFiles[index]?.fileId;
             if (!fileId) return null;
 
             const uploadFunction = file.size > trabalho.configuracaoModalidade.chunk_limite ? uploadChunkedFile : uploadSingleFile;
-            const uploadedFileId = await uploadFunction(file, file.name, fileId);
-
-            if (uploadedFileId) {
+            const uploadedFile = await uploadFunction(file, file.name, fileId);
+            //
+            if (uploadedFile) {
                 // Atualizar o arquivo com o ID do servidor
                 setArquivos(prev => prev.map(arquivo =>
-                    arquivo.id === fileId
-                        ? { ...arquivo, id: uploadedFileId }
+                    arquivo.fileId === fileId
+                        ? { ...arquivo, id: uploadedFile, url: uploadedFile.url }
                         : arquivo
                 ));
-                return uploadedFileId;
+                return uploadedFile;
             }
             return null;
         });
@@ -244,7 +251,7 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
 
     // NOVA FUNÇÃO: Remover arquivo da lista
     const removeFile = (fileId: string) => {
-        setArquivos(prev => prev.filter(arquivo => arquivo.id !== fileId));
+        setArquivos(prev => prev.filter(arquivo => arquivo.fileId !== fileId));
     };
 
     // 
@@ -259,261 +266,261 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
         }).then(() => {
             setIsLoading(false)
             router.push("/painel/trabalhos/")
-alert("Correção enviada com sucesso!")
+            alert("Correção enviada com sucesso!")
         })
     }
 
 
-return (
-    <div className="text-black shadow-md p-10">
-        <div className="p-5">
-            <div className="text-center">
-                <h2>{trabalho.titulo}</h2>
-            </div>
-            <div>
-                Status: <span>{trabalho.status}</span>
-            </div>
-            <div className="">
+    return (
+        <div className="text-black shadow-md p-10">
+            <div className="p-5">
                 <div className="text-center">
-                    <h3 className="w-full text-center text-2xl font-extrabold">Comentários dos Avaliadores</h3>
+                    <h2 onClick={() => console.log(arquivos)}>{trabalho.titulo}</h2>
                 </div>
-                <div className="space-y-2">
-                    {
-                        trabalho.avaliadorComentarios.length === 0 ? <span>Nenhum comentário disponível.</span> :
-                            trabalho.avaliadorComentarios.map((comentario, index) => (
-                                <div key={index} className="relative border p-2 my-2">
-                                    {
-                                        index === trabalho.avaliadorComentarios.length - 1 &&
-                                        <div className="bg-red-400 font-extrabold text-sm p-2 w-fit h-fit rounded-sm">
-                                            <p>COMENTÁRIO DE ÚLTIMA AVALIAÇÃO</p>
+                <div>
+                    Status: <span>{trabalho.status}</span>
+                </div>
+                <div className="">
+                    <div className="text-center">
+                        <h3 className="w-full text-center text-2xl font-extrabold">Comentários dos Avaliadores</h3>
+                    </div>
+                    <div className="space-y-2">
+                        {
+                            trabalho.avaliadorComentarios.length === 0 ? <span>Nenhum comentário disponível.</span> :
+                                trabalho.avaliadorComentarios.map((comentario, index) => (
+                                    <div key={index} className="relative border p-2 my-2">
+                                        {
+                                            index === trabalho.avaliadorComentarios.length - 1 &&
+                                            <div className="bg-red-400 font-extrabold text-sm p-2 w-fit h-fit rounded-sm">
+                                                <p>COMENTÁRIO DE ÚLTIMA AVALIAÇÃO</p>
+                                            </div>
+                                        }
+                                        <p><strong>Avaliação {index + 1}: {new Date(comentario.date).toLocaleDateString()}</strong></p>
+                                        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(comentario.comentario) }} />
+                                    </div>
+                                ))
+                        }
+                    </div>
+                </div>
+                <div className="bg-blue-100 text-black p-5 space-y-5">
+                    <div className="text-center">
+                        <h3 className="w-full text-center text-2xl font-extrabold">Detalhes dos Autores</h3>
+                    </div>
+                    <div className="w-full text-center">
+                        <p>Caso queira fazer alguma alteração, entre em contato com a Organização do Congresso.</p>
+                    </div>
+                    <div>
+                        {
+                            trabalho.autores.map((trabalho) => {
+                                return (
+                                    <div className="relative bg-red-100 p-5">
+                                        <div className="absolute inset-0 bg-red-500 px-3 rounded-2xl font-extrabold text-white w-fit h-fit p-1 -top-[10px]">
+                                            <p>{trabalho.isOrientador ? "Orientador" : ""}</p>
                                         </div>
-                                    }
-                                    <p><strong>Avaliação {index + 1}: {new Date(comentario.date).toLocaleDateString()}</strong></p>
-                                    <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(comentario.comentario) }} />
+                                        <div>
+                                            <p>{trabalho.nome}</p>
+                                            <p>{trabalho.cpf}</p>
+                                            <p>{trabalho.email}</p>
+                                            <p>Pagante: {trabalho.isPagante ? "Sim" : "Não"}</p>
+                                        </div>
+                                    </div>
+                                )
+                            })
+                        }
+                    </div>
+                </div>
+                <div>
+                    <p className="w-full text-center">Abaixo, você será capaz de realizar as alterações necessárias. Lembre-se, depois de enviado, não tem mais volta.</p>
+                </div>
+                <div className="w-full bg-orange-300 p-5">
+                    <p className="text-center w-full text-2xl font-extrabold">Tópicos</p>
+                    <div className="space-y-2">
+                        {
+                            Object.entries(trabalho.topicos).map(([key, value]) => (
+                                <div key={key}>
+                                    <h3>{key}</h3>
+                                    <input type="text" className="text-black" value={value} onChange={(e) => {
+                                        const newValue = e.target.value;
+                                        setTrabalhoData((prevData) => ({
+                                            ...prevData,
+                                            topicos: {
+                                                ...prevData.topicos,
+                                                [key]: newValue
+                                            }
+                                        }));
+                                    }} />
+                                    {/*<p>{value}</p>*/}
                                 </div>
                             ))
-                    }
+                        }
+                    </div>
                 </div>
-            </div>
-            <div className="bg-blue-100 text-black p-5 space-y-5">
-                <div className="text-center">
-                    <h3 className="w-full text-center text-2xl font-extrabold">Detalhes dos Autores</h3>
-                </div>
-                <div className="w-full text-center">
-                    <p>Caso queira fazer alguma alteração, entre em contato com a Organização do Congresso.</p>
-                </div>
-                <div>
-                    {
-                        trabalho.autores.map((trabalho) => {
-                            return (
-                                <div className="relative bg-red-100 p-5">
-                                    <div className="absolute inset-0 bg-red-500 px-3 rounded-2xl font-extrabold text-white w-fit h-fit p-1 -top-[10px]">
-                                        <p>{trabalho.isOrientador ? "Orientador" : ""}</p>
-                                    </div>
-                                    <div>
-                                        <p>{trabalho.nome}</p>
-                                        <p>{trabalho.cpf}</p>
-                                        <p>{trabalho.email}</p>
-                                        <p>Pagante: {trabalho.isPagante ? "Sim" : "Não"}</p>
-                                    </div>
-                                </div>
-                            )
-                        })
-                    }
-                </div>
-            </div>
-            <div>
-                <p className="w-full text-center">Abaixo, você será capaz de realizar as alterações necessárias. Lembre-se, depois de enviado, não tem mais volta.</p>
-            </div>
-            <div className="w-full bg-orange-300 p-5">
-                <p className="text-center w-full text-2xl font-extrabold">Tópicos</p>
-                <div className="space-y-2">
-                    {
-                        Object.entries(trabalho.topicos).map(([key, value]) => (
-                            <div key={key}>
-                                <h3>{key}</h3>
-                                <input type="text" className="text-black" value={value} onChange={(e) => {
-                                    const newValue = e.target.value;
-                                    setTrabalhoData((prevData) => ({
-                                        ...prevData,
-                                        topicos: {
-                                            ...prevData.topicos,
-                                            [key]: newValue
-                                        }
-                                    }));
-                                }} />
-                                {/*<p>{value}</p>*/}
-                            </div>
-                        ))
-                    }
-                </div>
-            </div>
-            <div className="w-full text-center py-3">
-                <div>
-                    <h1 className="font-extrabold text-2xl">ARQUIVOS</h1>
-                </div>
-                <div className="bg-red-100">
-                    {/**
+                <div className="w-full text-center py-3">
+                    <div>
+                        <h1 className="font-extrabold text-2xl">ARQUIVOS</h1>
+                    </div>
+                    <div className="bg-red-100">
+                        {/**
                          * Esse é o bloque de arquivos já postados. Por motivo de segurança, o usuário não é capaz de alterar esse documento após realizar a postagem.
                          * Somente um ADM consegue fazer isso!!!
                          * Colocar em algum lugar aqui nesse bloco que o usuário não será capaz de apagar os arquivos já postados.
                          */}
-                    <div className="py-3 space-y-5">
-                        <div className="w-full flex justify-center">
-                            <h1 className="bg-red-500 w-fit p-2 rounded-xl">Arquivos já postados</h1>
-                        </div>
-                        <div>
-                            <p>Abaixo todos os seus arquivos que foram postados por você até agora</p>
-                            <p>[Você não pode alterar esses arquivos]</p>
-                        </div>
-                        <div>
-                            {
-                                trabalho.arquivos.map((arquivo, index) => (
-                                    <div key={index} className="border p-2 my-2 flex justify-between items-center text-black">
-                                        <div className="flex items-center gap-2">
-                                            <Paperclip />
-                                            <a href={arquivo.url} target="_blank" rel="noopener noreferrer" className="underline">
-                                                {arquivo.originalName}
-                                            </a>
-                                        </div>
-                                        <div className="text-sm text-gray-800 space-x-5">
-                                            <span>{(arquivo.size / (1024 * 1024)).toFixed(2)} MB</span> | <span>{new Date(arquivo.uploadDate).toLocaleDateString()}</span>
-                                        </div>
-                                    </div>
-                                ))
-                            }
-                        </div>
-                    </div>
-                </div>
-                <div className="bg-red-100 space-y-5 py-5">
-                    {/**
-                         * Esse é o bloco para o usuário postar um novo arquivo. Temos que deixar claro que ele só precisa postar se foi solicitado a ele no último comentário
-                         */}
-                    <div className="w-full flex justify-center">
-                        <h1 className="bg-red-500 w-fit p-2 rounded-xl">Postar Novo Arquivo</h1>
-                    </div>
-
-                    <div className="flex items-center justify-center">
-                        <div className="text-center flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl p-8 hover:border-blue-400 transition-colors duration-300">
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                multiple
-                                onChange={(e) => {
-                                    if (e.target.files && e.target.files.length > 0) {
-                                        handleMultipleFileUpload(e.target.files);
-                                    }
-                                }}
-                                className="hidden"
-                                accept=".pdf,.doc,.docx"
-                            />
-                            <Upload className="text-blue-500 h-12 w-12 mb-4" />
-                            <button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                className={`flex items-center justify-center px-4 py-2 rounded-lg font-medium text-white transition-all duration-200 ${arquivos.length >= trabalho.configuracaoModalidade.postagens_maximas
-                                    ? 'bg-gray-400 cursor-not-allowed'
-                                    : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
-                                    }`}
-                                disabled={arquivos.length >= trabalho.configuracaoModalidade.postagens_maximas}
-                            >
-                                <Plus size={16} className="mr-2" />
-                                {arquivos.length === 0 ? 'Selecionar arquivos' : 'Adicionar mais arquivos'}
-                            </button>
-
-                            <p className="text-sm text-gray-500 mt-3">
-                                PDF, DOC ou DOCX até{' '}
-                                <span className="font-semibold text-gray-700">
-                                    {trabalho.configuracaoModalidade.limite_maximo_de_postagem / 1024 / 1024}MB
-                                </span>{' '}
-                                cada
-                            </p>
-
-                            <p className="text-sm text-gray-600 mt-1">
-                                {arquivos.length}/
-                                {trabalho.configuracaoModalidade.postagens_maximas} arquivos selecionados
-                            </p>
-                        </div>
-
-                    </div>
-                    {arquivos.length > 0 && (
-                        <div className="space-x-5 border-2 border-dashed border-gray-800 p-3">
-                            <div className="arquivos-lista">
-                                <h4 className="arquivos-titulo">Arquivos anexados:</h4>
+                        <div className="py-3 space-y-5">
+                            <div className="w-full flex justify-center">
+                                <h1 className="bg-red-500 w-fit p-2 rounded-xl">Arquivos já postados</h1>
+                            </div>
+                            <div>
+                                <p>Abaixo todos os seus arquivos que foram postados por você até agora</p>
+                                <p>[Você não pode alterar esses arquivos]</p>
+                            </div>
+                            <div>
                                 {
-                                    arquivos.map((arquivo, index) => (
-                                        <div key={arquivo.id} className="arquivo-item text-start">
-                                            <div className="arquivo-header">
-                                                <div className="arquivo-info">
-                                                    <p className="arquivo-nome">
-                                                        {arquivo.originalName}
-                                                    </p>
-                                                    <p className="arquivo-tamanho">
-                                                        {formatFileSize(arquivo.size)}
-                                                    </p>
-                                                </div>
-
-                                                <div className="arquivo-acoes">
-                                                    {arquivo.status === 'uploading' && (
-                                                        <Loader className="animate-spin text-blue-500" size={16} />
-                                                    )}
-                                                    {arquivo.status === 'completed' && (
-                                                        <CheckCircle className="text-green-500" size={16} />
-                                                    )}
-                                                    {arquivo.status === 'error' && (
-                                                        <AlertCircle className="text-red-500" size={16} />
-                                                    )}
-
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeFile(arquivo.id)}
-                                                        className="remover-arquivo"
-                                                    >
-                                                        <X size={16} />
-                                                    </button>
-                                                </div>
+                                    trabalho.arquivos.map((arquivo, index) => (
+                                        <div key={index} className="border p-2 my-2 flex justify-between items-center text-black">
+                                            <div className="flex items-center gap-2">
+                                                <Paperclip />
+                                                <a href={arquivo.url} target="_blank" rel="noopener noreferrer" className="underline">
+                                                    {arquivo.originalName}
+                                                </a>
                                             </div>
-
-                                            {/* Barra de progresso */}
-                                            {arquivo.status === 'uploading' && (
-                                                <div className="progress-bar">
-                                                    <div
-                                                        className="progress-fill"
-                                                        style={{ width: `${arquivo.progress}%` }}
-                                                    ></div>
-                                                </div>
-                                            )}
-
-                                            {/* Mensagem de erro */}
-                                            {arquivo.status === 'error' && arquivo.error && (
-                                                <p className="text-xs text-red-600 mt-1">{arquivo.error}</p>
-                                            )}
-
-                                            {/* Status */}
-                                            <div className="flex items-center mt-2">
-                                                <span className={`text-xs ${arquivo.status === 'completed' ? 'status-completed' :
-                                                    arquivo.status === 'error' ? 'status-error' : 'status-uploading'
-                                                    }`}>
-                                                    {arquivo.status === 'uploading' && `Enviando... ${arquivo.progress}%`}
-                                                    {arquivo.status === 'completed' && 'Upload concluído!'}
-                                                    {arquivo.status === 'error' && 'Erro no upload'}
-                                                </span>
+                                            <div className="text-sm text-gray-800 space-x-5">
+                                                <span>{(arquivo.size / (1024 * 1024)).toFixed(2)} MB</span> | <span>{new Date(arquivo.uploadDate).toLocaleDateString()}</span>
                                             </div>
                                         </div>
-                                    ))}
+                                    ))
+                                }
                             </div>
                         </div>
-                    )}
+                    </div>
+                    <div className="bg-red-100 space-y-5 py-5">
+                        {/**
+                         * Esse é o bloco para o usuário postar um novo arquivo. Temos que deixar claro que ele só precisa postar se foi solicitado a ele no último comentário
+                         */}
+                        <div className="w-full flex justify-center">
+                            <h1 className="bg-red-500 w-fit p-2 rounded-xl">Postar Novo Arquivo</h1>
+                        </div>
+
+                        <div className="flex items-center justify-center">
+                            <div className="text-center flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-2xl p-8 hover:border-blue-400 transition-colors duration-300">
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    multiple
+                                    onChange={(e) => {
+                                        if (e.target.files && e.target.files.length > 0) {
+                                            handleMultipleFileUpload(e.target.files);
+                                        }
+                                    }}
+                                    className="hidden"
+                                    accept=".pdf,.doc,.docx"
+                                />
+                                <Upload className="text-blue-500 h-12 w-12 mb-4" />
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className={`flex items-center justify-center px-4 py-2 rounded-lg font-medium text-white transition-all duration-200 ${arquivos.length >= trabalho.configuracaoModalidade.postagens_maximas
+                                        ? 'bg-gray-400 cursor-not-allowed'
+                                        : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
+                                        }`}
+                                    disabled={arquivos.length >= trabalho.configuracaoModalidade.postagens_maximas}
+                                >
+                                    <Plus size={16} className="mr-2" />
+                                    {arquivos.length === 0 ? 'Selecionar arquivos' : 'Adicionar mais arquivos'}
+                                </button>
+
+                                <p className="text-sm text-gray-500 mt-3">
+                                    PDF, DOC ou DOCX até{' '}
+                                    <span className="font-semibold text-gray-700">
+                                        {trabalho.configuracaoModalidade.limite_maximo_de_postagem / 1024 / 1024}MB
+                                    </span>{' '}
+                                    cada
+                                </p>
+
+                                <p className="text-sm text-gray-600 mt-1">
+                                    {arquivos.length}/
+                                    {trabalho.configuracaoModalidade.postagens_maximas} arquivos selecionados
+                                </p>
+                            </div>
+
+                        </div>
+                        {arquivos.length > 0 && (
+                            <div className="space-x-5 border-2 border-dashed border-gray-800 p-3">
+                                <div className="arquivos-lista">
+                                    <h4 className="arquivos-titulo">Arquivos anexados:</h4>
+                                    {
+                                        arquivos.map((arquivo, index) => (
+                                            <div key={arquivo.fileId} className="arquivo-item text-start">
+                                                <div className="arquivo-header">
+                                                    <div className="arquivo-info">
+                                                        <p className="arquivo-nome">
+                                                            {arquivo.originalName}
+                                                        </p>
+                                                        <p className="arquivo-tamanho">
+                                                            {formatFileSize(arquivo.size)}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="arquivo-acoes">
+                                                        {arquivo.status === 'uploading' && (
+                                                            <Loader className="animate-spin text-blue-500" size={16} />
+                                                        )}
+                                                        {arquivo.status === 'completed' && (
+                                                            <CheckCircle className="text-green-500" size={16} />
+                                                        )}
+                                                        {arquivo.status === 'error' && (
+                                                            <AlertCircle className="text-red-500" size={16} />
+                                                        )}
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeFile(arquivo.fileId)}
+                                                            className="remover-arquivo"
+                                                        >
+                                                            <X size={16} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Barra de progresso */}
+                                                {arquivo.status === 'uploading' && (
+                                                    <div className="progress-bar">
+                                                        <div
+                                                            className="progress-fill"
+                                                            style={{ width: `${arquivo.progress}%` }}
+                                                        ></div>
+                                                    </div>
+                                                )}
+
+                                                {/* Mensagem de erro */}
+                                                {arquivo.status === 'error' && arquivo.error && (
+                                                    <p className="text-xs text-red-600 mt-1">{arquivo.error}</p>
+                                                )}
+
+                                                {/* Status */}
+                                                <div className="flex items-center mt-2">
+                                                    <span className={`text-xs ${arquivo.status === 'completed' ? 'status-completed' :
+                                                        arquivo.status === 'error' ? 'status-error' : 'status-uploading'
+                                                        }`}>
+                                                        {arquivo.status === 'uploading' && `Enviando... ${arquivo.progress}%`}
+                                                        {arquivo.status === 'completed' && 'Upload concluído!'}
+                                                        {arquivo.status === 'error' && 'Erro no upload'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+                <div className="w-full flex items-center justify-center">
+                    <button className="bg-red-800 text-white py-3 px-8 text-sm font-extrabold" onClick={() => {
+                        if (confirm("Ao enviar essa correção não será possível realizar nenhuma alteração. Deseja mesmo continuar?")) {
+                            sendToApi()
+                        }
+                    }}>ENVIAR CORREÇÃO</button>
                 </div>
             </div>
-            <div className="w-full flex items-center justify-center">
-                <button className="bg-red-800 text-white py-3 px-8 text-sm font-extrabold" onClick={() => {
-                    if (confirm("Ao enviar essa correção não será possível realizar nenhuma alteração. Deseja mesmo continuar?")) {
-                        sendToApi()
-                    }
-                }}>ENVIAR CORREÇÃO</button>
-            </div>
-        </div>
-    </div >
-);
+        </div >
+    );
 };

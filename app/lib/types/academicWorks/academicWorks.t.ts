@@ -80,9 +80,10 @@ export interface IAcademicWorks {
     configuracaoModalidade: IAcademicWorksProps["modalidades"][0];
 }
 export interface ArquivoUpload {
-    id: string;
+    fileId: string;
     fileName: string;
     originalName: string;
+    url?:string, // coloquei como opcional pq se não ia bugar tudo!!
     size: number;
     status: 'uploading' | 'completed' | 'error';
     progress: number;
