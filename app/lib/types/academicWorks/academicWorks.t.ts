@@ -79,5 +79,13 @@ export interface IAcademicWorks {
     avaliadorId?: ObjectId;
     configuracaoModalidade: IAcademicWorksProps["modalidades"][0];
 }
-
+export interface ArquivoUpload {
+    id: string;
+    fileName: string;
+    originalName: string;
+    size: number;
+    status: 'uploading' | 'completed' | 'error';
+    progress: number;
+    error?: string;
+}
 
