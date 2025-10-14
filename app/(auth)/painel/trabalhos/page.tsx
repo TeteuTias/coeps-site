@@ -21,6 +21,7 @@ import {
     MessageCircle,
     File,
     MessageSquare,
+    Trash2,
 } from 'lucide-react'
 import './style.css';
 
@@ -138,6 +139,7 @@ export default function Home() {
 }
 const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTrabalho }) => {
     const router = useRouter()
+    const [isDeleting, setIsDeleting] = useState(false)
     const {
         _id,
         titulo,
@@ -164,6 +166,52 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
     const [expandirTopicos, setExpandirTopicos] = useState<boolean>(false)
     const [expandirComentariosBanca, setExpandirComentariosBanca] = useState<boolean>(false)
 
+    // Função para excluir trabalho
+    const handleDeleteWork = async () => {
+        // Confirmação do navegador
+        const confirmMessage = `Tem certeza que deseja excluir o trabalho "${titulo}"?\n\nEsta ação não pode ser desfeita e todos os arquivos e dados relacionados serão permanentemente removidos.`
+        
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        setIsDeleting(true);
+        
+        try {
+            // TODO: Implementar chamada para API de exclusão
+            // const response = await fetch('/api/delete/trabalho', {
+            //     method: 'DELETE',
+            //     headers: {
+            //         'Content-Type': 'application/json',
+            //     },
+            //     body: JSON.stringify({
+            //         trabalhoId: _id
+            //     })
+            // });
+
+            // if (!response.ok) {
+            //     const errorData = await response.json();
+            //     throw new Error(errorData.message || 'Erro ao excluir trabalho');
+            // }
+
+            // const result = await response.json();
+            
+            // Simulação temporária - remover quando API estiver implementada
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            alert('Trabalho excluído com sucesso!');
+            
+            // TODO: Atualizar lista de trabalhos após exclusão
+            // window.location.reload(); // Solução temporária
+            
+        } catch (error) {
+            console.error('Erro ao excluir trabalho:', error);
+            alert(error instanceof Error ? error.message : 'Erro desconhecido ao excluir trabalho');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     return (
         <div className="trabalho-card">
             {/* Cabeçalho do Card */}
@@ -172,9 +220,23 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
                     <FileText className="h-6 w-6" />
                     {titulo}
                 </h2>
-                <div className={`card-status ${propsTrabalho.status} text-orange-500`}>
-                    {statusIcon}
-                    <span>{status}</span>
+                <div className="card-header-actions">
+                    <div className={`card-status ${propsTrabalho.status} text-orange-500`}>
+                        {statusIcon}
+                        <span>{status}</span>
+                    </div>
+                    <button
+                        onClick={handleDeleteWork}
+                        disabled={isDeleting}
+                        className="btn-delete-work"
+                        title="Excluir trabalho"
+                    >
+                        {isDeleting ? (
+                            <div className="loading-spinner-small"></div>
+                        ) : (
+                            <Trash2 size={16} />
+                        )}
+                    </button>
                 </div>
             </div>
             {/* Grid de Informações Principais */}
@@ -344,10 +406,12 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
             </div>
 
             <div className='w-full pt-10'>
-                {
-                    propsTrabalho.status === "Necessita de Alteração" &&
-                    <button className='btn-correcao' onClick={() => router.push(`/painel/trabalhos/correcao/${propsTrabalho._id}`)}>Realizar Correção</button>
-                }
+                <div className="actions-row">
+                    {
+                        propsTrabalho.status === "Necessita de Alteração" &&
+                        <button className='btn-correcao' onClick={() => router.push(`/painel/trabalhos/correcao/${propsTrabalho._id}`)}>Realizar Correção</button>
+                    }
+                </div>
             </div>
         </div>
     );

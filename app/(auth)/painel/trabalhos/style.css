@@ -165,6 +165,12 @@
   margin-bottom: 1.5rem;
 }
 
+.card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
 .card-title {
   font-size: 1.4rem;
   font-weight: 800;
@@ -488,6 +494,46 @@
   line-height: 1.5;
 }
 
+/* Botão de exclusão de trabalho */
+.btn-delete-work {
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+}
+
+.btn-delete-work:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+  background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%);
+}
+
+.btn-delete-work:disabled {
+  background: #9CA3AF;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Loading spinner pequeno */
+.loading-spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
 /* Botão de correção */
 .btn-correcao {
   background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
@@ -509,6 +555,14 @@
   transform: translateY(-2px);
   box-shadow: 0 8px 30px rgba(220, 38, 38, 0.4);
   background: linear-gradient(135deg, #B91C1C 0%, #DC2626 100%);
+}
+
+/* Linha de ações */
+.actions-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 /* Mensagem de carregamento */
@@ -586,8 +640,13 @@
     align-items: flex-start;
   }
   
+  .card-header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
   .card-status {
-    align-self: flex-end;
+    align-self: flex-start;
   }
   
   .autor-item {
