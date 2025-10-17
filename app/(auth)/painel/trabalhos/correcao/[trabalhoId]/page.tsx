@@ -2,7 +2,6 @@
 
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react"
 import "./style.css"
-import { ObjectId } from "bson";
 import { IAcademicWorks, ArquivoUpload } from "@/lib/types/academicWorks/academicWorks.t";
 import { Paperclip, Loader, CheckCircle, AlertCircle, X, Upload, Plus } from "lucide-react";
 import DOMPurify from "dompurify";
