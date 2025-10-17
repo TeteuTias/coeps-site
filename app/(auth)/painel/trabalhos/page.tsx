@@ -23,6 +23,7 @@ import {
     MessageSquare,
 } from 'lucide-react'
 import './style.css';
+import HtmlSanitizer from '@/app/utils/htmlSanitizer';
 
 //
 //
@@ -309,10 +310,7 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
                                         key={index}
                                         className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 transition-all duration-300 hover:shadow-md"
                                     >
-                                        <p className="text-gray-800 font-normal leading-relaxed mb-3">
-                                            {comentario.comentario}
-                                        </p>
-                                        <div className="flex flex-wrap items-center text-sm text-gray-500 gap-x-4 gap-y-2">
+                                        <div className="flex flex-wrap items-center justify-between pb-10 text-sm text-gray-500 gap-x-4 gap-y-2">
                                             <p>
                                                 <span className="font-medium text-gray-700">Data:</span>{' '}
                                                 {new Date(comentario.date).toLocaleDateString('pt-BR', {
@@ -334,6 +332,8 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
                                             >
                                                 {comentario.status}
                                             </span>
+                                        </div>
+                                        <div className="mb-3" dangerouslySetInnerHTML={{ __html: HtmlSanitizer(comentario.comentario) }}>
                                         </div>
                                     </div>
                                 ))
