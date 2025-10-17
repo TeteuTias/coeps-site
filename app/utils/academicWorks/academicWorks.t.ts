@@ -13,7 +13,7 @@ export interface IAcademicWorksProps {
     }[],
     "link_edital": string,
     "link_guia"?: string,
-    "modalidades"?: { // Coloquei como opcional pois pode acontecer de apaguarem todas as modalidades
+    "modalidades": { // Coloquei como opcional pois pode acontecer de apaguarem todas as modalidades
         _id: ObjectId,
         modalidade: string,
         autores_por_trabalho: number,
@@ -79,14 +79,5 @@ export interface IAcademicWorks {
     avaliadorId?: ObjectId;
     configuracaoModalidade: IAcademicWorksProps["modalidades"][0];
 }
-export interface ArquivoUpload {
-    fileId: string;
-    fileName: string;
-    originalName: string;
-    url?:string, // coloquei como opcional pq se não ia bugar tudo!!
-    size: number;
-    status: 'uploading' | 'completed' | 'error';
-    progress: number;
-    error?: string;
-}
+
 

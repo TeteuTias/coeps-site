@@ -24,6 +24,7 @@ import {
     Trash2,
 } from 'lucide-react'
 import './style.css';
+import HtmlSanitizer from '@/app/utils/htmlSanitizer';
 
 //
 //
@@ -296,7 +297,7 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
                 {
                     arquivos.map((arquivo) => {
                         return (
-                            <div className='arquivo-item' key={`${arquivo.fileId}`}>
+                            <div className='arquivo-item text-start' key={`${arquivo.fileId}`}>
                                 <h3 className="arquivo-header" onClick={() => console.log(arquivo)}>
                                     <File className="h-5 w-5" /> Arquivo
                                 </h3>
@@ -312,9 +313,15 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
                                         Visualizar
                                     </a>
                                 </div>
-                                <div className="arquivo-info">
+                                <div className="arquivo-info text-black">
                                     <span>Postado em:</span>
-                                    <p className="arquivo-data">{new Date(arquivo?.uploadDate).toDateString()}</p>
+                                    <p className="arquivo-data">
+                                        {new Date(arquivo?.uploadDate).toLocaleDateString('pt-BR', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric',
+                                        })} às {new Date(arquivo?.uploadDate).toLocaleTimeString('pt-BR')}
+                                    </p>
                                 </div>
                             </div>
                         )
@@ -359,50 +366,59 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
                     </h3>
                     <button className='btn-toggle' onClick={() => setExpandirComentariosBanca((prev) => !prev)}>{expandirComentariosBanca ? `Expandir` : `Recolher`}</button>
                 </div>
-                <div>
-                    {propsTrabalho.avaliadorComentarios.length === 0 ? (
-                        <p className="text-gray-500 text-sm">Nenhuma avaliação foi feita ainda.</p>
-                    ) : (
-                        <div className='space-y-5'>
-                            <p className='w-full text-center text-gray-500'>Avaliações já realizadas</p>
-                            {
-                                propsTrabalho.avaliadorComentarios.map((comentario, index) => (
-                                    <div
-                                        key={index}
-                                        className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 transition-all duration-300 hover:shadow-md"
-                                    >
-                                        <p className="text-gray-800 font-normal leading-relaxed mb-3">
-                                            {comentario.comentario}
-                                        </p>
-                                        <div className="flex flex-wrap items-center text-sm text-gray-500 gap-x-4 gap-y-2">
-                                            <p>
-                                                <span className="font-medium text-gray-700">Data:</span>{' '}
-                                                {new Date(comentario.date).toLocaleDateString('pt-BR', {
-                                                    year: 'numeric',
-                                                    month: 'long',
-                                                    day: 'numeric',
-                                                })} às {new Date(comentario.date).toLocaleTimeString('pt-BR')}
-                                            </p>
-                                            <span
-                                                className={`
+                {
+                    expandirComentariosBanca &&
+                    <div>
+                        {propsTrabalho.avaliadorComentarios.length === 0 ? (
+                            <p className="text-gray-500 text-sm">Nenhuma avaliação foi feita ainda.</p>
+                        ) : (
+                            <div className='space-y-5'>
+                                <p className='w-full text-center text-gray-500'>Avaliações já realizadas</p>
+                                {
+                                    propsTrabalho.avaliadorComentarios.map((comentario, index) => (
+                                        <div
+                                            key={index}
+                                            className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 transition-all duration-300 hover:shadow-md"
+                                        >
+                                            <div>
+                                                {index === propsTrabalho.avaliadorComentarios.length - 1 &&
+                                                    <span className="bg-indigo-100 text-indigo-800 text-xs font-semibold px-3 py-1 rounded-full mb-2 inline-block animate-pulse">
+                                                        ÚLTIMA AVALIAÇÃO
+                                                    </span>
+                                                }
+                                            </div>
+                                            <div className="flex flex-wrap items-center justify-between pb-10 text-sm text-gray-500 gap-x-4 gap-y-2">
+                                                <p>
+                                                    <span className="font-medium text-gray-700">Data:</span>{' '}
+                                                    {new Date(comentario.date).toLocaleDateString('pt-BR', {
+                                                        year: 'numeric',
+                                                        month: 'long',
+                                                        day: 'numeric',
+                                                    })} às {new Date(comentario.date).toLocaleTimeString('pt-BR')}
+                                                </p>
+                                                <span
+                                                    className={`
         px-3 py-1 rounded-full text-xs font-semibold
         ${comentario.status === 'Aceito'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : comentario.status === 'Recusado'
-                                                            ? 'bg-red-100 text-red-800'
-                                                            : 'bg-yellow-100 text-yellow-800'
-                                                    }
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : comentario.status === 'Recusado'
+                                                                ? 'bg-red-100 text-red-800'
+                                                                : 'bg-yellow-100 text-yellow-800'
+                                                        }
       `}
-                                            >
-                                                {comentario.status}
-                                            </span>
+                                                >
+                                                    {comentario.status}
+                                                </span>
+                                            </div>
+                                            <div className="mb-3 text-black" dangerouslySetInnerHTML={{ __html: HtmlSanitizer(comentario.comentario) }}>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))
-                            }
-                        </div>
-                    )}
-                </div>
+                                    ))
+                                }
+                            </div>
+                        )}
+                    </div>
+                }
             </div>
 
             <div className='w-full pt-10'>
