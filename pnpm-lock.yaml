@@ -20,6 +20,9 @@ importers:
       aws-sdk:
         specifier: ^2.1692.0
         version: 2.1692.0
+      bson:
+        specifier: ^6.10.4
+        version: 6.10.4
       dompurify:
         specifier: ^3.2.7
         version: 3.3.0
