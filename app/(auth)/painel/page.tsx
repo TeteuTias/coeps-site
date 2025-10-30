@@ -87,9 +87,6 @@ function PaginaAreaDoCliente() {
         <Link href="painel/atividades" prefetch={false}>
           <CardOpcoes texto="Atividades" icon={<Activity size={48} />} />
         </Link>
-        <Link href="painel/brindes" prefetch={false}>
-          <CardOpcoes texto="Brindes" icon={<Sparkles size={48} />} special={true} />
-        </Link>
         <div style={{ opacity: userId ? 1 : 0.5, pointerEvents: userId ? 'auto' : 'none' }}>
           <Link href={`/qrCode/${userId ?? 'null'}`} prefetch={false}>
             <CardOpcoes texto="Meu QR Code" icon={<QrCode size={48} />} />
