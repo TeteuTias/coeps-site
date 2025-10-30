@@ -1,7 +1,5 @@
-import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
-import { getAccessToken, withApiAuthRequired } from '@auth0/nextjs-auth0';
-import { execOnce } from 'next/dist/shared/lib/utils';
+import { withApiAuthRequired } from '@auth0/nextjs-auth0';
 import { getSession } from '@auth0/nextjs-auth0';
 import { connectToDatabase } from '@/app/lib/mongodb';
 import { DateTime } from "luxon"
@@ -74,7 +72,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
             {
                 _id: new ObjectId(eventId),
                 participants: { $ne: _id }, // Verifica se o usuário não está na lista
-                isFree: 0 // Adiciona a condição de que isFree deve ser igual a 0
+                isFree: false // Adiciona a condição de que isFree deve ser igual a 0
             },
             [
                 {
@@ -104,9 +102,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
             { returnDocument: "after" } // Para retornar o documento atualizado
         );
 
-        //console.log(updateResult)
         if (updateResult) {
-            //console.log(updateResult)
             switch (true) {
                 case updateResult.maxParticipants == 0:
                     return Response.json({ message: 'Infelizmente, as vagas se esgotaram.' }, { status: 403 });
@@ -119,6 +115,9 @@ export const POST = withApiAuthRequired(async function POST(request) {
             }
             // return Response.json({ message: 'AQUI!' }, { status: 200 });
 
+        }
+        else {
+            throw new Error('Ocorreu algum erro, por favor recarregue a página! [código de erro: updateResult]');
         }
 
 
