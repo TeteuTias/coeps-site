@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import WarningModal from "@/components/WarningModal"
 import { DateTime } from "luxon"
 import Link from "next/link"
@@ -372,6 +373,12 @@ const BannerAtividade = ({ activity, userId, color }) => {
                         <DollarSign size={18} style={{ color: '#541A2C' }} />
                     </div> : ""
             }
+            {
+                buttonText == "INSCREVER" && !includesUser ?
+                    <div className="atividades-vagas-tag">
+                        <span>{nVagas} Vagas</span>
+                    </div> : ""
+            }
             <div className="atividades-card-content">
                 <div className={`atividades-card-header-border`} style={{ 'backgroundColor': color }} />
                 <div className="atividades-card-body">
@@ -391,13 +398,6 @@ const BannerAtividade = ({ activity, userId, color }) => {
                                 </button>
                             </div> : ""
                     }
-                    <h1 className="atividades-card-title">
-                        {
-                            buttonText == "INSCREVER" && !includesUser ?
-                                `[${nVagas} Vagas]` : ""
-                        }
-
-                    </h1>
                     <div className="atividades-card-icon">{getActivityIcon(activity)}</div>
                     <div className="atividades-card-title">
                         <h1 className="font-bold text-center" >{activity.name.toLocaleUpperCase()}</h1>
@@ -417,7 +417,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
                         activity.isFree ? handleRegister(activity._id) : handlePayedRegister(activity._id)
                     }} style={{ 'backgroundColor': color }} >
                         {
-                            includesUser ? "" : activity.isOpen ? buttonText : ""
+                            ""
                         }
 
                     </button> {/* INSCREVER|JÁ INSCRITO|FECHADO  */}
@@ -426,6 +426,22 @@ const BannerAtividade = ({ activity, userId, color }) => {
             {
                 (buttonText === 'FECHADO' || !activity.isOpen) &&
                     <div className="atividades-fechado">FECHADO</div>
+            }
+            {
+                buttonText === 'CHEIO' &&
+                    <div className="atividades-cheio">CHEIO</div>
+            }
+            {
+                buttonText === 'INSCREVER' && !includesUser &&
+                    <div 
+                        className="atividades-inscrever" 
+                        onClick={() => {
+                            activity.isFree ? handleRegister(activity._id) : handlePayedRegister(activity._id)
+                        }}
+                        style={{ cursor: 'pointer' }}
+                    >
+                        INSCREVER
+                    </div>
             }
             {
                 includesUser && <div className="atividades-inscrito">INSCRITO</div>
@@ -437,18 +453,17 @@ const BannerAtividade = ({ activity, userId, color }) => {
 const LoadingModal = ({ isLoading }) => {
     if (!isLoading) return null;
 
-    return (
-        <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 z-[200]">
+    return createPortal(
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50 z-[9999]" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
             <div className="flex flex-row content-center items-center justify-center p-5 rounded shadow-lg text-center bg-white">
-
                 <svg className="flex flex-row content-center items-center justify-center animate-spin h-10 w-10 text-blue-500" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 100 8v4a8 8 0 01-8-8z" />
                 </svg>
-
                 <p className="text-lg font-semibold p-4 text-black">Carregando</p>
             </div>
-        </div>
+        </div>,
+        typeof window !== 'undefined' ? document.body : document.createElement('div')
     );
 };
 //
@@ -457,46 +472,40 @@ const LoadingModal = ({ isLoading }) => {
 const WarningModalPayment = ({ href = "/pagamentos", message = "MENSAGEM NÃO DEFINIDA", textButton = "FECHAR", onClose = () => { }, closeModal = () => { }, isModal = 1 }) => {
     return (
         <>
-            {
-                isModal ?
-                    <div className=" fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-                        < div className="w-[85%] sm:w-full bg-white p-6 rounded-lg shadow-lg max-w-md " >
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center">
-                                    <span className="text-yellow-500 text-2xl mr-2">⚠️</span>
-                                    <h2 className="text-xl font-semibold text-gray-800">Aviso</h2>
-                                </div>
-
+            {isModal ? createPortal(
+                <div className="fixed inset-0 flex items-center justify-center z-[9999] bg-black bg-opacity-50" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+                    <div className="w-[85%] sm:w-full bg-white p-6 rounded-lg shadow-lg max-w-md ">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center">
+                                <span className="text-yellow-500 text-2xl mr-2">⚠️</span>
+                                <h2 className="text-xl font-semibold text-gray-800">Aviso</h2>
                             </div>
-                            <p className="mt-4 text-gray-600">{message}</p>
-                            <div className="flex flex-row justify-end space-x-2 mt-6 text-right">
-                                <button
-                                    className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-400 transition"
-                                    onClick={
-                                        () => {
-                                            closeModal(0)
-                                            onClose()
-                                        }
-                                    }
-                                >
-                                    <Link href={href} prefetch={false} target="_blank">PAGAR</Link>
-                                </button>
-                                <button
-                                    className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-400 transition"
-                                    onClick={
-                                        () => {
-                                            closeModal(0)
-                                            onClose()
-                                        }
-                                    }
-                                >
-                                    {textButton}
-                                </button>
-                            </div>
-                        </div >
-                    </div >
-                    : ""
-            }
+                        </div>
+                        <p className="mt-4 text-gray-600">{message}</p>
+                        <div className="flex flex-row justify-end space-x-2 mt-6 text-right">
+                            <button
+                                className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-400 transition"
+                                onClick={() => {
+                                    closeModal(0)
+                                    onClose()
+                                }}
+                            >
+                                <Link href={href} prefetch={false} target="_blank">PAGAR</Link>
+                            </button>
+                            <button
+                                className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-400 transition"
+                                onClick={() => {
+                                    closeModal(0)
+                                    onClose()
+                                }}
+                            >
+                                {textButton}
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                typeof window !== 'undefined' ? document.body : document.createElement('div')
+            ) : ""}
         </>
     );
 };
