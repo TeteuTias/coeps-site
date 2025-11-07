@@ -8,6 +8,7 @@ export default function MinhaProgramacao() {
   const [isFetching, setIsFetching] = useState<boolean>(true)
   const [data, setData] = useState(undefined)
   const [modal, setModal] = useState(undefined)
+  const [showRegrasModal, setShowRegrasModal] = useState<boolean>(true)
 
   const handleModal = (event) => {
     setModal(event)
@@ -47,9 +48,24 @@ export default function MinhaProgramacao() {
     enviarRequisicaoGet();
   }, []);
 
+  // Travar scroll da página quando o modal estiver aberto
+  useEffect(() => {
+    if (showRegrasModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    // Cleanup: restaurar scroll quando componente desmontar
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showRegrasModal]);
+
   return (
     <div className="programacao-main">
       {modal && <Modal handleModal={() => handleModal(0)} modal={modal} />}
+      {showRegrasModal && <RegrasModal onClose={() => setShowRegrasModal(false)} />}
 
       <div className="programacao-container">
         <div className="programacao-header">
@@ -204,6 +220,65 @@ const Modal = ({ handleModal, modal }) => {
 
 function padZeroIfNeeded(number) {
   return number < 10 ? '0' + number : number.toString();
+}
+
+const RegrasModal = ({ onClose }) => {
+  return (
+    <div className="regras-modal-overlay">
+      <div className="regras-modal">
+        <div className="regras-modal-content">
+          <h2 className="regras-modal-title">REGRAS DE CONDUTA</h2>
+          
+          <div className="regras-modal-text">
+            <p className="regras-modal-intro">
+              Para manter a ordem e a organização do evento as seguintes regras devem ser rigorosamente seguidas:
+            </p>
+
+            <div className="regras-modal-section">
+              <h3 className="regras-modal-section-title">1. Identificação e acesso</h3>
+              <p className="regras-modal-section-text">
+                Todos os participantes, palestrantes e demais envolvidos no minicurso, devem assinar a lista de presença durante o evento, somente pessoas previamente inscritas e com nome na lista terão acesso à área do minicurso.
+              </p>
+            </div>
+
+            <div className="regras-modal-section">
+              <h3 className="regras-modal-section-title">2. Proibição de Adornos</h3>
+              <p className="regras-modal-section-text">
+                Nos minicursos práticos que contarão com manequins e materiais disponibilizados pela comissão organizadora, não será permitido o uso de adornos (colares, brincos, pulseiras, anéis e relógios) por parte dos membros da liga, professores e congressistas. Ressaltamos que é obrigatório manter a integridade dos materiais fornecidos durante o evento.
+              </p>
+            </div>
+
+            <div className="regras-modal-section">
+              <h3 className="regras-modal-section-title">3. Papelaria</h3>
+              <p className="regras-modal-section-text">
+                Não será permitida a entrada na área do minicurso com canetas, lápis ou quaisquer outros materiais próprios que possam danificar ou comprometer a integridade dos manequins e demais recursos disponibilizados pela comissão organizadora.
+              </p>
+            </div>
+
+            <div className="regras-modal-section">
+              <h3 className="regras-modal-section-title">4. Vestimenta</h3>
+              <p className="regras-modal-section-text">
+                É importante que os participantes das ligas, professores e congressistas utilizem roupas adequadas, sapatos fechados e estejam portando o crachá de identificação do COEPS. Nos minicursos realizados em laboratórios, é obrigatório o uso de jaleco, visando a segurança e o cumprimento das normas institucionais.
+              </p>
+              <p className="regras-modal-section-text">
+                Os manequins ou estruturas disponibilizadas pelo CSR devem ser manipulados com cautela e utilizando luvas para que não ocorra nenhuma intercorrência.
+              </p>
+            </div>
+
+            <div className="regras-modal-warning">
+              <p className="regras-modal-warning-text">
+                Qualquer pessoa envolvida no minicurso que transgredir as normas estipuladas ou apresentar relutância em adequar-se às condutas preconizadas será convidada a se retirar do evento sem direito a certificação.
+              </p>
+            </div>
+          </div>
+
+          <button className="regras-modal-button" onClick={onClose}>
+            ENTENDI
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 const CardProgramacao = ({ dateKey, event, handleModal }) => {
