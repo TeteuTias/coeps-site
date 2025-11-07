@@ -203,6 +203,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
     const [modalMessage2, setModalMessage2] = useState(0)
     const [modal3Link, setModal3Link] = useState("/pagamentos")
     const [loadingModal, setLoadingModal] = useState(0)
+    const [showConfirmRemove, setShowConfirmRemove] = useState(false)
     const nVagas = activity.maxParticipants - activity.participants.length < 0 ? "0" : activity.maxParticipants - activity.participants.length
     // const buttonText = isDateEqualOrAfterToday(activity.dateOpen)
     const handleRegister = async (eventId) => {
@@ -317,6 +318,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
         }
     };
     const handleRemoveRegister = async (eventId) => {
+        setShowConfirmRemove(false)
         setLoadingModal(1)
 
         switch (true) {
@@ -365,6 +367,12 @@ const BannerAtividade = ({ activity, userId, color }) => {
             <WarningModal message={modalMessage2} textButton={"RECARREGAR PÁGINA"} closeModal={() => { setModalMessage(0) }} isModal={modalMessage2} onClose={() => { window.location.reload() }} />
             <WarningModalPayment href={modal3Link} message={modalMessage3} textButton={"FECHAR"} closeModal={() => { setModalMessage3(0) }} isModal={modalMessage3} />
             <LoadingModal isLoading={loadingModal} />
+            <ConfirmRemoveModal 
+                isOpen={showConfirmRemove} 
+                onClose={() => setShowConfirmRemove(false)} 
+                onConfirm={() => handleRemoveRegister(activity._id)}
+                activityName={activity.name}
+            />
 
             {
                 !activity.isFree ?
@@ -385,8 +393,8 @@ const BannerAtividade = ({ activity, userId, color }) => {
                     {
                         includesUser && activity.isFree ?
                             <div className="atividades-remove-button-container">
-                                <button className="atividades-remove-button" onClick={() => { handleRemoveRegister(activity._id) }}>
-                                    <XCircle size={20} />
+                                <button className="atividades-remove-button" onClick={() => { setShowConfirmRemove(true) }}>
+                                    <XCircle size={24} />
                                 </button>
                             </div> : ""
                     }
@@ -394,7 +402,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
                         includesUser && !activity.isFree ?
                             <div className="atividades-remove-button-container">
                                 <button className="atividades-remove-button" onClick={() => { setModalMessage("Para cancelar sua inscrição de um evento PAGO, entre em contato com a equipe COEPS.") }}>
-                                    <XCircle size={20} />
+                                    <XCircle size={24} />
                                 </button>
                             </div> : ""
                     }
@@ -432,7 +440,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
                     <div className="atividades-cheio">CHEIO</div>
             }
             {
-                buttonText === 'INSCREVER' && !includesUser &&
+                buttonText === 'INSCREVER' && !includesUser && activity.isOpen &&
                     <div 
                         className="atividades-inscrever" 
                         onClick={() => {
@@ -507,6 +515,48 @@ const WarningModalPayment = ({ href = "/pagamentos", message = "MENSAGEM NÃO DE
                 typeof window !== 'undefined' ? document.body : document.createElement('div')
             ) : ""}
         </>
+    );
+};
+
+// Modal de confirmação para remover inscrição
+const ConfirmRemoveModal = ({ isOpen, onClose, onConfirm, activityName }) => {
+    if (!isOpen) return null;
+
+    return createPortal(
+        <div className="fixed inset-0 flex items-center justify-center z-[9999] bg-black bg-opacity-50" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+            <div className="w-[85%] sm:w-full bg-white p-6 rounded-lg shadow-lg max-w-md">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                        <XCircle size={24} className="text-red-500 mr-2" />
+                        <h2 className="text-xl font-semibold text-gray-800">Confirmar Desinscrição</h2>
+                    </div>
+                </div>
+                <p className="mt-4 text-gray-600 mb-2">
+                    Tem certeza que deseja se desinscrever da atividade:
+                </p>
+                <p className="text-gray-800 font-semibold mb-4 text-center bg-gray-100 p-2 rounded">
+                    {activityName?.toUpperCase()}
+                </p>
+                <p className="text-sm text-gray-500 mb-6 text-center">
+                    Esta ação não pode ser desfeita.
+                </p>
+                <div className="flex flex-row justify-end space-x-2 mt-6">
+                    <button
+                        className="bg-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-400 transition font-semibold"
+                        onClick={onClose}
+                    >
+                        CANCELAR
+                    </button>
+                    <button
+                        className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition font-semibold"
+                        onClick={onConfirm}
+                    >
+                        CONFIRMAR
+                    </button>
+                </div>
+            </div>
+        </div>,
+        typeof window !== 'undefined' ? document.body : document.createElement('div')
     );
 };
 

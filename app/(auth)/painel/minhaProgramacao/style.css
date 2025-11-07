@@ -439,6 +439,233 @@
   width: 60%;
 }
 
+/* Modal de Regras de Conduta */
+.regras-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  padding: 1rem;
+  overflow-y: auto;
+  /* Esconder scrollbar mas manter funcionalidade */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE e Edge */
+}
+
+.regras-modal-overlay::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.regras-modal {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  margin: auto;
+  /* Esconder scrollbar mas manter funcionalidade */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE e Edge */
+}
+
+.regras-modal::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.regras-modal-content {
+  padding: 2.5rem;
+}
+
+.regras-modal-title {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #541A2C;
+  text-align: center;
+  margin-bottom: 2rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #541A2C 0%, #1B305F 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  padding-bottom: 1rem;
+  border-bottom: 3px solid #541A2C;
+}
+
+.regras-modal-text {
+  color: #374151;
+  line-height: 1.8;
+}
+
+.regras-modal-intro {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #541A2C;
+  margin-bottom: 2rem;
+  text-align: justify;
+  padding: 1rem;
+  background: rgba(84, 26, 44, 0.05);
+  border-radius: 10px;
+  border-left: 4px solid #541A2C;
+}
+
+.regras-modal-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 12px;
+  border: 1px solid rgba(84, 26, 44, 0.1);
+}
+
+.regras-modal-section-title {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1B305F;
+  margin-bottom: 0.75rem;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+}
+
+.regras-modal-section-text {
+  font-size: 1rem;
+  color: #374151;
+  line-height: 1.7;
+  text-align: justify;
+  margin-bottom: 0.5rem;
+}
+
+.regras-modal-warning {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+  border-radius: 12px;
+  border: 2px solid #EF4444;
+  border-left: 6px solid #DC2626;
+}
+
+.regras-modal-warning-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #DC2626;
+  line-height: 1.7;
+  text-align: justify;
+  margin: 0;
+}
+
+.regras-modal-button {
+  width: 100%;
+  padding: 1rem 2rem;
+  margin-top: 2rem;
+  background: linear-gradient(135deg, #541A2C 0%, #1B305F 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(84, 26, 44, 0.3);
+}
+
+.regras-modal-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(84, 26, 44, 0.4);
+  background: linear-gradient(135deg, #6B2235 0%, #2B4A7F 100%);
+}
+
+.regras-modal-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(84, 26, 44, 0.3);
+}
+
+/* Responsividade para o modal de regras */
+@media (max-width: 768px) {
+  .regras-modal-content {
+    padding: 1.5rem;
+  }
+
+  .regras-modal-title {
+    font-size: 1.5rem;
+  }
+
+  .regras-modal-intro {
+    font-size: 1rem;
+    padding: 0.75rem;
+  }
+
+  .regras-modal-section {
+    padding: 0.75rem;
+  }
+
+  .regras-modal-section-title {
+    font-size: 1.1rem;
+  }
+
+  .regras-modal-section-text {
+    font-size: 0.95rem;
+  }
+
+  .regras-modal-button {
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .regras-modal-content {
+    padding: 1rem;
+  }
+
+  .regras-modal-title {
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .regras-modal-intro {
+    font-size: 0.95rem;
+    padding: 0.5rem;
+  }
+
+  .regras-modal-section {
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .regras-modal-section-title {
+    font-size: 1rem;
+  }
+
+  .regras-modal-section-text {
+    font-size: 0.9rem;
+  }
+
+  .regras-modal-warning {
+    padding: 1rem;
+  }
+
+  .regras-modal-button {
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+  }
+}
+
 /* Responsividade */
 @media (max-width: 768px) {
   .programacao-container {

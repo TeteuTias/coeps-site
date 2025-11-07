@@ -333,16 +333,18 @@
   justify-content: center;
   align-items: center;
   color: #10B981;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 1.2rem;
   letter-spacing: 1px;
-  background: rgba(16,185,129,0.12);
-  border-radius: 10px;
-  padding: 0.5rem 1.2rem;
+  background: rgba(16,185,129,0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 12px;
+  padding: 0.6rem 1.5rem;
   margin: 1.5rem auto 0 auto;
-  box-shadow: 0 2px 8px rgba(16,185,129,0.10);
+  box-shadow: 0 4px 16px rgba(16,185,129,0.2);
   width: fit-content;
-  border: 2px solid #10B98133;
+  border: 1.5px solid rgba(16,185,129,0.3);
 }
 
 @media (max-width: 900px) {
@@ -369,6 +371,43 @@
     padding: 0.7rem 1.2rem;
   }
 } 
+
+/* Botão de remover inscrição - mais visível */
+.atividades-remove-button-container {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 20;
+}
+
+.atividades-remove-button {
+  background: rgba(239, 68, 68, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: white;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  transform: translate(25%, -25%);
+}
+
+.atividades-remove-button:hover {
+  background: rgba(220, 38, 38, 0.9);
+  transform: translate(25%, -25%) scale(1.1);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.atividades-remove-button:active {
+  transform: translate(25%, -25%) scale(1.05);
+}
 
 /* Texto em PRETO apenas no conteúdo de descrição dos MINICURSOS */
 .atividades-card:has(.lucide-graduation-cap) .atividades-card-description h1,
