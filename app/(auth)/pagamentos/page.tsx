@@ -303,87 +303,91 @@ const Pagamentos = () => {
       {data?.pagamento?.situacao !== 1 && dataPaymentConfig && (
         <section className="values-section">
           <div className="values-container">
-            <h2 className="values-title">VALORES</h2>
-            <div className="glass-container">
-              <p className="intro-text">
-                Abaixo você encontra informações sobre os valores correspondente ao Lote atual.
-              </p>
+            <h2 className="values-title">INSCRIÇÕES ENCERRADAS</h2>
+            {
+              /* Gambiarra só para nao aparecer nada kk */
+              100 % 2 === 5000 &&
+              <div className="glass-container">
+                <p className="intro-text">
+                  Abaixo você encontra informações sobre os valores correspondente ao Lote atual.
+                </p>
 
-              <div className="lot-badge">
-                {dataPaymentConfig.nome.toLocaleUpperCase()}
-              </div>
-
-              <div className="values-grid">
-                {
-                  dataPaymentConfig.pagamentosAceitos.includes("CREDIT_CARD") &&
-                  <div className="value-card">
-                    <div className="value-icon value-icon-large"><CreditCard size={40} /></div>
-                    <div className="value-type">CRÉDITO À VISTA</div>
-                    <div className="value-amount">R$ {dataPaymentConfig.valorAVista.toFixed(2)}</div>
-                  </div>
-                }
-                {
-                  dataPaymentConfig.pagamentosAceitos.includes("DEBIT_CARD") &&
-                  <div className="value-card">
-                    <div className="value-icon value-icon-large"><Landmark size={40} /></div>
-                    <div className="value-type">DÉBITO</div>
-                    <div className="value-amount">R$ {dataPaymentConfig.valorDebito.toFixed(2)}</div>
-                  </div>
-                }
-                {
-                  dataPaymentConfig.pagamentosAceitos.includes("BOLETO") &&
-                  <div className="value-card">
-                    <div className="value-icon value-icon-large"><FileText size={40} /></div>
-                    <div className="value-type">BOLETO</div>
-                    <div className="value-amount">R$ {dataPaymentConfig.valorBoleto.toFixed(2)}</div>
-                  </div>
-                }
-
-                {
-                  dataPaymentConfig.pagamentosAceitos.includes("PIX") &&
-                  <div className="value-card">
-                    <div className="value-icon value-icon-large"><Sparkles size={40} /></div>
-                    <div className="value-type">PIX</div>
-                    <div className="value-amount">R$ {dataPaymentConfig.valorPix.toFixed(2)}</div>
-                  </div>
-                }
-              </div>
-
-              {/* Informações importantes sobre prazos */}
-              <div className="payment-info-section">
-                <div className="payment-info-card">
-                  <div className="payment-info-icon"><Clock size={24} /></div>
-                  <div className="payment-info-content">
-                    <h4 className="payment-info-title">Prazo de Pagamento</h4>
-                    <p className="payment-info-text">Você terá 1 dia útil para realizar o pagamento após criar um novo pagamento (PIX, BOLETO ou CRÉDITO À VISTA).</p>
-                  </div>
+                <div className="lot-badge">
+                  {dataPaymentConfig.nome.toLocaleUpperCase()}
                 </div>
 
-                <div className="payment-info-card">
-                  <div className="payment-info-icon"><CheckCircle size={24} /></div>
-                  <div className="payment-info-content">
-                    <h4 className="payment-info-title">Confirmação</h4>
-                    <p className="payment-info-text">O pagamento será confirmado em até 3 dias úteis após o processamento.</p>
-                  </div>
-                </div>
-              </div>
-
-              <h3 className="installments-title">OPÇÕES DE PARCELAMENTO</h3>
-
-              <div className="installments-section">
-                <div className="installments-container">
-                  {dataPaymentConfig?.parcelamentos?.map((value) => (
-                    <div className="installment-item" key={value.codigo}>
-                      <div className="installment-bullet"></div>
-                      <div className="installment-text">
-                        Parcelar em {value.totalParcelas} {value.totalParcelas === 1 ? "vez" : "vezes"} de R$ {value.valorCadaParcela.toFixed(2)},
-                        totalizando R$ {(value.totalParcelas * value.valorCadaParcela).toFixed(2)}.
-                      </div>
+                <div className="values-grid">
+                  {
+                    dataPaymentConfig.pagamentosAceitos.includes("CREDIT_CARD") &&
+                    <div className="value-card">
+                      <div className="value-icon value-icon-large"><CreditCard size={40} /></div>
+                      <div className="value-type">CRÉDITO À VISTA</div>
+                      <div className="value-amount">R$ {dataPaymentConfig.valorAVista.toFixed(2)}</div>
                     </div>
-                  ))}
+                  }
+                  {
+                    dataPaymentConfig.pagamentosAceitos.includes("DEBIT_CARD") &&
+                    <div className="value-card">
+                      <div className="value-icon value-icon-large"><Landmark size={40} /></div>
+                      <div className="value-type">DÉBITO</div>
+                      <div className="value-amount">R$ {dataPaymentConfig.valorDebito.toFixed(2)}</div>
+                    </div>
+                  }
+                  {
+                    dataPaymentConfig.pagamentosAceitos.includes("BOLETO") &&
+                    <div className="value-card">
+                      <div className="value-icon value-icon-large"><FileText size={40} /></div>
+                      <div className="value-type">BOLETO</div>
+                      <div className="value-amount">R$ {dataPaymentConfig.valorBoleto.toFixed(2)}</div>
+                    </div>
+                  }
+
+                  {
+                    dataPaymentConfig.pagamentosAceitos.includes("PIX") &&
+                    <div className="value-card">
+                      <div className="value-icon value-icon-large"><Sparkles size={40} /></div>
+                      <div className="value-type">PIX</div>
+                      <div className="value-amount">R$ {dataPaymentConfig.valorPix.toFixed(2)}</div>
+                    </div>
+                  }
+                </div>
+
+                {/* Informações importantes sobre prazos */}
+                <div className="payment-info-section">
+                  <div className="payment-info-card">
+                    <div className="payment-info-icon"><Clock size={24} /></div>
+                    <div className="payment-info-content">
+                      <h4 className="payment-info-title">Prazo de Pagamento</h4>
+                      <p className="payment-info-text">Você terá 1 dia útil para realizar o pagamento após criar um novo pagamento (PIX, BOLETO ou CRÉDITO À VISTA).</p>
+                    </div>
+                  </div>
+
+                  <div className="payment-info-card">
+                    <div className="payment-info-icon"><CheckCircle size={24} /></div>
+                    <div className="payment-info-content">
+                      <h4 className="payment-info-title">Confirmação</h4>
+                      <p className="payment-info-text">O pagamento será confirmado em até 3 dias úteis após o processamento.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <h3 className="installments-title">OPÇÕES DE PARCELAMENTO</h3>
+
+                <div className="installments-section">
+                  <div className="installments-container">
+                    {dataPaymentConfig?.parcelamentos?.map((value) => (
+                      <div className="installment-item" key={value.codigo}>
+                        <div className="installment-bullet"></div>
+                        <div className="installment-text">
+                          Parcelar em {value.totalParcelas} {value.totalParcelas === 1 ? "vez" : "vezes"} de R$ {value.valorCadaParcela.toFixed(2)},
+                          totalizando R$ {(value.totalParcelas * value.valorCadaParcela).toFixed(2)}.
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            }
           </div>
         </section>
       )}
@@ -393,7 +397,7 @@ const Pagamentos = () => {
           {data?.pagamento?.situacao !== 1 && (
             <>
               {
-                data.pagamento.situacao === 0 ?
+                data.pagamento.situacao === 200 /* era 0 */?
                   <div className='flex flex-col'>
                     <div className="history-container">
                       <h2 className="history-title">NOVO PAGAMENTO</h2>
