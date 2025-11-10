@@ -145,7 +145,7 @@ const Anais = () => {
             </div>
             <div className="contact-item">
               <Phone className="contact-icon" />
-              <span>(15) 98812-3011</span>
+              <span>+55 34 99120-9359</span>
             </div>
             <div className="contact-item">
               <Instagram className="contact-icon" />
