@@ -147,7 +147,7 @@ function organizeData(data) {
   });
 
   Object.keys(organized).forEach(date => {
-    organized[date].sort((a, b) => new Date(b.date_init).getTime() - new Date(a.date_init).getTime());
+    organized[date].sort((a, b) => new Date(a.date_init).getTime() - new Date(b.date_init).getTime());
   });
 
   return organized;
