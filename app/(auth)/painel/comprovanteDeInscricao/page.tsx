@@ -10,8 +10,8 @@ const documentHtmlTemplate = `
   <div style="text-align: center; margin-bottom: 20px;">
     <img src="/documento-anexado.png" alt="Logo VII COEPS" style="max-width: 300px; height: auto; display: block; margin: 0 auto;">
   </div>
-  <h1 style="text-align: center; font-size: 24px; margin-bottom: 20px;">Comprovante de participação do VII COEPS</h1>
-  <p style="font-size: 16px; line-height: 1.6; text-align: justify;">Certificamos que o congressista XXX, está devidamente registrado, e enquanto participante devido, fará parte do VII Congresso dos Estudantes e Profissionais de Saúde (COEPS), que ocorrerá devidamente nos dias 13/11/2025, das 17:00 às 22:00, 14/11/2025 das 8:00 às 22:00,  15/11/2025 das 8:00 às 22:00 e 16/11/2025 das 8:00 às 13:00.</p>
+  <h1 style="text-align: center; font-size: 24px; margin-bottom: 20px;color: #281802ff;">Comprovante de participação do VII COEPS</h1>
+  <p style="font-size: 16px; line-height: 1.6; text-align: justify;color: #281802ff;">Certificamos que o congressista XXX, está devidamente registrado, e enquanto participante devido, fará parte do VII Congresso dos Estudantes e Profissionais de Saúde (COEPS), que ocorrerá devidamente nos dias 13/11/2025, das 17:00 às 22:00, 14/11/2025 das 8:00 às 22:00,  15/11/2025 das 8:00 às 22:00 e 16/11/2025 das 8:00 às 13:00.</p>
 </div>
 `;
 
