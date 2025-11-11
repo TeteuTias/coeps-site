@@ -79,10 +79,6 @@ export default function DocumentoAnexadoPage() {
         className="document-preview border p-6 rounded-lg bg-gray-50"
         dangerouslySetInnerHTML={{ __html: displayContent }}
       />
-
-      <p className="mt-4 text-sm text-gray-600">
-        O nome **{nomeCompleto}** foi inserido automaticamente no documento.
-      </p>
     </div>
   );
 }
