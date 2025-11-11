@@ -74,7 +74,7 @@ export default function Minicursos() {
                 <div className="atividades-intro">
                     <h1>O QUE TEMOS AQUI</h1>
                     <p>
-                        Aqui, você pode se inscrever em <span className="atividades-highlight">atividades complementares</span>. É obrigatório que cada participante escolha atividades que somem no mínimo <span className="atividades-highlight">8 horas</span> (há atividades de 1 hora de duração e outras maiores, como as mesas de especialidades). Lembre-se de que cada uma possui um número máximo de participantes, portanto, programe-se para se inscrever a tempo! Não se preocupe, todas as informações necessárias estão disponíveis aqui. Após a inscrição, a atividade será adicionada automaticamente à <span className="atividades-highlight">Minha Programação</span>. Você consegue ver mais detalhes sobre as atividades <Link prefetch={false} target="_blank" href="/programacao"><span className="atividades-highlight" style={{ cursor: 'pointer' }}>clicando aqui</span></Link>.
+                        Aqui, você pode se inscrever em <span className="atividades-highlight">atividades complementares</span>. Após a inscrição, a atividade será adicionada automaticamente à <span className="atividades-highlight">Minha Programação</span>. Você consegue ver mais detalhes sobre as atividades <Link prefetch={false} target="_blank" href="/programacao"><span className="atividades-highlight" style={{ cursor: 'pointer' }}>clicando aqui</span></Link>.
                     </p>
                 </div>
                 <div className="atividades-intro">
