@@ -140,7 +140,7 @@ export default function Minicursos() {
                         ) : (
                             <div className="atividades-no-results">
                                 <Info size={24} style={{ verticalAlign: 'middle', color: '#541A2C' }} />
-                                <p>Nenhuma atividade encontrada com o termo "{searchTerm}"</p>
+                                <p>Nenhuma atividade encontrada com o termo *{searchTerm}*</p>
                             </div>
                         );
                     })()}
