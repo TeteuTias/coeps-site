@@ -84,6 +84,9 @@ function PaginaAreaDoCliente() {
         <Link href="painel/certificados" prefetch={false}>
           <CardOpcoes texto="Meus Certificados" icon={<Award size={48} />} />
         </Link>
+        <Link href="painel/documento-anexado" prefetch={false}>
+          <CardOpcoes texto="Documento Anexado" icon={<Sparkles size={48} />} />
+        </Link>
         <Link href="painel/atividades" prefetch={false}>
           <CardOpcoes texto="Atividades" icon={<Activity size={48} />} />
         </Link>
