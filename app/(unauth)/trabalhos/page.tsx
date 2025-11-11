@@ -87,8 +87,8 @@ const Trabalhos = () => {
               <div className="empty-icon">
                 <Clock className="clock-icon" />
               </div>
-              <h2 className="empty-text">SUBMISSÕES EM BREVE</h2>
-              <p className="empty-subtext">Ainda não definimos a data para a abertura das submissões. Fique atento às nossas atualizações!</p>
+              <h2 className="empty-text">SUBMISSÕES ENCERRADAS</h2>
+              <p className="empty-subtext">As submissões de trabalhos foram encerradas. Obrigado pela participação!</p>
             </div>
           )}
         </div>
