@@ -4,7 +4,7 @@ import { createPortal } from "react-dom"
 import WarningModal from "@/components/WarningModal"
 import { DateTime } from "luxon"
 import Link from "next/link"
-import { DollarSign, Users, Calendar, Info, XCircle, CheckCircle, Clock, BookOpen, UserCheck, GraduationCap, Presentation, FlaskConical, Music, Award, Gamepad2, Heart, Stethoscope, Sparkles, Brain } from 'lucide-react';
+import { DollarSign, Users, Calendar, Info, XCircle, CheckCircle, Clock, BookOpen, UserCheck, GraduationCap, Presentation, FlaskConical, Music, Award, Gamepad2, Heart, Stethoscope, Sparkles, Brain, Search } from 'lucide-react';
 import './style.css';
 //
 //
@@ -12,6 +12,7 @@ import './style.css';
 export default function Minicursos() {
     const [loadingData, setLoadingData] = useState(1)
     const [data, setData] = useState({ _id: undefined, listEvents: [] })
+    const [searchTerm, setSearchTerm] = useState('')
 
     //
     //
@@ -104,16 +105,45 @@ export default function Minicursos() {
                         {!loadingData && data?.listEvents.length > 0 ? <span><BookOpen size={20} style={{ verticalAlign: 'middle', color: '#1B305F' }} /> ATIVIDADES DISPONÍVEIS</span> : ''}
                     </h1>
                 </div>
-                <div className="atividades-cards">
-                    {!loadingData && data?.listEvents.length > 0 && (
-                        <div className="w-full grid grid-cols-1 gap-x-10 gap-y-10 p-4 2xl:grid-cols-3 2xl:gap-2 2xl:gap-x-10 2xl:gap-y-10 lg:grid-cols-2 lg:gap-2 lg:gap-x-10 lg:gap-y-10">
-                            {data?.listEvents.map((value) => (
-                                <div key={value._id} className="atividades-card">
-                                    <BannerAtividade activity={value} color={generateHexColor()} userId={data._id} />
-                                </div>
-                            ))}
+                {!loadingData && data?.listEvents.length > 0 && (
+                    <div className="atividades-search-container">
+                        <div className="atividades-search-wrapper">
+                            <Search size={20} className="atividades-search-icon" />
+                            <input
+                                type="text"
+                                placeholder="Pesquisar atividades..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="atividades-search-input"
+                            />
                         </div>
-                    )}
+                    </div>
+                )}
+                <div className="atividades-cards">
+                    {!loadingData && data?.listEvents.length > 0 && (() => {
+                        const filteredEvents = data.listEvents.filter((value) => {
+                            const searchLower = searchTerm.toLowerCase();
+                            return (
+                                value.name?.toLowerCase().includes(searchLower) ||
+                                value.description?.toLowerCase().includes(searchLower)
+                            );
+                        });
+                        
+                        return filteredEvents.length > 0 ? (
+                            <div className="w-full grid grid-cols-1 gap-x-10 gap-y-10 p-4 2xl:grid-cols-3 2xl:gap-2 2xl:gap-x-10 2xl:gap-y-10 lg:grid-cols-2 lg:gap-2 lg:gap-x-10 lg:gap-y-10">
+                                {filteredEvents.map((value) => (
+                                    <div key={value._id} className="atividades-card">
+                                        <BannerAtividade activity={value} color={generateHexColor()} userId={data._id} />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="atividades-no-results">
+                                <Info size={24} style={{ verticalAlign: 'middle', color: '#541A2C' }} />
+                                <p>Nenhuma atividade encontrada com o termo "{searchTerm}"</p>
+                            </div>
+                        );
+                    })()}
                 </div>
             </div>
         </div>

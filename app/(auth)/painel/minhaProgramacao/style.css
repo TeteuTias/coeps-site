@@ -87,6 +87,260 @@
   max-width: 420px;
 }
 
+/* Card de aviso para autores */
+.programacao-aviso-card {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(27, 48, 95, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 2px solid #541A2C;
+  padding: 2.5rem;
+  margin-bottom: 3rem;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.programacao-aviso-title {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 2rem;
+  font-weight: 900;
+  color: #541A2C;
+  text-align: center;
+  margin-bottom: 1rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.8), 4px 4px 0px rgba(84, 26, 44, 0.3);
+}
+
+.programacao-aviso-subtitle {
+  font-size: 1.1rem;
+  color: #1B305F;
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 2rem;
+  letter-spacing: 0.5px;
+}
+
+.programacao-aviso-section {
+  margin-bottom: 2rem;
+}
+
+.programacao-aviso-section:last-child {
+  margin-bottom: 0;
+}
+
+.programacao-aviso-section-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1B305F;
+  margin-bottom: 1rem;
+  letter-spacing: 0.5px;
+}
+
+.programacao-aviso-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.programacao-aviso-list li {
+  font-size: 1rem;
+  color: #541A2C;
+  line-height: 1.8;
+  margin-bottom: 0.8rem;
+  padding-left: 1.5rem;
+  position: relative;
+  font-weight: 500;
+}
+
+.programacao-aviso-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #EF4444;
+  font-size: 1.5rem;
+  font-weight: bold;
+  line-height: 1.2;
+}
+
+.programacao-aviso-list li strong {
+  color: #541A2C;
+  font-weight: 700;
+}
+
+/* Container para cards de artigos e posters */
+.programacao-artigos-posters-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 3rem;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Card de artigos */
+.programacao-artigos-card {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(27, 48, 95, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 2px solid #541A2C;
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.programacao-artigos-table-container {
+  width: 100%;
+  margin-top: 1.5rem;
+  overflow-x: auto;
+}
+
+.programacao-artigos-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.6rem;
+  color: #541A2C;
+}
+
+.programacao-artigos-table thead {
+  background: rgba(84, 26, 44, 0.1);
+  border-bottom: 2px solid #541A2C;
+}
+
+.programacao-artigos-table th {
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.65rem;
+  color: #541A2C;
+  border-right: 1px solid rgba(84, 26, 44, 0.2);
+}
+
+.programacao-artigos-table th:last-child {
+  border-right: none;
+}
+
+.programacao-artigos-table td {
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid rgba(84, 26, 44, 0.1);
+  vertical-align: top;
+  line-height: 1.25;
+  font-size: 0.6rem;
+}
+
+.programacao-artigos-table tbody tr:hover {
+  background: rgba(84, 26, 44, 0.05);
+}
+
+.programacao-artigos-table td:first-child {
+  font-weight: 600;
+  min-width: 160px;
+  max-width: 160px;
+  width: 160px;
+}
+
+.programacao-artigos-table td:nth-child(2) {
+  font-weight: 400;
+}
+
+.programacao-artigos-table td:nth-child(3),
+.programacao-artigos-table td:nth-child(4) {
+  font-weight: 600;
+  text-align: center;
+  min-width: 70px;
+  max-width: 70px;
+  width: 70px;
+}
+
+/* Card de posters */
+.programacao-posters-card {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(27, 48, 95, 0.15);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 2px solid #541A2C;
+  padding: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.programacao-posters-table-container {
+  width: 100%;
+  margin-top: 1.5rem;
+  overflow-x: auto;
+}
+
+.programacao-posters-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.6rem;
+  color: #541A2C;
+}
+
+.programacao-posters-table thead {
+  background: rgba(84, 26, 44, 0.1);
+  border-bottom: 2px solid #541A2C;
+}
+
+.programacao-posters-table th {
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.65rem;
+  color: #541A2C;
+  border-right: 1px solid rgba(84, 26, 44, 0.2);
+}
+
+.programacao-posters-table th:last-child {
+  border-right: none;
+}
+
+.programacao-posters-table td {
+  padding: 0.35rem 0.6rem;
+  border-bottom: 1px solid rgba(84, 26, 44, 0.1);
+  vertical-align: top;
+  line-height: 1.25;
+  font-size: 0.6rem;
+}
+
+.programacao-posters-table tbody tr:hover {
+  background: rgba(84, 26, 44, 0.05);
+}
+
+.programacao-posters-table td:first-child {
+  font-weight: 600;
+  min-width: 180px;
+  max-width: 180px;
+  width: 180px;
+}
+
+.programacao-posters-table td:last-child {
+  font-weight: 400;
+}
+
+/* Título dos cards de artigos e posters */
+.programacao-artigos-posters-title {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 2rem;
+  font-weight: 900;
+  color: #541A2C;
+  text-align: center;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.8), 4px 4px 0px rgba(84, 26, 44, 0.3);
+  margin: 0;
+}
+
 /* Grid de cards */
 .programacao-cards-container {
   display: flex;
@@ -686,6 +940,69 @@
   
   .programacao-intro p {
     font-size: 1rem;
+  }
+
+  .programacao-artigos-posters-container {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .programacao-artigos-card,
+  .programacao-posters-card {
+    padding: 1.5rem;
+    min-height: 150px;
+  }
+
+  .programacao-artigos-table {
+    font-size: 0.5rem;
+  }
+
+  .programacao-artigos-table th {
+    font-size: 0.55rem;
+    padding: 0.35rem 0.45rem;
+  }
+
+  .programacao-artigos-table td {
+    padding: 0.3rem 0.45rem;
+    font-size: 0.5rem;
+  }
+
+  .programacao-artigos-table td:first-child {
+    min-width: 120px;
+    max-width: 120px;
+    width: 120px;
+  }
+
+  .programacao-artigos-table td:nth-child(3),
+  .programacao-artigos-table td:nth-child(4) {
+    min-width: 60px;
+    max-width: 60px;
+    width: 60px;
+  }
+
+  .programacao-posters-table {
+    font-size: 0.5rem;
+  }
+
+  .programacao-posters-table th {
+    font-size: 0.55rem;
+    padding: 0.35rem 0.45rem;
+  }
+
+  .programacao-posters-table td {
+    padding: 0.3rem 0.45rem;
+    font-size: 0.5rem;
+  }
+
+  .programacao-posters-table td:first-child {
+    min-width: 140px;
+    max-width: 140px;
+    width: 140px;
+  }
+
+
+  .programacao-artigos-posters-title {
+    font-size: 1.5rem;
   }
   
   .programacao-date-card {
