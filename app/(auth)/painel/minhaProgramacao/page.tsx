@@ -88,7 +88,7 @@ export default function MinhaProgramacao() {
           <p className="programacao-aviso-subtitle">
             Informações importantes para as apresentações de trabalhos científicos:
           </p>
-          
+
           <div className="programacao-aviso-section">
             <h3 className="programacao-aviso-section-title">
               Apresentação em formato de pôster / banner
@@ -242,7 +242,7 @@ export default function MinhaProgramacao() {
               </table>
             </div>
           </div>
-          
+
           <div className="programacao-posters-card">
             <h2 className="programacao-artigos-posters-title">POSTERS</h2>
             <div className="programacao-posters-table-container">
@@ -407,14 +407,20 @@ export default function MinhaProgramacao() {
               <div className="programacao-loading-animation"></div>
             </div>
           ) : Object.keys(data?.data).length ? (
-            Object.keys(data?.data).map(key => (
-              <CardProgramacao
-                dateKey={key}
-                event={data?.data[key]}
-                key={Math.floor(Math.random() * 100)}
-                handleModal={handleModal}
-              />
-            ))
+            Object.keys(data?.data)
+              //@ts-expect-error: Essa página deveria ser tipada de forma mais concisa. Não há erro aqui, mas como não foi tipado, o TS vai falar que deveríamos especificar melhor o tipo de A e B.
+              .sort((a, b) => new Date(a) - new Date(b))
+              .map(key => {
+                console.log(key)
+                return (
+                  <CardProgramacao
+                    dateKey={key}
+                    event={data?.data[key]}
+                    key={Math.floor(Math.random() * 100)}
+                    handleModal={handleModal}
+                  />
+                )
+              })
           ) : (
             <div className="programacao-empty">
               <h1>Você ainda não possui uma programação</h1>
@@ -545,7 +551,7 @@ const RegrasModal = ({ onClose }) => {
       <div className="regras-modal">
         <div className="regras-modal-content">
           <h2 className="regras-modal-title">REGRAS DE CONDUTA</h2>
-          
+
           <div className="regras-modal-text">
             <p className="regras-modal-intro">
               Para manter a ordem e a organização do evento as seguintes regras devem ser rigorosamente seguidas:
