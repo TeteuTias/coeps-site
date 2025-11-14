@@ -328,7 +328,7 @@ export default function MinhaProgramacao() {
                   </tr>
                   <tr>
                     <td>Gabriela Teixeira de Araújo</td>
-                    <td>MAPEAMENTO DAS AÇÕES REALIZADAS PELO PROJETO DE EXTENSÃO "DOCE LAR" EM UM SERVIÇO DE ACOLHIMENTO INSTITUCIONAL (2024-2025)</td>
+                    <td>MAPEAMENTO DAS AÇÕES REALIZADAS PELO PROJETO DE EXTENSÃO &quot;DOCE LAR&quot; EM UM SERVIÇO DE ACOLHIMENTO INSTITUCIONAL (2024-2025)</td>
                   </tr>
                   <tr>
                     <td>Giovanna Amaral de Paula Lemos Freire</td>
