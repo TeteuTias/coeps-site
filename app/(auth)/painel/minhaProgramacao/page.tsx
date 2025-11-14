@@ -308,7 +308,51 @@ export default function MinhaProgramacao() {
                   </tr>
                   <tr>
                     <td>Francielle Silva de Oliveira</td>
+                    <td>A RECUSA DE VACINAÇÃO INFANTIL COMO DESAFIO ÉTICO PARA A PRÁTICA PEDIÁTRICA</td>
+                  </tr>
+                  <tr>
+                    <td>Francielle Silva de Oliveira</td>
                     <td>USO DE TELAS NA INFANCIA</td>
+                  </tr>
+                  <tr>
+                    <td>Gabriel Assunção Alvim</td>
+                    <td>Morfina Oral versus Oxicodona Oral no Manejo Ambulatorial da Dor Oncológica: Eficácia, Segurança e Manutenção do Tratamento</td>
+                  </tr>
+                  <tr>
+                    <td>Gabriel Assunção Alvim</td>
+                    <td>Eficácia da Dexmedetomidina em Comparação ao Midazolam para Sedação em Procedimentos Cirúrgicos Ambulatoriais: Uma Revisão Sistemática</td>
+                  </tr>
+                  <tr>
+                    <td>Gabriel Santos Alves</td>
+                    <td>HISTÓRIAS SOCIAIS EM CRIANÇAS COM TRANSTORNO DO ESPECTRO AUTISTA: REVISÃO DE LITERATURA SOBRE INTERVENÇÕES PARA HABILIDADES SOCIAIS</td>
+                  </tr>
+                  <tr>
+                    <td>Gabriela Teixeira de Araújo</td>
+                    <td>MAPEAMENTO DAS AÇÕES REALIZADAS PELO PROJETO DE EXTENSÃO "DOCE LAR" EM UM SERVIÇO DE ACOLHIMENTO INSTITUCIONAL (2024-2025)</td>
+                  </tr>
+                  <tr>
+                    <td>Giovanna Amaral de Paula Lemos Freire</td>
+                    <td>A BOA MORTE SOB A ÓTICA DA BIOÉTICA: AUTONOMIA, DIGNIDADE E CUIDADO NO FIM DA VIDA</td>
+                  </tr>
+                  <tr>
+                    <td>Giovanna Amaral de Paula Lemos Freire</td>
+                    <td>IMPACTOS NEGATIVOS DA DISLEXIA NO DESENVOLVIMENTO EMOCIONAL E COGNITIVO</td>
+                  </tr>
+                  <tr>
+                    <td>Isabella Resende e Oliveira</td>
+                    <td>A INFLUÊNCIA DA ESPIRITUALIDADE NOS CUIDADOS PALIATIVOS E BEM ESTAR DE PACIENTES ONCOLÓGICOS</td>
+                  </tr>
+                  <tr>
+                    <td>Isadora Cangussu Souza</td>
+                    <td>ÓBITOS MATERNOS POR CAUSAS OBSTÉTRICAS DIRETAS NO BRASIL</td>
+                  </tr>
+                  <tr>
+                    <td>João Victor do Nascimento</td>
+                    <td>APLICAÇÃO DA INTELIGÊNCIA ARTIFICIAL NA MEDICINA DE PRECISÃO</td>
+                  </tr>
+                  <tr>
+                    <td>Karla Gabriella Rodrigues do Nascimento</td>
+                    <td>LASER DE BAIXA INTENSIDADE NO TRATAMENTO FISIOTERAPÊUTICO DA PARALISIA FACIAL EM CRIANÇA: RELATO DE CASO</td>
                   </tr>
                   <tr>
                     <td>Laura Moreira de Melo</td>
