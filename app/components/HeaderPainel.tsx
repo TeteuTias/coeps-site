@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Calendar, CreditCard, FileText, Home, LogOut, Menu, User, X } from 'lucide-react';
 
 const menuItems = [
   { name: 'Início', href: '/', icon: <Home size={16} /> },
-  { name: 'Minha página', href: '/painel', icon: <User size={16} /> },
+  { name: 'Meu painel', href: '/painel', icon: <User size={16} /> },
   { name: 'Trabalhos', href: '/painel/trabalhos', icon: <FileText size={16} /> },
   { name: 'Programação', href: '/painel/minhaProgramacao', icon: <Calendar size={16} /> },
   { name: 'Pagamentos', href: '/pagamentos', icon: <CreditCard size={16} /> },
@@ -16,6 +17,11 @@ const menuItems = [
 export default function HeaderPainel({ isPayed = true }: { isPayed: boolean }) {
   const [menuAberto, setMenuAberto] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const pathname = usePathname();
+  const itemIsActive = (href: string) => {
+    if (href === '/' || href === '/painel') return pathname === href;
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -29,16 +35,29 @@ export default function HeaderPainel({ isPayed = true }: { isPayed: boolean }) {
       <div className="cieps-panel-header-inner">
         <Link href="/" prefetch={false} className="cieps-panel-brand">
           <Image
+            className="cieps-panel-brand-lockup"
             src="/cieps/cieps-lockup-horizontal.png"
             width={420}
             height={136}
+            alt="I CIEPS"
+          />
+          <Image
+            className="cieps-panel-brand-mark"
+            src="/cieps/cieps-mark.png"
+            width={64}
+            height={64}
             alt="I CIEPS"
           />
         </Link>
 
         <nav className="cieps-panel-nav" aria-label="Navegação do congressista">
           {menuItems.map((item) => (
-            <Link key={item.name} href={item.href} prefetch={false}>
+            <Link
+              key={item.name}
+              href={item.href}
+              prefetch={false}
+              className={itemIsActive(item.href) ? 'is-active' : undefined}
+            >
               {item.icon}
               <span>{item.name}</span>
             </Link>
@@ -72,6 +91,7 @@ export default function HeaderPainel({ isPayed = true }: { isPayed: boolean }) {
               key={item.name}
               href={item.href}
               prefetch={false}
+              className={itemIsActive(item.href) ? 'is-active' : undefined}
               onClick={() => setMenuAberto(false)}
             >
               {item.icon}

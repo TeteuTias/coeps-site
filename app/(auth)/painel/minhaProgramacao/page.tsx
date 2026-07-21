@@ -109,7 +109,7 @@ export default function MinhaProgramacao() {
             </ul>
           </div>
         </div>
-
+        {/*
         <div className="programacao-artigos-posters-container">
           <div className="programacao-artigos-card">
             <h2 className="programacao-artigos-posters-title">ARTIGOS</h2>
@@ -443,7 +443,7 @@ export default function MinhaProgramacao() {
             </div>
           </div>
         </div>
-
+    */}
         <div className="programacao-cards-container">
           {isFetching ? (
             <div className="programacao-loading">

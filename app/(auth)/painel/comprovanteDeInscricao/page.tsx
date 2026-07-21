@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react";
-import { Download } from 'lucide-react';
+import { Download, FileCheck2 } from 'lucide-react';
 // import html2pdf from 'html2pdf.js'; // Removido para importação dinâmica
 
 // Conteúdo HTML do documento convertido
@@ -63,22 +63,26 @@ export default function DocumentoAnexadoPage() {
   const displayContent = documentContent;
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-xl max-w-4xl mx-auto my-8">
-      <div className="flex justify-between items-center mb-6 border-b pb-4">
-        <h1 className="text-2xl font-bold text-gray-800">Seu Documento Anexado</h1>
+    <main className="cieps-receipt-page">
+      <section className="cieps-receipt-heading">
+        <div>
+          <span className="cieps-kicker">Documento do congressista</span>
+          <h1 className="cieps-display">Comprovante de inscrição</h1>
+          <p>Confira os dados abaixo e gere uma cópia em PDF para seus registros.</p>
+        </div>
         <button 
           onClick={handleDownloadPdf} 
-          className="flex items-center px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition duration-300"
+          className="cieps-button"
         >
-          <Download size={20} className="mr-2" />
+          <Download size={20} />
           Baixar em PDF
         </button>
-      </div>
+      </section>
       
-      <div 
-        className="document-preview border p-6 rounded-lg bg-gray-50"
-        dangerouslySetInnerHTML={{ __html: displayContent }}
-      />
-    </div>
+      <section className="cieps-receipt-preview">
+        <div className="cieps-receipt-preview-label"><FileCheck2 size={18} /> Pré-visualização</div>
+        <div className="document-preview" dangerouslySetInnerHTML={{ __html: displayContent }} />
+      </section>
+    </main>
   );
 }

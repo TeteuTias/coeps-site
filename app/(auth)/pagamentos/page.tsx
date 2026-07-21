@@ -6,7 +6,6 @@ import { useUser } from "@/lib/auth0-client"
 import { useState, useEffect } from "react"
 import Link from "next/link";
 import Cards from 'react-credit-cards-2';
-import { ILecture } from '@/lib/types/events/event.t';
 import { IUser } from "@/app/lib/types/user/user.t"
 import { IPaymentConfig } from '@/lib/types/payments/payment.t';
 import TermModal, { ModalProps } from '@/components/TermModal';
@@ -15,12 +14,13 @@ import {
     CheckCircle,
     AlertCircle,
     ArrowRight,
+    BarChart3,
 } from 'lucide-react';
 import './style.css';
 import PaymentTicketProps from '@/lib/types/payments/paymentTicket.t';
-import Header from '@/components/Header';
 
 const Pagamentos = () => {
+    const [data, setData] = useState<{ pagamento: IUser["pagamento"] }>(undefined);
     const { user, isLoading } = useUser();
     const [isLoadingPaymentData, setIsLoadingPaymentData] = useState<boolean>(true);
     const [dataPaymentConfig, setDataPaymentConfig] = useState<IPaymentConfig & { sessaoPagamentoAutomáticoAtiva: PaymentTicketProps | false } | undefined>(undefined);
@@ -45,6 +45,7 @@ const Pagamentos = () => {
                 }
 
                 const responseData: { data: { pagamento: IUser["pagamento"] } } = await response.json();
+                setData(responseData.data)
                 console.log('Resposta da requisição GET:', responseData);
 
                 handleIsFetchingData(false);
@@ -133,9 +134,94 @@ const Pagamentos = () => {
         return <LoadingScreen />;
     }
 
+    // return <PagamentosManual />
+
+    if (data.pagamento.situacao === 1) { // Está pago
+        return (
+            <main className="min-h-screen font-[family-name:var(--cieps-body)] text-[var(--cieps-ink)] pb-12">
+                <div className="mx-auto w-full max-w-[1320px] px-[clamp(1rem,3vw,2rem)] pt-[clamp(2rem,4vw,4rem)]">
+
+                    {/* Container de Status */}
+                    <div className="mb-6 flex flex-wrap items-center gap-[0.8rem] rounded-lg border border-[var(--cieps-line)] bg-[rgba(255,253,248,.96)] p-[clamp(1.25rem,3vw,2rem)] text-left shadow-[var(--cieps-shadow)]">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded border border-[rgba(163,45,45,.2)] bg-[rgba(163,45,45,.08)] text-[var(--cieps-red)] shadow-none">
+                            <CheckCircle className="h-[1.2rem] w-[1.2rem]" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <h2 className="m-0 font-[family-name:var(--cieps-display)] text-xl font-semibold tracking-normal text-[var(--cieps-ink)] shadow-none">
+                                PAGAMENTO CONFIRMADO
+                            </h2>
+                            <p className="m-0 text-[0.98rem] text-[var(--cieps-muted)]">
+                                Seu pagamento foi confirmado! Você tem acesso completo ao CIEPS.
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Seção de Histórico */}
+                    <section className="mx-auto w-full max-w-[1320px] pb-5">
+                        <div className="w-full">
+
+                            {/* Cabeçalho replicando o pseudo-elemento ::before */}
+                            <span className="mb-[0.65rem] block text-[0.72rem] font-bold text-[var(--cieps-red)]">
+                                ÁREA DO CONGRESSISTA
+                            </span>
+                            <h2 className="mb-5 font-[family-name:var(--cieps-display)] text-[clamp(1.8rem,3vw,2.8rem)] font-semibold leading-none tracking-[-.035em] text-[var(--cieps-ink)] shadow-none">
+                                HISTÓRICO DE PAGAMENTOS
+                            </h2>
+
+                            {/* Superfície Editorial (Glass Container) */}
+                            <div className="rounded-lg border border-[var(--cieps-line)] bg-[rgba(255,253,248,.96)] p-[clamp(1.25rem,4vw,2rem)] shadow-[var(--cieps-shadow)]">
+
+                                <p className="mb-6 text-[0.96rem] leading-[1.65] text-[var(--cieps-muted)]">
+                                    Acompanhe todos os seus pagamentos realizados e mantenha o controle das suas transações.
+                                </p>
+
+                                {/* Resumo */}
+                                <div className="mb-8 flex items-center gap-4 rounded-md border border-[var(--cieps-line)] bg-[var(--cieps-paper)] p-4">
+                                    <div className="flex shrink-0 items-center justify-center text-[var(--cieps-blue)]">
+                                        <BarChart3 size={28} />
+                                    </div>
+                                    <div>
+                                        <h3 className="mb-1 font-[family-name:var(--cieps-display)] text-[0.9rem] font-bold text-[var(--cieps-ink)]">
+                                            Resumo
+                                        </h3>
+                                        <p className="m-0 text-sm text-[var(--cieps-muted)]">
+                                            {data.pagamento.lista_pagamentos?.length ?
+                                                `${data.pagamento.lista_pagamentos?.length.toString().padStart(2, '0')} pagamentos encontrados` :
+                                                "Você ainda não realizou nenhum pagamento."
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Lista de Pagamentos */}
+                                {data.pagamento.lista_pagamentos.length > 0 && (
+                                    <div className="flex flex-col gap-4">
+                                        {data.pagamento.lista_pagamentos?.map((value, index) => (
+                                            <CardPagamentos
+                                                key={index}
+                                                eventId={data.pagamento.lista_pagamentos[index]?._eventID || ""}
+                                                type={data.pagamento.lista_pagamentos[index]?._type || ""}
+                                                invoiceUrl={value.invoiceUrl}
+                                                valor={value.value}
+                                                data_formatada={value.dateCreated}
+                                                invoiceNumber={value.invoiceNumber}
+                                                status={value.status}
+                                                description={value.description}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        )
+
+    }
+
     return (
         <div>
-            <Header />
             {/* ---> ESSA TELA É EXCLUSIVAMENTE PARA OS PAGAMENTOS AUTOMATICOS <--- */}
             {
                 dataPaymentConfig.modo == "automatico" &&
@@ -466,7 +552,7 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: an
                 <div className='pagamentos-main max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-sm border border-slate-200'>
                     <div className='flex flex-col gap-6'>
                         <div className='bg-amber-50 text-amber-800 p-4 rounded-lg border-l-4 border-amber-400 font-medium'>
-                            Seu Pagamento ainda não foi confirmado.
+                            Seu Pagamento ainda não foi confirmado. Realize o pagamento para ter acesso total à página do congresso.
                         </div>
                         <div className='flex flex-col gap-4'>
                             <h1 className='w-full text-2xl font-bold text-slate-800 text-center'>
@@ -677,20 +763,37 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: an
 // Tela de carregamento com imagem
 const LoadingScreen = () => {
     return (
-        <div className="pagamentos-main">
-            <div className="status-section">
-                <div className="status-container glass-container">
-                    <div className="loading-container">
-                        <div className="loading-image"></div>
-                        <div className="loading-spinner">
-                            <Loader2 className="spinner-icon" />
+        <div className="mx-auto w-full max-w-[900px] rounded-lg border border-[var(--cieps-line)] p-[clamp(1rem,3vw,2rem)] shadow-[var(--cieps-shadow)]">
+            <div className="mx-auto mb-5 w-full max-w-[1320px] p-0">
+
+                {/* status-container / glass-container */}
+                <div className="m-0 w-full max-w-none rounded-lg border border-[var(--cieps-line)] bg-[rgba(255,253,248,.96)] p-5 text-left shadow-[var(--cieps-shadow)]">
+
+                    {/* loading-container */}
+                    <div className="flex min-h-[250px] flex-col items-center justify-center gap-4 py-8">
+
+                        {/* Se você tiver uma imagem de logo/branding, ela vai aqui */}
+                        <div className="mb-2"></div>
+
+                        {/* Spinner usando o Loader2 (Lucide) com a cor da marca */}
+                        <div className="flex items-center justify-center text-[var(--cieps-red)]">
+                            <Loader2 className="h-10 w-10 animate-spin" strokeWidth={2.5} />
                         </div>
-                        <h2 className="loading-text">CARREGANDO PAGAMENTOS</h2>
-                        <div className="loading-dots">
-                            <span></span>
-                            <span></span>
-                            <span></span>
+
+                        {/* Texto e Pontinhos animados */}
+                        <div className="mt-2 flex items-center gap-1">
+                            <h2 className="m-0 font-[family-name:var(--cieps-display)] text-[1.1rem] font-bold tracking-normal text-[var(--cieps-ink)] shadow-none">
+                                CARREGANDO PAGAMENTOS
+                            </h2>
+
+                            {/* Animação dos 3 pontinhos usando Tailwind */}
+                            <div className="flex items-center gap-[3px] pb-1">
+                                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--cieps-red)] [animation-delay:-0.3s]"></span>
+                                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--cieps-red)] [animation-delay:-0.15s]"></span>
+                                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--cieps-red)]"></span>
+                            </div>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -1237,17 +1340,12 @@ const ResponseModal2 = ({ handleModalClose, message }: { handleModalClose, messa
 const CardPagamentos = ({ eventId, type, data_formatada, invoiceNumber, status, description, valor, invoiceUrl }: {
     eventId: string, type: string, data_formatada: any, invoiceNumber: string, status: string, description: string, valor: number, invoiceUrl: string
 }) => {
-    // Arrumando a DATA
-    //
-    //
-    const [typeText, setTypeText] = useState<ILecture["name"]>("CARREGANDO ATIVIDADE")
+    const [typeText, setTypeText] = useState<string>("CARREGANDO ATIVIDADE")
 
     useEffect(() => {
-        // Defina a função assíncrona dentro do `useEffect`
         async function fetchData() {
             try {
                 if (type == "activity" && typeText == "CARREGANDO ATIVIDADE") {
-                    // Execute operações assíncronas aqui
                     const response = await fetch(`/api/get/atividadeNomePeloId/${eventId}`, {
                         method: 'GET',
                         headers: {
@@ -1258,9 +1356,8 @@ const CardPagamentos = ({ eventId, type, data_formatada, invoiceNumber, status, 
                         setTypeText("ERRO AO CARREGAR NOME")
                         return;
                     }
-                    const responseJson: { data: ILecture["name"] | null | undefined } = await response.json()
+                    const responseJson = await response.json()
                     if (!responseJson.data || Object.keys(responseJson.data).length === 0) {
-                        // Se o dado for null, undefined ou um objeto vazio, saia.
                         setTypeText("Minicurso não encontrado")
                         return;
                     }
@@ -1273,16 +1370,11 @@ const CardPagamentos = ({ eventId, type, data_formatada, invoiceNumber, status, 
             }
         }
 
-        // Chame a função assíncrona
         fetchData();
     }, [typeText, eventId, type]);
-    //
-    /*
-        Dicionário
-        ACTIVE => Aguardando
-    
-    */
-    switch (true) { // "Traduz o que está escrito no status."
+
+    // Dicionário de Status
+    switch (true) {
         case status == "PAYMENT_CONFIRMED" || status == "CONFIRMED" || status == "PAYMENT_RECEIVED":
             status = "PAGO"
             break
@@ -1292,7 +1384,6 @@ const CardPagamentos = ({ eventId, type, data_formatada, invoiceNumber, status, 
         case status == "PENDING":
             status = "PAGAMENTO PENDENTE"
             break
-
         case status == "PAYMENT_REFUNDED":
             status = "COBRANÇA ESTORNADA"
             break
@@ -1307,56 +1398,74 @@ const CardPagamentos = ({ eventId, type, data_formatada, invoiceNumber, status, 
             break
     }
 
+    // Definindo as cores do badge com base no status (adaptado para o visual do CIEPS)
+    let badgeStyles = "bg-gray-100 border-gray-200 text-gray-700";
+    if (status === "PAGO") {
+        badgeStyles = "bg-[#e8f5e9] border-[#c8e6c9] text-[#2e7d32]";
+    } else if (status === "CANCELADO" || status.includes("NEGADO")) {
+        badgeStyles = "bg-[rgba(163,45,45,.08)] border-[rgba(163,45,45,.2)] text-[var(--cieps-red)]";
+    } else if (status === "PAGAMENTO PENDENTE" || status.includes("PROCESSANDO")) {
+        badgeStyles = "bg-[rgba(239,159,39,.14)] border-[rgba(239,159,39,.32)] text-[var(--cieps-ink)]"; // Usa o padrão amarelo do CSS original
+    }
+
     return (
-        <div className="history-card">
-            <div className="card-header">
-                <div className="card-value-badge">
-                    <span className="currency">R$</span>
-                    <span className="amount">{valor}</span>
+        <div className="flex flex-col rounded-lg border border-[var(--cieps-line)] bg-[rgba(255,253,248,.96)] shadow-[var(--cieps-shadow)] transition-colors hover:bg-[var(--cieps-paper-strong)]">
+
+            {/* Header: Valor e Status */}
+            <div className="flex items-center justify-between border-b border-[var(--cieps-line)] p-4 sm:px-6">
+                <div className="flex items-baseline gap-1">
+                    <span className="text-sm font-semibold text-[var(--cieps-muted)]">R$</span>
+                    <span className="font-[family-name:var(--cieps-display)] text-2xl font-bold tracking-tight text-[var(--cieps-ink)]">
+                        {valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
                 </div>
-                <div className="card-status">
-                    <span className={`status-badge status-${status.toLowerCase().replace(/\s+/g, '-')}`}>
+                <div>
+                    <span className={`inline-block rounded-[3px] border px-2 py-1 text-[0.68rem] font-bold tracking-wide shadow-none ${badgeStyles}`}>
                         {status}
                     </span>
                 </div>
             </div>
 
-            <div className="card-content">
+            {/* Content: Detalhes do Pagamento */}
+            <div className="flex flex-col gap-4 p-4 sm:px-6 sm:py-5">
+
+                {/* Nome da Atividade (Se for activity) */}
                 {type === "activity" && (
-                    <div className="activity-name">
-                        <h4 className="activity-title">{typeText}</h4>
+                    <div className="rounded border-l-4 border-[var(--cieps-blue)] bg-[var(--cieps-paper)] p-3">
+                        <h4 className="m-0 font-[family-name:var(--cieps-display)] text-[1rem] font-semibold text-[var(--cieps-ink)]">
+                            {typeText}
+                        </h4>
                     </div>
                 )}
 
-                <div className="card-details">
-                    <div className="detail-row">
-                        <div className="detail-item">
-                            <span className="detail-label">Data:</span>
-                            <span className="detail-value">{data_formatada}</span>
-                        </div>
-                        <div className="detail-item">
-                            <span className="detail-label">Descrição:</span>
-                            <span className="detail-value">{description}</span>
-                        </div>
+                {/* Grid de Detalhes */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div className="flex flex-col">
+                        <span className="text-[0.78rem] font-bold text-[var(--cieps-red)]">Data:</span>
+                        <span className="text-[0.95rem] text-[var(--cieps-muted)]">{data_formatada}</span>
                     </div>
 
-                    <div className="detail-row">
-                        <div className="detail-item">
-                            <span className="detail-label">Número:</span>
-                            <span className="detail-value">#{invoiceNumber}</span>
-                        </div>
+                    <div className="flex flex-col">
+                        <span className="text-[0.78rem] font-bold text-[var(--cieps-red)]">Número:</span>
+                        <span className="text-[0.95rem] font-medium text-[var(--cieps-muted)]">#{invoiceNumber}</span>
+                    </div>
+
+                    <div className="flex flex-col sm:col-span-2">
+                        <span className="text-[0.78rem] font-bold text-[var(--cieps-red)]">Descrição:</span>
+                        <span className="text-[0.95rem] text-[var(--cieps-muted)]">{description}</span>
                     </div>
                 </div>
 
+                {/* Ações (Link do Comprovante) */}
                 {status !== "CANCELADO" && (
-                    <div className="card-actions">
+                    <div className="mt-2 border-t border-[var(--cieps-line)] pt-4">
                         <Link
                             target="_blank"
                             prefetch={false}
                             href={invoiceUrl}
-                            className="invoice-link"
+                            className="inline-flex items-center gap-2 rounded bg-transparent p-0 text-[0.9rem] font-bold text-[var(--cieps-blue)] underline transition-colors hover:text-[#134982]"
                         >
-                            <span className="link-text">Ver comprovante</span>
+                            <span>Ver comprovante</span>
                             <ArrowRight size={16} />
                         </Link>
                     </div>

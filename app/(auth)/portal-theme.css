@@ -1,0 +1,272 @@
+/* Shared visual language for every authenticated CIEPS journey. */
+.cieps-auth-shell {
+  background: linear-gradient(180deg, rgba(255,255,255,.68), rgba(244,241,234,.96)), var(--cieps-paper);
+  color: var(--cieps-ink);
+  font-family: var(--cieps-body);
+}
+
+.cieps-auth-shell :where(input, select, textarea, button) { font: inherit; }
+.cieps-auth-shell :where(input, select, textarea):focus-visible {
+  border-color: var(--cieps-blue) !important;
+  box-shadow: 0 0 0 3px rgba(24,95,165,.12) !important;
+  outline: none;
+}
+
+/* Shared page canvases */
+.cieps-auth-shell :is(.atividades-main,.programacao-main,.informacoes-main,.trabalhos-main,.enviar-trabalho-main,.qr-main,.pagamentos-main) {
+  background: linear-gradient(180deg,rgba(255,255,255,.68),rgba(244,241,234,.96)),var(--cieps-paper);
+  color: var(--cieps-ink);
+  font-family: var(--cieps-body);
+  min-height: 100vh;
+}
+
+.cieps-auth-shell :is(.atividades-container,.programacao-container,.trabalhos-container,.enviar-trabalho-container) {
+  margin: 0 auto;
+  max-width: 1320px;
+  padding: clamp(2rem,4vw,4rem) clamp(1rem,3vw,2rem);
+  width: 100%;
+}
+
+.cieps-auth-shell :is(.atividades-header,.programacao-header,.informacoes-header) {
+  color: var(--cieps-ink);
+  margin: 0 auto 1.25rem;
+  max-width: 1320px;
+  padding: 0;
+  text-align: left;
+}
+
+.cieps-auth-shell :is(.atividades-title,.programacao-title,.header-title) {
+  color: var(--cieps-ink);
+  font-family: var(--cieps-display);
+  font-size: clamp(2.7rem,5vw,5rem);
+  font-weight: 600;
+  letter-spacing: -.035em;
+  line-height: 1;
+  margin: 0;
+  text-shadow: none;
+}
+
+.cieps-auth-shell :is(.atividades-header,.programacao-header,.informacoes-header)::before {
+  color: var(--cieps-red);
+  content: 'ÁREA DO CONGRESSISTA';
+  display: block;
+  font-size: .72rem;
+  font-weight: 700;
+  margin-bottom: .65rem;
+}
+
+/* Editorial surfaces */
+.cieps-auth-shell :is(.atividades-intro,.atividades-status,.atividades-search-wrapper,.atividades-no-results,.programacao-intro,.programacao-aviso-card,.programacao-artigos-card,.programacao-posters-card,.programacao-date-card,.programacao-empty,.informacoes-intro,.status-container,.form-card,.password-card,.publicacao-status,.publicacoes-section,.trabalho-card,.formulario-principal,.loading-container,.periodo-fechado,.qr-card,.history-card) {
+  backdrop-filter: none;
+  background: rgba(255,253,248,.96);
+  border: 1px solid var(--cieps-line);
+  border-radius: 8px;
+  box-shadow: var(--cieps-shadow);
+  color: var(--cieps-ink);
+  text-shadow: none;
+}
+
+.cieps-auth-shell :is(.atividades-intro,.programacao-intro,.publicacao-status) {
+  border-left: 4px solid var(--cieps-yellow);
+  padding: clamp(1.25rem,3vw,2rem);
+  text-align: left;
+}
+
+.cieps-auth-shell :is(.atividades-intro,.programacao-intro,.publicacao-status) :is(h1,p),
+.cieps-auth-shell :is(.atividades-status,.programacao-aviso-card,.programacao-empty) :is(h1,h2,h3,p,li) {
+  -webkit-text-fill-color: currentColor;
+  background: none;
+  color: var(--cieps-ink);
+  letter-spacing: 0;
+  text-align: left;
+  text-shadow: none;
+}
+
+.cieps-auth-shell :is(.atividades-intro,.programacao-intro) h1 { color:var(--cieps-red);font-size:.75rem;margin:0 0 .75rem; }
+.cieps-auth-shell :is(.atividades-intro,.programacao-intro,.publicacao-status) p { color:var(--cieps-muted);font-size:.98rem;line-height:1.7;margin:0; }
+.cieps-auth-shell :is(.atividades-highlight,.programacao-highlight) {
+  background: rgba(239,159,39,.14);
+  border: 1px solid rgba(239,159,39,.32);
+  border-radius: 3px;
+  box-shadow: none;
+  color: var(--cieps-ink);
+  display: inline;
+  margin: 0;
+  padding: .12rem .35rem;
+  text-shadow: none;
+}
+
+/* Activities */
+.cieps-auth-shell .atividades-search-container { margin:1.5rem 0 2rem;max-width:720px; }
+.cieps-auth-shell .atividades-search-wrapper { align-items:center;display:flex;padding:.85rem 1rem; }
+.cieps-auth-shell .atividades-search-wrapper:focus-within { border-color:var(--cieps-blue);box-shadow:0 0 0 3px rgba(24,95,165,.1); }
+.cieps-auth-shell .atividades-search-icon { color:var(--cieps-red); }
+.cieps-auth-shell .atividades-search-input { color:var(--cieps-ink); }
+.cieps-auth-shell .atividades-intro a { background:transparent !important;color:var(--cieps-blue) !important;padding:0 !important;text-decoration:underline; }
+.cieps-auth-shell .atividades-cards > div { padding:0 !important; }
+.cieps-auth-shell .atividades-card,.cieps-auth-shell .atividades-card-container { height:100%; }
+.cieps-auth-shell .atividades-card-content {
+  background:var(--cieps-paper-strong);border:1px solid var(--cieps-line);border-radius:8px;
+  box-shadow:0 12px 28px rgba(26,26,26,.06);display:flex;flex-direction:column;height:100%;overflow:hidden;
+}
+.cieps-auth-shell .atividades-card-header-border { height:4px; }
+.cieps-auth-shell .atividades-card-body { flex:1;padding:1.4rem; }
+.cieps-auth-shell .atividades-card-icon { color:var(--cieps-red); }
+.cieps-auth-shell .atividades-card-title h1 { color:var(--cieps-ink);font-family:var(--cieps-display);font-size:1.25rem; }
+.cieps-auth-shell .atividades-card-description h1 { color:var(--cieps-muted);line-height:1.6; }
+.cieps-auth-shell .atividades-card-footer { border-top:1px solid var(--cieps-line);padding:1rem 1.4rem; }
+.cieps-auth-shell :is(.atividades-card-button,.atividades-inscrever) { background:var(--cieps-red);border-radius:4px;color:#fff;font-weight:700;padding:.8rem 1rem; }
+.cieps-auth-shell :is(.atividades-preco-tag,.atividades-vagas-tag,.atividades-inscrito,.atividades-cheio,.atividades-fechado) { border-radius:3px;box-shadow:none;font-size:.68rem;font-weight:700; }
+
+/* Agenda */
+.cieps-auth-shell .programacao-aviso-card { border-top:4px solid var(--cieps-yellow);max-width:none;padding:clamp(1.5rem,3vw,2.25rem); }
+.cieps-auth-shell .programacao-aviso-title,.cieps-auth-shell .programacao-artigos-posters-title { color:var(--cieps-red);font-family:var(--cieps-display);letter-spacing:-.02em;text-align:left;text-shadow:none; }
+.cieps-auth-shell .programacao-aviso-title { font-size:clamp(1.8rem,3vw,2.6rem); }
+.cieps-auth-shell .programacao-aviso-subtitle { color:var(--cieps-muted);text-align:left; }
+.cieps-auth-shell .programacao-aviso-list li { color:var(--cieps-ink); }
+.cieps-auth-shell .programacao-aviso-list li::before { color:var(--cieps-yellow);content:'•'; }
+.cieps-auth-shell .programacao-artigos-posters-container { gap:1.25rem; }
+.cieps-auth-shell :is(.programacao-artigos-card,.programacao-posters-card) { overflow:hidden;padding:1.4rem; }
+.cieps-auth-shell :is(.programacao-artigos-table,.programacao-posters-table) { border-collapse:collapse;color:var(--cieps-ink);width:100%; }
+.cieps-auth-shell :is(.programacao-artigos-table,.programacao-posters-table) th { background:var(--cieps-ink);color:#fff;font-size:.72rem;padding:.85rem;text-transform:uppercase; }
+.cieps-auth-shell :is(.programacao-artigos-table,.programacao-posters-table) td { border-bottom:1px solid var(--cieps-line);padding:.85rem; }
+.cieps-auth-shell .programacao-date-card { overflow:hidden; }
+.cieps-auth-shell .programacao-date-header { background:var(--cieps-ink);color:#fff;padding:1rem 1.25rem; }
+.cieps-auth-shell .programacao-date-title { color:#fff;font-family:var(--cieps-display); }
+.cieps-auth-shell .programacao-event-card { background:transparent;border-bottom:1px solid var(--cieps-line);border-radius:0;box-shadow:none;padding:1.15rem; }
+.cieps-auth-shell .programacao-event-indicator { background:var(--cieps-yellow); }
+.cieps-auth-shell .programacao-event-title { color:var(--cieps-ink); }
+.cieps-auth-shell .programacao-event-description { color:var(--cieps-muted); }
+.cieps-auth-shell .programacao-loading {
+  align-items:center;background:var(--cieps-paper-strong);border:1px solid var(--cieps-line);
+  border-radius:8px;box-shadow:var(--cieps-shadow);color:var(--cieps-ink);display:flex;
+  flex-direction:column;gap:1rem;justify-content:center;margin:1.25rem auto;min-height:150px;padding:2rem;
+}
+.cieps-auth-shell .programacao-loading::after { color:var(--cieps-muted);content:'Carregando sua agenda…';font-size:.82rem;font-weight:700;text-transform:uppercase; }
+.cieps-auth-shell .programacao-loading-animation { border:3px solid var(--cieps-line);border-radius:50%;border-top-color:var(--cieps-red);height:32px;width:32px; }
+.cieps-auth-shell :is(.programacao-modal-overlay,.regras-modal-overlay,.loading-modal) { background:rgba(26,26,26,.65);backdrop-filter:blur(4px); }
+.cieps-auth-shell :is(.programacao-modal,.regras-modal,.loading-modal-content) { background:var(--cieps-paper-strong);border:1px solid var(--cieps-line);border-radius:8px;box-shadow:0 24px 64px rgba(0,0,0,.25); }
+.cieps-auth-shell :is(.programacao-modal-title,.regras-modal-title) { color:var(--cieps-ink);font-family:var(--cieps-display); }
+.cieps-auth-shell :is(.programacao-modal-section-title,.regras-modal-section-title) { color:var(--cieps-red); }
+.cieps-auth-shell .regras-modal-button { background:var(--cieps-red);border-radius:4px; }
+
+/* Profile and forms */
+.cieps-auth-shell .informacoes-main { padding:clamp(2rem,4vw,4rem) clamp(1rem,3vw,2rem); }
+.cieps-auth-shell .informacoes-header { display:block;justify-content:flex-start; }
+.cieps-auth-shell .informacoes-intro { margin:0 auto 1.25rem;max-width:1320px;padding:1.5rem;text-align:left; }
+.cieps-auth-shell .informacoes-intro:hover { transform:none; }
+.cieps-auth-shell .section-title { background:transparent;box-shadow:none;color:var(--cieps-ink);font-family:var(--cieps-display);font-size:clamp(1.8rem,3vw,2.8rem);margin:0 0 .75rem;padding:0;text-align:left; }
+.cieps-auth-shell .intro-text { color:var(--cieps-muted);font-size:.96rem;line-height:1.65;text-align:left; }
+.cieps-auth-shell .status-section { margin:0 auto 1.25rem;max-width:1320px;padding:0; }
+.cieps-auth-shell .status-container { margin:0;max-width:none;padding:1.25rem;text-align:left; }
+.cieps-auth-shell :is(.details-container,.loading-container) { align-items:center;display:flex;gap:.8rem; }
+.cieps-auth-shell :is(.details-icon,.form-icon,.password-icon) {
+  background:rgba(163,45,45,.08);
+  border:1px solid rgba(163,45,45,.2);
+  box-shadow:none;
+  color:var(--cieps-red);
+}
+.cieps-auth-shell :is(.details-text,.loading-text) { color:var(--cieps-ink);font-family:var(--cieps-display);letter-spacing:0;text-shadow:none; }
+.cieps-auth-shell > .loading-container { background:transparent;border:0;box-shadow:none;min-height:calc(100vh - 82px); }
+.cieps-auth-shell > .loading-container::before { animation:cieps-portal-spin .8s linear infinite;border:3px solid var(--cieps-line);border-radius:50%;border-top-color:var(--cieps-red);content:'';height:38px;width:38px; }
+@keyframes cieps-portal-spin { to { transform:rotate(360deg); } }
+.cieps-auth-shell .details-subtext { color:var(--cieps-muted); }
+.cieps-auth-shell .forms-section { margin:0 auto;max-width:1320px;padding:0; }
+.cieps-auth-shell .forms-container { gap:1rem; }
+.cieps-auth-shell :is(.form-card,.password-card) { padding:1.4rem; }
+.cieps-auth-shell :is(.form-card,.password-card):hover { transform:none; }
+.cieps-auth-shell :is(.form-title,.password-title) { color:var(--cieps-ink);font-family:var(--cieps-display);letter-spacing:-.02em;text-shadow:none; }
+.cieps-auth-shell :is(.form-label,.arquivos-titulo,.autor-titulo) { color:var(--cieps-ink);font-size:.78rem;font-weight:700;letter-spacing:0;text-transform:none; }
+.cieps-auth-shell :is(.form-input,.form-select,.form-textarea) { background:#fff;border:1px solid var(--cieps-line);border-radius:4px;color:var(--cieps-ink);padding:.85rem 1rem; }
+.cieps-auth-shell :is(.form-button,.password-button,.btn-principal,.btn-secundario,.upload-button,.adicionar-autor-btn) { background:var(--cieps-red);border:1px solid var(--cieps-red);border-radius:4px;box-shadow:none;color:#fff;font-weight:700; }
+.cieps-auth-shell :is(.form-button,.password-button,.btn-principal,.btn-secundario):hover:not(:disabled) { background:#8f2323;box-shadow:none;transform:translateY(-1px); }
+
+/* Works and submission */
+.cieps-auth-shell .publicacao-status h1,.cieps-auth-shell .publicacoes-section > h1,.cieps-auth-shell .form-title { color:var(--cieps-ink);font-family:var(--cieps-display);letter-spacing:-.025em;text-align:left;text-shadow:none; }
+.cieps-auth-shell .publicacao-status h1 { font-size:clamp(2rem,4vw,3.6rem); }
+.cieps-auth-shell .datas-container { background:var(--cieps-paper);border:1px solid var(--cieps-line);border-radius:4px; }
+.cieps-auth-shell .data-item { background:#fff;border:1px solid var(--cieps-line);border-radius:4px;box-shadow:none; }
+.cieps-auth-shell .data-item:hover { transform:none; }
+.cieps-auth-shell .data-item p:first-child { color:var(--cieps-red); }
+.cieps-auth-shell .data-item p:last-child { color:var(--cieps-ink);font-family:var(--cieps-display); }
+.cieps-auth-shell :is(.btn-submeter,.btn-correcao) { background:var(--cieps-red);border:1px solid var(--cieps-red);border-radius:4px;box-shadow:none;color:#fff; }
+.cieps-auth-shell .publicacoes-section { padding:clamp(1.25rem,3vw,2rem); }
+.cieps-auth-shell .trabalho-card { border-top:4px solid var(--cieps-blue);padding:clamp(1.2rem,3vw,2rem); }
+.cieps-auth-shell .trabalho-card:hover { background:var(--cieps-paper-strong);box-shadow:var(--cieps-shadow);transform:none; }
+.cieps-auth-shell :is(.card-title,.topicos-title,.comentarios-title) { color:var(--cieps-ink);font-family:var(--cieps-display); }
+.cieps-auth-shell :is(.info-label,.topico-chave) { color:var(--cieps-red); }
+.cieps-auth-shell :is(.info-value,.topico-valor,.autor-email,.arquivo-data) { color:var(--cieps-muted); }
+.cieps-auth-shell .enviar-trabalho-container { max-width:1080px; }
+.cieps-auth-shell .formulario-principal { padding:clamp(1.25rem,4vw,3rem); }
+.cieps-auth-shell .form-subtitle { color:var(--cieps-muted);text-align:left; }
+.cieps-auth-shell .upload-area { background:var(--cieps-paper);border:1.5px dashed rgba(24,95,165,.5);border-radius:6px; }
+.cieps-auth-shell .upload-icon { color:var(--cieps-blue); }
+.cieps-auth-shell :is(.arquivos-lista,.autores-section) { background:var(--cieps-paper);border:1px solid var(--cieps-line);border-radius:6px;padding:1rem; }
+.cieps-auth-shell :is(.arquivo-item,.autor-item) { background:#fff;border:1px solid var(--cieps-line);border-radius:4px;box-shadow:none; }
+.cieps-auth-shell .btn-voltar { background:transparent;border:1px solid rgba(24,95,165,.45);border-radius:4px;color:var(--cieps-blue); }
+.cieps-auth-shell .progress-fill { background:var(--cieps-blue); }
+
+/* QR and payments */
+.cieps-auth-shell .qr-card { overflow:visible; }
+.cieps-auth-shell .qr-card::before { display:none; }
+.cieps-auth-shell .qr-card:hover { background:var(--cieps-paper-strong);border-color:var(--cieps-line);box-shadow:var(--cieps-shadow); }
+.cieps-auth-shell .qr-title { color:var(--cieps-ink);font-family:var(--cieps-display);text-shadow:none; }
+.cieps-auth-shell .qr-img { background:#fff;border:1px solid var(--cieps-line);border-radius:4px;box-shadow:none; }
+.cieps-auth-shell .qr-info { background:var(--cieps-paper);border:1px solid var(--cieps-line);border-radius:4px;box-shadow:none;color:var(--cieps-ink); }
+.cieps-auth-shell .qr-label { color:var(--cieps-red); }
+.cieps-auth-shell .qr-back-btn { background:var(--cieps-paper-strong);border:1px solid var(--cieps-line);border-radius:4px;color:var(--cieps-red); }
+.cieps-auth-shell .pagamentos-main { margin:0 auto;max-width:900px;padding:clamp(1rem,3vw,2rem) !important; }
+.cieps-auth-shell .pagamentos-main.pagamentos-main { border-color:var(--cieps-line);border-radius:8px;box-shadow:var(--cieps-shadow); }
+.cieps-auth-shell .pagamentos-main button { border-radius:4px !important; }
+.cieps-auth-shell .pagamentos-main :is(.bg-indigo-600,.bg-emerald-600,.bg-blue-500) { background-color:var(--cieps-red) !important; }
+.cieps-auth-shell .pagamentos-main :is(.text-indigo-600,.text-emerald-600) { color:var(--cieps-red) !important; }
+
+/* Utility-based registration and correction screens */
+.cieps-auth-shell > div > div > .shadow-xl { border:1px solid var(--cieps-line) !important;border-radius:8px !important;box-shadow:var(--cieps-shadow) !important; }
+.cieps-auth-shell :is(input,select,textarea) { accent-color:var(--cieps-red); }
+.cieps-auth-shell button[class*="bg-[#3E4095]"] { background:var(--cieps-red) !important;border-radius:4px !important; }
+.cieps-auth-shell h2[class*="text-[#3E4095]"] { color:var(--cieps-red) !important;font-family:var(--cieps-display); }
+.cieps-auth-shell main[class*="min-h-screen"] > div:not([class]) { margin:0 auto;max-width:1120px;padding:clamp(1rem,3vw,2.5rem); }
+.cieps-auth-shell main[class*="min-h-screen"] .bg-indigo-600 { background-color:var(--cieps-red) !important; }
+.cieps-auth-shell main[class*="min-h-screen"] .text-indigo-500 { color:var(--cieps-blue) !important; }
+
+@media (max-width:900px) {
+  .cieps-auth-shell .programacao-artigos-posters-container { grid-template-columns:1fr; }
+  .cieps-auth-shell :is(.programacao-artigos-table-container,.programacao-posters-table-container) { overflow-x:auto; }
+}
+
+/* Benefits and receipt pages */
+.cieps-benefits-page,.cieps-receipt-page { margin:0 auto;max-width:1320px;min-height:100vh;padding:clamp(2rem,5vw,5rem) clamp(1rem,3vw,2rem); }
+.cieps-benefits-hero,.cieps-receipt-heading { align-items:end;background:var(--cieps-paper-strong);border:1px solid var(--cieps-line);box-shadow:var(--cieps-shadow);display:flex;gap:2rem;justify-content:space-between;padding:clamp(1.5rem,4vw,3.5rem); }
+.cieps-benefits-hero h1,.cieps-receipt-heading h1 { color:var(--cieps-ink);font-size:clamp(2.7rem,5vw,5rem);letter-spacing:-.04em;line-height:1;margin:.5rem 0 1rem;max-width:900px; }
+.cieps-benefits-hero p,.cieps-receipt-heading p,.cieps-benefit-copy p,.cieps-benefits-note p { color:var(--cieps-muted);line-height:1.7;margin:0;max-width:760px; }
+.cieps-benefits-hero > svg { color:var(--cieps-yellow);flex:0 0 auto; }
+.cieps-benefits-grid { display:grid;gap:1.25rem;grid-template-columns:minmax(0,1.4fr) minmax(280px,.6fr);margin-top:1.25rem; }
+.cieps-benefit-card,.cieps-benefits-note { background:var(--cieps-paper-strong);border:1px solid var(--cieps-line);padding:clamp(1.4rem,3vw,2.25rem); }
+.cieps-benefit-card { display:grid;gap:2rem;grid-template-columns:220px 1fr; }
+.cieps-benefit-brand { align-items:flex-start;border-right:1px solid var(--cieps-line);display:flex;flex-direction:column;gap:1.25rem;padding-right:2rem; }
+.cieps-benefit-brand img { height:auto;object-fit:contain;width:100%; }
+.cieps-benefit-brand span { align-items:center;color:var(--cieps-blue);display:flex;font-size:.75rem;font-weight:700;gap:.4rem;text-transform:uppercase; }
+.cieps-benefit-copy h2,.cieps-benefits-note h2 { color:var(--cieps-ink);font-size:clamp(1.8rem,3vw,3rem);line-height:1.08;margin:.45rem 0 .75rem; }
+.cieps-coupon { align-items:center;background:rgba(239,159,39,.15);border:1px dashed var(--cieps-yellow);display:flex;gap:.75rem;margin:1.25rem 0;padding:1rem; }
+.cieps-coupon strong { font-family:var(--cieps-display);font-size:1.4rem;letter-spacing:.06em; }
+.cieps-benefits-note { border-top:4px solid var(--cieps-blue); }
+.cieps-receipt-heading { align-items:center; }
+.cieps-receipt-preview { background:#dcd8cf;border:1px solid var(--cieps-line);margin-top:1.25rem;padding:clamp(1rem,3vw,2rem); }
+.cieps-receipt-preview-label { align-items:center;color:var(--cieps-ink);display:flex;font-size:.75rem;font-weight:700;gap:.5rem;margin-bottom:1rem;text-transform:uppercase; }
+.cieps-receipt-preview .document-preview { background:#fff;box-shadow:0 18px 45px rgba(26,26,26,.12);margin:0 auto;max-width:794px;min-height:520px;padding:clamp(1rem,4vw,3rem); }
+
+@media (max-width:760px) {
+  .cieps-benefits-hero,.cieps-receipt-heading { align-items:flex-start;flex-direction:column; }
+  .cieps-benefits-grid,.cieps-benefit-card { grid-template-columns:1fr; }
+  .cieps-benefit-brand { border-bottom:1px solid var(--cieps-line);border-right:0;padding:0 0 1.5rem; }
+  .cieps-benefit-brand img { max-width:180px; }
+  .cieps-receipt-heading .cieps-button { width:100%; }
+}
+
+@media (max-width:640px) {
+  .cieps-auth-shell :is(.atividades-container,.programacao-container,.trabalhos-container,.enviar-trabalho-container) { padding:1.5rem 1rem 3rem; }
+  .cieps-auth-shell :is(.atividades-title,.programacao-title,.header-title) { font-size:2.65rem; }
+  .cieps-auth-shell :is(.programacao-modal,.regras-modal) { max-height:92vh;overflow-y:auto;width:calc(100% - 1.5rem); }
+  .cieps-auth-shell .qr-back-btn { left:1rem;top:1rem; }
+}
