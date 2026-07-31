@@ -13,6 +13,9 @@ const menuItems = [
   { name: 'Informações', href: '/anais' },
   { name: 'Araguari', href: '/#araguari' },
   { name: 'Contato', href: '/#contato' },
+  {
+    name: "Login", href: "/painel/"
+  },
 ];
 
 export default function Header() {
@@ -44,6 +47,9 @@ export default function Header() {
   }, [menuAberto]);
 
   const itemIsActive = (href: string) => {
+    if (!href.includes("#")) {
+      return;
+    }
     const route = href.split('#')[0] || '/';
     if (route === '/') return pathname === '/' && !href.includes('#');
     return pathname === route || pathname.startsWith(`${route}/`);
@@ -69,15 +75,17 @@ export default function Header() {
               href={item.href}
               prefetch={false}
               aria-current={itemIsActive(item.href) ? 'page' : undefined}
+              className={`${item.name.toLocaleLowerCase() === "painel" && "underline underline-offset-1 decoration-red-700 font-extrabold"}`}
             >
               {item.name}
             </Link>
           ))}
         </nav>
-
-        <Link href="/inscricoes" prefetch={false} className="cieps-header-cta">
-          Inscrições
-        </Link>
+        <div className='cieps-header-cta'>
+          <Link href="/inscricoes" prefetch={true} className="cieps-header-cta">
+            Inscrições
+          </Link>
+        </div>
 
         <button
           type="button"

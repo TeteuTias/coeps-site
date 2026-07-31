@@ -1,7 +1,7 @@
 'use client'
 import { useUser } from "@/lib/auth0-client"
 import { useRouter } from 'next/navigation';
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TelaLoading from "@/app/components/TelaLoading";
 import PaginaErrorPadrao from "@/app/components/PaginaErrorPadrao";
 import { Button, Modal, StatusBanner } from "@/app/components/cieps";
@@ -17,6 +17,7 @@ export default function UpdateData() {
 
     // Estados Pessoais
     const [value_name, setValueName] = useState('');
+    const [openLgpd, setOpenLgdp] = useState(false)
     const [value_email, setValueEmail] = useState('');
     const [value_telefone, setValueTelefone] = useState('');
     const [value_cpf, setValueCpf] = useState('');
@@ -157,41 +158,7 @@ export default function UpdateData() {
                     handleChangeAvisoErro(`Selecione o "Semestre"`)
                     return 0
             }
-
-            // Payload rigorosamente tipado para evitar crashes no Banco
-            const response = await fetchWithTimeout('/api/post/updateData', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    "nome": value_name.trim(),
-                    "cpf": value_cpf.trim(),
-                    "numero_telefone": value_telefone.trim(),
-                    "address": value_address,
-                    "addressNumber": parseInt(value_addressNumber, 10),
-                    "complement": value_complement.substring(0, 255),
-                    "province": value_province,
-                    "postalCode": value_postalCode,
-                    "cidade": value_cidade_nome.trim(),
-                    "pais": value_pais,
-                    "cidade_nome": value_cidade_nome,
-                    "data_nascimento": value_data_nascimento,
-                    "onde_conheceu": value_onde_conheceu,
-                    "situacao_academica": value_situacao,
-                    "curso": value_curso,
-                    "ano_conclusao": value_ano,
-                    "semestre_conclusao": value_semestre
-                })
-            })
-
-            if (!response.ok) {
-                const responseJson = await readJsonResponse(response)
-                handleChangeAvisoErro(responseJson?.message || "Não foi possível salvar seus dados. Tente novamente.")
-                handleChangeSetIsLoadingForms(0)
-                throw new Error('Erro ao carregar os dados');
-            }
-            router.push('/pagamentos')
+            setOpenLgdp(true)
         } catch (error) {
             handleChangeAvisoErro(error instanceof Error ? error.message : 'Não foi possível salvar seus dados. Tente novamente.')
         } finally {
@@ -201,10 +168,55 @@ export default function UpdateData() {
 
     return (
         <main className="cieps-page-shell flex flex-col justify-center">
+            {
+                openLgpd &&
+                <LgpdModal
+                    open={() => { setOpenLgdp(true) }}
+                    onClose={() => { setOpenLgdp(false) }}
+                    onConfirm={async () => {
+                        setIsLoadingForms(true)
+                        // Payload rigorosamente tipado para evitar crashes no Banco
+                        const response = await fetchWithTimeout('/api/post/updateData', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                "nome": value_name.trim(),
+                                "cpf": value_cpf.trim(),
+                                "numero_telefone": value_telefone.trim(),
+                                "address": value_address,
+                                "addressNumber": parseInt(value_addressNumber, 10),
+                                "complement": value_complement.substring(0, 255),
+                                "province": value_province,
+                                "postalCode": value_postalCode,
+                                "cidade": value_cidade_nome.trim(),
+                                "pais": value_pais,
+                                "cidade_nome": value_cidade_nome,
+                                "data_nascimento": value_data_nascimento,
+                                "onde_conheceu": value_onde_conheceu,
+                                "situacao_academica": value_situacao,
+                                "curso": value_curso,
+                                "ano_conclusao": value_ano,
+                                "semestre_conclusao": value_semestre
+                            })
+                        })
+
+                        if (!response.ok) {
+                            setIsLoadingForms(false)
+                            const responseJson = await readJsonResponse(response)
+                            handleChangeAvisoErro(responseJson?.message || "Não foi possível salvar seus dados. Tente novamente.")
+                            handleChangeSetIsLoadingForms(0)
+                            throw new Error('Erro ao carregar os dados');
+                        }
+                        router.push('/pagamentos')
+                    }} // ………………
+                    isLoading={() => { }}
+                />}
             <AvisoModal texto={avisoErro} handler={handleChangeAvisoErro} />
             {
                 isLoadingForms ? (
-                    <div className="fixed inset-0 z-40 flex items-center justify-center bg-tinta/20 backdrop-blur-sm" role="status" aria-live="polite">
+                    <div className="fixed inset-0 z-40 flex items-center justify-center bg-tinta/20 backdrop-blur-sm z-[100000]" role="status" aria-live="polite">
                         <div className="cieps-surface rounded-lg px-6 py-4 font-bold text-tinta">Salvando cadastro…</div>
                     </div>
                 ) : null
@@ -218,11 +230,11 @@ export default function UpdateData() {
                     </div>
 
                     <div className="flex flex-col space-y-8">
-                        
+
                         {/* SEÇÃO 1: Dados Pessoais */}
                         <div className="flex flex-col space-y-4">
                             <h2 className="text-lg font-bold text-goles border-b pb-2">Dados Pessoais</h2>
-                            
+
                             <div className="flex flex-col space-y-1">
                                 <h1 className="text-sm font-semibold text-tinta">Nome completo</h1>
                                 <InputComponent ariaLabel="Nome completo" placeholder="Digite seu nome" value={value_name} onChange={handleChangeName} />
@@ -250,7 +262,7 @@ export default function UpdateData() {
                         {/* SEÇÃO 2: Endereço */}
                         <div className="flex flex-col space-y-4">
                             <h2 className="text-lg font-bold text-goles border-b pb-2">Endereço</h2>
-                            
+
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 <div className="flex flex-col space-y-1">
                                     <h1 className="text-sm font-semibold text-tinta">CEP</h1>
@@ -398,3 +410,100 @@ const InputComponent = ({ type_text = "text", placeholder, value, onChange, aria
         </div>
     );
 };
+
+function LgpdModal({ open, onClose, onConfirm, isLoading }) {
+    const [agreed, setAgreed] = useState(false);
+
+    // Reseta o checkbox toda vez que o modal abre
+    useEffect(() => {
+        if (open) setAgreed(false);
+    }, [open]);
+
+    if (!open) return null;
+
+    return (
+        <Modal
+            open={open}
+            onClose={onClose}
+            title="Termos de Privacidade e LGPD"
+            description="Por favor, leia atentamente como seus dados serão tratados antes de prosseguir."
+            className="max-w-2xl"
+        >
+            <div className="flex flex-col space-y-4 text-[0.95rem] text-[var(--cieps-ink)]">
+
+                {/* Scroll Box Responsivo */}
+                <div className="max-h-[55vh] md:max-h-[40vh] overflow-y-auto rounded-md border border-[var(--cieps-line)] bg-[var(--cieps-paper)] p-3 sm:p-5 shadow-inner text-sm space-y-4">
+                    <p>
+                        Em conformidade com a <strong>Lei Geral de Proteção de Dados Pessoais (LGPD - Lei nº 13.709/2018)</strong>, solicitamos o seu consentimento para a coleta e tratamento dos seus dados pessoais.
+                    </p>
+
+                    <div>
+                        <h3 className="font-bold text-base text-[var(--cieps-ink)]">1. Finalidade do Tratamento</h3>
+                        {/* Correção: Usando div em vez de p para não dar erro de Hydration com a tag ul */}
+                        <div className="mt-1 space-y-2 text-[var(--cieps-muted)]">
+                            <p>Os dados fornecidos neste formulário (incluindo Nome, CPF, contato, endereço e dados acadêmicos) serão utilizados exclusivamente para:</p>
+                            <ul className="list-disc pl-5 space-y-1">
+                                <li>Viabilizar sua inscrição e participação no evento;</li>
+                                <li>Emissão de credenciais, certificados e documentos fiscais legais;</li>
+                                <li>Envio de comunicações importantes referentes ao evento, logística e pagamentos;</li>
+                                <li>Geração de dados estatísticos anonimizados para a organização.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 className="font-bold text-base text-[var(--cieps-ink)]">2. Compartilhamento de Dados</h3>
+                        <p className="mt-1 text-[var(--cieps-muted)]">
+                            Garantimos que suas informações não serão comercializadas ou cedidas a terceiros sem relação direta com o evento. O compartilhamento ocorrerá estritamente com plataformas parceiras operacionais (como gateways de pagamento e sistemas de credenciamento) que também cumprem com as normas de segurança da LGPD.
+                        </p>
+                    </div>
+
+                    <div>
+                        <h3 className="font-bold text-base text-[var(--cieps-ink)]">3. Segurança da Informação</h3>
+                        <p className="mt-1 text-[var(--cieps-muted)]">
+                            Seus dados serão armazenados em ambiente seguro, protegido contra acessos não autorizados, perdas ou alterações, pelo tempo necessário para o cumprimento das finalidades descritas ou obrigações legais (como guarda de notas fiscais).
+                        </p>
+                    </div>
+
+                    <div>
+                        <h3 className="font-bold text-base text-[var(--cieps-ink)]">4. Direitos do Titular</h3>
+                        <p className="mt-1 text-[var(--cieps-muted)]">
+                            Você tem o direito de solicitar, a qualquer momento, o acesso, a correção, a anonimização ou a exclusão dos seus dados de nossa base, ressalvadas as obrigações legais de retenção.
+                        </p>
+                    </div>
+                </div>
+
+                {/* Checkbox de Aceite (Otimizado para Toque) */}
+                <label className="flex items-start space-x-3 cursor-pointer rounded-lg border border-[var(--cieps-line)] p-3 sm:p-4 transition-colors hover:bg-[var(--cieps-paper)]">
+                    <input
+                        type="checkbox"
+                        className="mt-0.5 h-5 w-5 shrink-0 rounded border-gray-300 text-[var(--cieps-red)] focus:ring-[var(--cieps-red)]"
+                        checked={agreed}
+                        onChange={(e) => setAgreed(e.target.checked)}
+                    />
+                    <span className="text-sm font-medium leading-snug">
+                        Li e concordo com o tratamento dos meus dados pessoais para as finalidades descritas acima, nos termos da Lei nº 13.709/2018 (LGPD).
+                    </span>
+                </label>
+
+                {/* Ações (Largura total no mobile, lado a lado no desktop) */}
+                <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end sm:pt-4">
+                    <Button
+                        variant="ghost"
+                        onClick={onClose}
+                        disabled={isLoading}
+                        className="w-full sm:w-auto"
+                    >
+                        Voltar e revisar dados
+                    </Button>
+                    <Button
+                        onClick={onConfirm}
+                        className={`w-full sm:w-auto ${!agreed ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                        Finalizar Cadastro
+                    </Button>
+                </div>
+            </div>
+        </Modal>
+    );
+}

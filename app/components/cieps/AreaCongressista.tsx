@@ -4,7 +4,6 @@ import {
   BookOpen,
   Clock,
   CreditCard,
-  FileText,
   QrCode,
   Sparkles,
   Upload,

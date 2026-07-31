@@ -412,16 +412,26 @@ function PaymentSessionActive({
                                             {copied ? 'Código copiado' : 'Copiar Código PIX'}
                                         </button>
                                     </div> :
-                                    <div className='text-black'>
-                                        <div>
-                                            <p>Seu pix está pronto!</p>
+                                    <div className='flex flex-col items-center justify-center text-center gap-3 w-full'>
+                                        <div className='flex flex-col gap-1'>
+                                            <p className='text-[var(--cieps-ink)] font-bold text-lg'>
+                                                Seu ambiente de pagamento está pronto!
+                                            </p>
+                                            <p className='text-[var(--cieps-muted)] text-sm max-w-sm'>
+                                                Clique no botão abaixo para acessar a página segura e concluir sua transação.
+                                            </p>
                                         </div>
+
                                         <button
-                                            className='border-1 border-black'
+                                            type="button"
+                                            className='mt-2 inline-flex w-full sm:w-auto items-center justify-center gap-2 px-8 py-3 bg-[#2f7651] text-white font-bold rounded-xl hover:bg-[#245f41] transition-all shadow-md hover:shadow-lg active:scale-95'
                                             onClick={() => {
                                                 window.open(paymentConfig.sessaoPagamentoAutomáticoAtiva.paymentUrl, "_blank");
                                             }}
-                                        >Ir para pagamento</button>
+                                        >
+                                            Ir para pagamento
+                                            <ArrowRight size={20} aria-hidden="true" />
+                                        </button>
                                     </div>
                             }
                         </div>
@@ -585,7 +595,7 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                                                 {tipoPagamento === "DEBIT_CARD" && <p className='font-medium'>- DÉBITO: R$ {loteAtual?.precos.valorDebito}</p>}
                                             </div>
                                         )
-            }, 30_000)
+                                    }, 30_000)
                                 }
                                 <div className='mt-4 bg-red-50 text-red-600 p-4 rounded-lg border border-red-100 text-center font-medium text-sm'>
                                     Preencha suas informações e você terá 15 minutos para realizar seu pagamento no valor prometido.
@@ -1044,207 +1054,207 @@ const PaymentForm = ({ isModalOpen, onClose, dataPaymentConfig, hydratePage }: {
                 description="Preencha os dados com atenção para concluir o pagamento."
                 className="max-w-lg"
             >
-                    {step === 2 && (
-                        <button
-                            type="button"
-                            aria-label="Voltar aos dados do titular"
-                            onClick={() => setStep(1)}
-                            className='mb-4 inline-flex min-h-11 items-center justify-center rounded border border-[var(--cieps-line)] px-4 py-2 font-bold text-[var(--cieps-blue)]'
-                        >
-                            <span>VOLTAR</span>
-                        </button>
-                    )}
-                    {step === 1 && (
-                        <form onSubmit={handleSubmitPersonalInfo} className=''>
-                            <div className='text-center font-bold text-[#3e4095] text-[20px] mb-5'>
-                                <h1>Informações Pessoais</h1>
-                            </div>
-                            <div className='flex flex-col space-y-3'>
+                {step === 2 && (
+                    <button
+                        type="button"
+                        aria-label="Voltar aos dados do titular"
+                        onClick={() => setStep(1)}
+                        className='mb-4 inline-flex min-h-11 items-center justify-center rounded border border-[var(--cieps-line)] px-4 py-2 font-bold text-[var(--cieps-blue)]'
+                    >
+                        <span>VOLTAR</span>
+                    </button>
+                )}
+                {step === 1 && (
+                    <form onSubmit={handleSubmitPersonalInfo} className=''>
+                        <div className='text-center font-bold text-[#3e4095] text-[20px] mb-5'>
+                            <h1>Informações Pessoais</h1>
+                        </div>
+                        <div className='flex flex-col space-y-3'>
+                            <input
+                                className='text-black mb-2 p-2 border rounded'
+                                type="text"
+                                name="name"
+                                aria-label="Nome completo do titular"
+                                autoComplete="name"
+                                placeholder="Nome Completo"
+                                value={personalInfo.name}
+                                onChange={handlePersonalInfoChange}
+                            />
+                            <input
+                                className='text-black mb-2 p-2 border rounded'
+                                type="email"
+                                name="email"
+                                aria-label="E-mail do titular"
+                                autoComplete="email"
+                                placeholder="Email"
+                                value={personalInfo.email}
+                                onChange={handlePersonalInfoChange}
+                            />
+                            <input
+                                className='text-black mb-2 p-2 border rounded'
+                                type="tel"
+                                name="cpfCnpj"
+                                aria-label="CPF do titular"
+                                inputMode="numeric"
+                                placeholder="CPF"
+                                value={personalInfo.cpfCnpj}
+                                onChange={handlePersonalInfoChange}
+                            />
+                            <input
+                                className='text-black mb-2 p-2 border rounded'
+                                type="tel"
+                                name="postalCode"
+                                aria-label="CEP do titular"
+                                inputMode="numeric"
+                                autoComplete="postal-code"
+                                placeholder="CEP"
+                                value={personalInfo.postalCode}
+                                onChange={handlePersonalInfoChange}
+                            />
+                            <input
+                                className='text-black mb-2 p-2 border rounded'
+                                type="tel"
+                                name="addressNumber"
+                                aria-label="Número da residência"
+                                inputMode="numeric"
+                                placeholder="Número da Residência"
+                                value={personalInfo.addressNumber}
+                                onChange={handlePersonalInfoChange}
+                            />
+                            <input
+                                className='text-black mb-2 p-2 border rounded'
+                                type="tel"
+                                name="phone"
+                                aria-label="Telefone do titular"
+                                autoComplete="tel"
+                                placeholder="DDD + Telefone"
+                                value={personalInfo.phone}
+                                onChange={handlePersonalInfoChange}
+                            />
+                            <button
+                                type="submit"
+                                className={`bg-blue-500 text-white py-2 px-4 rounded font-bold text-[20px] ${isPersonalInfoValid() ? '' : 'opacity-50 cursor-not-allowed'}`}
+                                disabled={!isPersonalInfoValid()}
+                            >
+                                Continuar
+                            </button>
+                        </div>
+                    </form>
+                )}
+                {step === 2 && (
+                    <div className=''>
+                        <div className='text-center font-bold text-[#3e4095] text-[20px] mb-5'>
+                            <h1>{dataPaymentConfig.nome || "PAGAMENTOS"}</h1>
+                        </div>
+                        <Cards
+                            locale={{ valid: 'Validade', }}
+                            placeholders={{ name: "SEU NOME AQUI" }}
+                            number={cardInfo.number}
+                            expiry={cardInfo.expiry}
+                            cvc={cardInfo.cvc}
+                            name={cardInfo.name}
+                            focused={cardInfo.focus}
+                        />
+                        <form onSubmit={handleSubmitCardInfo} className='pt-3'>
+                            <div className='flex flex-col text-black space-y-3'>
+                                <input
+                                    className='text-black mb-2 p-2 border rounded'
+                                    type="text"
+                                    name="number"
+                                    aria-label="Número do cartão"
+                                    inputMode="numeric"
+                                    autoComplete="cc-number"
+                                    placeholder="Número do Cartão"
+                                    value={cardInfo.number}
+                                    onChange={handleCardInfoChange}
+                                    onFocus={handleCardInfoFocus}
+                                />
                                 <input
                                     className='text-black mb-2 p-2 border rounded'
                                     type="text"
                                     name="name"
-                                    aria-label="Nome completo do titular"
-                                    autoComplete="name"
-                                    placeholder="Nome Completo"
-                                    value={personalInfo.name}
-                                    onChange={handlePersonalInfoChange}
+                                    aria-label="Nome impresso no cartão"
+                                    autoComplete="cc-name"
+                                    placeholder="Nome no Cartão"
+                                    value={cardInfo.name}
+                                    onChange={handleCardInfoChange}
+                                    onFocus={handleCardInfoFocus}
                                 />
                                 <input
                                     className='text-black mb-2 p-2 border rounded'
-                                    type="email"
-                                    name="email"
-                                    aria-label="E-mail do titular"
-                                    autoComplete="email"
-                                    placeholder="Email"
-                                    value={personalInfo.email}
-                                    onChange={handlePersonalInfoChange}
-                                />
-                                <input
-                                    className='text-black mb-2 p-2 border rounded'
-                                    type="tel"
-                                    name="cpfCnpj"
-                                    aria-label="CPF do titular"
+                                    type="text"
+                                    name="expiry"
+                                    aria-label="Validade do cartão"
                                     inputMode="numeric"
-                                    placeholder="CPF"
-                                    value={personalInfo.cpfCnpj}
-                                    onChange={handlePersonalInfoChange}
+                                    autoComplete="cc-exp"
+                                    placeholder="Data Vencimento"
+                                    value={cardInfo.expiry}
+                                    onChange={handleCardInfoChange}
+                                    onFocus={handleCardInfoFocus}
                                 />
                                 <input
                                     className='text-black mb-2 p-2 border rounded'
-                                    type="tel"
-                                    name="postalCode"
-                                    aria-label="CEP do titular"
+                                    type="text"
+                                    name="cvc"
+                                    aria-label="Código de segurança do cartão"
                                     inputMode="numeric"
-                                    autoComplete="postal-code"
-                                    placeholder="CEP"
-                                    value={personalInfo.postalCode}
-                                    onChange={handlePersonalInfoChange}
+                                    autoComplete="cc-csc"
+                                    placeholder="Número CVC"
+                                    value={cardInfo.cvc}
+                                    onChange={handleCardInfoChange}
+                                    onFocus={handleCardInfoFocus}
                                 />
-                                <input
-                                    className='text-black mb-2 p-2 border rounded'
-                                    type="tel"
-                                    name="addressNumber"
-                                    aria-label="Número da residência"
-                                    inputMode="numeric"
-                                    placeholder="Número da Residência"
-                                    value={personalInfo.addressNumber}
-                                    onChange={handlePersonalInfoChange}
-                                />
-                                <input
-                                    className='text-black mb-2 p-2 border rounded'
-                                    type="tel"
-                                    name="phone"
-                                    aria-label="Telefone do titular"
-                                    autoComplete="tel"
-                                    placeholder="DDD + Telefone"
-                                    value={personalInfo.phone}
-                                    onChange={handlePersonalInfoChange}
-                                />
+                                <div className='pt-2'>
+                                    <div className='text-center'>
+                                        <div>
+                                            <p className='font-bold text-[#3e4095]'>
+                                                OPÇÕES DE PARCELAMENTO
+                                            </p>
+                                        </div>
+                                        <div className='font-bold pb-8 text-[#3e4095]'>
+                                            <p>
+                                                Escolha uma das {dataPaymentConfig.sessaoPagamentoAutomáticoAtiva.paymentConfig.precos.parcelamentos.length} opções de parcelamento disponíveis:
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className='space-y-3'>
+                                        {
+
+                                            dataPaymentConfig.sessaoPagamentoAutomáticoAtiva.paymentConfig.precos.parcelamentos?.map((value) => {
+                                                return (
+                                                    <button type="button" key={value.codigo} aria-pressed={value.codigo == idPagamento} className={`w-full cursor-pointer p-5 text-left ${value.codigo == idPagamento ? 'bg-[var(--cieps-red)] text-white' : "bg-[rgba(239,159,39,.16)] text-[var(--cieps-ink)]"}`} onClick={() => {
+                                                        handleIdPagamento(value.codigo)
+                                                        setTextoPagametoEscolhido(
+                                                            `Você escolheu realizar o pagamento em ${value.totalParcelas} parcelas de R$ ${value.valorCadaParcela.toFixed(2)}, totalizando R$${(value.valorCadaParcela * value.totalParcelas).toFixed(2)}`
+                                                        )
+
+                                                    }}
+                                                    >
+                                                        <div>
+                                                            <p className='text-white font-bold'>
+                                                                {value.codigo == idPagamento ? "SELECIONADO" : ""}
+                                                            </p>
+                                                        </div>
+                                                        <h1>
+                                                            Quero realizar o pagamento em <span className='font-bold'>{value.totalParcelas} parcelas de R${value.valorCadaParcela.toFixed(2)}</span>, totalizando <span className='font-bold'>R${(value.valorCadaParcela * value.totalParcelas).toFixed(2)}</span>.
+                                                        </h1>
+                                                    </button>
+                                                )
+                                            })
+                                        }
+                                    </div>
+                                </div>
                                 <button
                                     type="submit"
-                                    className={`bg-blue-500 text-white py-2 px-4 rounded font-bold text-[20px] ${isPersonalInfoValid() ? '' : 'opacity-50 cursor-not-allowed'}`}
-                                    disabled={!isPersonalInfoValid()}
+                                    className={`bg-red-600 text-white py-2 px-4 rounded font-bold text-[20px] ${isCardInfoValid() ? '' : 'opacity-50 cursor-not-allowed'}`}
+                                    disabled={!isCardInfoValid()}
                                 >
-                                    Continuar
+                                    PAGAR
                                 </button>
                             </div>
                         </form>
-                    )}
-                    {step === 2 && (
-                        <div className=''>
-                            <div className='text-center font-bold text-[#3e4095] text-[20px] mb-5'>
-                                <h1>{dataPaymentConfig.nome || "PAGAMENTOS"}</h1>
-                            </div>
-                            <Cards
-                                locale={{ valid: 'Validade', }}
-                                placeholders={{ name: "SEU NOME AQUI" }}
-                                number={cardInfo.number}
-                                expiry={cardInfo.expiry}
-                                cvc={cardInfo.cvc}
-                                name={cardInfo.name}
-                                focused={cardInfo.focus}
-                            />
-                            <form onSubmit={handleSubmitCardInfo} className='pt-3'>
-                                <div className='flex flex-col text-black space-y-3'>
-                                    <input
-                                        className='text-black mb-2 p-2 border rounded'
-                                        type="text"
-                                        name="number"
-                                        aria-label="Número do cartão"
-                                        inputMode="numeric"
-                                        autoComplete="cc-number"
-                                        placeholder="Número do Cartão"
-                                        value={cardInfo.number}
-                                        onChange={handleCardInfoChange}
-                                        onFocus={handleCardInfoFocus}
-                                    />
-                                    <input
-                                        className='text-black mb-2 p-2 border rounded'
-                                        type="text"
-                                        name="name"
-                                        aria-label="Nome impresso no cartão"
-                                        autoComplete="cc-name"
-                                        placeholder="Nome no Cartão"
-                                        value={cardInfo.name}
-                                        onChange={handleCardInfoChange}
-                                        onFocus={handleCardInfoFocus}
-                                    />
-                                    <input
-                                        className='text-black mb-2 p-2 border rounded'
-                                        type="text"
-                                        name="expiry"
-                                        aria-label="Validade do cartão"
-                                        inputMode="numeric"
-                                        autoComplete="cc-exp"
-                                        placeholder="Data Vencimento"
-                                        value={cardInfo.expiry}
-                                        onChange={handleCardInfoChange}
-                                        onFocus={handleCardInfoFocus}
-                                    />
-                                    <input
-                                        className='text-black mb-2 p-2 border rounded'
-                                        type="text"
-                                        name="cvc"
-                                        aria-label="Código de segurança do cartão"
-                                        inputMode="numeric"
-                                        autoComplete="cc-csc"
-                                        placeholder="Número CVC"
-                                        value={cardInfo.cvc}
-                                        onChange={handleCardInfoChange}
-                                        onFocus={handleCardInfoFocus}
-                                    />
-                                    <div className='pt-2'>
-                                        <div className='text-center'>
-                                            <div>
-                                                <p className='font-bold text-[#3e4095]'>
-                                                    OPÇÕES DE PARCELAMENTO
-                                                </p>
-                                            </div>
-                                            <div className='font-bold pb-8 text-[#3e4095]'>
-                                                <p>
-                                                    Escolha uma das {dataPaymentConfig.sessaoPagamentoAutomáticoAtiva.paymentConfig.precos.parcelamentos.length} opções de parcelamento disponíveis:
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className='space-y-3'>
-                                            {
-
-                                                dataPaymentConfig.sessaoPagamentoAutomáticoAtiva.paymentConfig.precos.parcelamentos?.map((value) => {
-                                                    return (
-                                                        <button type="button" key={value.codigo} aria-pressed={value.codigo == idPagamento} className={`w-full cursor-pointer p-5 text-left ${value.codigo == idPagamento ? 'bg-[var(--cieps-red)] text-white' : "bg-[rgba(239,159,39,.16)] text-[var(--cieps-ink)]"}`} onClick={() => {
-                                                            handleIdPagamento(value.codigo)
-                                                            setTextoPagametoEscolhido(
-                                                                `Você escolheu realizar o pagamento em ${value.totalParcelas} parcelas de R$ ${value.valorCadaParcela.toFixed(2)}, totalizando R$${(value.valorCadaParcela * value.totalParcelas).toFixed(2)}`
-                                                            )
-
-                                                        }}
-                                                        >
-                                                            <div>
-                                                                <p className='text-white font-bold'>
-                                                                    {value.codigo == idPagamento ? "SELECIONADO" : ""}
-                                                                </p>
-                                                            </div>
-                                                            <h1>
-                                                                Quero realizar o pagamento em <span className='font-bold'>{value.totalParcelas} parcelas de R${value.valorCadaParcela.toFixed(2)}</span>, totalizando <span className='font-bold'>R${(value.valorCadaParcela * value.totalParcelas).toFixed(2)}</span>.
-                                                            </h1>
-                                                        </button>
-                                                    )
-                                                })
-                                            }
-                                        </div>
-                                    </div>
-                                    <button
-                                        type="submit"
-                                        className={`bg-red-600 text-white py-2 px-4 rounded font-bold text-[20px] ${isCardInfoValid() ? '' : 'opacity-50 cursor-not-allowed'}`}
-                                        disabled={!isCardInfoValid()}
-                                    >
-                                        PAGAR
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    )}
+                    </div>
+                )}
             </Modal>
 
             {/* Modal de Confirmação */}

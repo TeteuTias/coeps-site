@@ -82,9 +82,9 @@ export default function HeaderPainel({ isPayed = true }: { isPayed: boolean }) {
 
         <div className="cieps-panel-actions">
           {!isPayed && <span className="cieps-panel-alert">Pagamento pendente</span>}
-          <a href="/auth/logout" className="cieps-panel-logout">
-            <LogOut size={16} />
+          <a href="/auth/logout" className="cieps-panel-logout flex flex-row items-center">
             <span>Sair</span>
+            <LogOut size={16} />
           </a>
         </div>
 

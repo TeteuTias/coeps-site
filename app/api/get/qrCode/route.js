@@ -2,9 +2,11 @@ import { ObjectId } from 'mongodb';
 import { withApiAuthRequired, getSession } from '@/lib/auth0-compat';
 import { connectToDatabase } from '@/app/lib/mongodb';
 import { NextResponse } from 'next/server';
+import QRCode from 'qrcode';
 
 /** @type {any} */
 export const GET = withApiAuthRequired(async (req) => {
+  console.log(" pasdkfpasokdf pakodp foak")
   try {
     const session = await getSession(req);
     if (!session?.user?.sub) {

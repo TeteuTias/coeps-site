@@ -28,47 +28,6 @@ export default function Modal({
   const descriptionId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-
-    const previousActiveElement = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    const dialog = dialogRef.current;
-    const focusable = dialog?.querySelectorAll<HTMLElement>(
-      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    );
-    focusable?.[0]?.focus();
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        onClose();
-        return;
-      }
-
-      if (event.key !== 'Tab' || !focusable?.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener('keydown', onKeyDown);
-    return () => {
-      document.removeEventListener('keydown', onKeyDown);
-      document.body.style.overflow = previousOverflow;
-      previousActiveElement?.focus();
-    };
-  }, [onClose, open]);
-
   if (!open || typeof document === 'undefined') return null;
 
   return createPortal(
@@ -93,6 +52,6 @@ export default function Modal({
         {footer && <footer className="cieps-modal-footer">{footer}</footer>}
       </div>
     </div>,
-    document.body,
+    document.body
   );
 }
