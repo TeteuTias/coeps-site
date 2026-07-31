@@ -30,13 +30,21 @@ export const GET = withApiAuthRequired(async function GET(request, { params }) {
                 }
             }
         ).toArray()
+        if (!result[0]?.informacoes_usuario) {
+            return NextResponse.json(
+                { error: "not_found", message: "As informações do usuário não foram encontradas." },
+                { status: 404 }
+            );
+        }
         return NextResponse.json({ ...result[0].informacoes_usuario }, { status: 200 });
         // result[0].informacoes_usuario => IUser['informacoes_usuario']
 
     }
-    catch (error) {
-        // console.log(error)
-        return NextResponse.json({ "error": error }, { status: 500 })
+    catch {
+        return NextResponse.json(
+            { error: "internal_server_error", message: "Não foi possível consultar as informações do usuário." },
+            { status: 500 }
+        )
     }
 })
 /*             

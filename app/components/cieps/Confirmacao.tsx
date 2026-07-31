@@ -1,14 +1,16 @@
 'use client';
 
 import Image from 'next/image';
-import { Button } from './ui';
+import { Button, StatusBanner } from './ui';
 
 export default function Confirmacao({
   onContinue,
   isLoading = false,
+  error,
 }: {
   onContinue: () => void;
   isLoading?: boolean;
+  error?: string | null;
 }) {
   return (
     <main className="flex min-h-screen w-full items-center justify-center bg-papel px-4 py-12">
@@ -36,7 +38,13 @@ export default function Confirmacao({
           </div>
         </div>
 
-        <Button full onClick={onContinue} disabled={isLoading}>
+        {error && (
+          <StatusBanner tone="error" title="Não foi possível abrir o painel" className="w-full text-left">
+            {error}
+          </StatusBanner>
+        )}
+
+        <Button full onClick={onContinue} loading={isLoading}>
           {isLoading ? 'Abrindo painel...' : 'Ir para meu painel'}
         </Button>
       </section>

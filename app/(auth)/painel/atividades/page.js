@@ -5,7 +5,11 @@ import WarningModal from "@/components/WarningModal"
 import { DateTime } from "luxon"
 import Link from "next/link"
 import { DollarSign, Users, Calendar, Info, XCircle, CheckCircle, Clock, BookOpen, UserCheck, GraduationCap, Presentation, FlaskConical, Music, Award, Gamepad2, Heart, Stethoscope, Sparkles, Brain, Search } from 'lucide-react';
+import { AsyncStatePanel } from '@/components/cieps';
+import { fetchWithTimeout, readJsonResponse } from '@/lib/client/fetchWithTimeout';
 import './style.css';
+
+const activityColors = ['#a32d2d', '#185fa5', '#ef9f27', '#1a1a1a'];
 //
 //
 //
@@ -13,6 +17,7 @@ export default function Minicursos() {
     const [loadingData, setLoadingData] = useState(1)
     const [data, setData] = useState({ _id: undefined, listEvents: [] })
     const [searchTerm, setSearchTerm] = useState('')
+    const [loadError, setLoadError] = useState(null)
 
     //
     //
@@ -20,16 +25,16 @@ export default function Minicursos() {
         const fetchData = async () => {
             try {
 
-                const response = await fetch('/api/get/atividadesDisponiveis', { cache: 'no-cache' })
-                const jsonResponse = await response.json()
+                const response = await fetchWithTimeout('/api/get/atividadesDisponiveis', { cache: 'no-cache' })
+                const jsonResponse = await readJsonResponse(response)
                 if (!response.ok) {
-                    console.log(jsonResponse)
-                    return 0
+                    throw new Error(jsonResponse?.message || 'Falha ao consultar atividades')
                 }
                 setData(jsonResponse)
+                setLoadError(null)
             }
             catch (error) {
-                console.log(error)
+                setLoadError(error instanceof Error ? error.message : 'Não foi possível consultar as atividades.')
             }
             finally {
                 setLoadingData(0)
@@ -95,13 +100,14 @@ export default function Minicursos() {
                     <p style={{ textAlign: 'left' }}>
                         <CheckCircle size={16} style={{ color: '#1B305F', marginRight: 6, verticalAlign: 'middle' }} /> A soma das inscrições dos minicursos deve totalizar, no mínimo, <span className="atividades-highlight">8 horas</span>.<br />
                         <Info size={16} style={{ color: '#1B305F', marginRight: 6, verticalAlign: 'middle' }} /> <b>NÃO</b> são permitidas inscrições em atividades com horários conflitantes. É de responsabilidade do congressista realizar um planejamento prévio antes da abertura das inscrições.<br />
-                        <Calendar size={16} style={{ color: '#1B305F', marginRight: 6, verticalAlign: 'middle' }} /> O congressista pode consultar as datas de abertura das inscrições, os horários, os locais e as datas de realização das atividades <span className="atividades-highlight"><Link className="bg-red-600 p-1 text-white" href="/programacao" prefetch={false} target="_blank">clicando aqui</Link></span>.
+                        <Calendar size={16} style={{ color: '#185FA5', marginRight: 6, verticalAlign: 'middle' }} /> O congressista pode consultar as datas de abertura das inscrições, os horários, os locais e as datas de realização das atividades <span className="atividades-highlight"><Link className="font-bold text-[var(--cieps-blue)] underline" href="/programacao" prefetch={false} target="_blank">clicando aqui</Link></span>.
                     </p>
                 </div>
                 <div className="atividades-status">
                     <h1>
                         {loadingData ? <span><Clock size={20} style={{ verticalAlign: 'middle', color: '#1B305F' }} /> CARREGANDO ATIVIDADES</span> : ''}
-                        {!loadingData && data?.listEvents.length === 0 ? <span><Info size={20} style={{ verticalAlign: 'middle', color: '#541A2C' }} /> AINDA NÃO HÁ ATIVIDADES DISPONÍVEIS</span> : ''}
+                        {!loadingData && loadError ? <span><Info size={20} style={{ verticalAlign: 'middle', color: '#A32D2D' }} /> ATIVIDADES INDISPONÍVEIS</span> : ''}
+                        {!loadingData && !loadError && data?.listEvents.length === 0 ? <span><Info size={20} style={{ verticalAlign: 'middle', color: '#A32D2D' }} /> AINDA NÃO HÁ ATIVIDADES DISPONÍVEIS</span> : ''}
                         {!loadingData && data?.listEvents.length > 0 ? <span><BookOpen size={20} style={{ verticalAlign: 'middle', color: '#1B305F' }} /> ATIVIDADES DISPONÍVEIS</span> : ''}
                     </h1>
                 </div>
@@ -111,6 +117,7 @@ export default function Minicursos() {
                             <Search size={20} className="atividades-search-icon" />
                             <input
                                 type="text"
+                                aria-label="Pesquisar atividades"
                                 placeholder="Pesquisar atividades..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -120,6 +127,14 @@ export default function Minicursos() {
                     </div>
                 )}
                 <div className="atividades-cards">
+                    {!loadingData && loadError && (
+                        <AsyncStatePanel
+                            status="error"
+                            errorTitle="Atividades indisponíveis"
+                            message={loadError}
+                            onRetry={() => setLoadingData(1)}
+                        />
+                    )}
                     {!loadingData && data?.listEvents.length > 0 && (() => {
                         const filteredEvents = data.listEvents.filter((value) => {
                             const searchLower = searchTerm.toLowerCase();
@@ -131,9 +146,9 @@ export default function Minicursos() {
                         
                         return filteredEvents.length > 0 ? (
                             <div className="w-full grid grid-cols-1 gap-x-10 gap-y-10 p-4 2xl:grid-cols-3 2xl:gap-2 2xl:gap-x-10 2xl:gap-y-10 lg:grid-cols-2 lg:gap-2 lg:gap-x-10 lg:gap-y-10">
-                                {filteredEvents.map((value) => (
+                                {filteredEvents.map((value, index) => (
                                     <div key={value._id} className="atividades-card">
-                                        <BannerAtividade activity={value} color={generateHexColor()} userId={data._id} />
+                                        <BannerAtividade activity={value} color={activityColors[index % activityColors.length]} userId={data._id} />
                                     </div>
                                 ))}
                             </div>
@@ -170,51 +185,6 @@ const isDateEqualOrAfterToday = (inputDate, participants, maxParticipants) => {
     }
     return 'INSCREVER'
 }
-function generateHexColor() {
-    const targetColor = [0x3e, 0x40, 0x95]; // RGB values of #3e4095
-    const threshold = 100; // Threshold to avoid colors too close to #3e4095
-    const whiteThreshold = 200; // Avoid colors too close to white
-
-    function getRandomHex() {
-        return Math.floor(Math.random() * 256);
-    }
-
-    function getHexCode(value) {
-        return value.toString(16).padStart(2, '0');
-    }
-
-    function isStrongColor(red, green, blue) {
-        return red > 128 || green > 128 || blue > 128;
-    }
-
-    function isCloseToWhite(red, green, blue) {
-        return red > whiteThreshold && green > whiteThreshold && blue > whiteThreshold;
-    }
-
-    let color;
-    do {
-        let red, green, blue;
-
-        do {
-            red = getRandomHex();
-            green = getRandomHex();
-            blue = getRandomHex();
-        } while (!isStrongColor(red, green, blue) || isCloseToWhite(red, green, blue));
-
-        const distance = Math.sqrt(
-            Math.pow(targetColor[0] - red, 2) +
-            Math.pow(targetColor[1] - green, 2) +
-            Math.pow(targetColor[2] - blue, 2)
-        );
-
-        if (distance > threshold) {
-            color = `#${getHexCode(red)}${getHexCode(green)}${getHexCode(blue)}`;
-        }
-    } while (!color);
-
-    return color;
-}
-
 const BannerAtividade = ({ activity, userId, color }) => {
     /*
     name
@@ -230,7 +200,6 @@ const BannerAtividade = ({ activity, userId, color }) => {
     const [includesUser, setIncludesUser] = useState(activity.participants.includes(userId))
     const [modalMessage, setModalMessage] = useState(0)
     const [modalMessage3, setModalMessage3] = useState(0)
-    const [modalMessage2, setModalMessage2] = useState(0)
     const [modal3Link, setModal3Link] = useState("/pagamentos")
     const [loadingModal, setLoadingModal] = useState(0)
     const [showConfirmRemove, setShowConfirmRemove] = useState(false)
@@ -256,7 +225,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
                     setModalMessage("Infelizmente, o evento está fechado. Não é mais possível se inscrever.")
                     return 0
             }
-            const response = await fetch('/api/put/inscreverAtividade', {
+            const response = await fetchWithTimeout('/api/put/inscreverAtividade', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -264,18 +233,16 @@ const BannerAtividade = ({ activity, userId, color }) => {
                 body: JSON.stringify({ eventId }),
             });
 
-            const result = await response.json();
+            const result = await readJsonResponse(response);
 
             if (!response.ok) {
-                console.log("!ok")
-                console.log(result)
                 if (response.status == 403) {
                     setButtonText('CHEIO')
                     setModalMessage(result.message)
                     return 0
                 }
                 if (response.status == 500) {
-                    setModalMessage2(result.message)
+                    setModalMessage(result.message)
 
                 }
                 setModalMessage(result.message)
@@ -286,7 +253,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
             setModalMessage(result.message)
             setButtonText('INSCRITO')
         } catch (error) {
-            console.log(error.message);
+            setModalMessage(error instanceof Error ? error.message : 'Não foi possível concluir a inscrição.')
         } finally {
             setLoadingModal(0)
         }
@@ -311,7 +278,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
                     setModalMessage("Infelizmente, o evento está fechado. Não é mais possível se inscrever.")
                     return 0
             }
-            const response = await fetch('/api/payment/createActivityPayment', {
+            const response = await fetchWithTimeout('/api/payment/createActivityPayment', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -319,18 +286,16 @@ const BannerAtividade = ({ activity, userId, color }) => {
                 body: JSON.stringify({ eventId }),
             });
 
-            const result = await response.json();
+            const result = await readJsonResponse(response);
 
             if (!response.ok) {
-                //console.log("!ok")
-                console.log(result)
                 if (response.status == 403) {
                     setButtonText('CHEIO')
                     setModalMessage(result.message)
                     return 0
                 }
                 if (response.status == 500) {
-                    setModalMessage2(result.message)
+                    setModalMessage(result.message)
 
                 }
                 setModalMessage(result.message)
@@ -342,7 +307,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
             setModal3Link(result.link || "/pagamentos")
             setButtonText('INSCRITO')
         } catch (error) {
-            console.log(error.message);
+            setModalMessage(error instanceof Error ? error.message : 'Não foi possível iniciar o pagamento.')
         } finally {
             setLoadingModal(0)
         }
@@ -358,7 +323,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
         }
 
         try {
-            const response = await fetch('/api/delete/desinscreverAtividade', {
+            const response = await fetchWithTimeout('/api/delete/desinscreverAtividade', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -366,10 +331,9 @@ const BannerAtividade = ({ activity, userId, color }) => {
                 body: JSON.stringify({ eventId }),
             });
 
-            const result = await response.json();
+            const result = await readJsonResponse(response);
 
             if (!response.ok) {
-                console.log(result)
                 if (response.status == 403) {
                     // setButtonText('CHEIO')
                     setModalMessage(result.message)
@@ -384,9 +348,11 @@ const BannerAtividade = ({ activity, userId, color }) => {
             setIncludesUser(0)
             setButtonText('INSCREVER')
             */
-            setModalMessage2(result.message)
+            setIncludesUser(0)
+            setButtonText(isDateEqualOrAfterToday(activity.dateOpen, Math.max(0, activity.participants.length - 1), activity.maxParticipants))
+            setModalMessage(result.message)
         } catch (error) {
-            console.log(error.message);
+            setModalMessage(error instanceof Error ? error.message : 'Não foi possível retirar sua inscrição.')
         } finally {
             setLoadingModal(0)
         }
@@ -394,7 +360,6 @@ const BannerAtividade = ({ activity, userId, color }) => {
     return (
         <div className="atividades-card-container">
             <WarningModal message={modalMessage} textButton={"FECHAR"} closeModal={() => { setModalMessage(0) }} isModal={modalMessage} />
-            <WarningModal message={modalMessage2} textButton={"RECARREGAR PÁGINA"} closeModal={() => { setModalMessage(0) }} isModal={modalMessage2} onClose={() => { window.location.reload() }} />
             <WarningModalPayment href={modal3Link} message={modalMessage3} textButton={"FECHAR"} closeModal={() => { setModalMessage3(0) }} isModal={modalMessage3} />
             <LoadingModal isLoading={loadingModal} />
             <ConfirmRemoveModal 

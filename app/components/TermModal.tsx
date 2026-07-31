@@ -1,93 +1,54 @@
-// src/components/TermModal.tsx
-"use client"
+'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { Button, Modal } from '@/components/cieps';
 
 export interface ModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onConfirm: () => void;
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
 }
 
-const TermModal: React.FC<ModalProps> = ({ isOpen, onClose, onConfirm }) => {
-    // Adiciona um estado para o checkbox
-    const [isChecked, setIsChecked] = useState(false);
+function TermModalContent({ onClose, onConfirm }: Omit<ModalProps, 'isOpen'>) {
+  const [isChecked, setIsChecked] = useState(false);
 
-    if (!isOpen) return null;
-
-    return (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-75 overflow-y-auto h-full w-full flex items-center justify-center z-[51] p-4 animate-fade-in">
-            <div className="relative bg-white w-full max-w-xl mx-auto rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-95 md:scale-100 animate-slide-up-fade">
-
-                {/* Botão de Fechar */}
-                <button
-                    className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                    onClick={onClose}
-                    aria-label="Fechar"
-                >
-                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-
-                {/* Conteúdo do Modal */}
-                <div className="p-8 space-y-6">
-                    {/* Título do Modal */}
-                    <h2 className="text-3xl font-bold text-gray-900 leading-tight">
-                        Termo de Consentimento
-                    </h2>
-                    <h3 className="text-xl font-semibold text-gray-700">
-                        para Tratamento de Dados Pessoais
-                    </h3>
-
-                    {/* Corpo do Termo */}
-                    <div className="text-gray-600 text-base space-y-4 leading-relaxed max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
-                        <p>
-                            Ao realizar minha inscrição no <strong className="font-semibold text-gray-800">CIEPS (Congresso Internacional de Estudantes e Profissionais da Saúde)</strong>, declaro estar ciente e de acordo com o tratamento dos meus dados pessoais fornecidos neste formulário, conforme disposto na <strong className="font-semibold text-gray-800">Lei Geral de Proteção de Dados Pessoais – LGPD (Lei nº 13.709/2018)</strong>.
-                        </p>
-                        <p>
-                            Autorizo a organização do evento a coletar, armazenar, utilizar e, se necessário, compartilhar meus dados exclusivamente para fins relacionados à organização, comunicação, controle de participação e divulgação institucional do CIEPS.
-                        </p>
-                        <p>
-                            Os dados coletados não serão utilizados para fins comerciais nem repassados a terceiros não envolvidos com o evento, respeitando os princípios de finalidade, necessidade e segurança previstos na LGPD.
-                        </p>
-                        <div>
-                            <h4 className="font-bold text-gray-800 mt-4">Tenho ciência de que:</h4>
-                            <ul className="list-disc pl-6 mt-2 space-y-2 text-sm">
-                                <li>Poderei, a qualquer momento, solicitar acesso, correção ou exclusão dos meus dados;</li>
-                                <li>A qualquer tempo, poderei revogar este consentimento, mediante solicitação pelo e-mail oficial da organização;</li>
-                                <li>Meus dados poderão ser utilizados para envio de informações sobre futuras edições do evento e ações educativas relacionadas, caso eu manifeste interesse.</li>
-                            </ul>
-                        </div>
-                        <p className="font-bold mt-4 text-gray-800">
-                            Declaro, portanto, que li, compreendi e estou de acordo com os termos acima.
-                        </p>
-                    </div>
-                </div>
-
-                {/* Rodapé - Checkbox e Botão de Ação */}
-                <div className="p-8 bg-gray-50 border-t border-gray-100 rounded-b-xl flex flex-col md:flex-row items-center justify-between gap-4">
-                    <label className="flex items-center text-gray-700 cursor-pointer text-base select-none">
-                        <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => setIsChecked(e.target.checked)}
-                            className="form-checkbox h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 transition-colors duration-200 ease-in-out"
-                        />
-                        <span className="ml-3 font-medium">Li e aceito os termos acima.</span>
-                    </label>
-                    <button
-                        onClick={onConfirm}
-                        disabled={!isChecked}
-                        className={`px-8 py-3 font-semibold rounded-full shadow-lg transition-all duration-200 ease-in-out
-                            ${isChecked ? 'bg-indigo-600 text-white hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-offset-2' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
-                    >
-                        Confirmar e Prosseguir
-                    </button>
-                </div>
-            </div>
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      title="Termo de consentimento"
+      description="Tratamento de dados pessoais para participação no I CIEPS"
+      className="max-w-3xl"
+      footer={<Button onClick={onConfirm} disabled={!isChecked}>Confirmar e prosseguir</Button>}
+    >
+      <div className="max-h-[48vh] space-y-4 overflow-y-auto pr-2 text-sm leading-7">
+        <p>
+          Ao realizar minha inscrição no <strong className="text-tinta">CIEPS — Congresso Internacional de Estudantes e Profissionais da Saúde</strong>, declaro estar ciente e de acordo com o tratamento dos dados pessoais fornecidos neste formulário, conforme a Lei Geral de Proteção de Dados Pessoais — LGPD (Lei nº 13.709/2018).
+        </p>
+        <p>
+          Autorizo a organização do evento a coletar, armazenar, utilizar e, quando necessário, compartilhar meus dados exclusivamente para organização, comunicação, controle de participação e divulgação institucional do CIEPS.
+        </p>
+        <p>
+          Os dados não serão utilizados para fins comerciais nem repassados a terceiros não envolvidos com o evento, respeitando os princípios de finalidade, necessidade e segurança previstos na LGPD.
+        </p>
+        <div>
+          <h3 className="font-bold text-tinta">Tenho ciência de que:</h3>
+          <ul className="mt-2 list-disc space-y-2 pl-5">
+            <li>poderei solicitar acesso, correção ou exclusão dos meus dados;</li>
+            <li>poderei revogar este consentimento pelo e-mail oficial da organização;</li>
+            <li>comunicações sobre futuras edições dependerão do interesse manifestado.</li>
+          </ul>
         </div>
-    );
-};
+        <p className="font-bold text-tinta">Declaro que li, compreendi e concordo com os termos acima.</p>
+      </div>
+      <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-md border border-linha bg-papel p-4 text-sm font-semibold text-tinta">
+        <input type="checkbox" checked={isChecked} onChange={(event) => setIsChecked(event.target.checked)} className="mt-0.5 h-5 w-5 accent-goles" />
+        <span>Li e aceito os termos acima.</span>
+      </label>
+    </Modal>
+  );
+}
 
-export default TermModal;
+export default function TermModal({ isOpen, onClose, onConfirm }: ModalProps) {
+  return isOpen ? <TermModalContent onClose={onClose} onConfirm={onConfirm} /> : null;
+}

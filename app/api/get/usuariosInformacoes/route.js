@@ -33,8 +33,11 @@ export const GET = withApiAuthRequired((async function GET( request, { params } 
         return NextResponse.json({ "data": result[0] });
 
     }
-    catch (error){
-        return NextResponse.json({"error": error})
+    catch {
+        return NextResponse.json(
+            { error: "internal_server_error", message: "Não foi possível consultar as informações do usuário." },
+            { status: 500 }
+        )
     }
 }))
 /*

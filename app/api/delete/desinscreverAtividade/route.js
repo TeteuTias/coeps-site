@@ -68,9 +68,11 @@ export const DELETE = withApiAuthRequired(async function (req) {
 
         }
         return Response.json({ message: 'Não foi possível retirar sua inscrição. Regarregue a página e tente novamente.' }, { status: 403 });
-    } catch (error) {
-        console.error(error);
-        return Response.json({ message: 'Internal server error' }, { status: 500 });
+    } catch {
+        return Response.json(
+            { error: 'internal_server_error', message: 'Não foi possível retirar a inscrição.' },
+            { status: 500 }
+        );
     }
 
 })

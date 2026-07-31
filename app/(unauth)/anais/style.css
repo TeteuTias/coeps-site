@@ -79,6 +79,21 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.anais-grid > .cieps-state-panel,
+.anais-grid > .anais-empty {
+  grid-column: 1 / -1;
+}
+
+.anais-contact-list a {
+  align-items: center;
+  color: var(--cieps-blue);
+  display: inline-flex;
+  gap: 0.5rem;
+  min-height: 44px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .anais-card {
   color: inherit;
   display: grid;

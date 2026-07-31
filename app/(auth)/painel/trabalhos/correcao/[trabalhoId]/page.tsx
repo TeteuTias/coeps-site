@@ -1,11 +1,13 @@
 "use client"
 
-import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import "./style.css"
 import { IAcademicWorks, ArquivoUpload } from "@/lib/types/academicWorks/academicWorks.t";
 import { Paperclip, Loader, CheckCircle, AlertCircle, X, Upload, Plus } from "lucide-react";
 import DOMPurify from "dompurify";
 import { useRouter } from "next/navigation";
+import { AsyncStatePanel, Button, Modal, PageShell, StatusBanner } from '@/components/cieps';
+import { fetchWithTimeout, readJsonResponse } from '@/lib/client/fetchWithTimeout';
 //
 //
 // Função para gerar um nome de arquivo único, evitando conflitos no armazenamento.
@@ -21,7 +23,7 @@ const generateUniqueFileName = (originalName: string): string => {
 async function fetchWithRetry(url: string, options: RequestInit, retries = 3): Promise<Response> {
     for (let i = 0; i < retries; i++) {
         try {
-            const response = await fetch(url, options);
+            const response = await fetchWithTimeout(url, options, 60_000);
             if (response.status >= 500) {
                 throw new Error(`Server error: ${response.status}`);
             }
@@ -51,42 +53,58 @@ export default function Page({ params }: { params: Promise<{ trabalhoId: string 
     const [trabalhoData, setTrabalhoData] = useState<IAcademicWorks | null>(null);
 
     const [loading, setLoading] = useState<boolean>(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
+    const [requestVersion, setRequestVersion] = useState(0);
     useEffect(() => {
+        let active = true;
         const fetchData = async () => {
             try {
 
                 const { trabalhoId } = await params;
-                const response = await fetch(`/api/get/usuariosTrabalhos/${trabalhoId}`);
-                if (!response.ok) {
-                    // Handle error
-                    const errMessage: { message: string } = await response.json();
-                    alert(errMessage.message);
-                    return;
-                }
-                const { data }: { data: IAcademicWorks } = await response.json();
-                setTrabalhoData(data);
+                const response = await fetchWithTimeout(`/api/get/usuariosTrabalhos/${trabalhoId}`);
+                const payload = await readJsonResponse<{ data: IAcademicWorks }>(response);
+                if (!payload) throw new Error('A API retornou uma resposta vazia.');
+                const { data } = payload;
+                if (active) setTrabalhoData(data);
+            }
+            catch (error) {
+                if (active) setLoadError(error instanceof Error ? error.message : 'Não foi possível carregar o trabalho.');
             }
             finally {
-                setLoading(false)
+                if (active) setLoading(false)
             }
         }
-        fetchData()
-    }, [params])
+        void fetchData()
+        return () => {
+            active = false;
+        }
+    }, [params, requestVersion])
+
+    if (loading) {
+        return <PageShell className="flex items-center justify-center"><AsyncStatePanel status="loading" loadingTitle="Carregando trabalho para correção" className="w-full max-w-2xl" /></PageShell>
+    }
+
+    if (loadError || !trabalhoData) {
+        return (
+            <PageShell className="flex items-center justify-center">
+                <AsyncStatePanel
+                    status="error"
+                    errorTitle="Trabalho indisponível"
+                    message={loadError ?? 'O trabalho solicitado não foi encontrado.'}
+                    onRetry={() => {
+                        setLoadError(null);
+                        setLoading(true);
+                        setRequestVersion((version) => version + 1);
+                    }}
+                    className="w-full max-w-2xl"
+                />
+            </PageShell>
+        )
+    }
 
     return (
         <main className="min-h-screen min-w-screen">
-            {
-                loading &&
-                <div className="fixed w-full">
-                    <p className="w-full min-h-screen flex items-center justify-center content-center bg-red-500 text-white text-center">C A R R E G A N D O</p>
-                </div>
-            }
-            <div>
-                {
-                    trabalhoData &&
-                    <TrabalhoComponent setIsLoading={setLoading} trabalho={trabalhoData} setTrabalhoData={setTrabalhoData} />
-                }
-            </div>
+            <TrabalhoComponent trabalho={trabalhoData} setTrabalhoData={setTrabalhoData} />
         </main>
     )
 }
@@ -95,11 +113,13 @@ export default function Page({ params }: { params: Promise<{ trabalhoId: string 
 // ... (código do componente Page)
 
 // Este é o componente com o design modernizado.
-const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: React.Dispatch<React.SetStateAction<IAcademicWorks | null>>, setIsLoading: Dispatch<SetStateAction<boolean>> }> = ({ trabalho, setTrabalhoData, setIsLoading }) => {
+const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: React.Dispatch<React.SetStateAction<IAcademicWorks | null>> }> = ({ trabalho, setTrabalhoData }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
     const [arquivos, setArquivos] = useState<ArquivoUpload[]>([]);
     const [formError, setFormError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [confirmSubmit, setConfirmSubmit] = useState(false);
 
     // ==================================================================
     // LÓGICA DE UPLOAD QUE ESTAVA FALTANDO (ADICIONADA DE VOLTA AQUI)
@@ -123,12 +143,8 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
             const response = await fetchWithRetry('/api/post/uploadBlobSingle', { method: 'POST', body: formData });
             updateFileProgress(fileId, 70, 'uploading');
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || `Erro no upload: ${response.statusText}`);
-            }
-
-            const result = await response.json();
+            const result = await readJsonResponse<any>(response);
+            if (!result) throw new Error('A API de upload retornou uma resposta vazia.');
             if (!result.data || !result.data._id) throw new Error('A API de upload não retornou um ID de arquivo válido.');
 
             updateFileProgress(fileId, 100, 'completed');
@@ -158,9 +174,8 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
                 formData.append('fileName', uniqueFileName);
 
                 const response = await fetchWithRetry('/api/post/uploadBlobChunk', { method: 'POST', body: formData });
-                if (!response.ok) throw new Error(`Erro no upload do chunk ${i + 1}`);
-
-                const result = await response.json();
+                const result = await readJsonResponse<any>(response);
+                if (!result) throw new Error(`A API não confirmou o chunk ${i + 1}.`);
                 chunkIds.push(result.chunkId);
                 updateFileProgress(fileId, ((i + 1) / totalChunks) * 90, 'uploading');
             }
@@ -171,9 +186,8 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
                 body: JSON.stringify({ chunkFileName: uniqueFileName, finalFileName: uniqueFileName, chunkIds, totalSize: file.size }),
             });
 
-            if (!reconstructResponse.ok) throw new Error('Erro na reconstrução do arquivo');
-
-            const result = await reconstructResponse.json();
+            const result = await readJsonResponse<any>(reconstructResponse);
+            if (!result) throw new Error('A API de reconstrução retornou uma resposta vazia.');
             if (!result.data || !result.data._id) throw new Error('A API de reconstrução não retornou um ID válido.');
 
             updateFileProgress(fileId, 100, 'completed');
@@ -223,7 +237,7 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
             if (uploadedFile) {
                 setArquivos(prev => prev.map(arquivo =>
                     arquivo.fileId === fileId
-                        ? { ...arquivo, id: uploadedFile.id as any, url: uploadedFile.url }
+                        ? { ...arquivo, fileId: uploadedFile.id, url: uploadedFile.url }
                         : arquivo
                 ));
                 return uploadedFile;
@@ -242,44 +256,53 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
     };
 
     const sendToApi = async () => {
-        setIsLoading(true);
-        await fetch("/api/put/academicWork/", {
-            method: "PUT",
-            body: JSON.stringify({
-                academicWork: trabalho,
-                newFiles: arquivos
-            })
-        }).then(() => {
-            setIsLoading(false);
+        if (isSubmitting) return;
+        if (arquivos.some((arquivo) => arquivo.status !== 'completed')) {
+            setFormError('Aguarde o término de todos os uploads ou remova os arquivos com erro.');
+            return;
+        }
+
+        setIsSubmitting(true);
+        setFormError(null);
+        try {
+            const response = await fetchWithTimeout("/api/put/academicWork", {
+                method: "PUT",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ academicWork: trabalho, newFiles: arquivos })
+            });
+            await readJsonResponse(response);
             router.push("/painel/trabalhos/");
-            alert("Correção enviada com sucesso!");
-        });
+        } catch (error) {
+            setFormError(error instanceof Error ? error.message : 'Não foi possível enviar a correção.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
-        <div className="bg-slate-50 min-h-screen">
-            <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8 text-slate-800">
+        <div className="bg-papel min-h-screen">
+            <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-8 text-tinta">
 
                 {/* CABEÇALHO */}
                 <div className="text-center space-y-2 w-full flex items-center justify-center flex-col">
-                    <h1 className="text-4xl font-bold text-slate-900">{trabalho.titulo}</h1>
+                    <h1 className="text-4xl font-bold text-tinta">{trabalho.titulo}</h1>
                     <p className="text-lg text-white bg-red-800 w-fit px-3 py-2 rounded-lg"><span className="font-semibold">{trabalho.status}</span></p>
                 </div>
 
                 {/* CARD DE COMENTÁRIOS */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h2 className="text-xl font-semibold text-slate-900 mb-6">Comentários dos Avaliadores</h2>
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-linha">
+                    <h2 className="text-xl font-semibold text-tinta mb-6">Comentários dos Avaliadores</h2>
                     <div className="space-y-6">
                         {trabalho.avaliadorComentarios.length === 0
-                            ? <p className="text-slate-500">Nenhum comentário disponível.</p>
+                            ? <p className="text-muted">Nenhum comentário disponível.</p>
                             : trabalho.avaliadorComentarios.map((comentario, index) => (
-                                <div key={index} className="border-l-4 border-indigo-500 pl-4">
+                                <div key={index} className="border-l-4 border-goles pl-4">
                                     {index === trabalho.avaliadorComentarios.length - 1 &&
-                                        <span className="bg-indigo-100 text-indigo-800 text-xs font-semibold px-3 py-1 rounded-full mb-2 inline-block animate-pulse">
+                                        <span className="bg-goles/10 text-goles text-xs font-semibold px-3 py-1 rounded-full mb-2 inline-block animate-pulse">
                                             ÚLTIMA AVALIAÇÃO
                                         </span>
                                     }
-                                    <p className="font-semibold text-slate-700">
+                                    <p className="font-semibold text-tinta">
                                         Avaliação {index + 1}: {new Date(comentario.date).toLocaleString('pt-BR', {
                                             dateStyle: 'full',
                                             timeStyle: 'medium',
@@ -293,22 +316,22 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
                 </div>
 
                 {/* CARD DE AUTORES */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h2 className="text-xl font-semibold text-slate-900 mb-2">Detalhes dos Autores</h2>
-                    <p className="text-slate-500 mb-6">Para alterações nos autores, entre em contato com a organização do evento.</p>
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-linha">
+                    <h2 className="text-xl font-semibold text-tinta mb-2">Detalhes dos Autores</h2>
+                    <p className="text-muted mb-6">Para alterações nos autores, entre em contato com a organização do evento.</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {trabalho.autores.map((autor) => (
-                            <div className="relative bg-slate-50 border border-slate-200 rounded-lg p-4" key={autor.nome + autor.cpf}>
+                            <div className="relative bg-papel border border-linha rounded-lg p-4" key={autor.nome + autor.cpf}>
                                 {autor.isOrientador &&
-                                    <span className="absolute -top-3 right-4 bg-slate-800 text-white text-xs font-bold px-3 py-1 rounded-full">
+                                    <span className="absolute -top-3 right-4 bg-tinta text-white text-xs font-bold px-3 py-1 rounded-full">
                                         Orientador
                                     </span>
                                 }
                                 <div className="space-y-1 text-sm">
-                                    <p className="font-semibold text-slate-800">{autor.nome}</p>
-                                    <p className="text-slate-600">{autor.cpf}</p>
-                                    <p className="text-slate-600">{autor.email}</p>
-                                    <p className="text-slate-600">Pagante: <span className="font-medium">{autor.isPagante ? "Sim" : "Não"}</span></p>
+                                    <p className="font-semibold text-tinta">{autor.nome}</p>
+                                    <p className="text-muted">{autor.cpf}</p>
+                                    <p className="text-muted">{autor.email}</p>
+                                    <p className="text-muted">Pagante: <span className="font-medium">{autor.isPagante ? "Sim" : "Não"}</span></p>
                                 </div>
                             </div>
                         ))}
@@ -316,16 +339,17 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
                 </div>
 
                 {/* CARD DE TÓPICOS */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                    <h2 className="text-xl font-semibold text-slate-900 mb-6">Tópicos do Trabalho</h2>
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-linha">
+                    <h2 className="text-xl font-semibold text-tinta mb-6">Tópicos do Trabalho</h2>
                     <div className="space-y-4">
-                        {Object.entries(trabalho.topicos).map(([key, value]) => (
+                        {Object.entries(trabalho.topicos).map(([key, value], index) => (
                             <div key={key}>
-                                <label className="block text-sm font-medium text-slate-700 capitalize">{key}</label>
+                                <label htmlFor={`correction-topic-${index}`} className="block text-sm font-medium text-tinta capitalize">{key}</label>
                                 <input
+                                    id={`correction-topic-${index}`}
                                     type="text"
-                                    className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400
-                                      focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                    className="mt-1 block w-full px-3 py-2 bg-white border border-linha rounded-md text-sm shadow-sm placeholder:text-muted
+                                      focus:outline-none focus:border-goles focus:ring-1 focus:ring-goles"
                                     value={value}
                                     onChange={(e) => {
                                         const newValue = e.target.value;
@@ -344,19 +368,19 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
                 </div>
 
                 {/* CARD DE ARQUIVOS */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-8">
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-linha space-y-8">
                     <div>
-                        <h2 className="text-xl font-semibold text-slate-900 mb-2">Arquivos Já Enviados</h2>
-                        <p className="text-slate-500 mb-4">Estes arquivos não podem ser alterados ou removidos.</p>
+                        <h2 className="text-xl font-semibold text-tinta mb-2">Arquivos Já Enviados</h2>
+                        <p className="text-muted mb-4">Estes arquivos não podem ser alterados ou removidos.</p>
                         <div className="space-y-2">
                             {trabalho.arquivos.map((arquivo, index) => (
                                 <a href={arquivo.url} target="_blank" rel="noopener noreferrer" key={index}
-                                    className="flex justify-between items-center bg-slate-50 hover:bg-slate-100 border border-slate-200 p-3 rounded-lg transition-colors duration-200">
-                                    <div className="flex items-center gap-3 font-medium text-indigo-600">
+                                    className="flex justify-between items-center bg-papel hover:bg-linha/40 border border-linha p-3 rounded-lg transition-colors duration-200">
+                                    <div className="flex items-center gap-3 font-medium text-goles">
                                         <Paperclip className="h-5 w-5" />
                                         <span>{arquivo.originalName}</span>
                                     </div>
-                                    <div className="text-sm text-slate-500 space-x-4">
+                                    <div className="text-sm text-muted space-x-4">
                                         <span>{(arquivo.size / (1024 * 1024)).toFixed(2)} MB</span>
                                         <span>{new Date(arquivo.uploadDate).toLocaleDateString()}</span>
                                     </div>
@@ -366,11 +390,11 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
                     </div>
 
                     <div>
-                        <h2 className="text-xl font-semibold text-slate-900 mb-2">Anexar Novos Arquivos</h2>
-                        <p className="text-slate-500 mb-4">Envie novos arquivos se solicitado na avaliação. Arraste e solte ou clique para selecionar.</p>
+                        <h2 className="text-xl font-semibold text-tinta mb-2">Anexar Novos Arquivos</h2>
+                        <p className="text-muted mb-4">Envie novos arquivos se solicitado na avaliação. Arraste e solte ou clique para selecionar.</p>
 
                         <div className="flex items-center justify-center">
-                            <div className="w-full text-center flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-xl p-8 hover:border-indigo-500 transition-colors duration-300 bg-slate-50">
+                            <div className="w-full text-center flex flex-col items-center justify-center border-2 border-dashed border-linha rounded-xl p-8 hover:border-goles transition-colors duration-300 bg-papel">
                                 <input
                                     ref={fileInputRef}
                                     type="file"
@@ -379,23 +403,23 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
                                     className="hidden"
                                     accept=".pdf,.doc,.docx"
                                 />
-                                <Upload className="text-indigo-500 h-10 w-10 mb-4" />
+                                <Upload className="text-araguari h-10 w-10 mb-4" />
                                 <button
                                     type="button"
                                     onClick={() => fileInputRef.current?.click()}
                                     className={`flex items-center justify-center px-5 py-2.5 rounded-lg font-semibold text-white transition-all duration-200 shadow-sm ${arquivos.length >= trabalho.configuracaoModalidade.postagens_maximas
-                                        ? 'bg-slate-400 cursor-not-allowed'
-                                        : 'bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800'
+                                        ? 'bg-muted cursor-not-allowed'
+                                        : 'bg-goles hover:bg-[#8f2323] active:bg-[#7f1f1f]'
                                         }`}
                                     disabled={arquivos.length >= trabalho.configuracaoModalidade.postagens_maximas}
                                 >
                                     <Plus size={18} className="mr-2" />
                                     {arquivos.length === 0 ? 'Selecionar Arquivos' : 'Adicionar Mais'}
                                 </button>
-                                <p className="text-sm text-slate-500 mt-4">
-                                    Arquivos de até <span className="font-semibold text-slate-700">{trabalho.configuracaoModalidade.limite_maximo_de_postagem / 1024 / 1024}MB</span> cada
+                                <p className="text-sm text-muted mt-4">
+                                    Arquivos de até <span className="font-semibold text-tinta">{trabalho.configuracaoModalidade.limite_maximo_de_postagem / 1024 / 1024}MB</span> cada
                                 </p>
-                                <p className="text-sm text-slate-600 mt-1 font-medium">
+                                <p className="text-sm text-muted mt-1 font-medium">
                                     {arquivos.length}/{trabalho.configuracaoModalidade.postagens_maximas} arquivos selecionados
                                 </p>
                             </div>
@@ -404,24 +428,24 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
                         {arquivos.length > 0 && (
                             <div className="mt-6 space-y-3">
                                 {arquivos.map((arquivo) => (
-                                    <div key={arquivo.fileId} className="border border-slate-200 rounded-lg p-4 space-y-3 bg-white">
+                                    <div key={arquivo.fileId} className="border border-linha rounded-lg p-4 space-y-3 bg-white">
                                         <div className="flex items-start justify-between gap-4">
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-slate-800 truncate">{arquivo.originalName}</p>
-                                                <p className="text-sm text-slate-500">{formatFileSize(arquivo.size)}</p>
+                                                <p className="text-sm font-medium text-tinta truncate">{arquivo.originalName}</p>
+                                                <p className="text-sm text-muted">{formatFileSize(arquivo.size)}</p>
                                             </div>
                                             <div className="flex items-center gap-2 flex-shrink-0">
-                                                {arquivo.status === 'uploading' && <Loader className="animate-spin text-indigo-500" size={20} />}
+                                                {arquivo.status === 'uploading' && <Loader className="animate-spin text-araguari" size={20} />}
                                                 {arquivo.status === 'completed' && <CheckCircle className="text-green-500" size={20} />}
                                                 {arquivo.status === 'error' && <AlertCircle className="text-red-500" size={20} />}
-                                                <button type="button" onClick={() => removeFile(arquivo.fileId)} className="text-slate-400 hover:text-slate-600">
+                                                <button type="button" onClick={() => removeFile(arquivo.fileId)} className="text-muted hover:text-muted" aria-label={`Remover arquivo ${arquivo.originalName}`}>
                                                     <X size={20} />
                                                 </button>
                                             </div>
                                         </div>
                                         {arquivo.status === 'uploading' && (
-                                            <div className="w-full bg-slate-200 rounded-full h-1.5">
-                                                <div className="bg-indigo-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${arquivo.progress}%` }}></div>
+                                            <div className="w-full bg-linha rounded-full h-1.5">
+                                                <div className="bg-goles/100 h-1.5 rounded-full transition-all duration-300" style={{ width: `${arquivo.progress}%` }}></div>
                                             </div>
                                         )}
                                         {arquivo.status === 'error' && arquivo.error && (
@@ -436,18 +460,40 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
 
                 {/* AÇÃO FINAL */}
                 <div className="pt-4 flex flex-col items-center">
-                    <p className="text-slate-500 text-center mb-4">Lembre-se: após o envio, nenhuma alteração poderá ser desfeita.</p>
-                    <button
-                        className="w-full max-w-xs bg-indigo-600 text-white py-3 px-6 text-base font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:scale-105"
-                        onClick={() => {
-                            if (confirm("Ao enviar esta correção, não será possível realizar nenhuma alteração. Deseja mesmo continuar?")) {
-                                sendToApi();
-                            }
-                        }}
+                    {formError && <StatusBanner tone="error" title="Não foi possível enviar" className="mb-4 w-full max-w-2xl">{formError}</StatusBanner>}
+                    <p className="text-muted text-center mb-4">Lembre-se: após o envio, nenhuma alteração poderá ser desfeita.</p>
+                    <Button
+                        type="button"
+                        disabled={isSubmitting}
+                        loading={isSubmitting}
+                        className="w-full max-w-xs"
+                        onClick={() => setConfirmSubmit(true)}
                     >
-                        Enviar Correção
-                    </button>
+                        {isSubmitting ? 'Enviando correção...' : 'Enviar correção'}
+                    </Button>
                 </div>
+                <Modal
+                    open={confirmSubmit}
+                    onClose={() => !isSubmitting && setConfirmSubmit(false)}
+                    title="Enviar correção"
+                    description="Revise os dados antes de confirmar o envio."
+                >
+                    <StatusBanner tone="warning" title="A correção será definitiva">
+                        Depois do envio, não será possível realizar novas alterações nesta etapa.
+                    </StatusBanner>
+                    <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        <Button variant="ghost" onClick={() => setConfirmSubmit(false)} disabled={isSubmitting}>Voltar e revisar</Button>
+                        <Button
+                            loading={isSubmitting}
+                            onClick={() => {
+                                setConfirmSubmit(false)
+                                void sendToApi()
+                            }}
+                        >
+                            Confirmar envio
+                        </Button>
+                    </div>
+                </Modal>
             </div>
         </div>
     );

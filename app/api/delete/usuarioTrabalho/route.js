@@ -39,8 +39,16 @@ export const POST = withApiAuthRequired(async function POST(request) {
         // Se tudo der certo, retorne sucesso
         return Response.json({ message: 'O arquivo foi excluído com sucesso!' }, { status: 200 });
     } catch (error) {
-        console.log(error);
-        return Response.json({ message: error.message || "Ocorreu um erro desconhecido. Recarregue a página e tente novamente. Caso o problema persista, entre em contato com a equipe CIEPS" }, { status: error.status || 403 });
+        if (error?.status === 409) {
+            return Response.json(
+                { error: "submission_closed", message: "O prazo para excluir arquivos já foi encerrado." },
+                { status: 409 }
+            );
+        }
+        return Response.json(
+            { error: "internal_server_error", message: "Não foi possível excluir o arquivo." },
+            { status: 500 }
+        );
     }
 });
 

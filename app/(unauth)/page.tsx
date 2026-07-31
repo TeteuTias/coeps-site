@@ -29,7 +29,7 @@ const metrics = [
 ];
 
 const programacao = [
-  ['12 nov', 'Abertura oficial', 'Palavra magna e simposios'],
+  ['12 nov', 'Abertura oficial', 'Palavra magna e simpósios'],
   ['13 nov', 'Mesas-redondas', 'Comunicações orais e workshops'],
   ['14 nov', 'Minicursos', 'Vivências e sessões temáticas'],
   ['15 nov', 'Encerramento', 'Apresentações finais e celebração'],
@@ -65,6 +65,7 @@ export default function Home() {
               unoptimized={true}
               alt="Arte panorâmica do I CIEPS com a ponte ferroviária de Araguari"
               fill
+              loading="eager"
             />
           </div>
         </div>
@@ -179,7 +180,7 @@ export default function Home() {
             futuro da saúde.
           </p>
           <Link href="/trabalhos" prefetch={false} className="cieps-button-outline">
-            Conhecer submissao
+            Conhecer submissão
           </Link>
         </article>
       </section>
@@ -205,9 +206,11 @@ export default function Home() {
           <span className="landing-institution-label">Apoio</span>
           <div className="landing-logo-row landing-support-row">
             <div className="landing-logo-item landing-logo-imepac" aria-label="IMEPAC Araguari">
-              <img
+              <Image
                 className="imepac-symbol"
                 src="/cieps/logo-imepac-symbol-clean.png"
+                width={96}
+                height={96}
                 alt=""
                 aria-hidden="true"
               />
@@ -221,9 +224,11 @@ export default function Home() {
               className="landing-logo-item landing-logo-prefeitura"
               aria-label="Prefeitura de Araguari"
             >
-              <img
+              <Image
                 className="prefeitura-symbol"
                 src="/cieps/logo-prefeitura-symbol-clean.png"
+                width={96}
+                height={96}
                 alt=""
                 aria-hidden="true"
               />

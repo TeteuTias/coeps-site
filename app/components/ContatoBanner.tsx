@@ -2,7 +2,7 @@
 
 export default function ContatoBanner() {
   return (
-    <div className="bg-[#3E4095] flex flex-col items-center justify-center content-center p-3" id="ComponenteContados">
+    <div className="bg-goles flex flex-col items-center justify-center content-center p-3" id="ComponenteContados">
       <h1 className="text-[25px] text-white font-coeps p-5">CONTATO</h1>
       <div className="flex p-2 flex-col space-y-10 lg:flex-row lg:items-center lg:justify-center lg:content-center lg:space-x-10 lg:space-y-0 ">
         <div className="flex flex-row space-x-2 items-center justify-center content-center">

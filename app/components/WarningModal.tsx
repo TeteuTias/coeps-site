@@ -1,54 +1,34 @@
-'use client'
+'use client';
 
-import React from 'react';
-import { createPortal } from 'react-dom';
+import { Button, Modal } from '@/components/cieps';
 
-interface WarningModalProps { // deixar tudo com "?" ?
-    message: string;
-    textButton: string;
-    onClose: () => void;
-    closeModal: (value: number) => void;
-    isModal: boolean;
+interface WarningModalProps {
+  message: string;
+  textButton: string;
+  onClose: () => void;
+  closeModal: (value: number) => void;
+  isModal: boolean;
 }
 
-const WarningModal = ({
-    message = "MENSAGEM NÃO DEFINIDA",
-    textButton = "FECHAR",
-    onClose = () => { },
-    closeModal = () => { },
-    isModal = false
-}: WarningModalProps) => {
-    return (
-        <>
-            {isModal ? (
-                createPortal(
-                    <div className="fixed inset-0 flex items-center justify-center z-[9999] bg-black bg-opacity-50" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
-                        <div className="w-[85%] sm:w-full bg-white p-6 rounded-lg shadow-lg max-w-md ">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center">
-                                    <span className="text-yellow-500 text-2xl mr-2">⚠️</span>
-                                    <h2 className="text-xl font-semibold text-gray-800">Aviso</h2>
-                                </div>
-                            </div>
-                            <p className="mt-4 text-gray-600">{message}</p>
-                            <div className="flex flex-row justify-end space-x-2 mt-6 text-right">
-                                <button
-                                    className="bg-yellow-500 text-white py-2 px-4 rounded hover:bg-yellow-400 transition"
-                                    onClick={() => {
-                                        closeModal(0)
-                                        onClose()
-                                    }}
-                                >
-                                    {textButton}
-                                </button>
-                            </div>
-                        </div>
-                    </div>,
-                    typeof window !== 'undefined' ? document.body : (globalThis as any).document?.body ?? document.createElement('div')
-                )
-            ) : ""}
-        </>
-    );
-};
+export default function WarningModal({
+  message = 'Não foi possível concluir esta ação.',
+  textButton = 'Fechar',
+  onClose = () => undefined,
+  closeModal = () => undefined,
+  isModal = false,
+}: WarningModalProps) {
+  const close = () => {
+    closeModal(0);
+    onClose();
+  };
 
-export default WarningModal;
+  return (
+    <Modal
+      open={isModal}
+      onClose={close}
+      title="Atenção"
+      description={message}
+      footer={<Button onClick={close}>{textButton}</Button>}
+    />
+  );
+}

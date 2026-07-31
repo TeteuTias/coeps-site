@@ -55,10 +55,9 @@ export const POST = withApiAuthRequired(async function POST(request) {
             _id: result.insertedId.toString()
         });
 
-    } catch (error) {
-        console.error('Erro no upload do chunk:', error);
+    } catch {
         return NextResponse.json(
-            { error: error.message || 'Erro interno do servidor' },
+            { error: 'internal_server_error', message: 'Não foi possível enviar esta parte do arquivo.' },
             { status: 500 }
         );
     }

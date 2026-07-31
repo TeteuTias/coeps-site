@@ -1,4 +1,5 @@
 import { ButtonLink, Logo, Stripe } from './ui';
+import { Instagram, Mail, MessageCircle } from 'lucide-react';
 
 const links = [
   { label: 'Inscrição', href: '/painel', variant: 'solid' as const },
@@ -29,11 +30,11 @@ export default function LinkBio() {
         ))}
       </div>
 
-      <div className="mt-2 flex items-center gap-3" aria-label="Redes sociais">
-        <span className="h-6 w-6 rounded-full bg-linha" />
-        <span className="h-6 w-6 rounded-full bg-linha" />
-        <span className="h-6 w-6 rounded-full bg-linha" />
-      </div>
+      <nav className="mt-2 flex items-center gap-2" aria-label="Contato e redes sociais">
+        <a className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-linha bg-white text-goles transition-colors hover:bg-goles/10" href="https://www.instagram.com/coeps.araguari/" target="_blank" rel="noopener noreferrer" aria-label="Instagram do CIEPS"><Instagram size={19} aria-hidden="true" /></a>
+        <a className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-linha bg-white text-goles transition-colors hover:bg-goles/10" href="https://api.whatsapp.com/send?phone=5562983306426" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp do CIEPS"><MessageCircle size={19} aria-hidden="true" /></a>
+        <a className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-linha bg-white text-goles transition-colors hover:bg-goles/10" href="mailto:dadg.imepac@gmail.com" aria-label="E-mail do CIEPS"><Mail size={19} aria-hidden="true" /></a>
+      </nav>
     </main>
   );
 }

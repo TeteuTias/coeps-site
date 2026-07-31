@@ -4,13 +4,12 @@ import {
   BookOpen,
   Clock,
   CreditCard,
-  FileText,
   QrCode,
   Sparkles,
   Upload,
   UserRound,
 } from 'lucide-react';
-import { Card, Kicker, cx } from './ui';
+import { Card, Kicker, StatusBanner, cx } from './ui';
 
 const quickActions = [
   { href: '/pagamentos', label: 'Meus pagamentos', icon: CreditCard },
@@ -41,9 +40,11 @@ function Stat({ value, label, accent }: { value: string; label: string; accent?:
 export default function AreaCongressista({
   nome = 'Congressista',
   userId,
+  loadError,
 }: {
   nome?: string;
   userId?: string | null;
+  loadError?: string | null;
 }) {
   return (
     <main className="flex min-h-screen flex-col gap-6 bg-papel p-6 md:p-10">
@@ -74,9 +75,15 @@ export default function AreaCongressista({
         </div>
       </section>
 
+      {loadError && (
+        <StatusBanner tone="warning" title="Algumas informações não foram carregadas">
+          {loadError}
+        </StatusBanner>
+      )}
+
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Stat value="Confirmada" label="Status da inscrição" accent />
-        <Stat value="3 novos" label="Avisos" />
+        <Stat value="Acompanhe" label="Avisos e próximos passos" />
         <Stat value="2026" label="Edição internacional" />
       </section>
 

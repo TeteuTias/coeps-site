@@ -1,66 +1,77 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from 'react';
+import Image from 'next/image';
 import { Download, FileCheck2 } from 'lucide-react';
-// import html2pdf from 'html2pdf.js'; // Removido para importação dinâmica
+import { AsyncStatePanel, Button } from '@/components/cieps';
+import { fetchWithTimeout, readJsonResponse } from '@/lib/client/fetchWithTimeout';
 
-// Conteúdo HTML do documento convertido
-const documentHtmlTemplate = `
-<div id="document-content" style="padding: 20px; font-family: 'Times New Roman', Times, serif;">
-  <div style="text-align: center; margin-bottom: 20px;">
-    <img src="/documento-anexado.png" alt="Logo do I CIEPS" style="max-width: 300px; height: auto; display: block; margin: 0 auto;">
-  </div>
-  <h1 style="text-align: center; font-size: 24px; margin-bottom: 20px;color: #281802ff;">Comprovante de participação no I CIEPS</h1>
-  <p style="font-size: 16px; line-height: 1.6; text-align: justify;color: #281802ff;">Certificamos que o(a) congressista XXX está devidamente inscrito(a) para participar do I Congresso Internacional de Estudantes e Profissionais da Saúde, realizado em Araguari, de 12 a 15 de novembro de 2026.</p>
-</div>
-`;
+async function requestParticipantName() {
+  const response = await fetchWithTimeout('/api/get/usuariosInformacoes', { cache: 'no-store' });
+  if (!response.ok) throw new Error('Não foi possível consultar os dados do congressista.');
+  const payload = await readJsonResponse<{
+    data?: { informacoes_usuario?: { nome?: string } };
+  }>(response);
+  const name = payload?.data?.informacoes_usuario?.nome;
+  if (!name || typeof name !== 'string') throw new Error('O nome do congressista ainda não está disponível.');
+  return name;
+}
 
-export default function DocumentoAnexadoPage() {
-  const [nomeCompleto, setNomeCompleto] = useState<string>('Carregando Nome...');
-  const [documentContent, setDocumentContent] = useState<string>(documentHtmlTemplate);
+export default function ComprovanteDeInscricao() {
+  const [name, setName] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+
+  const loadName = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setName(await requestParticipantName());
+    } catch (requestError) {
+      setName(null);
+      setError(requestError instanceof Error ? requestError.message : 'Não foi possível carregar o comprovante.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    
-    const fetchUserData = async () => {
-      try {
-       
-        const res = await fetch("/api/get/usuariosInformacoes");
-        const data = await res.json();
-        const nome = data?.data?.informacoes_usuario?.nome || ''; 
-        setNomeCompleto(nome);
-        
-        
-        const newContent = documentHtmlTemplate.replace(/XXX/g, nome);
-        setDocumentContent(newContent);
-
-      } catch (e) {
-        console.error("Erro ao buscar dados do usuário:", e);
-        setNomeCompleto('Participante Não Identificado');
-        setDocumentContent(documentHtmlTemplate.replace(/XXX/g, 'Participante Não Identificado'));
-      }
+    let active = true;
+    void requestParticipantName()
+      .then((result) => {
+        if (active) setName(result);
+      })
+      .catch((requestError) => {
+        if (active) setError(requestError instanceof Error ? requestError.message : 'Não foi possível carregar o comprovante.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
     };
-    fetchUserData();
   }, []);
 
   const handleDownloadPdf = async () => {
-    // Importação dinâmica do html2pdf.js
-    const html2pdf = (await import('html2pdf.js')).default;
-
     const element = document.getElementById('document-content');
-    if (element) {
-      // Configurações para o html2pdf para melhor formatação
-      const opt: any = {
-        margin:       [10, 10, 10, 10] as [number, number, number, number],
-        filename:     'documento_cieps.pdf',
-        image:        { type: 'png', quality: 1.0 },
-        html2canvas:  { scale: 2, logging: true, dpi: 192, letterRendering: true },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    if (!element || !name || generating) return;
+
+    setGenerating(true);
+    try {
+      const html2pdf = (await import('html2pdf.js')).default;
+      const options = {
+        margin: [10, 10, 10, 10] as [number, number, number, number],
+        filename: 'comprovante-inscricao-cieps.pdf',
+        image: { type: 'png' as const, quality: 1 },
+        html2canvas: { scale: 2, logging: false, dpi: 192, letterRendering: true },
+        jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const },
       };
-      html2pdf().set(opt).from(element).save();
+      await html2pdf().set(options).from(element).save();
+    } finally {
+      setGenerating(false);
     }
   };
-
-  const displayContent = documentContent;
 
   return (
     <main className="cieps-receipt-page">
@@ -70,18 +81,31 @@ export default function DocumentoAnexadoPage() {
           <h1 className="cieps-display">Comprovante de inscrição</h1>
           <p>Confira os dados abaixo e gere uma cópia em PDF para seus registros.</p>
         </div>
-        <button 
-          onClick={handleDownloadPdf} 
-          className="cieps-button"
-        >
-          <Download size={20} />
-          Baixar em PDF
-        </button>
+        <Button onClick={handleDownloadPdf} disabled={!name} loading={generating}>
+          <Download size={20} aria-hidden="true" />
+          {generating ? 'Gerando PDF' : 'Baixar em PDF'}
+        </Button>
       </section>
-      
+
       <section className="cieps-receipt-preview">
-        <div className="cieps-receipt-preview-label"><FileCheck2 size={18} /> Pré-visualização</div>
-        <div className="document-preview" dangerouslySetInnerHTML={{ __html: displayContent }} />
+        <div className="cieps-receipt-preview-label"><FileCheck2 size={18} aria-hidden="true" />Pré-visualização</div>
+        {loading ? (
+          <AsyncStatePanel status="loading" loadingTitle="Preparando seu comprovante" />
+        ) : error ? (
+          <AsyncStatePanel status="error" errorTitle="Comprovante indisponível" message={error} onRetry={loadName} />
+        ) : name ? (
+          <div id="document-content" className="document-preview">
+            <div className="mb-8 text-center">
+              <Image src="/documento-anexado.png" alt="Marca do I CIEPS" width={580} height={180} className="mx-auto h-auto max-w-[300px]" />
+            </div>
+            <h2 className="cieps-display mb-5 text-center text-2xl font-semibold text-tinta">Comprovante de participação no I CIEPS</h2>
+            <p className="text-justify font-serif text-base leading-7 text-tinta">
+              Certificamos que <strong>{name}</strong> está devidamente inscrito(a) para participar do
+              I Congresso Internacional de Estudantes e Profissionais da Saúde, realizado em Araguari,
+              de 12 a 15 de novembro de 2026.
+            </p>
+          </div>
+        ) : null}
       </section>
     </main>
   );

@@ -10,7 +10,10 @@ const protectedGet = withApiAuthRequired((async function GET(
     try {
         const { trabalhoId } = await params;
         if (!ObjectId.isValid(trabalhoId)) {
-            throw new Error('Invalid trabalhoId');
+            return Response.json(
+                { error: 'invalid_work_id', message: 'O identificador do trabalho é inválido.' },
+                { status: 400 }
+            );
         }
         const { user } = await getSession();
         const userId = user.sub.replace("auth0|", ""); // Retirando o auth0|  
@@ -20,12 +23,18 @@ const protectedGet = withApiAuthRequired((async function GET(
             query,
         )
         if (!result) {
-            throw new Error("Esse trabalho não necessita de alteração nesse momento.")
+            return Response.json(
+                { error: 'work_not_available', message: 'Esse trabalho não necessita de alteração nesse momento.' },
+                { status: 404 }
+            );
         }
         return Response.json({ data: result })
         // Simulação de dados de usuários que trabalharam no trabalho com o ID fornecido
-    } catch (error) {
-        return Response.json({ message: (error as Error).message }, { status: 500 });
+    } catch {
+        return Response.json(
+            { error: 'internal_server_error', message: 'Não foi possível consultar o trabalho.' },
+            { status: 500 }
+        );
     }
 
 }) as any);

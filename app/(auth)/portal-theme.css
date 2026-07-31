@@ -218,17 +218,7 @@
 .cieps-auth-shell .pagamentos-main { margin:0 auto;max-width:900px;padding:clamp(1rem,3vw,2rem) !important; }
 .cieps-auth-shell .pagamentos-main.pagamentos-main { border-color:var(--cieps-line);border-radius:8px;box-shadow:var(--cieps-shadow); }
 .cieps-auth-shell .pagamentos-main button { border-radius:4px !important; }
-.cieps-auth-shell .pagamentos-main :is(.bg-indigo-600,.bg-emerald-600,.bg-blue-500) { background-color:var(--cieps-red) !important; }
-.cieps-auth-shell .pagamentos-main :is(.text-indigo-600,.text-emerald-600) { color:var(--cieps-red) !important; }
-
-/* Utility-based registration and correction screens */
-.cieps-auth-shell > div > div > .shadow-xl { border:1px solid var(--cieps-line) !important;border-radius:8px !important;box-shadow:var(--cieps-shadow) !important; }
 .cieps-auth-shell :is(input,select,textarea) { accent-color:var(--cieps-red); }
-.cieps-auth-shell button[class*="bg-[#3E4095]"] { background:var(--cieps-red) !important;border-radius:4px !important; }
-.cieps-auth-shell h2[class*="text-[#3E4095]"] { color:var(--cieps-red) !important;font-family:var(--cieps-display); }
-.cieps-auth-shell main[class*="min-h-screen"] > div:not([class]) { margin:0 auto;max-width:1120px;padding:clamp(1rem,3vw,2.5rem); }
-.cieps-auth-shell main[class*="min-h-screen"] .bg-indigo-600 { background-color:var(--cieps-red) !important; }
-.cieps-auth-shell main[class*="min-h-screen"] .text-indigo-500 { color:var(--cieps-blue) !important; }
 
 @media (max-width:900px) {
   .cieps-auth-shell .programacao-artigos-posters-container { grid-template-columns:1fr; }

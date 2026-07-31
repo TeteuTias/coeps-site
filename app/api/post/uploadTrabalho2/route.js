@@ -9,7 +9,7 @@ async function getUserId() {
     return session?.user?.sub.replace("auth0|", "");
 }
 
-export async function POST(request, response) {
+export const POST = withApiAuthRequired(async function POST(request) {
 
 
     const userId = await getUserId()
@@ -77,4 +77,4 @@ export async function POST(request, response) {
             { status: 400 }, // The webhook will retry 5 times waiting for a status 200
         );
     }
-}
+});

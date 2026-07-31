@@ -1,48 +1,25 @@
-'use client'
-// components/ImageModal.js
+'use client';
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { Modal } from '@/components/cieps';
 
-const ImageModal = ({ src, alt }: { src: string, alt: string }) => {
-  const [modalAberto, setModalAberto] = useState(false);
-
-  const abrirModal = () => {
-    setModalAberto(true);
-  };
-
-  const fecharModal = () => {
-    setModalAberto(false);
-  };
+export default function ImageModal({ src, alt }: { src: string; alt: string }) {
+  const [open, setOpen] = useState(false);
 
   return (
-    <div>
-      <div onClick={abrirModal} className="cursor-pointer">
-        <Image
-          src={src}
-          alt={alt}
-          width={500} // Ajuste o tamanho conforme necessário
-          height={500} // Ajuste o tamanho conforme necessário
-        />
-      </div>
-      {modalAberto && (
-        <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-gray-800 bg-opacity-75 z-50  ">
-          <div className="bg-white m-2 p-2 lg:m-0 lg:p-4 max-w-lg max-h-full overflow-auto">
-            <div className='bg-red-600 absolute p-2 py-1 cursor-pointer font-extrabold' onClick={() => { fecharModal() }}>
-              <h1>X</h1>
-            </div>
-            <Image
-              src={src}
-              alt={alt}
-              layout="responsive"
-              width={500} // Ajuste o tamanho conforme necessário
-              height={500} // Ajuste o tamanho conforme necessário
-            />
-          </div>
-        </div>
-      )}
-    </div>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="block w-full overflow-hidden rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-goles"
+        aria-label={`Ampliar imagem: ${alt}`}
+      >
+        <Image src={src} alt={alt} width={900} height={900} className="h-auto w-full object-contain" />
+      </button>
+      <Modal open={open} onClose={() => setOpen(false)} title={alt} className="max-w-4xl">
+        <Image src={src} alt={alt} width={1400} height={1400} className="h-auto max-h-[68vh] w-full object-contain" />
+      </Modal>
+    </>
   );
-};
-
-export default ImageModal;
+}

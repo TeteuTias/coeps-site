@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import { ICourse, ILecture } from "@/lib/types/events/event.t";
 import { Calendar, Clock, MapPin, Info, X, Loader2 } from 'lucide-react';
+import { AsyncStatePanel } from '@/components/cieps';
+import { fetchWithTimeout, readJsonResponse } from '@/lib/client/fetchWithTimeout';
 import './style.css';
 
 export default function MinhaProgramacao() {
@@ -9,6 +11,8 @@ export default function MinhaProgramacao() {
   const [data, setData] = useState(undefined)
   const [modal, setModal] = useState(undefined)
   const [showRegrasModal, setShowRegrasModal] = useState<boolean>(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [requestVersion, setRequestVersion] = useState(0)
 
   const handleModal = (event) => {
     setModal(event)
@@ -25,7 +29,7 @@ export default function MinhaProgramacao() {
   useEffect(() => {
     const enviarRequisicaoGet = async () => {
       try {
-        const response = await fetch('/api/get/usuariosProgramacao', {
+        const response = await fetchWithTimeout('/api/get/usuariosProgramacao', {
           cache: 'no-cache',
           method: 'GET',
           headers: {
@@ -37,16 +41,26 @@ export default function MinhaProgramacao() {
           throw new Error('Falha ao enviar a requisição GET');
         }
 
-        const responseData: { minicursos: ICourse[], palestras: ILecture[] } = await response.json();
+        const responseData = await readJsonResponse<{
+          minicursos: ICourse[];
+          palestras: ILecture[];
+        }>(response);
+
+        if (!responseData) {
+          throw new Error('A API retornou uma resposta vazia.');
+        }
 
         handleIsFetching(false)
         handleData({ "data": organizeData(responseData) })
-      } catch (error) {
-        console.error('Erro ao enviar a requisição GET:', error);
+        setLoadError(null)
+      } catch {
+        setLoadError('Não foi possível consultar sua programação agora.')
+      } finally {
+        handleIsFetching(false)
       }
     };
     enviarRequisicaoGet();
-  }, []);
+  }, [requestVersion]);
 
   // Travar scroll da página quando o modal estiver aberto
   useEffect(() => {
@@ -446,21 +460,28 @@ export default function MinhaProgramacao() {
     */}
         <div className="programacao-cards-container">
           {isFetching ? (
-            <div className="programacao-loading">
-              <h1>CARREGANDO</h1>
-              <div className="programacao-loading-animation"></div>
-            </div>
+            <AsyncStatePanel status="loading" loadingTitle="Carregando sua programação" />
+          ) : loadError ? (
+            <AsyncStatePanel
+              status="error"
+              errorTitle="Programação indisponível"
+              message={loadError}
+              onRetry={() => {
+                setLoadError(null)
+                setIsFetching(true)
+                setRequestVersion((version) => version + 1)
+              }}
+            />
           ) : Object.keys(data?.data).length ? (
             Object.keys(data?.data)
               //@ts-expect-error: Essa página deveria ser tipada de forma mais concisa. Não há erro aqui, mas como não foi tipado, o TS vai falar que deveríamos especificar melhor o tipo de A e B.
               .sort((a, b) => new Date(a) - new Date(b))
               .map(key => {
-                console.log(key)
                 return (
                   <CardProgramacao
                     dateKey={key}
                     event={data?.data[key]}
-                    key={Math.floor(Math.random() * 100)}
+                    key={key}
                     handleModal={handleModal}
                   />
                 )
@@ -669,7 +690,13 @@ const CardProgramacao = ({ dateKey, event, handleModal }) => {
             <div
               className="programacao-event-card"
               onClick={() => handleModal(value)}
-              key={Math.floor(Math.random() * 100) * index}
+              key={[
+                dateKey,
+                value._id ?? value.name ?? 'evento',
+                value.date_init ?? 'sem-inicio',
+                value.date_end ?? 'sem-fim',
+                index,
+              ].join('-')}
             >
               <div className="programacao-event-indicator"></div>
               <div className="programacao-event-content">

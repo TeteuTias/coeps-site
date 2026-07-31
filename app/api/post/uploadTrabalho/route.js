@@ -37,8 +37,16 @@ export const POST = withApiAuthRequired(async function POST(request) {
         }, { status: 200 });
 
     } catch (err) {
-        console.error(err);
-        return Response.json({ message: err.message || "Ocorreu um erro desconhecido. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe CIEPS."}, { status: err.status || 500 });
+        if (err?.status === 409) {
+            return Response.json(
+                { error: "submission_closed", message: "O prazo para envio de trabalhos já foi encerrado." },
+                { status: 409 }
+            );
+        }
+        return Response.json(
+            { error: "internal_server_error", message: "Não foi possível enviar o trabalho." },
+            { status: 500 }
+        );
     }
 });
 

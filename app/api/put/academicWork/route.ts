@@ -65,8 +65,10 @@ export const PUT: any = withApiAuthRequired(async function (req) {
         //
         return Response.json({ academicWork, newFiles }, { status: 200 });
     }
-    catch (error) {
-        console.error(error);
-        return Response.json({ message: 'Internal server error' }, { status: 500 });
+    catch {
+        return Response.json(
+            { error: 'internal_server_error', message: 'Não foi possível atualizar o trabalho.' },
+            { status: 500 }
+        );
     }
 })

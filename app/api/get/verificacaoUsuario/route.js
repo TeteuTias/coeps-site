@@ -35,7 +35,7 @@ export const GET = withApiAuthRequired(async function GET(request, response) {
             {
                 "_id": new ObjectId(userId)
             },
-            { projection: { 'pagamento.situacao_animacao':1,'pagamento.situacao': 1, 'isPos_registration': 1, '_id': 0 } }
+            { projection: { 'informacoes_usuario': 1, 'pagamento.situacao_animacao':1,'pagamento.situacao': 1, 'isPos_registration': 1, '_id': 0 } }
         ).toArray()
 
         return NextResponse.json({
@@ -43,9 +43,11 @@ export const GET = withApiAuthRequired(async function GET(request, response) {
         }, { status: 200 });
 
     }
-    catch (error) {
-        //console.log(error)
-        return NextResponse.json({ "error": error }, { status: 500 })
+    catch {
+        return NextResponse.json(
+            { error: "internal_server_error", message: "Não foi possível verificar o usuário." },
+            { status: 500 }
+        )
     }
 })
 

@@ -43,9 +43,11 @@ export const GET = withApiAuthRequired(async function GET(request, { params }) {
     return NextResponse.json({ _id, listEvents: result }, { status: 200 });
 
   }
-  catch (error) {
-    //console.log(error)
-    return NextResponse.json({ "message": error }, { status: 500 })
+  catch {
+    return NextResponse.json(
+      { error: "internal_server_error", message: "Não foi possível consultar as atividades." },
+      { status: 500 }
+    )
   }
 })
 /* {

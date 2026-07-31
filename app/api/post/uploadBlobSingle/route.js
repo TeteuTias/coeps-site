@@ -83,10 +83,9 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
         return NextResponse.json({ success: true, data: fileData });
 
-    } catch (error) {
-        console.error('Erro no upload:', error);
+    } catch {
         return NextResponse.json(
-            { error: error.message || 'Erro interno do servidor' },
+            { error: 'internal_server_error', message: 'Não foi possível enviar o arquivo.' },
             { status: 500 }
         );
     }

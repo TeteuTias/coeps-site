@@ -3,7 +3,6 @@ import { upload } from '@vercel/blob/client';
 
 // pages/index.js
 import { useEffect, useState } from 'react';
-import CardDatas from '@/app/components/CardDatas';
 import WarningModal from '@/app/components/WarningModal';
 import { isTodayBetweenDates } from '@/lib/isTodayBetweenDates';
 import { IAcademicWorksProps, IAcademicWorks } from '@/lib/types/academicWorks/academicWorks.t';
@@ -25,6 +24,14 @@ import {
 } from 'lucide-react'
 import './style.css';
 import HtmlSanitizer from '@/app/utils/htmlSanitizer';
+import { AsyncStatePanel, Button, Modal, PageShell, StatusBanner } from '@/components/cieps';
+import { fetchWithTimeout, readJsonResponse } from '@/lib/client/fetchWithTimeout';
+
+function formatSubmissionDate(value: string) {
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return 'Data a confirmar'
+    return date.toLocaleDateString('pt-BR')
+}
 
 //
 //
@@ -32,31 +39,66 @@ export default function Home() {
     const [usuarioTrabalhos, setUsuarioTrabalhos] = useState<IAcademicWorks[]>()
     const [trabalhosConfigs, setTrabalhosConfigs] = useState<IAcademicWorksProps>()
     const [isLoading, setIsLoading] = useState<boolean>(true)
+    const [loadError, setLoadError] = useState<string | null>(null)
+    const [requestVersion, setRequestVersion] = useState(0)
+    const [operationMessage, setOperationMessage] = useState<string | null>(null)
     const router = useRouter()
 
     // carregando data
     useEffect(() => {
+        let active = true
         const fetchData = async () => {
-            //console.log("executou")
-            const [response1, response2] = await Promise.all([
-                fetch('/api/get/trabalhosConfig', { cache: 'no-cache' }).then(value => value.json()),
-                fetch('/api/get/usuariosTrabalhos', { cache: 'no-cache' }).then(value => value.json())
-            ]);
-
-            // Setando o que eu iria setar de qualquer forma 
-            setTrabalhosConfigs(response1)
-            setUsuarioTrabalhos(response2.data)
-            setIsLoading(false)
+            try {
+                const [configResponse, worksResponse] = await Promise.all([
+                    fetchWithTimeout('/api/get/trabalhosConfig', { cache: 'no-store' }),
+                    fetchWithTimeout('/api/get/usuariosTrabalhos', { cache: 'no-store' })
+                ])
+                if (!configResponse.ok || !worksResponse.ok) {
+                    throw new Error('Falha ao consultar trabalhos')
+                }
+                const [config, works] = await Promise.all([
+                    readJsonResponse<IAcademicWorksProps>(configResponse),
+                    readJsonResponse<{ data?: IAcademicWorks[] }>(worksResponse)
+                ])
+                if (!config || !works) throw new Error('A API retornou uma resposta vazia')
+                if (!active) return
+                setTrabalhosConfigs(config)
+                setUsuarioTrabalhos(works.data ?? [])
+            } catch {
+                if (active) setLoadError('Não foi possível consultar suas submissões agora.')
+            } finally {
+                if (active) setIsLoading(false)
+            }
         };
-        fetchData()
-
-    }, [isLoading])
+        void fetchData()
+        return () => {
+            active = false
+        }
+    }, [requestVersion])
 
     if (isLoading) {
         return (
-            <div className='loading-container'>
-                <h1 className='loading-text'>CARREGANDO</h1>
-            </div>
+            <PageShell className="flex items-center justify-center">
+                <AsyncStatePanel status="loading" loadingTitle="Carregando suas submissões" className="w-full max-w-2xl" />
+            </PageShell>
+        )
+    }
+
+    if (loadError || !trabalhosConfigs || !usuarioTrabalhos) {
+        return (
+            <PageShell className="flex items-center justify-center">
+                <AsyncStatePanel
+                    status="error"
+                    errorTitle="Submissões indisponíveis"
+                    message={loadError ?? 'Os dados retornaram incompletos.'}
+                    onRetry={() => {
+                        setLoadError(null)
+                        setIsLoading(true)
+                        setRequestVersion((version) => version + 1)
+                    }}
+                    className="w-full max-w-2xl"
+                />
+            </PageShell>
         )
     }
 
@@ -83,11 +125,11 @@ export default function Home() {
                                             <div className='datas-grid'>
                                                 <div className='data-item'>
                                                     <p>Início</p>
-                                                    <p>{new Date(trabalhosConfigs.data_inicio_submissao).getDate() + "-" + Number(new Date(trabalhosConfigs.data_inicio_submissao).getMonth()) + 1 + "-" + new Date(trabalhosConfigs.data_inicio_submissao).getFullYear()}</p>
+                                                    <p>{formatSubmissionDate(trabalhosConfigs.data_inicio_submissao)}</p>
                                                 </div>
                                                 <div className='data-item'>
                                                     <p>Fim</p>
-                                                    <p>{new Date(trabalhosConfigs.data_limite_submissao).getDate() + "-" + Number(new Date(trabalhosConfigs.data_limite_submissao).getMonth()) + 1 + "-" + new Date(trabalhosConfigs.data_limite_submissao).getFullYear()}</p>
+                                                    <p>{formatSubmissionDate(trabalhosConfigs.data_limite_submissao)}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -101,11 +143,11 @@ export default function Home() {
                                             <div className='datas-grid'>
                                                 <div className='data-item'>
                                                     <p>Início</p>
-                                                    <p>{new Date(trabalhosConfigs.data_inicio_submissao).getDate() + "-" + new Date(trabalhosConfigs.data_inicio_submissao).getMonth() + "-" + new Date(trabalhosConfigs.data_inicio_submissao).getFullYear()}</p>
+                                                    <p>{formatSubmissionDate(trabalhosConfigs.data_inicio_submissao)}</p>
                                                 </div>
                                                 <div className='data-item'>
                                                     <p>Fim</p>
-                                                    <p>{new Date(trabalhosConfigs.data_limite_submissao).getDate() + "-" + new Date(trabalhosConfigs.data_limite_submissao).getMonth() + "-" + new Date(trabalhosConfigs.data_limite_submissao).getFullYear()}</p>
+                                                    <p>{formatSubmissionDate(trabalhosConfigs.data_limite_submissao)}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -118,6 +160,11 @@ export default function Home() {
                     <h1>
                         Suas Publicações
                     </h1>
+                    {operationMessage && (
+                        <StatusBanner tone="success" title="Submissão atualizada" className="mb-5">
+                            {operationMessage}
+                        </StatusBanner>
+                    )}
                     <div className='flex items-center justify-center content-center'>
                         {
                             !usuarioTrabalhos.length ?
@@ -127,7 +174,16 @@ export default function Home() {
                                 :
                                 <div className='w-full space-y-5'>
                                     {
-                                        usuarioTrabalhos.map((trabalho) => <TrabalhoPostado key={`${trabalho._id}`} propsTrabalho={trabalho} />)
+                                        usuarioTrabalhos.map((trabalho) => (
+                                            <TrabalhoPostado
+                                                key={`${trabalho._id}`}
+                                                propsTrabalho={trabalho}
+                                                onDeleted={(workId) => {
+                                                    setUsuarioTrabalhos((current) => current?.filter((item) => item._id !== workId) ?? [])
+                                                    setOperationMessage('O trabalho e seus arquivos foram excluídos com sucesso.')
+                                                }}
+                                            />
+                                        ))
                                     }
                                 </div>
                         }
@@ -138,9 +194,14 @@ export default function Home() {
 
     );
 }
-const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTrabalho }) => {
+const TrabalhoPostado: React.FC<{
+    propsTrabalho: IAcademicWorks;
+    onDeleted: (workId: IAcademicWorks['_id']) => void;
+}> = ({ propsTrabalho, onDeleted }) => {
     const router = useRouter()
     const [isDeleting, setIsDeleting] = useState(false)
+    const [confirmDelete, setConfirmDelete] = useState(false)
+    const [deleteError, setDeleteError] = useState<string | null>(null)
     const {
         _id,
         titulo,
@@ -169,45 +230,23 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
 
     // Função para excluir trabalho
     const handleDeleteWork = async () => {
-        // Confirmação do navegador
-        const confirmMessage = `Tem certeza que deseja excluir o trabalho "${titulo}"?\n\nEsta ação não pode ser desfeita e todos os arquivos e dados relacionados serão permanentemente removidos.`
-        
-        if (!confirm(confirmMessage)) {
-            return;
-        }
-
         setIsDeleting(true);
+        setDeleteError(null)
         
         try {
-            // TODO: Implementar chamada para API de exclusão
-            // const response = await fetch('/api/delete/trabalho', {
-            //     method: 'DELETE',
-            //     headers: {
-            //         'Content-Type': 'application/json',
-            //     },
-            //     body: JSON.stringify({
-            //         trabalhoId: _id
-            //     })
-            // });
-
-            // if (!response.ok) {
-            //     const errorData = await response.json();
-            //     throw new Error(errorData.message || 'Erro ao excluir trabalho');
-            // }
-
-            // const result = await response.json();
-            
-            // Simulação temporária - remover quando API estiver implementada
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            alert('Trabalho excluído com sucesso!');
-            
-            // TODO: Atualizar lista de trabalhos após exclusão
-            // window.location.reload(); // Solução temporária
-            
+            const response = await fetchWithTimeout('/api/delete/trabalho', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ trabalhoId: _id })
+            });
+            const result = (await readJsonResponse<{ error?: string; message?: string }>(response)) ?? {};
+            if (!response.ok) {
+                throw new Error(result.error || result.message || 'Não foi possível excluir o trabalho.');
+            }
+            setConfirmDelete(false)
+            onDeleted(_id)
         } catch (error) {
-            console.error('Erro ao excluir trabalho:', error);
-            alert(error instanceof Error ? error.message : 'Erro desconhecido ao excluir trabalho');
+            setDeleteError(error instanceof Error ? error.message : 'Não foi possível excluir o trabalho.');
         } finally {
             setIsDeleting(false);
         }
@@ -227,10 +266,11 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
                         <span>{status}</span>
                     </div>
                     <button
-                        onClick={handleDeleteWork}
+                        type="button"
+                        onClick={() => setConfirmDelete(true)}
                         disabled={isDeleting}
                         className="btn-delete-work"
-                        title="Excluir trabalho"
+                        aria-label={`Excluir trabalho ${titulo}`}
                     >
                         {isDeleting ? (
                             <div className="loading-spinner-small"></div>
@@ -298,7 +338,7 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
                     arquivos.map((arquivo) => {
                         return (
                             <div className='arquivo-item text-start' key={`${arquivo.fileId}`}>
-                                <h3 className="arquivo-header" onClick={() => console.log(arquivo)}>
+                                <h3 className="arquivo-header">
                                     <File className="h-5 w-5" /> Arquivo
                                 </h3>
                                 <div className="arquivo-info">
@@ -382,7 +422,7 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
                                         >
                                             <div>
                                                 {index === propsTrabalho.avaliadorComentarios.length - 1 &&
-                                                    <span className="bg-indigo-100 text-indigo-800 text-xs font-semibold px-3 py-1 rounded-full mb-2 inline-block animate-pulse">
+                                                    <span className="bg-goles/10 text-goles text-xs font-semibold px-3 py-1 rounded-full mb-2 inline-block animate-pulse">
                                                         ÚLTIMA AVALIAÇÃO
                                                     </span>
                                                 }
@@ -429,6 +469,25 @@ const TrabalhoPostado: React.FC<{ propsTrabalho: IAcademicWorks }> = ({ propsTra
                     }
                 </div>
             </div>
+            {deleteError && (
+                <StatusBanner tone="error" title="O trabalho não foi excluído" className="mt-5">
+                    {deleteError}
+                </StatusBanner>
+            )}
+            <Modal
+                open={confirmDelete}
+                onClose={() => !isDeleting && setConfirmDelete(false)}
+                title="Excluir trabalho"
+                description={`Confirme a exclusão de “${titulo}”.`}
+            >
+                <StatusBanner tone="warning" title="Esta ação não pode ser desfeita">
+                    Todos os arquivos e dados relacionados a esta submissão serão removidos permanentemente.
+                </StatusBanner>
+                <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                    <Button type="button" variant="ghost" onClick={() => setConfirmDelete(false)} disabled={isDeleting}>Cancelar</Button>
+                    <Button type="button" variant="danger" onClick={handleDeleteWork} loading={isDeleting}>Excluir definitivamente</Button>
+                </div>
+            </Modal>
         </div>
     );
 };

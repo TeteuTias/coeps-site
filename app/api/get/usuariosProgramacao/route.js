@@ -22,7 +22,7 @@ export const GET = withApiAuthRequired(async function GET(request, { params }) {
         // Já vem apenas com o replace.
         const { db } = await connectToDatabase();
 
-        const [result1, result2, result3] = await Promise.all([
+        const [result1, result2] = await Promise.all([
             db.collection('minicursos').find(
                 {
                     $or: [
@@ -45,8 +45,11 @@ export const GET = withApiAuthRequired(async function GET(request, { params }) {
         }, { status: 200 });
 
     }
-    catch (error) {
-        return NextResponse.json({ "error": error })
+    catch {
+        return NextResponse.json(
+            { error: "internal_server_error", message: "Não foi possível consultar a programação." },
+            { status: 500 }
+        )
     }
 })
 /*

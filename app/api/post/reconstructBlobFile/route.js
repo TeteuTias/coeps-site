@@ -78,8 +78,10 @@ export const POST = withApiAuthRequired(async function POST(request) {
             }
         });
 
-    } catch (error) {
-        console.error('Erro na reconstrução do arquivo:', error);
-        return NextResponse.json({ error: error.message || 'Erro interno do servidor' }, { status: 500 });
+    } catch {
+        return NextResponse.json(
+            { error: 'internal_server_error', message: 'Não foi possível reconstruir o arquivo.' },
+            { status: 500 }
+        );
     }
 });

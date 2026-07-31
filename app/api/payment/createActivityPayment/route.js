@@ -214,9 +214,11 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
         return Response.json({ message: 'Você completou sua inscrição! Para garantir sua vaga, é essencial que o pagamento seja realizado até o final do dia. Caso contrário, sua vaga será perdida.Para efetuar o pagamento, clique no botão abaixo ou acesse o menu MEUS PAGAMENTOS.', "link": responseJson.invoiceUrl }, { status: 200 });
     }
-    catch (error) {
-
-        return Response.json({ "message": error.message || "O CORREU ALGUM ERRO DESCONHECIDO" }, { status: 500 })
+    catch {
+        return Response.json(
+            { error: "internal_server_error", message: "Não foi possível iniciar o pagamento da atividade." },
+            { status: 500 }
+        )
     }
 })
 //

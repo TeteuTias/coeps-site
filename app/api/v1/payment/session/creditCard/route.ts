@@ -30,7 +30,10 @@ export const POST = withApiAuthRequired(async function POST(request) {
     // Captando ip para pagamento
     const forwardedFor = request.headers.get('x-forwarded-for');
     // Se houver mais de um IP na lista, pega o primeiro
-    const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : request.socket.remoteAddress;
+    const ip =
+        forwardedFor?.split(',')[0].trim() ||
+        request.headers.get('x-real-ip') ||
+        '127.0.0.1';
 
     //
     try {

@@ -11,7 +11,6 @@ export const POST = withApiAuthRequired(async function POST(request) {
     try {
         // Puxando informações
         const { user } = await getSession();
-        console.log(user)
         
         const userId = user.sub.replace("auth0|", ""); // Retirando o auth0|  
 
@@ -162,9 +161,11 @@ export const POST = withApiAuthRequired(async function POST(request) {
         })
         return Response.json({ "sucesso": "Ocorreu Tudo Certo!" })
     }
-    catch (error) {
-        console.log(error.message)
-        return Response.json({ "message": error.message || "Ocorreu um erro desconhecido. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe CIEPS." }, { status: 500 })
+    catch {
+        return Response.json(
+            { error: "internal_server_error", message: "Não foi possível salvar os dados do usuário." },
+            { status: 500 }
+        )
     }
 
 

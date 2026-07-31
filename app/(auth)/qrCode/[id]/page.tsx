@@ -1,9 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import './style.css';
-import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
 import Image from 'next/image';
+import { useParams } from 'next/navigation';
+import { ArrowLeft, QrCode } from 'lucide-react';
+import { AsyncStatePanel, ButtonLink, PageShell, SectionHeading, StatusBanner } from '@/components/cieps';
+import { fetchWithTimeout } from '@/lib/client/fetchWithTimeout';
+import './style.css';
 
 interface UsuarioQR {
   id: string;
@@ -12,70 +15,96 @@ interface UsuarioQR {
   qrCode: string;
 }
 
+async function requestQrCode() {
+  const response = await fetchWithTimeout('/api/get/qrCode', { cache: 'no-store' });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(typeof payload?.error === 'string' ? payload.error : 'Não foi possível gerar o QR Code.');
+  }
+  if (!payload?.id || !payload?.qrCode) throw new Error('O QR Code retornado é inválido.');
+  return payload as UsuarioQR;
+}
+
 export default function MeuQRCodePage() {
+  const { id } = useParams<{ id: string }>();
   const [dados, setDados] = useState<UsuarioQR | null>(null);
-  const [erro, setErro] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(id === 'null' ? 'Identificação do congressista indisponível.' : null);
+  const [loading, setLoading] = useState(id !== 'null');
+
+  const buscarQR = useCallback(async () => {
+    if (!id || id === 'null') {
+      setErro('Identificação do congressista indisponível.');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setErro(null);
+    try {
+      const result = await requestQrCode();
+      if (result.id !== id) throw new Error('Este QR Code não corresponde ao congressista autenticado.');
+      setDados(result);
+    } catch (requestError) {
+      setDados(null);
+      setErro(requestError instanceof Error ? requestError.message : 'Não foi possível gerar o QR Code.');
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
 
   useEffect(() => {
-    async function buscarQR() {
-      try {
-        const res = await fetch('/api/get/qrCode');
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.error || 'Erro inesperado');
-        setDados(json);
-      } catch (e: any) {
-        setErro(e.message);
-      } finally {
-        setLoading(false);
-      }
-    }
-    buscarQR();
-  }, []);
-
-  if (loading)
-    return (
-      <div className="qr-main min-h-screen flex items-center justify-center">
-        <div className="qr-loader">
-          <Image
-            src="/LetreiroColorido01.png"
-            alt="Logo do I CIEPS"
-            className="qr-loader-logo"
-            draggable="false"
-          />
-          <div className="qr-spinner"></div>
-          <p className="qr-loading-text">Carregando seu QR Code...</p>
-        </div>
-      </div>
-    );
-
-  if (erro)
-    return (
-      <div className="qr-main min-h-screen flex items-center justify-center">
-        <div className="qr-error-card">
-          <p className="qr-error-icon">❌</p>
-          <p className="qr-error-text">{erro}</p>
-        </div>
-      </div>
-    );
+    if (!id || id === 'null') return;
+    let active = true;
+    void requestQrCode()
+      .then((result) => {
+        if (!active) return;
+        if (result.id !== id) throw new Error('Este QR Code não corresponde ao congressista autenticado.');
+        setDados(result);
+      })
+      .catch((requestError) => {
+        if (active) setErro(requestError instanceof Error ? requestError.message : 'Não foi possível gerar o QR Code.');
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [id]);
 
   return (
-    <div className="qr-main min-h-screen flex flex-col justify-center items-center px-4">
-      <Link href="/painel" className="qr-back-btn" aria-label="Voltar para o painel">
-        <span className="qr-back-icon">←</span> <span className="qr-back-text">Voltar</span>
-      </Link>
-      <div className="qr-card bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full flex flex-col items-center">
-        <h1 className="qr-title text-3xl font-bold mb-4">Seu QR Code</h1>
-        {
-          // ts-ignore:Ele tava pedindo para usar o Image no nextjs. Para não dar erros de building, removi a verificação
-        }
-        <img src={dados?.qrCode} alt="QR Code" className="qr-img mb-6" />
-        <div className="qr-info text-left w-full space-y-2">
-          <p><span className="qr-label">ID:</span> {dados?.id}</p>
-          <p><span className="qr-label">Nome:</span> {dados?.nome}</p>
-          <p><span className="qr-label">Email:</span> {dados?.email}</p>
-        </div>
-      </div>
-    </div>
+    <PageShell className="qr-main">
+      <SectionHeading
+        kicker="Acesso ao evento"
+        title="Seu QR Code"
+        description="Apresente este código no credenciamento e mantenha seus dados de acesso protegidos."
+        action={<ButtonLink href="/painel" variant="outline"><ArrowLeft size={18} aria-hidden="true" />Voltar ao painel</ButtonLink>}
+      />
+
+      <section className="mt-5">
+        {loading ? (
+          <AsyncStatePanel status="loading" loadingTitle="Gerando seu QR Code" />
+        ) : erro ? (
+          <AsyncStatePanel status="error" errorTitle="QR Code indisponível" message={erro} onRetry={buscarQR} />
+        ) : dados ? (
+          <article className="qr-card mx-auto max-w-xl rounded-lg border border-linha bg-white p-6 shadow-[var(--cieps-shadow)] sm:p-10">
+            <div className="mx-auto w-full max-w-[320px] rounded-md border border-linha bg-white p-3">
+              <Image src={dados.qrCode} alt={`QR Code de ${dados.nome}`} width={320} height={320} unoptimized className="h-auto w-full" />
+            </div>
+            <div className="mt-6 space-y-2 rounded-md border border-linha bg-papel p-4 text-sm text-tinta">
+              <p><strong>Nome:</strong> {dados.nome}</p>
+              <p><strong>E-mail:</strong> {dados.email}</p>
+              <p className="break-all"><strong>ID:</strong> {dados.id}</p>
+            </div>
+            <StatusBanner tone="warning" title="Uso pessoal" className="mt-4">
+              Não compartilhe este código. Ele identifica sua inscrição no evento.
+            </StatusBanner>
+          </article>
+        ) : (
+          <AsyncStatePanel status="empty" emptyTitle="QR Code ainda não disponível" message="Conclua sua inscrição ou procure a organização." />
+        )}
+      </section>
+      <span className="sr-only"><QrCode aria-hidden="true" /></span>
+    </PageShell>
   );
 }

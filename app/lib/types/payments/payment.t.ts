@@ -93,8 +93,8 @@ export interface IPayment {
             "type": string, // exemplo => "PERCENTAGE"
         },
         "postalService": boolean,
-        "custody": any | null,
-        "refunds": any | null,
+        "custody": unknown | null,
+        "refunds": unknown | null,
         "_webhook": {
             "id": number, //exemplo => "evt_15e444ff9b9ab9ec29294aa1abe68025&723192187",
             "event": string, //exemplo => "PAYMENT_CONFIRMED",

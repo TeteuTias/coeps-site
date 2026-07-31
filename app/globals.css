@@ -17,6 +17,7 @@ input[type=number] {
 }
 
 :root {
+  color-scheme: light;
   --foreground-rgb: 26, 26, 26;
   --background-start-rgb: 244, 241, 234;
   --background-end-rgb: 244, 241, 234;
@@ -31,14 +32,6 @@ input[type=number] {
   --cieps-shadow: 0 18px 42px rgba(26, 26, 26, 0.08);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 255, 255, 255;
-    --background-end-rgb: 255, 255, 255;
-  }
-}
-
 body {
   color: rgb(var(--foreground-rgb));
   background:
@@ -46,6 +39,8 @@ body {
     rgb(var(--background-start-rgb));
   font-family: var(--cieps-body);
   letter-spacing: 0;
+  margin: 0;
+  min-height: 100vh;
   overflow-x: hidden;
 }
 
@@ -59,7 +54,30 @@ a {
 }
 
 img {
+  height: auto;
   max-width: 100%;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgba(239, 159, 39, 0.35);
+  color: var(--cieps-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--cieps-red);
+  outline-offset: 3px;
 }
 
 .cieps-display {
@@ -86,6 +104,7 @@ img {
   gap: 0.55rem;
   justify-content: center;
   min-height: 48px;
+  border-radius: 6px;
   padding: 0.85rem 1.35rem;
   transition:
     background-color 180ms ease,
@@ -146,6 +165,204 @@ img {
 
 .glass-container:hover {
   background: rgba(255, 253, 248, 0.98);
+}
+
+.cieps-page-shell {
+  margin: 0 auto;
+  max-width: 1320px;
+  min-height: calc(100vh - 64px);
+  padding: clamp(2rem, 5vw, 5rem) clamp(1rem, 3vw, 2rem);
+  width: 100%;
+}
+
+.cieps-section-heading {
+  align-items: flex-end;
+  background: var(--cieps-paper-strong);
+  border: 1px solid var(--cieps-line);
+  box-shadow: var(--cieps-shadow);
+  display: flex;
+  gap: 2rem;
+  justify-content: space-between;
+  padding: clamp(1.5rem, 4vw, 3.5rem);
+}
+
+.cieps-state-panel {
+  align-items: center;
+  background: var(--cieps-paper-strong);
+  border: 1px solid var(--cieps-line);
+  border-radius: 8px;
+  box-shadow: var(--cieps-shadow);
+  color: var(--cieps-ink);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  justify-content: center;
+  min-height: 260px;
+  padding: clamp(2rem, 6vw, 4rem);
+  text-align: center;
+}
+
+.cieps-state-panel strong {
+  font-family: var(--cieps-display);
+  font-size: clamp(1.35rem, 3vw, 2rem);
+}
+
+.cieps-state-panel span {
+  color: var(--cieps-muted);
+  font-family: var(--cieps-body);
+  font-size: 0.94rem;
+  line-height: 1.6;
+  max-width: 560px;
+}
+
+.cieps-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.cieps-form-field > label {
+  color: var(--cieps-ink);
+  font-family: var(--cieps-body);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.cieps-form-field :is(input, select, textarea) {
+  background: #fff;
+  border: 1px solid var(--cieps-line);
+  border-radius: 6px;
+  color: var(--cieps-ink);
+  min-height: 48px;
+  padding: 0.8rem 0.9rem;
+  width: 100%;
+}
+
+.cieps-form-field textarea {
+  min-height: 128px;
+  resize: vertical;
+}
+
+.cieps-form-field :is(input, select, textarea):focus {
+  border-color: var(--cieps-blue);
+  box-shadow: 0 0 0 3px rgba(24, 95, 165, 0.12);
+  outline: 0;
+}
+
+.cieps-field-hint,
+.cieps-field-error {
+  font-family: var(--cieps-body);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.cieps-field-hint {
+  color: var(--cieps-muted);
+}
+
+.cieps-field-error {
+  color: var(--cieps-red);
+  font-weight: 700;
+}
+
+.cieps-modal-layer {
+  align-items: center;
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 1rem;
+  position: fixed;
+  z-index: 10000;
+}
+
+.cieps-modal-backdrop {
+  background: rgba(26, 26, 26, 0.7);
+  border: 0;
+  inset: 0;
+  position: absolute;
+}
+
+.cieps-modal-card {
+  background: var(--cieps-paper-strong);
+  border: 1px solid var(--cieps-line);
+  border-radius: 10px;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.28);
+  max-height: min(90vh, 760px);
+  max-width: 680px;
+  overflow: auto;
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  position: relative;
+  width: 100%;
+}
+
+.cieps-modal-close {
+  min-height: 42px;
+  min-width: 42px;
+  padding: 0.5rem;
+  position: absolute;
+  right: 0.75rem;
+  top: 0.75rem;
+}
+
+.cieps-modal-card > header {
+  padding-right: 2.5rem;
+}
+
+.cieps-modal-content {
+  color: var(--cieps-muted);
+  font-family: var(--cieps-body);
+  line-height: 1.65;
+  margin-top: 1.5rem;
+}
+
+.cieps-modal-footer {
+  align-items: center;
+  border-top: 1px solid var(--cieps-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+}
+
+.sr-only {
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+@media (max-width: 640px) {
+  .cieps-section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cieps-section-heading > :last-child {
+    width: 100%;
+  }
+
+  .cieps-section-heading > :last-child :is(a, button) {
+    width: 100%;
+  }
+
+  .cieps-modal-layer {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .cieps-modal-card {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    max-height: 92vh;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

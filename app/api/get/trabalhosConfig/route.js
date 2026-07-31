@@ -28,9 +28,11 @@ export const GET = withApiAuthRequired(async function GET(request, { params }) {
         return NextResponse.json({ ...result[0] }, { status: 200 });
 
     }
-    catch (error) {
-        //console.log(error)
-        return NextResponse.json({ "error": error, "message": error?.message }, { status: 500 })
+    catch {
+        return NextResponse.json(
+            { error: "internal_server_error", message: "Não foi possível consultar as configurações de trabalhos." },
+            { status: 500 }
+        )
     }
 })
 /*             { projection: { _id: 0 } }

@@ -3,16 +3,19 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Confirmacao } from '@/components/cieps'
+import { fetchWithTimeout } from '@/lib/client/fetchWithTimeout'
 
 export default function SuaInscricaoFoiConfirmada() {
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState(null)
   const router = useRouter()
 
   const confirmarAnimacaoInscricao = async () => {
     setIsLoading(true)
+    setError(null)
 
     try {
-      const response = await fetch('/api/post/confirmarAnimacaoInscricao', {
+      const response = await fetchWithTimeout('/api/post/confirmarAnimacaoInscricao', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -25,11 +28,11 @@ export default function SuaInscricaoFoiConfirmada() {
       }
 
       router.push('/painel')
-    } catch (error) {
-      console.error('Erro ao confirmar animação de inscrição:', error)
+    } catch {
+      setError('Tente novamente. Sua inscrição continua confirmada e nenhum dado foi perdido.')
       setIsLoading(false)
     }
   }
 
-  return <Confirmacao onContinue={confirmarAnimacaoInscricao} isLoading={isLoading} />
+  return <Confirmacao onContinue={confirmarAnimacaoInscricao} isLoading={isLoading} error={error} />
 }

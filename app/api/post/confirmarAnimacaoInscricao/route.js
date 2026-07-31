@@ -37,9 +37,11 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
         return Response.json({ "message": "Ocorreu Tudo Certo!" }, { status: 200 })
     }
-    catch (error) {
-        console.log(error)
-        return Response.json({ "message": error.message || "Ocorreu um erro desconhecido. Recarregue a página e tente novamente. Caso o erro persista, entre em contato com a equipe CIEPS." }, { status: 500 })
+    catch {
+        return Response.json(
+            { error: "internal_server_error", message: "Não foi possível confirmar a visualização." },
+            { status: 500 }
+        )
     }
 
 

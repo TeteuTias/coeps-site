@@ -49,8 +49,7 @@ export const DELETE = withApiAuthRequired(async function DELETE(request) {
                     if (arquivo.url) {
                         await del(arquivo.url);
                     }
-                } catch (error) {
-                    console.error(`Erro ao excluir arquivo ${arquivo.url}:`, error);
+                } catch {
                     // Continue mesmo se um arquivo falhar
                 }
             }
@@ -83,10 +82,10 @@ export const DELETE = withApiAuthRequired(async function DELETE(request) {
             message: 'Trabalho excluído com sucesso!' 
         }, { status: 200 });
 
-    } catch (error) {
-        console.error('Erro ao excluir trabalho:', error);
+    } catch {
         return Response.json({ 
-            error: error.message || "Erro interno do servidor. Tente novamente mais tarde." 
+            error: "internal_server_error",
+            message: "Não foi possível excluir o trabalho."
         }, { status: 500 });
     }
 });

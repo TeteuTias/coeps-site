@@ -30,6 +30,22 @@ export default function HeaderPainel({ isPayed = true }: { isPayed: boolean }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    if (!menuAberto) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuAberto(false);
+    };
+    document.addEventListener('keydown', closeOnEscape);
+
+    return () => {
+      document.removeEventListener('keydown', closeOnEscape);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [menuAberto]);
+
   return (
     <header className={`cieps-panel-header ${isScrolled ? 'is-scrolled' : ''}`}>
       <div className="cieps-panel-header-inner">
@@ -66,10 +82,9 @@ export default function HeaderPainel({ isPayed = true }: { isPayed: boolean }) {
 
         <div className="cieps-panel-actions">
           {!isPayed && <span className="cieps-panel-alert">Pagamento pendente</span>}
-          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-          <a href="/auth/logout" className="cieps-panel-logout">
-            <LogOut size={16} />
+          <a href="/auth/logout" className="cieps-panel-logout flex flex-row items-center">
             <span>Sair</span>
+            <LogOut size={16} />
           </a>
         </div>
 
@@ -78,6 +93,7 @@ export default function HeaderPainel({ isPayed = true }: { isPayed: boolean }) {
           className="cieps-panel-menu"
           aria-label={menuAberto ? 'Fechar menu' : 'Abrir menu'}
           aria-expanded={menuAberto}
+          aria-controls="cieps-panel-mobile-navigation"
           onClick={() => setMenuAberto((value) => !value)}
         >
           {menuAberto ? <X size={22} /> : <Menu size={22} />}
@@ -85,7 +101,7 @@ export default function HeaderPainel({ isPayed = true }: { isPayed: boolean }) {
       </div>
 
       {menuAberto && (
-        <div className="cieps-panel-mobile">
+        <nav id="cieps-panel-mobile-navigation" className="cieps-panel-mobile" aria-label="Navegação móvel do congressista">
           {menuItems.map((item) => (
             <Link
               key={item.name}
@@ -98,12 +114,11 @@ export default function HeaderPainel({ isPayed = true }: { isPayed: boolean }) {
               <span>{item.name}</span>
             </Link>
           ))}
-          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a href="/auth/logout" onClick={() => setMenuAberto(false)}>
             <LogOut size={16} />
             <span>Sair</span>
           </a>
-        </div>
+        </nav>
       )}
     </header>
   );

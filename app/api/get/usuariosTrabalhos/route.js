@@ -54,8 +54,11 @@ export const GET = withApiAuthRequired(async function GET(request, response) {
         */
 
     }
-    catch (error) {
-        return NextResponse.json({ "message": error }, { status: 500 })
+    catch {
+        return NextResponse.json(
+            { error: "internal_server_error", message: "Não foi possível consultar os trabalhos." },
+            { status: 500 }
+        )
     }
 })
 /*

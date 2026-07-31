@@ -202,7 +202,6 @@ export const POST: any = withApiAuthRequired(async function POST(request) {
             }
         });
     } catch (error) {
-        console.error('Erro detalhado na submissão do trabalho:', error);
 
         // MODIFICAÇÃO: Melhor tratamento de erros específicos
         if (error.message.includes('ID de arquivo inválido') ||
