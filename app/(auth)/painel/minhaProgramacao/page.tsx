@@ -690,7 +690,13 @@ const CardProgramacao = ({ dateKey, event, handleModal }) => {
             <div
               className="programacao-event-card"
               onClick={() => handleModal(value)}
-              key={`${dateKey}-${value._id ?? value.name ?? index}`}
+              key={[
+                dateKey,
+                value._id ?? value.name ?? 'evento',
+                value.date_init ?? 'sem-inicio',
+                value.date_end ?? 'sem-fim',
+                index,
+              ].join('-')}
             >
               <div className="programacao-event-indicator"></div>
               <div className="programacao-event-content">

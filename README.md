@@ -12,10 +12,10 @@ o hostname do tenant, sem `https://` ou barra final.
 ```powershell
 npm ci
 Copy-Item .env.example .env.local
-npm run dev -- -p 30001
+npm run dev
 ```
 
-Abra [http://localhost:30001](http://localhost:30001).
+Abra [http://localhost:3000](http://localhost:3000).
 
 Os endpoints de autenticação do Auth0 v4 são `/auth/login` e `/auth/logout`.
 As variáveis legadas `AUTH0_ISSUER_BASE_URL` e `AUTH0_BASE_URL` ainda são
