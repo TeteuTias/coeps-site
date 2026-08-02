@@ -1,26 +1,39 @@
 import { ObjectId } from 'bson';
 import { ILoteAutomatico } from './payment.t';
-//
-//
+import type {
+    PaymentAmountsSnapshot,
+    PaymentCodeSnapshot,
+    PaymentSessionStatus,
+} from './paymentCode.t';
+
+export type PaymentSessionMethod = "PIX" | "CREDIT_CARD" | "BOLETO" | "DEBIT_CARD";
+
 export default interface PaymentTicketProps {
-    _id: ObjectId;
-    orderId: string;
-    owner: ObjectId;
-    pixCode: string | null;
+    _id: ObjectId | string;
+    orderId?: string | null;
+    owner: ObjectId | string;
+    edicaoId?: string;
+    pixCode?: string | null;
     userProps: {
         name: string,
-        cpf: number,
-        zipCode: number,
+        cpf: number | string,
+        zipCode: number | string,
         street: string,
-        number: number,
+        number: number | string,
         neighborhood: string,
         complement: string,
         phone: string,
         email: string
     },
     paymentConfig: ILoteAutomatico;
+    paymentConfigOriginal?: ILoteAutomatico;
+    codigoDesconto?: PaymentCodeSnapshot;
+    codigoRastreio?: PaymentCodeSnapshot;
+    valoresCentavos?: PaymentAmountsSnapshot;
+    metodosPagamentoPermitidos?: string[];
+    metodoPagamento?: PaymentSessionMethod | null;
     type: "ticket" | "course";
-    status: "PENDING" | "PAID" | "UNPAID";
-    paymentUrl: string;
-    expiresAt: Date;
+    status: PaymentSessionStatus;
+    paymentUrl?: string | null;
+    expiresAt: Date | string;
 }

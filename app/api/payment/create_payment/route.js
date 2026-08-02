@@ -1,145 +1,320 @@
-import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
-import { getAccessToken, withApiAuthRequired } from '@/lib/auth0-compat';
-import { execOnce } from 'next/dist/shared/lib/utils';
-import { getSession } from '@/lib/auth0-compat';
-import { connectToDatabase } from '@/app/lib/mongodb';
-//
-//
-//
-//
-//
-/** @type {any} */
+import { withApiAuthRequired } from '@/lib/auth0-compat';
+import { getUserId } from '@/lib/getUserId';
+import { connectToDatabase } from '@/lib/mongodb';
+import { getActivePaymentConfig, getEditionId, isPaymentSalesOpen } from '@/lib/payments/config';
+import { prepareManualTicketPurchase } from '@/lib/payments/manual-purchase';
+import {
+  cancelPaymentAfterLostDiscountReservation,
+  hasConfirmedRegistrationForEdition,
+  markDiscountHasExternalCharge,
+  PaymentCodeError,
+  releaseDiscountReservation,
+  restoreDiscountAfterRejectedCharge,
+  updatePaymentAssignment,
+} from '@/lib/payments/codes';
+import { runPaymentTransaction } from '@/lib/payments/transactions';
+import { getPaymentOverdueGraceDays } from '@/lib/payments/overdue';
+
+const METHODS = ['PIX', 'BOLETO', 'DEBIT_CARD', 'CREDIT_CARD'];
+
+function valueForMethod(session, method) {
+  const prices = session.paymentConfig.precos;
+  if (method === 'PIX') return prices.valorPix;
+  if (method === 'BOLETO') return prices.valorBoleto;
+  if (method === 'DEBIT_CARD') return prices.valorDebito;
+  if (method === 'CREDIT_CARD') return prices.valorAVista;
+  return null;
+}
+
+function historyEntry(payment, userId, description) {
+  return {
+    _id: new ObjectId(),
+    object: payment.object,
+    id: payment.id,
+    dateCreated: payment.dateCreated,
+    customer: payment.customer,
+    value: payment.value,
+    netValue: payment.netValue,
+    description,
+    billingType: payment.billingType,
+    status: payment.status,
+    dueDate: payment.dueDate,
+    invoiceUrl: payment.invoiceUrl,
+    invoiceNumber: payment.invoiceNumber,
+    externalReference: payment.externalReference,
+    _type: 'ticket',
+    _userId: userId,
+  };
+}
+
 export const POST = withApiAuthRequired(async function POST(request) {
+  let purchase = null;
+
+  try {
+    const data = await request.json();
+    const userId = await getUserId(request);
+    if (!userId || !ObjectId.isValid(userId)) {
+      return Response.json({ error: 'not_authenticated', message: 'Sessão inválida.' }, { status: 401 });
+    }
+    if (!METHODS.includes(data.typePayment)) {
+      return Response.json({ error: 'invalid_payment_method', message: 'Método inválido.' }, { status: 422 });
+    }
+
+    const owner = new ObjectId(userId);
+    const { db, client } = await connectToDatabase();
+    const [user, config] = await Promise.all([
+      db.collection('usuarios').findOne({ _id: owner }, { projection: { id_api: 1 } }),
+      getActivePaymentConfig(db),
+    ]);
+    if (!user?.id_api || !config) {
+      return Response.json({ error: 'payment_config_not_found', message: 'Pagamento indisponível.' }, { status: 404 });
+    }
+    if (config.modo !== 'manual') {
+      return Response.json(
+        {
+          error: 'manual_payment_disabled',
+          message: 'O fluxo manual de pagamento não está ativo.',
+        },
+        { status: 409 },
+      );
+    }
+    const edicaoId = getEditionId(config);
+    if (await hasConfirmedRegistrationForEdition(db, owner, edicaoId)) {
+      return Response.json(
+        {
+          error: 'registration_already_confirmed',
+          message: 'Sua inscrição nesta edição já está confirmada.',
+        },
+        { status: 409 },
+      );
+    }
+    const activePurchase = await db.collection('pagamentos.sessoes').findOne({
+      owner,
+      edicaoId,
+      type: 'ticket',
+      status: {
+        $in: ['OPEN', 'CREATING_PAYMENT', 'PAYMENT_PENDING', 'PAYMENT_REVIEW_REQUIRED'],
+      },
+    });
+    if (activePurchase) {
+      return Response.json(
+        { error: 'active_payment_exists', message: 'Já existe uma cobrança ativa.' },
+        { status: 409 },
+      );
+    }
+    if (!isPaymentSalesOpen(config)) {
+      return Response.json(
+        { error: 'payment_sales_closed', message: 'As inscrições não estão abertas.' },
+        { status: 409 },
+      );
+    }
+    if (!config.pagamentosAceitos?.includes(data.typePayment)) {
+      return Response.json(
+        { error: 'payment_method_not_allowed', message: 'Esse método de pagamento não é aceito.' },
+        { status: 422 },
+      );
+    }
+
+    const configuredValue =
+      data.typePayment === 'PIX'
+        ? config.valorPix
+        : data.typePayment === 'BOLETO'
+          ? config.valorBoleto
+          : data.typePayment === 'DEBIT_CARD'
+            ? config.valorDebito
+            : config.valorAVista;
+    const apiUrl = process.env.ASAAS_API_URL;
+    const apiKey = process.env.ASAAS_API_KEY;
+    if (!Number.isFinite(configuredValue) || configuredValue <= 0) {
+      return Response.json({ error: 'invalid_payment_value', message: 'Valor inválido.' }, { status: 422 });
+    }
+    if (!apiUrl || !apiKey) {
+      return Response.json(
+        { error: 'payment_gateway_not_configured', message: 'Gateway não configurado.' },
+        { status: 503 },
+      );
+    }
+
+    purchase = await prepareManualTicketPurchase(db, {
+      owner,
+      config,
+      codigoDesconto: data.codigoDesconto,
+      codigoRastreio: data.codigoRastreio,
+    });
+    const value = valueForMethod(purchase, data.typePayment);
+    if (!Number.isFinite(value) || value <= 0) {
+      throw new Error('Valor do pagamento inválido.');
+    }
+
+    const payload = {
+      customer: user.id_api,
+      name: config.nome,
+      billingType: data.typePayment === 'DEBIT_CARD' ? 'UNDEFINED' : data.typePayment,
+      value,
+      dueDate: new Date().toISOString().split('T')[0],
+      description: config.nome,
+      daysAfterDueDateToRegistrationCancellation: getPaymentOverdueGraceDays(),
+      externalReference: purchase._id.toHexString(),
+      callback: { successUrl: process.env.ASAAS_URL_CALLBACK, autoRedirect: false },
+      postalService: false,
+    };
+
+    const discountLockedForCharge = await markDiscountHasExternalCharge(db, purchase._id);
+    if (purchase.codigoDesconto && !discountLockedForCharge) {
+      await runPaymentTransaction(client, (mongoSession) =>
+        cancelPaymentAfterLostDiscountReservation(db, purchase._id, mongoSession),
+      );
+      return Response.json(
+        {
+          error: 'discount_reservation_lost',
+          message: 'A reserva do desconto expirou. Inicie uma nova compra.',
+        },
+        { status: 409 },
+      );
+    }
+    let gatewayResponse;
     try {
-        //
-        const dataPayment = await request.json()
-        if (!dataPayment.typePayment) {
-            throw new Error("TypePayment not defined.")
-        }
-        // Verificando se ele está logado
-        // 
-        const { user } = await getSession();
-        const _id = new ObjectId(user.sub.replace("auth0|", "")) // Retirando o auth0|  
-        const userId = user.sub.replace("auth0|", "") // sem estar em objectId
-        //
-        // Puxando id_api.
-        const { db } = await connectToDatabase()
-        const collection = 'usuarios'
-        var query = {
-            _id
-        }
-        const dbFindOne = await db.collection(collection).find(query, { projection: { "_id": 0, "id_api": 1 } }).toArray()
-        if (dbFindOne.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
-            //console.log("result.matchedCount === 0 - dbFindOne")
-            return Response.json({ "erro": "result.matchedCount" }, { status: 404 })
-        }
-        else if (dbFindOne.modifiedCount === 0) { // Nenhum documento foi modificado.
-            //console.log("result.modifiedCount === 0 - dbFindOne")
-            return Response.json({ "erro": "result.modifiedCount === 0" }, { status: 400 })
-        }
-        const id_api = dbFindOne[0].id_api
-        //
-        const colecao = "ingressos_config"
-        const resultPagamento = await db.collection(colecao).find(
-            { _id: new ObjectId("66bcfceedc9c7250e85b2ac6") },
-        ).toArray()
-
-
-        if (!resultPagamento[0]?.pagamentosAceitos?.includes(dataPayment?.typePayment)) {
-            throw new Error("Desculpe, esse método de pagamento não é aceito.")
-        }
-
-        //
-        // Tentando Criar Pagamento Checkout.
-        const PAGBANK_API_KEY = process.env.PAGBANK_API_KEY;
-        //const horario_limite = new Date(new Date().getTime()+ 10 * 60 * 1000) // 2023-08-14T19:09:10-03:00
-
-        const ASAAS_API_KEY = process.env.ASAAS_API_KEY //process.env.ASAAS_API_KEY
-        const ASAAS_API_URL = process.env.ASAAS_API_URL + "/payments"
-        const urlCallback = process.env.ASAAS_URL_CALLBACK
-        const redirect_url = process.env.ASAAS_URL_REDIRECT
-
-
-        let valor = null
-        if (dataPayment.typePayment === "PIX") {
-            console.log("PIX")
-            valor = resultPagamento[0].valorPix
-        } else if (dataPayment.typePayment === "DEBIT_CARD") {
-            console.log("DEBIT_CARD")
-            valor = resultPagamento[0].valorDebito
-        } else if (dataPayment.typePayment === "BOLETO") {
-            console.log("BOLETO")
-            valor = resultPagamento[0].valorBoleto
-        } else if (dataPayment.typePayment === "CREDIT_CARD") {
-            console.log("CREDIT_CARD")
-            valor = resultPagamento[0].valorAVista
-        }
-        if (valor === null) {
-            throw new Error("O valor de seu pagamento não foi encontrado.")
-        }
-
-        // valor = resultPagamento[0].valorAVista => o safado do bug aqui
-
-        const data_vencimento = new Date().toISOString().split("T")[0] // retorna o dia de hoje.
-        const descricao = resultPagamento[0].nome// 'Primeiro lote de inscrição no I CIEPS.'
-        const desconto = 0
-
-        const options = {
-            method: 'POST',
-            headers: {
-                accept: 'application/json',
-                'content-type': 'application/json',
-                access_token: ASAAS_API_KEY
-            },
-            body: JSON.stringify({
-                customer: id_api,
-                name: resultPagamento[0].nome,
-                billingType: dataPayment?.typePayment === "DEBIT_CARD" ? "UNDEFINED" : dataPayment?.typePayment,
-                value: valor,
-                dueDate: data_vencimento,
-                description: descricao,
-                dueDateLimitDays: 3,
-                discount: { value: desconto },
-                callback: { successUrl: urlCallback, autoRedirect: false },
-
-                postalService: false,
-            })
-        };
-
-        const responseAPI = await fetch(ASAAS_API_URL, options)
-        if (!responseAPI.ok) {
-            var responseJson = await responseAPI.json()
-            console.log(responseJson)
-            throw ({ "message": "!responseAPI.ok => Registro API Pagamentos" })
-        }
-        var responseJson = await responseAPI.json()
-        // 
-        // Registrando o pagamento no DB
-        const dbUpdateOne = await db.collection(collection).updateOne(
-            {
-                _id
-            },
-            {
-                "$push": { 'pagamento.lista_pagamentos': { ...responseJson, _webhook: [], _type: "ticket", _userId: userId } },
-                "$set": { 'pagamento.situacao': 2 }
-            }
-        )
-
-        if (dbUpdateOne.matchedCount === 0) { //Nenhum documento correspondeu ao filtro.
-            console.log("result.matchedCount === 0")
-            return Response.json({ "erro": "result.matchedCount - dbUpdateOne" }, { status: 404 })
-        }
-        else if (dbUpdateOne.modifiedCount === 0) { // Nenhum documento foi modificado.
-
-            return Response.json({ "erro": "result.modifiedCount === 0 - dbUpdateOne" }, { status: 400 })
-        }
-
-        return Response.json({ "link": responseJson.invoiceUrl }, { status: 200 })
+      gatewayResponse = await fetch(`${apiUrl}/payments`, {
+        method: 'POST',
+        headers: {
+          accept: 'application/json',
+          'content-type': 'application/json',
+          access_token: apiKey,
+        },
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      await db.collection('pagamentos.sessoes').updateOne(
+        { _id: purchase._id, status: 'CREATING_PAYMENT' },
+        { $set: { gatewayState: 'RECONCILIATION_REQUIRED', updatedAt: new Date() } },
+      );
+      console.error('Resultado desconhecido ao criar cobrança manual:', error);
+      return Response.json(
+        { error: 'payment_reconciliation_required', message: 'A cobrança está sendo verificada.' },
+        { status: 503 },
+      );
     }
-    catch (error) {
 
-        return Response.json({ "message": error instanceof Error ? error.message : "Desculpe. Ocorreu um erro desconhecido. Recarregue a página e tente novamente." }, { status: 403 })
+    const responseBody = await gatewayResponse.json().catch(() => ({}));
+    if (!gatewayResponse.ok) {
+      if (gatewayResponse.status >= 500) {
+        await db.collection('pagamentos.sessoes').updateOne(
+          { _id: purchase._id },
+          { $set: { gatewayState: 'RECONCILIATION_REQUIRED', updatedAt: new Date() } },
+        );
+      } else {
+        await restoreDiscountAfterRejectedCharge(db, purchase._id, new Date(purchase.expiresAt));
+        await Promise.all([
+          db.collection('pagamentos.sessoes').updateOne(
+            { _id: purchase._id },
+            {
+              $set: { status: 'CANCELLED', updatedAt: new Date() },
+              $unset: { activeKey: '' },
+            },
+          ),
+          releaseDiscountReservation(db, purchase._id),
+          updatePaymentAssignment(db, purchase._id, 'CANCELADA'),
+        ]);
+      }
+      return Response.json(
+        {
+          error: 'payment_creation_failed',
+          message: responseBody?.errors?.[0]?.description || 'Não foi possível criar a cobrança.',
+        },
+        { status: gatewayResponse.status >= 500 ? 503 : 422 },
+      );
     }
-})
-//
+
+    if (!responseBody?.id) {
+      await db.collection('pagamentos.sessoes').updateOne(
+        { _id: purchase._id, status: 'CREATING_PAYMENT' },
+        { $set: { gatewayState: 'RECONCILIATION_REQUIRED', updatedAt: new Date() } },
+      );
+      return Response.json(
+        { error: 'invalid_gateway_response', message: 'A cobrança precisa de conciliação.' },
+        { status: 503 },
+      );
+    }
+
+    try {
+      await runPaymentTransaction(client, async (mongoSession) => {
+        const sessionUpdate = await db.collection('pagamentos.sessoes').updateOne(
+        { _id: purchase._id, status: 'CREATING_PAYMENT' },
+        {
+          $set: {
+            status: 'PAYMENT_PENDING',
+            metodoPagamento: data.typePayment,
+            paymentId: responseBody.id,
+            invoiceNumber: responseBody.invoiceNumber,
+            paymentUrl: responseBody.invoiceUrl || null,
+            gatewayState: 'CREATED',
+            updatedAt: new Date(),
+          },
+        },
+        { session: mongoSession },
+        );
+        if (sessionUpdate.modifiedCount !== 1) {
+          throw new Error('A sessão manual mudou durante a criação da cobrança.');
+        }
+        await db.collection('usuarios').updateOne(
+        { _id: owner },
+        {
+          $push: { 'pagamento.lista_pagamentos': historyEntry(responseBody, userId, config.nome) },
+          $set: { 'pagamento.situacao': 2 },
+        },
+        { session: mongoSession },
+        );
+        await updatePaymentAssignment(
+          db,
+          purchase._id,
+          'PAGAMENTO_PENDENTE',
+          {
+            metodo: data.typePayment,
+            paymentId: responseBody.id,
+            invoiceNumber: responseBody.invoiceNumber,
+          },
+          mongoSession,
+        );
+        await db.collection('pagamentos.atribuicoes').updateOne(
+          { compraId: purchase._id },
+          {
+            $set: {
+              valorSelecionadoCentavos: {
+                original: purchase.valoresCentavos.original[data.typePayment],
+                desconto: purchase.valoresCentavos.desconto[data.typePayment],
+                final: purchase.valoresCentavos.final[data.typePayment],
+              },
+            },
+          },
+          { session: mongoSession },
+        );
+      });
+    } catch (transactionError) {
+      await db.collection('pagamentos.sessoes').updateOne(
+        { _id: purchase._id, status: 'CREATING_PAYMENT' },
+        {
+          $set: {
+            gatewayState: 'RECONCILIATION_REQUIRED',
+            paymentId: responseBody.id,
+            invoiceNumber: responseBody.invoiceNumber,
+            paymentUrl: responseBody.invoiceUrl || null,
+            updatedAt: new Date(),
+          },
+        },
+      );
+      throw transactionError;
+    }
+
+    return Response.json({ link: responseBody.invoiceUrl }, { status: 201 });
+  } catch (error) {
+    if (error instanceof PaymentCodeError) {
+      return Response.json({ error: error.code, message: error.message }, { status: error.status });
+    }
+    console.error('Erro ao criar pagamento manual:', error);
+    return Response.json(
+      { error: 'payment_creation_failed', message: 'Não foi possível criar a cobrança.' },
+      { status: 500 },
+    );
+  }
+});

@@ -1,8 +1,8 @@
 import { ObjectId } from 'mongodb';
 import { NextResponse } from 'next/server';
 import { withApiAuthRequired } from '@/lib/auth0-compat';
-import { connectToDatabase } from '@/lib/mongodb';
 import { getUserId } from '@/lib/getUserId';
+import { connectToDatabase } from '@/lib/mongodb';
 import {
     cancelPaymentAfterLostDiscountReservation,
     markDiscountHasExternalCharge,
@@ -12,44 +12,16 @@ import {
 import { runPaymentTransaction } from '@/lib/payments/transactions';
 import { isPaymentMethodAllowedForSession } from '@/lib/payments/config';
 
-function formatDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-function paymentHistoryEntry(payment: Record<string, unknown>, userId: string, description: string) {
-    return {
-        _id: new ObjectId(),
-        object: payment.object,
-        id: payment.id,
-        dateCreated: payment.dateCreated,
-        customer: payment.customer,
-        value: payment.value,
-        netValue: payment.netValue,
-        description,
-        billingType: payment.billingType,
-        status: payment.status,
-        dueDate: payment.dueDate,
-        invoiceUrl: payment.invoiceUrl,
-        invoiceNumber: payment.invoiceNumber,
-        externalReference: payment.externalReference,
-        _type: 'ticket',
-        _userId: userId,
-    };
-}
-
 export const POST = withApiAuthRequired(async function POST(request: Request) {
     try {
         const userId = await getUserId(request);
-        const data = await request.json();
+        const body = await request.json();
 
         if (
             !userId ||
             !ObjectId.isValid(userId) ||
-            !data.sessionId ||
-            !ObjectId.isValid(data.sessionId)
+            !body.sessionId ||
+            !ObjectId.isValid(body.sessionId)
         ) {
             return NextResponse.json(
                 { error: 'invalid_payment_session', message: 'Sessão de pagamento inválida.' },
@@ -57,23 +29,9 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             );
         }
 
-        if (
-            !data.cardInfo?.number ||
-            !data.cardInfo?.expiry ||
-            !data.cardInfo?.cvc ||
-            !data.personalInfo?.name ||
-            !data.personalInfo?.email ||
-            !data.personalInfo?.cpfCnpj
-        ) {
-            return NextResponse.json(
-                { error: 'invalid_card_data', message: 'Preencha os dados do cartão.' },
-                { status: 400 },
-            );
-        }
-
-        const owner = new ObjectId(userId);
-        const sessionId = new ObjectId(data.sessionId);
         const { db, client } = await connectToDatabase();
+        const owner = new ObjectId(userId);
+        const sessionId = new ObjectId(body.sessionId);
         const existingSession = await db.collection('pagamentos.sessoes').findOne({
             _id: sessionId,
             owner,
@@ -89,28 +47,32 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
 
         if (
             existingSession.status === 'PAYMENT_PENDING' &&
-            existingSession.metodoPagamento === 'CREDIT_CARD' &&
-            existingSession.paymentId
+            existingSession.metodoPagamento === 'PIX' &&
+            existingSession.paymentUrl
         ) {
             return NextResponse.json(
-                { success: true, message: 'A cobrança já foi criada.' },
+                {
+                    success: true,
+                    paymentUrl: existingSession.paymentUrl,
+                    checkoutId: existingSession.orderId,
+                },
                 { status: 200 },
             );
         }
 
-        if (!(await isPaymentMethodAllowedForSession(db, existingSession, 'CREDIT_CARD'))) {
+        if (!(await isPaymentMethodAllowedForSession(db, existingSession, 'PIX'))) {
             return NextResponse.json(
-                {
-                    error: 'payment_method_not_allowed',
-                    message: 'Cartão de crédito não está disponível.',
-                },
+                { error: 'payment_method_not_allowed', message: 'PIX não está disponível.' },
                 { status: 409 },
             );
         }
 
         if (existingSession.status !== 'OPEN') {
             return NextResponse.json(
-                { error: 'payment_creation_in_progress', message: 'A cobrança já foi iniciada.' },
+                {
+                    error: 'payment_creation_in_progress',
+                    message: 'A cobrança desta sessão já foi iniciada.',
+                },
                 { status: 409 },
             );
         }
@@ -119,16 +81,6 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             return NextResponse.json(
                 { error: 'payment_session_expired', message: 'A sessão expirou.' },
                 { status: 409 },
-            );
-        }
-
-        const selectedInstallment = existingSession.paymentConfig?.precos?.parcelamentos?.find(
-            (installment) => Number(installment.codigo) === Number(data.idPagamento),
-        );
-        if (!selectedInstallment) {
-            return NextResponse.json(
-                { error: 'installment_not_found', message: 'Parcelamento inválido.' },
-                { status: 422 },
             );
         }
 
@@ -142,12 +94,13 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             {
                 $set: {
                     status: 'CREATING_PAYMENT',
-                    metodoPagamento: 'CREDIT_CARD',
+                    metodoPagamento: 'PIX',
                     updatedAt: new Date(),
                 },
             },
             { returnDocument: 'after' },
         );
+
         if (!lockedSession) {
             return NextResponse.json(
                 { error: 'payment_creation_in_progress', message: 'A cobrança já está sendo criada.' },
@@ -159,69 +112,50 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             { _id: owner },
             { projection: { id_api: 1 } },
         );
-        const apiUrl = process.env.ASAAS_API_URL;
-        const apiKey = process.env.ASAAS_API_KEY;
-        if (!user?.id_api || !apiUrl || !apiKey) {
+        if (!user?.id_api) {
             await db.collection('pagamentos.sessoes').updateOne(
                 { _id: sessionId, status: 'CREATING_PAYMENT' },
                 { $set: { status: 'OPEN', metodoPagamento: null, updatedAt: new Date() } },
             );
             return NextResponse.json(
-                { error: 'payment_gateway_not_configured', message: 'Pagamento indisponível.' },
+                { error: 'payment_customer_not_found', message: 'Cadastro de pagamento não encontrado.' },
+                { status: 404 },
+            );
+        }
+
+        const apiUrl = process.env.ASAAS_API_URL;
+        const apiKey = process.env.ASAAS_API_KEY;
+        if (!apiUrl || !apiKey) {
+            await db.collection('pagamentos.sessoes').updateOne(
+                { _id: sessionId, status: 'CREATING_PAYMENT' },
+                { $set: { status: 'OPEN', metodoPagamento: null, updatedAt: new Date() } },
+            );
+            return NextResponse.json(
+                { error: 'payment_gateway_not_configured', message: 'Gateway não configurado.' },
                 { status: 503 },
             );
         }
 
-        const forwardedFor = request.headers.get('x-forwarded-for');
-        const remoteIp =
-            forwardedFor?.split(',')[0]?.trim() ||
-            request.headers.get('x-real-ip') ||
-            '127.0.0.1';
-        const [expiryMonth, shortExpiryYear] = String(data.cardInfo.expiry).split('/');
-        const expiryYear =
-            shortExpiryYear?.length === 2 ? `20${shortExpiryYear}` : shortExpiryYear;
-        const installmentCount = Number(selectedInstallment.totalParcelas);
-        const totalValue = Number(
-            (Number(selectedInstallment.valorCadaParcela) * installmentCount).toFixed(2),
-        );
-        const originalInstallment = existingSession.paymentConfigOriginal?.precos?.parcelamentos?.find(
-            (installment) => Number(installment.codigo) === Number(data.idPagamento),
-        );
-        const finalCents = Math.round(totalValue * 100);
-        const originalCents = originalInstallment
-            ? Math.round(Number(originalInstallment.valorCadaParcela) * 100) *
-              Number(originalInstallment.totalParcelas)
-            : finalCents;
-        const requestBody: Record<string, unknown> = {
+        const checkoutRequest = {
+            billingTypes: ['PIX'],
+            minutesToExpire: 14,
             customer: user.id_api,
-            billingType: 'CREDIT_CARD',
-            dueDate: formatDate(new Date()),
+            chargeTypes: ['DETACHED'],
             externalReference: sessionId.toHexString(),
-            creditCard: {
-                holderName: data.personalInfo.name,
-                number: data.cardInfo.number,
-                expiryMonth,
-                expiryYear,
-                ccv: data.cardInfo.cvc,
+            callback: {
+                successUrl: process.env.ASAAS_URL_CALLBACK,
+                cancelUrl: process.env.ASAAS_URL_REDIRECT,
+                expiredUrl: process.env.ASAAS_URL_CALLBACK,
             },
-            creditCardHolderInfo: {
-                name: data.personalInfo.name,
-                email: data.personalInfo.email,
-                cpfCnpj: data.personalInfo.cpfCnpj,
-                postalCode: data.personalInfo.postalCode,
-                addressNumber: data.personalInfo.addressNumber,
-                addressComplement: data.personalInfo.addressComplement || '',
-                phone: data.personalInfo.phone,
-            },
-            remoteIp,
+            items: [
+                {
+                    description: lockedSession.paymentConfig.nome,
+                    name: lockedSession.paymentConfig.nome,
+                    quantity: 1,
+                    value: lockedSession.paymentConfig.precos.valorPix,
+                },
+            ],
         };
-
-        if (installmentCount > 1) {
-            requestBody.installmentCount = installmentCount;
-            requestBody.totalValue = totalValue;
-        } else {
-            requestBody.value = totalValue;
-        }
 
         const discountLockedForCharge = await markDiscountHasExternalCharge(db, sessionId);
         if (lockedSession.codigoDesconto && !discountLockedForCharge) {
@@ -242,36 +176,46 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
         }
         let gatewayResponse: Response;
         try {
-            gatewayResponse = await fetch(`${apiUrl}/payments`, {
+            gatewayResponse = await fetch(`${apiUrl}/checkouts`, {
                 method: 'POST',
                 headers: {
                     accept: 'application/json',
                     'content-type': 'application/json',
                     access_token: apiKey,
                 },
-                body: JSON.stringify(requestBody),
+                body: JSON.stringify(checkoutRequest),
             });
         } catch (error) {
             await db.collection('pagamentos.sessoes').updateOne(
                 { _id: sessionId, status: 'CREATING_PAYMENT' },
-                { $set: { gatewayState: 'RECONCILIATION_REQUIRED', updatedAt: new Date() } },
+                {
+                    $set: {
+                        gatewayState: 'RECONCILIATION_REQUIRED',
+                        updatedAt: new Date(),
+                    },
+                },
             );
-            console.error('Resultado desconhecido ao criar cobrança de cartão:', error);
+            console.error('Resultado desconhecido ao criar checkout PIX:', error);
             return NextResponse.json(
                 {
                     error: 'payment_reconciliation_required',
-                    message: 'A cobrança está sendo verificada. Não tente novamente.',
+                    message: 'A criação da cobrança está sendo verificada. Não tente outra cobrança.',
                 },
                 { status: 503 },
             );
         }
 
-        const responseBody = await gatewayResponse.json().catch(() => ({}));
+        const gatewayBody = await gatewayResponse.json().catch(() => ({}));
         if (!gatewayResponse.ok) {
             if (gatewayResponse.status >= 500) {
                 await db.collection('pagamentos.sessoes').updateOne(
                     { _id: sessionId, status: 'CREATING_PAYMENT' },
-                    { $set: { gatewayState: 'RECONCILIATION_REQUIRED', updatedAt: new Date() } },
+                    {
+                        $set: {
+                            gatewayState: 'RECONCILIATION_REQUIRED',
+                            updatedAt: new Date(),
+                        },
+                    },
                 );
             } else {
                 await restoreDiscountAfterRejectedCharge(
@@ -287,16 +231,16 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
 
             return NextResponse.json(
                 {
-                    error: 'credit_card_payment_failed',
+                    error: 'pix_checkout_failed',
                     message:
-                        responseBody?.errors?.[0]?.description ||
-                        'Não foi possível criar a cobrança.',
+                        gatewayBody?.errors?.[0]?.description ||
+                        'Não foi possível criar o checkout PIX.',
                 },
                 { status: gatewayResponse.status >= 500 ? 503 : 422 },
             );
         }
 
-        if (!responseBody?.id) {
+        if (!gatewayBody?.id || !gatewayBody?.link) {
             await db.collection('pagamentos.sessoes').updateOne(
                 { _id: sessionId, status: 'CREATING_PAYMENT' },
                 {
@@ -307,7 +251,10 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                 },
             );
             return NextResponse.json(
-                { error: 'invalid_gateway_response', message: 'A cobrança precisa de conciliação.' },
+                {
+                    error: 'invalid_gateway_response',
+                    message: 'A cobrança foi criada, mas precisa de conciliação.',
+                },
                 { status: 503 },
             );
         }
@@ -320,42 +267,27 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                     $set: {
                         status: 'PAYMENT_PENDING',
                         gatewayState: 'CREATED',
-                        paymentId: responseBody.id,
-                        invoiceNumber: responseBody.invoiceNumber,
-                        paymentUrl: responseBody.invoiceUrl || null,
-                        selectedInstallmentCode: selectedInstallment.codigo,
+                        orderId: gatewayBody.id,
+                        paymentUrl: gatewayBody.link,
                         updatedAt: new Date(),
                     },
                 },
                 { session: mongoSession },
                 );
                 if (sessionUpdate.modifiedCount !== 1) {
-                    throw new Error('A sessão de cartão mudou durante a criação da cobrança.');
+                    throw new Error('A sessão PIX mudou durante a criação da cobrança.');
                 }
 
                 await db.collection('usuarios').updateOne(
-                { _id: owner },
-                {
-                    $push: {
-                        'pagamento.lista_pagamentos': paymentHistoryEntry(
-                            responseBody,
-                            userId,
-                            lockedSession.paymentConfig.nome,
-                        ),
-                    },
-                    $set: { 'pagamento.situacao': 2 },
-                },
+                { _id: owner, 'pagamento.situacao': { $ne: 1 } },
+                { $set: { 'pagamento.situacao': 2 } },
                 { session: mongoSession },
                 );
                 await updatePaymentAssignment(
                     db,
                     sessionId,
                     'PAGAMENTO_PENDENTE',
-                    {
-                        metodo: 'CREDIT_CARD',
-                        paymentId: responseBody.id,
-                        invoiceNumber: responseBody.invoiceNumber,
-                    },
+                    { metodo: 'PIX', checkoutId: gatewayBody.id },
                     mongoSession,
                 );
                 await db.collection('pagamentos.atribuicoes').updateOne(
@@ -363,9 +295,9 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                     {
                         $set: {
                             valorSelecionadoCentavos: {
-                                original: originalCents,
-                                desconto: originalCents - finalCents,
-                                final: finalCents,
+                                original: lockedSession.valoresCentavos.original.PIX,
+                                desconto: lockedSession.valoresCentavos.desconto.PIX,
+                                final: lockedSession.valoresCentavos.final.PIX,
                             },
                         },
                     },
@@ -378,9 +310,8 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                 {
                     $set: {
                         gatewayState: 'RECONCILIATION_REQUIRED',
-                        paymentId: responseBody.id,
-                        invoiceNumber: responseBody.invoiceNumber,
-                        paymentUrl: responseBody.invoiceUrl || null,
+                        orderId: gatewayBody.id,
+                        paymentUrl: gatewayBody.link,
                         updatedAt: new Date(),
                     },
                 },
@@ -391,14 +322,15 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
         return NextResponse.json(
             {
                 success: true,
-                message: 'Cobrança criada. Aguarde a confirmação do pagamento.',
+                paymentUrl: gatewayBody.link,
+                checkoutId: gatewayBody.id,
             },
             { status: 201 },
         );
     } catch (error) {
-        console.error('Erro ao criar cobrança de cartão:', error);
+        console.error('Erro ao criar checkout PIX:', error);
         return NextResponse.json(
-            { error: 'credit_card_payment_failed', message: 'Não foi possível criar a cobrança.' },
+            { error: 'pix_checkout_failed', message: 'Não foi possível criar o checkout PIX.' },
             { status: 500 },
         );
     }

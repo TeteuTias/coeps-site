@@ -25,6 +25,9 @@ export interface ILoteAutomatico {
 // 4. Interface Principal (Raiz)
 export interface IPaymentConfig {
     _id: string & { readonly __brand: 'ObjectId' };
+    edicaoId?: string;
+    ativo?: boolean;
+    pagantesLegados?: number;
     dataInit: string;
     dataEnd: string;
     nome: string;

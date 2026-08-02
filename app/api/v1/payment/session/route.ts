@@ -1,215 +1,364 @@
+import { ObjectId } from 'mongodb';
 import { NextResponse } from 'next/server';
-import { ObjectId } from 'bson';
+import { withApiAuthRequired } from '@/lib/auth0-compat';
 import { getUserId } from '@/lib/getUserId';
 import { connectToDatabase } from '@/lib/mongodb';
-import PaymentTicketProps from '@/lib/types/payments/paymentTicket.t';
-import { ILoteAutomatico } from '@/lib/types/payments/payment.t';
-import { IUser } from '@/lib/types/user/user.t';
+import {
+    PaymentCodeError,
+    createPaymentAssignment,
+    expireOpenSessionsForOwner,
+    getTrackingCodeForPurchase,
+    hasConfirmedRegistrationForEdition,
+    normalizePaymentCode,
+    releaseDiscountReservation,
+    reserveDiscountCode,
+} from '@/lib/payments/codes';
+import {
+    getActivePaymentConfig,
+    getCurrentAutomaticLot,
+    getEditionId,
+    isPaymentSalesOpen,
+    lockPaymentCapacityCalculation,
+} from '@/lib/payments/config';
+import { applyDiscountToLot } from '@/lib/payments/prices';
+import { toPublicPaymentSession } from '@/lib/payments/public-session';
+import { runPaymentTransaction } from '@/lib/payments/transactions';
 
-/**
- * 
- * @param request Cria uma sessão para o usuário ou retorna uma caso ele já possua.
- */
-export async function POST(request: Request) {
+export const POST = withApiAuthRequired(async function POST(request: Request) {
+    let reservedPurchaseId: ObjectId | null = null;
+
     try {
         const userId = await getUserId(request);
-        const { db } = await connectToDatabase();
-
-        // Procurando usuário
-        const usuario: IUser | null = await db.collection("usuarios").findOne({
-            "_id": new ObjectId(userId)
-        });
-
-        //
-
-        // --- NOVO: Extraindo e validando os dados enviados pelo Frontend ---
-        const body = await request.json();
-        const { nome, cpf, cep, rua, numero, bairro, complemento, loteAtualFrontEnd, telefone, email } = body;
-        // Validação de segurança no Backend
-        if (!nome || !cpf || !cep || !rua || !numero || !bairro || !loteAtualFrontEnd || !telefone || !email) {
+        if (!userId || !ObjectId.isValid(userId)) {
             return NextResponse.json(
-                { error: 'Todos os campos obrigatórios devem ser preenchidos.' },
-                { status: 400 }
+                { error: 'not_authenticated', message: 'Sessão inválida.' },
+                { status: 401 },
             );
         }
-        // -------------------------------------------------------------------
 
-        // 1. Pega a hora atual para podermos comparar
+        const body = await request.json();
+        const {
+            nome,
+            cpf,
+            cep,
+            rua,
+            numero,
+            bairro,
+            complemento,
+            telefone,
+            email,
+            codigoDesconto,
+            codigoRastreio,
+        } = body;
+        const loteCodigo = body.loteCodigo ?? body.loteAtualFrontEnd?.codigo;
+
+        if (
+            !nome ||
+            !cpf ||
+            !cep ||
+            !rua ||
+            !numero ||
+            !bairro ||
+            !telefone ||
+            !email ||
+            loteCodigo === undefined
+        ) {
+            return NextResponse.json(
+                { error: 'invalid_payment_data', message: 'Preencha todos os campos obrigatórios.' },
+                { status: 400 },
+            );
+        }
+
+        const { db, client } = await connectToDatabase();
+        const owner = new ObjectId(userId);
+        const user = await db.collection('usuarios').findOne(
+            { _id: owner },
+            { projection: { id_api: 1 } },
+        );
+
+        if (!user?.id_api) {
+            return NextResponse.json(
+                { error: 'payment_customer_not_found', message: 'Cadastro de pagamento não encontrado.' },
+                { status: 404 },
+            );
+        }
+
+        const config = await getActivePaymentConfig(db);
+        if (!config) {
+            return NextResponse.json(
+                { error: 'payment_config_not_found', message: 'Configuração não encontrada.' },
+                { status: 404 },
+            );
+        }
+        if (config.modo !== 'automatico') {
+            return NextResponse.json(
+                {
+                    error: 'automatic_payment_disabled',
+                    message: 'O fluxo automático de pagamento não está ativo.',
+                },
+                { status: 409 },
+            );
+        }
+        const edicaoId = getEditionId(config);
+
+        if (await hasConfirmedRegistrationForEdition(db, owner, edicaoId)) {
+            return NextResponse.json(
+                {
+                    error: 'registration_already_confirmed',
+                    message: 'Sua inscrição nesta edição já está confirmada.',
+                },
+                { status: 409 },
+            );
+        }
+
         const now = new Date();
+        await expireOpenSessionsForOwner(db, owner, now, edicaoId);
 
-        // 2. Tenta encontrar uma sessão válida (que ainda não expirou)
-        const sessaoAtiva: PaymentTicketProps | null = await db.collection('pagamentos.sessoes').findOne({
-            owner: new ObjectId(userId),
-            type: "ticket",
-            expiresAt: { $gt: now } // O segredo está aqui: expiresAt maior que o momento atual
+        const activeSession = await db.collection('pagamentos.sessoes').findOne({
+            owner,
+            edicaoId,
+            type: 'ticket',
+            $or: [
+                { status: 'OPEN', expiresAt: { $gt: now } },
+                {
+                    status: {
+                        $in: [
+                            'CREATING_PAYMENT',
+                            'PAYMENT_PENDING',
+                            'PAYMENT_REVIEW_REQUIRED',
+                        ],
+                    },
+                },
+            ],
         });
 
-        // 3. Se encontrou uma sessão válida, retorna ela e encerra a execução
-        if (sessaoAtiva) {
-            return NextResponse.json({
-                success: true,
-                sessao: sessaoAtiva,
-                message: "Sessão ativa recuperada com sucesso."
-            }, { status: 200 }); // 200 OK
-        }
+        if (activeSession) {
+            const sameDiscount =
+                normalizePaymentCode(codigoDesconto) ===
+                normalizePaymentCode(activeSession.codigoDesconto?.codigo);
+            const sameTracking =
+                normalizePaymentCode(codigoRastreio) ===
+                normalizePaymentCode(activeSession.codigoRastreio?.codigo);
 
-        // ==========================================
-        // 4.1. Se não encontrou, vamos verificar se o plano que ele enviou ainda está vigente.
-        // ==========================================
-        const ticketConfig = await db.collection("ingressos_config").findOne(
-            { _id: new ObjectId("66bcfceedc9c7250e85b2ac6") }
-        )
-        if (!ticketConfig) {
-            return NextResponse.json({ message: "Configuração não encontrada" }, { status: 404 });
-        }
-        // Verficando o plano atual vigente:
-        const numeroInscritosPagantes = await db.collection("usuarios").countDocuments({
-            "pagamento.situacao": 1, // Se o usuário pagou.
-            // NÃO pode ser "organizador".
-            "pagamento.tipo_pagamento": { $not: /^organizador$/i }
-        });
-
-        const sessoesAtivas: number = await db.collection("pagamentos.sessoes").countDocuments({
-            // Traz apenas os documentos onde o 'expiresAt' é MAIOR que 'now'
-            expiresAt: { $gt: now },
-            status: "PENDENTE" // Evita contar quem já pagou dentro dos 15 minutos
-        });
-
-        const pagamentosRealizadosESessoesAbertas = sessoesAtivas + numeroInscritosPagantes;
-        // Calculando lote
-        let loteAtual: ILoteAutomatico | null = null;
-        const lotes = ticketConfig.configuracaoLotesAutomaticos?.lotes;
-        if (lotes && lotes.length > 0) {
-            let vagasAcumuladas = 0;
-
-            for (let i = 0; i < lotes.length; i++) {
-                const lote = lotes[i];
-                vagasAcumuladas += lote.limiteVagas;
-
-                const isUltimoLote = i === lotes.length - 1;
-
-                // Se o total de ocupantes não estourou a capacidade acumulada, ou é o último lote
-                if (pagamentosRealizadosESessoesAbertas < vagasAcumuladas || isUltimoLote) {
-                    loteAtual = lote;
-                    break; // Achou o lote, encerra o loop
-                }
+            if (!sameDiscount || !sameTracking) {
+                return NextResponse.json(
+                    {
+                        error: 'active_payment_session_has_different_codes',
+                        message: 'Já existe uma sessão ativa com outros códigos.',
+                        sessao: toPublicPaymentSession(activeSession),
+                    },
+                    { status: 409 },
+                );
             }
+
+            return NextResponse.json(
+                {
+                    success: true,
+                    sessao: toPublicPaymentSession(activeSession),
+                    message: 'Sessão ativa recuperada com sucesso.',
+                },
+                { status: 200 },
+            );
         }
-        // O lote do cliente é o mesmo lote que está vigente ? Se não for, vamos retornar a ele o lote vigente para ele atualizar no frontend. 
-        // Isso é uma medida de segurança para evitar que o cliente tente burlar o sistema enviando um lote antigo, ou garantir que ele saiba que o lote atualizou!
-        if (!loteAtual || loteAtual.codigo !== loteAtualFrontEnd.codigo) {
-            return NextResponse.json({
-                success: false,
-                message: "O lote que você selecionou não está mais vigente. Por favor, o lote atual foi atualizado em sua página.",
-                loteVigente: loteAtual
-            }, { status: 409 }); // 409 Conflict - O cliente tentou criar uma sessão com um lote que não é mais vigente. O front-end deve atualizar o lote vigente e avisar ao usuário.
+
+        if (!isPaymentSalesOpen(config, now)) {
+            return NextResponse.json(
+                {
+                    error: 'payment_sales_closed',
+                    message: 'As inscrições não estão abertas neste momento.',
+                },
+                { status: 409 },
+            );
         }
-        // ==========================================
-        // 4.2. Se não tiver problemas, vamos criar uma nova sessão de pagamento
-        // ==========================================
+
+        const currentLot = await getCurrentAutomaticLot(db, config, now);
+        if (!currentLot || Number(currentLot.codigo) !== Number(loteCodigo)) {
+            return NextResponse.json(
+                {
+                    error: 'payment_lot_changed',
+                    message: 'O lote vigente foi atualizado. Recarregue os valores.',
+                    loteVigente: currentLot,
+                },
+                { status: 409 },
+            );
+        }
+
+        const compraId = new ObjectId();
         const expiresAt = new Date(now.getTime() + 15 * 60 * 1000);
 
-        // Integração com Gateway (Mock)
-        // Criando o pagamento PIX:
-        const asaasApiUrl = process.env.ASAAS_API_URL
-        const ASAAS_API_KEY = process.env.ASAAS_API_KEY
-        const ASAAS_URL_CALLBACK = process.env.ASAAS_URL_CALLBACK
-        const ASAAS_URL_REDIRECT = process.env.ASAAS_URL_REDIRECT
-
-        const newSessionId = new ObjectId()
-
-        const modeloFetchAssas = {
-            "billingTypes": ["PIX"],
-            "minutesToExpire": 14,
-            "customer": usuario.id_api,
-            "chargeTypes": ["DETACHED"],
-            "externalReference": `${newSessionId}`,
-            "callback": {
-                "successUrl": ASAAS_URL_CALLBACK,
-                "cancelUrl": ASAAS_URL_REDIRECT,
-                "expiredUrl": ASAAS_URL_CALLBACK
-            },
-            "items": [
-                {
-                    "description": loteAtual.nome,
-                    "name": loteAtual.nome,
-                    "quantity": 1,
-                    "value": loteAtual.precos.valorPix
+        let session;
+        try {
+            session = await runPaymentTransaction(client, async (mongoSession) => {
+                await lockPaymentCapacityCalculation(db, config, mongoSession);
+                const lockedLot = await getCurrentAutomaticLot(
+                    db,
+                    config,
+                    now,
+                    mongoSession,
+                );
+                if (!lockedLot || Number(lockedLot.codigo) !== Number(loteCodigo)) {
+                    throw new PaymentCodeError(
+                        'O lote vigente foi atualizado. Recarregue os valores.',
+                        409,
+                        'PAYMENT_LOT_CHANGED',
+                    );
                 }
-            ],
-            /*
-            "customerData": {
-                "name": nome,
-                "cpfCnpj": cpf,
-                "email": email,
-                "phone": telefone,
-                "address": bairro,
-                "addressNumber": numero,
-                "complement": complemento || "",
-                "province": usuario.informacoes_usuario.país,
-                "postalCode": cep,
+
+                const discountSnapshot = codigoDesconto
+                    ? await reserveDiscountCode(db, {
+                          edicaoId,
+                          codigo: codigoDesconto,
+                          compraId,
+                          usuarioId: owner,
+                          reservadoAte: expiresAt,
+                          mongoSession,
+                      })
+                    : undefined;
+                if (discountSnapshot) reservedPurchaseId = compraId;
+
+                const trackingSnapshot = codigoRastreio
+                    ? await getTrackingCodeForPurchase(
+                          db,
+                          edicaoId,
+                          codigoRastreio,
+                          mongoSession,
+                      )
+                    : undefined;
+                const discounted = applyDiscountToLot(
+                    lockedLot,
+                    discountSnapshot?.percentualDesconto ?? 0,
+                );
+                const createdSession = {
+                    _id: compraId,
+                    activeKey: `${edicaoId}:${userId}:ticket`,
+                    owner,
+                    edicaoId,
+                    type: 'ticket',
+                    status: 'OPEN',
+                    expiresAt,
+                    createdAt: now,
+                    updatedAt: now,
+                    paymentConfigOriginal: lockedLot,
+                    paymentConfig: discounted.lot,
+                    valoresCentavos: discounted.amounts,
+                    metodosPagamentoPermitidos: config.pagamentosAceitos ?? [],
+                    codigoDesconto: discountSnapshot,
+                    codigoRastreio: trackingSnapshot,
+                    orderId: null,
+                    paymentUrl: null,
+                    pixCode: null,
+                    metodoPagamento: null,
+                    userProps: {
+                        name: String(nome),
+                        cpf: String(cpf),
+                        zipCode: String(cep),
+                        phone: String(telefone),
+                        email: String(email),
+                        street: String(rua),
+                        number: String(numero),
+                        neighborhood: String(bairro),
+                        complement: complemento ? String(complemento) : 'Não informado',
+                    },
+                };
+
+                await db
+                    .collection('pagamentos.sessoes')
+                    .insertOne(createdSession, { session: mongoSession });
+                await createPaymentAssignment(db, {
+                    compraId,
+                    edicaoId,
+                    usuarioId: owner,
+                    codigoDesconto: discountSnapshot,
+                    codigoRastreio: trackingSnapshot,
+                    valoresCentavos: discounted.amounts,
+                    status: 'ABERTA',
+                    createdAt: now,
+                    updatedAt: now,
+                }, mongoSession);
+
+                return createdSession;
+            });
+        } catch (error) {
+            await db.collection('pagamentos.sessoes').deleteOne({
+                _id: compraId,
+                status: 'OPEN',
+            });
+            if (reservedPurchaseId) {
+                await releaseDiscountReservation(db, reservedPurchaseId);
+                reservedPurchaseId = null;
             }
-                */
+
+            if ((error as { code?: number })?.code === 11000) {
+                const concurrentSession = await db.collection('pagamentos.sessoes').findOne({
+                    owner,
+                    edicaoId,
+                    type: 'ticket',
+                    status: {
+                        $in: [
+                            'OPEN',
+                            'CREATING_PAYMENT',
+                            'PAYMENT_PENDING',
+                            'PAYMENT_REVIEW_REQUIRED',
+                        ],
+                    },
+                });
+                if (concurrentSession) {
+                    const sameDiscount =
+                        normalizePaymentCode(codigoDesconto) ===
+                        normalizePaymentCode(concurrentSession.codigoDesconto?.codigo);
+                    const sameTracking =
+                        normalizePaymentCode(codigoRastreio) ===
+                        normalizePaymentCode(concurrentSession.codigoRastreio?.codigo);
+                    if (!sameDiscount || !sameTracking) {
+                        throw new PaymentCodeError(
+                            'Já existe uma sessão ativa com outros códigos.',
+                            409,
+                            'ACTIVE_PAYMENT_SESSION_HAS_DIFFERENT_CODES',
+                        );
+                    }
+                    return NextResponse.json(
+                        {
+                            success: true,
+                            sessao: toPublicPaymentSession(concurrentSession),
+                            message: 'Sessão ativa recuperada com sucesso.',
+                        },
+                        { status: 200 },
+                    );
+                }
+            }
+            throw error;
         }
-        const fetchCheckoutPIX = await fetch(`${asaasApiUrl}/checkouts`, {
-            method: "POST",
-            headers: {
-                'User-Agent': 'NomeDaSuaAplicacao/1.0.0', // Nome do seu app
-                'accept': 'application/json',
-                'content-type': 'application/json',
-                'access_token': ASAAS_API_KEY
+
+        reservedPurchaseId = null;
+        return NextResponse.json(
+            {
+                success: true,
+                sessao: toPublicPaymentSession(session),
+                message: 'Nova sessão criada com sucesso.',
             },
-            body: JSON.stringify(modeloFetchAssas)
-        })
-
-        if (!fetchCheckoutPIX.ok) {
-            return Response.json({ message: "Infelizmente ocorreu algum erro inesperado. Recarregue a página e tente novamente." }, { status: 500 })
-        }
-        const checkoutPix: { link: string, id: string } = await fetchCheckoutPIX.json() // tem mais informações, mas é só isso que importa.
-
-
-        //
-
-        // Monta o objeto da sessão
-        const novaSessao: PaymentTicketProps = {
-            _id: newSessionId,
-            orderId: checkoutPix.id,
-            owner: new ObjectId(userId),
-            pixCode: null,
-            paymentConfig: loteAtual,
-            paymentUrl: checkoutPix.link,
-            type: "ticket",
-            expiresAt: expiresAt,
-            // --- NOVO: Adicionando os dados validados à nova sessão ---
-            status: "UNPAID",
-            userProps: {
-                name: nome,
-                cpf: cpf,
-                zipCode: cep,
-                phone: telefone,
-                email: email,
-                street: rua,
-                number: numero,
-                neighborhood: bairro,
-                complement: complemento || "Não informado" // Complemento é opcional, então colocamos um valor padrão caso não seja fornecido, para não dar bug no Asaas.
+            { status: 201 },
+        );
+    } catch (error) {
+        if (reservedPurchaseId) {
+            try {
+                const { db } = await connectToDatabase();
+                await releaseDiscountReservation(db, reservedPurchaseId);
+            } catch (releaseError) {
+                console.error('Erro ao compensar reserva de desconto:', releaseError);
             }
         }
 
-        // Insere na coleção
-        await db.collection('pagamentos.sessoes').insertOne(novaSessao);
+        if (error instanceof PaymentCodeError) {
+            return NextResponse.json(
+                { error: error.code, message: error.message },
+                { status: error.status },
+            );
+        }
 
-        // Retorna a nova sessão criada
-        return NextResponse.json({
-            success: true,
-            sessao: novaSessao,
-            message: "Nova sessão criada com sucesso."
-        }, { status: 201 }); // 201 Created
-
-    } catch (error) {
         console.error('Erro ao processar sessão de pagamento:', error);
         return NextResponse.json(
-            { error: 'Erro interno ao processar sessão.' },
-            { status: 500 }
+            { error: 'payment_session_failed', message: 'Erro interno ao processar sessão.' },
+            { status: 500 },
         );
     }
-}
+});
