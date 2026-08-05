@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p 3000",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:payments": "node --experimental-strip-types --test \"app/lib/payments/__tests__/*.test.ts\"",
+    "migrate:payment-codes": "node scripts/migrations/setup-payment-codes.mjs"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.22.0",

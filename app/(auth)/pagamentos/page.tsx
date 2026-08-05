@@ -20,12 +20,88 @@ import {
 } from 'lucide-react';
 import './style.css';
 import PaymentTicketProps from '@/lib/types/payments/paymentTicket.t';
+import type { PaymentAmountsByMethod, PaymentAmountsSnapshot } from '@/lib/types/payments/paymentCode.t';
 import { fetchWithTimeout } from '@/lib/client/fetchWithTimeout';
 
 type PaymentConfigView = IPaymentConfig & {
     sessaoPagamentoAutomáticoAtiva: PaymentTicketProps | false;
     loteAutomaticoAtual?: ILoteAutomatico;
 };
+
+type PaymentCodesPreview = {
+    codigos: {
+        desconto?: {
+            codigo: string;
+            percentualDesconto: number;
+        };
+        rastreio?: {
+            codigo: string;
+            responsavel?: {
+                nome: string;
+            };
+        };
+    };
+    lote: {
+        original: ILoteAutomatico;
+        final: ILoteAutomatico;
+    };
+    valoresCentavos: PaymentAmountsSnapshot;
+};
+
+const paymentAmountLabels: Record<keyof PaymentAmountsByMethod, string> = {
+    PIX: 'PIX',
+    BOLETO: 'Boleto',
+    DEBIT_CARD: 'Débito',
+    CREDIT_CARD: 'Crédito',
+};
+
+function formatCurrencyFromCents(value: number) {
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+    }).format(value / 100);
+}
+
+function normalizePaymentCode(value: string) {
+    return value.trim().toLocaleUpperCase('pt-BR');
+}
+
+function PaymentAmountsSummary({
+    amounts,
+    methods,
+}: {
+    amounts: PaymentAmountsSnapshot;
+    methods: (keyof PaymentAmountsByMethod)[];
+}) {
+    return (
+        <div className='grid gap-3 sm:grid-cols-2' aria-label="Valores original e final por forma de pagamento">
+            {methods.map((method) => {
+                const discount = amounts.desconto[method];
+                return (
+                    <div key={method} className='rounded-lg border border-linha bg-white p-3 text-sm'>
+                        <p className='font-bold text-tinta'>{paymentAmountLabels[method]}</p>
+                        <div className='mt-2 flex items-center justify-between gap-3 text-muted'>
+                            <span>Original</span>
+                            <span className={discount > 0 ? 'line-through' : ''}>
+                                {formatCurrencyFromCents(amounts.original[method])}
+                            </span>
+                        </div>
+                        {discount > 0 && (
+                            <div className='mt-1 flex items-center justify-between gap-3 font-semibold text-[#2f7651]'>
+                                <span>Desconto</span>
+                                <span>- {formatCurrencyFromCents(discount)}</span>
+                            </div>
+                        )}
+                        <div className='mt-2 flex items-center justify-between gap-3 border-t border-linha pt-2 font-bold text-tinta'>
+                            <span>Final</span>
+                            <span>{formatCurrencyFromCents(amounts.final[method])}</span>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
 
 const Pagamentos = () => {
     const [data, setData] = useState<{ pagamento: IUser["pagamento"] } | undefined>(undefined);
@@ -236,6 +312,12 @@ const Pagamentos = () => {
                 (
                     dataPaymentConfig.sessaoPagamentoAutomáticoAtiva !== false ? (
                         <PaymentSessionActive
+                            key={[
+                                String(dataPaymentConfig.sessaoPagamentoAutomáticoAtiva._id),
+                                dataPaymentConfig.sessaoPagamentoAutomáticoAtiva.status,
+                                dataPaymentConfig.sessaoPagamentoAutomáticoAtiva.metodoPagamento ?? '',
+                                dataPaymentConfig.sessaoPagamentoAutomáticoAtiva.paymentUrl ?? '',
+                            ].join(':')}
                             dataPayment={{
                                 ...dataPaymentConfig,
                                 sessaoPagamentoAutomáticoAtiva: dataPaymentConfig.sessaoPagamentoAutomáticoAtiva,
@@ -266,13 +348,69 @@ function PaymentSessionActive({
     dataPayment: IPaymentConfig & { sessaoPagamentoAutomáticoAtiva: PaymentTicketProps },
     hydratePage: () => void
 }) {
-    const [paymentConfig, {/*setPaymentConfig*/ }] = useState<IPaymentConfig & { sessaoPagamentoAutomáticoAtiva: PaymentTicketProps }>(dataPayment)
+    const [paymentConfig, setPaymentConfig] = useState<IPaymentConfig & { sessaoPagamentoAutomáticoAtiva: PaymentTicketProps }>(dataPayment)
     const [tempoRestante, setTempoRestante] = useState<string>("Calculando...");
     const [textError, setTextError] = useState<string | false>(false);
-    const [paymentType, setpaymentType] = useState<"PIX" | "CREDIT_CARD" | "NONE">("NONE");
+    const [paymentType, setpaymentType] = useState<"PIX" | "CREDIT_CARD" | "NONE">(() => {
+        const session = dataPayment.sessaoPagamentoAutomáticoAtiva;
+        return session.metodoPagamento === "PIX" || (!session.metodoPagamento && session.paymentUrl) ? "PIX" : "NONE";
+    });
     const [copied, setCopied] = useState(false);
+    const [isCreatingPix, setIsCreatingPix] = useState(false);
+    const [pixError, setPixError] = useState<string | null>(null);
 
-    const lote = paymentConfig.sessaoPagamentoAutomáticoAtiva.paymentConfig;
+    const paymentSession = paymentConfig.sessaoPagamentoAutomáticoAtiva;
+    const lote = paymentSession.paymentConfig;
+    const sessionStatus = String(paymentSession.status);
+    const hasPixCheckout = Boolean(
+        paymentSession.pixCode ||
+        (paymentSession.paymentUrl && (!paymentSession.metodoPagamento || paymentSession.metodoPagamento === "PIX")),
+    );
+    const paymentMethodLocked = paymentSession.metodoPagamento;
+
+    const handleSelectPix = async () => {
+        setpaymentType("PIX");
+        setPixError(null);
+
+        if (hasPixCheckout || isCreatingPix) return;
+        if (paymentMethodLocked && paymentMethodLocked !== "PIX") {
+            setPixError("Esta sessão já está vinculada a outra forma de pagamento.");
+            return;
+        }
+
+        setIsCreatingPix(true);
+        try {
+            const response = await fetchWithTimeout('/api/v1/payment/session/pix', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: paymentSession._id }),
+            }, 30_000);
+            const result = (await response.json().catch(() => ({}))) as {
+                paymentUrl?: string;
+                pixCode?: string | null;
+                message?: string;
+            };
+
+            if (!response.ok || !result.paymentUrl) {
+                throw new Error(result.message || 'Não foi possível criar a cobrança PIX.');
+            }
+
+            setPaymentConfig((current) => ({
+                ...current,
+                sessaoPagamentoAutomáticoAtiva: {
+                    ...current.sessaoPagamentoAutomáticoAtiva,
+                    paymentUrl: result.paymentUrl,
+                    pixCode: result.pixCode ?? current.sessaoPagamentoAutomáticoAtiva.pixCode ?? null,
+                    metodoPagamento: "PIX",
+                    status: "PAYMENT_PENDING",
+                },
+            }));
+        } catch (error) {
+            setPixError(error instanceof Error ? error.message : 'Não foi possível criar a cobrança PIX.');
+        } finally {
+            setIsCreatingPix(false);
+        }
+    };
 
     useEffect(() => {
         const dataExpiracao = new Date(paymentConfig.sessaoPagamentoAutomáticoAtiva.expiresAt).getTime();
@@ -299,7 +437,15 @@ function PaymentSessionActive({
         return () => clearInterval(timer);
     }, [paymentConfig.sessaoPagamentoAutomáticoAtiva.expiresAt, paymentConfig.sessaoPagamentoAutomáticoAtiva.status]);
 
-    if (paymentConfig.sessaoPagamentoAutomáticoAtiva.status == "PENDING") {
+    if (sessionStatus === "PAYMENT_REVIEW_REQUIRED") {
+        return (
+            <div className='pagamentos-main max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-sm border border-linha'>
+                <h1>Seu pagamento precisa de verificação</h1>
+                <p>A cobrança está protegida contra duplicidade. Entre em contato com a organização antes de tentar novamente.</p>
+            </div>
+        )
+    }
+    if (sessionStatus === "CREATING_PAYMENT" || ((sessionStatus === "PAYMENT_PENDING" || sessionStatus === "PENDING") && !hasPixCheckout)) {
         return (
             <div className='pagamentos-main max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-sm border border-linha'>
                 <h1>Seu pagamento está sendo processado</h1>
@@ -307,7 +453,7 @@ function PaymentSessionActive({
             </div>
         )
     }
-    if (paymentConfig.sessaoPagamentoAutomáticoAtiva.status == "PAID") {
+    if (sessionStatus === "CONFIRMED" || sessionStatus === "PAID") {
         return (
             <div className='pagamentos-main max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-sm border border-linha'>
                 <h1>Você já realizou o pagamento!</h1>
@@ -351,6 +497,29 @@ function PaymentSessionActive({
                         Resumo do Pagamento - {lote.nome}
                     </h2>
 
+                    {paymentSession.valoresCentavos && (
+                        <div className='rounded-lg border border-[#2f7651]/25 bg-[#2f7651]/10 p-4' aria-label="Resumo dos valores da inscrição">
+                            <PaymentAmountsSummary
+                                amounts={paymentSession.valoresCentavos}
+                                methods={paymentConfig.pagamentosAceitos}
+                            />
+                            {(paymentSession.codigoDesconto || paymentSession.codigoRastreio) && (
+                                <div className='mt-3 flex flex-wrap gap-2 text-xs font-semibold text-muted'>
+                                    {paymentSession.codigoDesconto && (
+                                        <span className='rounded-full bg-white px-3 py-1'>
+                                            Desconto: {paymentSession.codigoDesconto.codigo}
+                                        </span>
+                                    )}
+                                    {paymentSession.codigoRastreio && (
+                                        <span className='rounded-full bg-white px-3 py-1'>
+                                            Rastreio: {paymentSession.codigoRastreio.codigo}
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm'>
                         <div className='flex flex-col gap-2'>
                             <p className='text-tinta'><span className='font-semibold text-[#2f7651]'>PIX:</span> R$ {lote.precos.valorPix}</p>
@@ -374,14 +543,19 @@ function PaymentSessionActive({
                     <h3 className='font-semibold text-tinta'>Como deseja pagar?</h3>
                     <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                         <button
-                            onClick={() => setpaymentType("PIX")}
-                            className={`p-4 rounded-xl border-2 font-bold transition-all text-center ${paymentType === "PIX" ? 'border-[#2f7651] bg-[#2f7651]/10 text-[#2f7651]' : 'border-linha bg-white text-muted hover:border-[#2f7651]/40'}`}
+                            type="button"
+                            onClick={() => void handleSelectPix()}
+                            disabled={isCreatingPix || (Boolean(paymentMethodLocked) && paymentMethodLocked !== "PIX")}
+                            aria-busy={isCreatingPix}
+                            className={`p-4 rounded-xl border-2 font-bold transition-all text-center disabled:cursor-not-allowed disabled:opacity-60 ${paymentType === "PIX" ? 'border-[#2f7651] bg-[#2f7651]/10 text-[#2f7651]' : 'border-linha bg-white text-muted hover:border-[#2f7651]/40'}`}
                         >
-                            Pagar com PIX
+                            {isCreatingPix ? 'Preparando PIX...' : 'Pagar com PIX'}
                         </button>
                         <button
+                            type="button"
                             onClick={() => setpaymentType("CREDIT_CARD")}
-                            className={`p-4 rounded-xl border-2 font-bold transition-all text-center ${paymentType === "CREDIT_CARD" ? 'border-goles bg-goles/10 text-goles' : 'border-linha bg-white text-muted hover:border-goles/40'}`}
+                            disabled={hasPixCheckout || (Boolean(paymentMethodLocked) && paymentMethodLocked !== "CREDIT_CARD")}
+                            className={`p-4 rounded-xl border-2 font-bold transition-all text-center disabled:cursor-not-allowed disabled:opacity-60 ${paymentType === "CREDIT_CARD" ? 'border-goles bg-goles/10 text-goles' : 'border-linha bg-white text-muted hover:border-goles/40'}`}
                         >
                             Cartão de Crédito
                         </button>
@@ -393,8 +567,13 @@ function PaymentSessionActive({
                     {paymentType === "PIX" && (
 
                         <div className='flex flex-col items-center justify-center p-8 bg-papel border-2 border-dashed border-linha rounded-xl gap-4'>
+                            {pixError && (
+                                <div className='w-full rounded-lg border border-red-200 bg-red-50 p-3 text-center text-sm text-red-700' role="alert">
+                                    {pixError}
+                                </div>
+                            )}
                             {
-                                paymentConfig.sessaoPagamentoAutomáticoAtiva.pixCode != null ?
+                                paymentSession.pixCode != null ?
                                     <div>
                                         <p className='text-muted font-medium text-center'>Escaneie o QR Code ou copie o código PIX</p>
                                         <div className='w-48 h-48 bg-[var(--cieps-paper)] border border-[var(--cieps-line)] rounded-lg flex items-center justify-center text-[var(--cieps-blue)] font-bold' aria-label="Código PIX disponível para cópia">
@@ -404,14 +583,18 @@ function PaymentSessionActive({
                                             type="button"
                                             className='mt-2 inline-flex items-center justify-center gap-2 px-6 py-2 bg-[var(--cieps-red)] text-white font-medium rounded-lg hover:bg-[#8f2323] transition-colors'
                                             onClick={async () => {
-                                                await navigator.clipboard.writeText(paymentConfig.sessaoPagamentoAutomáticoAtiva.pixCode ?? '');
+                                                await navigator.clipboard.writeText(paymentSession.pixCode ?? '');
                                                 setCopied(true);
                                             }}
                                         >
                                             <Copy size={17} aria-hidden="true" />
                                             {copied ? 'Código copiado' : 'Copiar Código PIX'}
                                         </button>
-                                    </div> :
+                                    </div> : isCreatingPix ?
+                                    <div className='flex flex-col items-center gap-3 py-4 text-center text-muted' role="status" aria-live="polite">
+                                        <Loader2 className='animate-spin text-[#2f7651]' size={28} aria-hidden="true" />
+                                        <p>Preparando sua cobrança PIX segura...</p>
+                                    </div> : paymentSession.paymentUrl ?
                                     <div className='flex flex-col items-center justify-center text-center gap-3 w-full'>
                                         <div className='flex flex-col gap-1'>
                                             <p className='text-[var(--cieps-ink)] font-bold text-lg'>
@@ -426,11 +609,21 @@ function PaymentSessionActive({
                                             type="button"
                                             className='mt-2 inline-flex w-full sm:w-auto items-center justify-center gap-2 px-8 py-3 bg-[#2f7651] text-white font-bold rounded-xl hover:bg-[#245f41] transition-all shadow-md hover:shadow-lg active:scale-95'
                                             onClick={() => {
-                                                window.open(paymentConfig.sessaoPagamentoAutomáticoAtiva.paymentUrl, "_blank");
+                                                window.open(paymentSession.paymentUrl ?? '', "_blank", 'noopener,noreferrer');
                                             }}
                                         >
                                             Ir para pagamento
                                             <ArrowRight size={20} aria-hidden="true" />
+                                        </button>
+                                    </div> :
+                                    <div className='flex flex-col items-center justify-center gap-3 text-center'>
+                                        <p className='text-sm text-muted'>A cobrança PIX ainda não foi criada.</p>
+                                        <button
+                                            type="button"
+                                            className='inline-flex items-center justify-center rounded-lg bg-[#2f7651] px-5 py-2.5 font-bold text-white hover:bg-[#245f41]'
+                                            onClick={() => void handleSelectPix()}
+                                        >
+                                            Tentar novamente
                                         </button>
                                     </div>
                             }
@@ -456,6 +649,79 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
     const [loadingModal, setLoadingModal] = useState<boolean>(false);
     const ticketRequestInFlight = useRef(false);
     const loteAtual = dataPaymentConfig.loteAutomaticoAtual;
+    const [codigoDesconto, setCodigoDesconto] = useState('');
+    const [codigoRastreio, setCodigoRastreio] = useState('');
+    const [codesPreview, setCodesPreview] = useState<PaymentCodesPreview | null>(null);
+    const [codesMessage, setCodesMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
+    const [isPreviewingCodes, setIsPreviewingCodes] = useState(false);
+
+    const hasInformedCodes = Boolean(normalizePaymentCode(codigoDesconto) || normalizePaymentCode(codigoRastreio));
+
+    const resetCodesPreview = () => {
+        setCodesPreview(null);
+        setCodesMessage(null);
+    };
+
+    const clearCodes = () => {
+        setCodigoDesconto('');
+        setCodigoRastreio('');
+        resetCodesPreview();
+    };
+
+    const handlePreviewCodes = async () => {
+        const normalizedDiscountCode = normalizePaymentCode(codigoDesconto);
+        const normalizedTrackingCode = normalizePaymentCode(codigoRastreio);
+
+        if (!normalizedDiscountCode && !normalizedTrackingCode) {
+            setCodesPreview(null);
+            setCodesMessage({ tone: 'error', text: 'Informe um código de desconto ou de rastreio.' });
+            return;
+        }
+        if (!loteAtual) {
+            setCodesMessage({ tone: 'error', text: 'Não foi possível identificar o lote atual.' });
+            return;
+        }
+
+        setIsPreviewingCodes(true);
+        setCodesMessage(null);
+        try {
+            const response = await fetchWithTimeout('/api/payment/codes/preview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    codigoDesconto: normalizedDiscountCode,
+                    codigoRastreio: normalizedTrackingCode,
+                    loteCodigo: loteAtual.codigo,
+                }),
+            }, 15_000);
+            const result = (await response.json().catch(() => ({}))) as Partial<PaymentCodesPreview> & {
+                message?: string;
+            };
+
+            if (!response.ok || !result.codigos || !result.lote || !result.valoresCentavos) {
+                throw new Error(result.message || 'Não foi possível validar os códigos informados.');
+            }
+
+            const preview = result as PaymentCodesPreview;
+            setCodesPreview(preview);
+            if (preview.codigos.desconto) setCodigoDesconto(preview.codigos.desconto.codigo);
+            if (preview.codigos.rastreio) setCodigoRastreio(preview.codigos.rastreio.codigo);
+            setCodesMessage({
+                tone: 'success',
+                text: preview.codigos.desconto
+                    ? `Desconto de ${preview.codigos.desconto.percentualDesconto}% aplicado ao resumo.`
+                    : 'Código de rastreio reconhecido. O valor da inscrição não foi alterado.',
+            });
+        } catch (error) {
+            setCodesPreview(null);
+            setCodesMessage({
+                tone: 'error',
+                text: error instanceof Error ? error.message : 'Não foi possível validar os códigos informados.',
+            });
+        } finally {
+            setIsPreviewingCodes(false);
+        }
+    };
 
     // Estado para guardar os dados do formulário
     const [formData, setFormData] = useState({
@@ -532,6 +798,11 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
         if (ticketRequestInFlight.current) return;
         const novosErros: { [key: string]: string } = {};
 
+        if (hasInformedCodes && !codesPreview) {
+            setCodesMessage({ tone: 'error', text: 'Valide os códigos informados antes de criar a sessão de pagamento.' });
+            return;
+        }
+
         if (!formData.cep.trim()) novosErros.cep = 'O CEP é obrigatório.';
         if (!formData.rua.trim()) novosErros.rua = 'A rua é obrigatória.';
         if (!formData.numero.trim()) novosErros.numero = 'O número é obrigatório.';
@@ -550,7 +821,12 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
             const paymentPostResponse = await fetchWithTimeout(`/api/v1/payment/session/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...formData, loteAtualFrontEnd: loteAtual }),
+                body: JSON.stringify({
+                    ...formData,
+                    loteAtualFrontEnd: loteAtual,
+                    codigoDesconto: normalizePaymentCode(codigoDesconto) || null,
+                    codigoRastreio: normalizePaymentCode(codigoRastreio) || null,
+                }),
             });
             const responseData: { message?: string } = await paymentPostResponse.json().catch(() => ({}));
             if (!paymentPostResponse.ok) {
@@ -597,6 +873,105 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                                         )
                                     }, 30_000)
                                 }
+                                <section className='mt-4 border-t border-linha pt-5' aria-labelledby="payment-codes-title">
+                                    <div className='mb-4'>
+                                        <h2 id="payment-codes-title" className='text-base font-bold text-tinta'>Possui algum código?</h2>
+                                        <p className='mt-1 text-sm text-muted'>O desconto reduz o valor. O rastreio identifica a indicação sem alterar o preço.</p>
+                                    </div>
+
+                                    <div className='grid gap-4 sm:grid-cols-2'>
+                                        <div>
+                                            <label htmlFor="discount-code" className='mb-1 block text-sm font-semibold text-tinta'>Código de desconto</label>
+                                            <input
+                                                id="discount-code"
+                                                type="text"
+                                                value={codigoDesconto}
+                                                maxLength={64}
+                                                autoComplete="off"
+                                                spellCheck={false}
+                                                placeholder="Ex.: C26-H7K9-Q2PX"
+                                                onChange={(event) => {
+                                                    setCodigoDesconto(event.target.value.toLocaleUpperCase('pt-BR'));
+                                                    resetCodesPreview();
+                                                }}
+                                                className='w-full rounded-lg border border-linha bg-white p-3 font-mono text-sm uppercase text-tinta outline-none transition focus:border-goles focus:ring-1 focus:ring-goles'
+                                            />
+                                        </div>
+                                        <div>
+                                            <label htmlFor="tracking-code" className='mb-1 block text-sm font-semibold text-tinta'>Código de rastreio</label>
+                                            <input
+                                                id="tracking-code"
+                                                type="text"
+                                                value={codigoRastreio}
+                                                maxLength={64}
+                                                autoComplete="off"
+                                                spellCheck={false}
+                                                placeholder="Ex.: C26-PARCEIRO-ANA"
+                                                onChange={(event) => {
+                                                    setCodigoRastreio(event.target.value.toLocaleUpperCase('pt-BR'));
+                                                    resetCodesPreview();
+                                                }}
+                                                className='w-full rounded-lg border border-linha bg-white p-3 font-mono text-sm uppercase text-tinta outline-none transition focus:border-goles focus:ring-1 focus:ring-goles'
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className='mt-4 flex flex-wrap gap-3'>
+                                        <button
+                                            type="button"
+                                            onClick={() => void handlePreviewCodes()}
+                                            disabled={isPreviewingCodes || !hasInformedCodes}
+                                            aria-busy={isPreviewingCodes}
+                                            className='inline-flex items-center justify-center gap-2 rounded-lg bg-goles px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[#8f2323] disabled:cursor-not-allowed disabled:opacity-60'
+                                        >
+                                            {isPreviewingCodes && <Loader2 className='animate-spin' size={17} aria-hidden="true" />}
+                                            {isPreviewingCodes ? 'Validando...' : 'Aplicar códigos'}
+                                        </button>
+                                        {(hasInformedCodes || codesPreview) && (
+                                            <button
+                                                type="button"
+                                                onClick={clearCodes}
+                                                disabled={isPreviewingCodes}
+                                                className='rounded-lg border border-linha bg-white px-5 py-2.5 text-sm font-semibold text-muted transition hover:border-goles/40 hover:text-tinta disabled:opacity-60'
+                                            >
+                                                Limpar
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {codesMessage && (
+                                        <div
+                                            className={`mt-4 rounded-lg border p-3 text-sm ${codesMessage.tone === 'success' ? 'border-[#2f7651]/30 bg-[#2f7651]/10 text-[#245f41]' : 'border-red-200 bg-red-50 text-red-700'}`}
+                                            role={codesMessage.tone === 'error' ? 'alert' : 'status'}
+                                            aria-live="polite"
+                                        >
+                                            {codesMessage.text}
+                                        </div>
+                                    )}
+
+                                    {codesPreview && (
+                                        <div className='mt-4 rounded-lg border border-[#2f7651]/25 bg-white p-4' aria-label="Prévia dos códigos aplicados">
+                                            <div className='flex flex-wrap gap-2 text-xs font-semibold'>
+                                                {codesPreview.codigos.desconto && (
+                                                    <span className='rounded-full bg-[#2f7651]/10 px-3 py-1 text-[#245f41]'>
+                                                        {codesPreview.codigos.desconto.codigo} · {codesPreview.codigos.desconto.percentualDesconto}% de desconto
+                                                    </span>
+                                                )}
+                                                {codesPreview.codigos.rastreio && (
+                                                    <span className='rounded-full bg-goles/10 px-3 py-1 text-goles'>
+                                                        Rastreio {codesPreview.codigos.rastreio.codigo}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className='mt-4'>
+                                                <PaymentAmountsSummary
+                                                    amounts={codesPreview.valoresCentavos}
+                                                    methods={dataPaymentConfig.pagamentosAceitos}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </section>
                                 <div className='mt-4 bg-red-50 text-red-600 p-4 rounded-lg border border-red-100 text-center font-medium text-sm'>
                                     Preencha suas informações e você terá 15 minutos para realizar seu pagamento no valor prometido.
                                 </div>
@@ -635,6 +1010,26 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                                     )
                                 })
                             }
+                            {codesPreview && (
+                                <div className='mt-3 rounded-lg border border-[#2f7651]/25 bg-[#2f7651]/10 p-3'>
+                                    <div className='flex flex-wrap gap-2 text-xs font-semibold'>
+                                        {codesPreview.codigos.desconto && (
+                                            <span className='rounded-full bg-white px-2.5 py-1 text-[#245f41]'>
+                                                {codesPreview.codigos.desconto.percentualDesconto}% de desconto
+                                            </span>
+                                        )}
+                                        {codesPreview.codigos.rastreio && (
+                                            <span className='rounded-full bg-white px-2.5 py-1 text-goles'>Rastreio aplicado</span>
+                                        )}
+                                    </div>
+                                    <div className='mt-3'>
+                                        <PaymentAmountsSummary
+                                            amounts={codesPreview.valoresCentavos}
+                                            methods={dataPaymentConfig.pagamentosAceitos}
+                                        />
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className='bg-red-50 text-red-600 p-3 rounded-lg border border-red-100 font-medium text-sm text-center'>
@@ -982,6 +1377,7 @@ const PaymentForm = ({ isModalOpen, onClose, dataPaymentConfig, hydratePage }: {
                         name: '',
                         focus: '',
                     });
+                    void hydratePage();
                     // Feche o modal e faça o que for necessário após o sucesso
                 } catch (error) {
                     const message = error instanceof Error ? error.message : 'Não foi possível processar o cartão.';
