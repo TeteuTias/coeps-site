@@ -680,6 +680,7 @@ export async function POST(request) {
   let payload;
   try {
     payload = await request.json();
+    console.log(payload)
   } catch {
     return Response.json({ error: 'invalid_json' }, { status: 400 });
   }
