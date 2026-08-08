@@ -414,7 +414,6 @@ function PaymentSessionActive({
 
     useEffect(() => {
         const dataExpiracao = new Date(paymentConfig.sessaoPagamentoAutomáticoAtiva.expiresAt).getTime();
-
         const timer = setInterval(() => {
             const agora = new Date().getTime();
             const diferenca = dataExpiracao - agora;
