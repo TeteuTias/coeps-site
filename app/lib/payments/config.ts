@@ -148,7 +148,7 @@ export async function getCurrentAutomaticLot(
         {
             'pagamento.situacao': 1,
             'pagamento.edicaoId': edicaoId,
-            'pagamento.compraId': { $exists: false },
+            // 'pagamento.compraId': { $exists: false },
             'pagamento.tipo_pagamento': { $not: /^organizador$/i },
         },
         { session: mongoSession },
