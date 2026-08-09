@@ -5,7 +5,7 @@ const databaseName = process.env.MONGODB_DB;
 const editionId = (
   process.env.PAYMENT_EDITION_ID || process.env.COEPS_ACTIVE_EDITION_ID
 )?.trim().toUpperCase();
-const configId = process.env.PAYMENT_CONFIG_ID || '66bcfceedc9c7250e85b2ac6';
+const configId = process.env.PAYMENT_CONFIG_ID?.trim();
 
 if (!uri || !databaseName) {
   throw new Error('Defina MONGODB_URI e MONGODB_DB antes de executar a migração.');
@@ -13,8 +13,11 @@ if (!uri || !databaseName) {
 if (!editionId) {
   throw new Error('Defina PAYMENT_EDITION_ID com o identificador da edição atual.');
 }
-if (!ObjectId.isValid(configId)) {
-  throw new Error('PAYMENT_CONFIG_ID não é um ObjectId válido.');
+if (!configId || !ObjectId.isValid(configId)) {
+  throw new Error(
+    'Defina PAYMENT_CONFIG_ID explicitamente com o ObjectId auditado da configuração. ' +
+    'A migração ampla não usa mais um ID legado por padrão.',
+  );
 }
 
 const client = new MongoClient(uri);
@@ -44,10 +47,40 @@ try {
   await client.connect();
   const db = client.db(databaseName);
   const now = new Date();
-  const legacyPaidUsers = await db.collection('usuarios').countDocuments({
+  const unscopedLegacyPaidUsers = await db.collection('usuarios').countDocuments({
     'pagamento.situacao': 1,
+    $or: [
+      { 'pagamento.edicaoId': { $exists: false } },
+      { 'pagamento.edicaoId': null },
+      { 'pagamento.edicaoId': '' },
+    ],
     'pagamento.tipo_pagamento': { $not: /^organizador$/i },
   });
+  if (unscopedLegacyPaidUsers > 0) {
+    throw new Error(
+      `Migra\u00e7\u00e3o bloqueada: ${unscopedLegacyPaidUsers} pagante(s) legado(s) n\u00e3o possuem edicaoId. ` +
+      'Classifique cada pagamento na edi\u00e7\u00e3o correta antes de executar; o script n\u00e3o atribui edi\u00e7\u00e3o por suposi\u00e7\u00e3o.',
+    );
+  }
+  const legacyPaidUsers = await db.collection('usuarios').countDocuments({
+    'pagamento.situacao': 1,
+    'pagamento.edicaoId': editionId,
+    'pagamento.tipo_pagamento': { $not: /^organizador$/i },
+  });
+  for (const [collectionName, path, label] of [
+    ['pagamentos.sessoes', 'installmentPlan.installmentId', 'sessões parceladas'],
+    ['pagamentos.atribuicoes', 'installmentPlan.installmentId', 'atribuições parceladas'],
+  ]) {
+    const duplicates = await db.collection(collectionName).aggregate([
+      { $match: { [path]: { $type: 'string' } } },
+      { $group: { _id: `$${path}`, count: { $sum: 1 } } },
+      { $match: { count: { $gt: 1 } } },
+      { $limit: 1 },
+    ]).toArray();
+    if (duplicates.length) {
+      throw new Error(`Migração bloqueada: existem ${label} com installmentId duplicado.`);
+    }
+  }
   const configObjectId = new ObjectId(configId);
   const targetConfig = await db.collection('ingressos_config').findOne(
     { _id: configObjectId },
@@ -82,14 +115,6 @@ try {
           pagantesLegados: { $exists: false },
         },
         { $set: { pagantesLegados: legacyPaidUsers } },
-        { session: migrationSession },
-      );
-      await db.collection('usuarios').updateMany(
-        {
-          'pagamento.situacao': 1,
-          'pagamento.edicaoId': { $exists: false },
-        },
-        { $set: { 'pagamento.edicaoId': editionId } },
         { session: migrationSession },
       );
     });
@@ -267,16 +292,20 @@ try {
     },
   ]);
 
-  await db.collection('pagamentos.atribuicoes').createIndexes([
+    await db.collection('pagamentos.atribuicoes').createIndexes([
     {
       key: { compraId: 1 },
       name: 'payment_assignment_purchase_unique',
       unique: true,
     },
-    {
-      key: { edicaoId: 1, status: 1, confirmedAt: -1 },
-      name: 'payment_assignment_edition_status',
-    },
+      {
+        key: { edicaoId: 1, status: 1, confirmedAt: -1 },
+        name: 'payment_assignment_edition_status',
+      },
+      {
+        key: { usuarioId: 1, createdAt: -1 },
+        name: 'payment_assignment_user_created',
+      },
     {
       key: { edicaoId: 1, 'codigoDesconto.codigoId': 1, status: 1 },
       name: 'payment_assignment_discount_sales',
@@ -297,6 +326,12 @@ try {
       unique: true,
       partialFilterExpression: { 'pagamento.checkoutId': { $type: 'string' } },
     },
+    {
+      key: { 'installmentPlan.installmentId': 1 },
+      name: 'payment_assignment_installment_unique',
+      unique: true,
+      partialFilterExpression: { 'installmentPlan.installmentId': { $type: 'string' } },
+    },
   ]);
 
   await db.collection('pagamentos.sessoes').createIndexes([
@@ -310,19 +345,41 @@ try {
       key: { edicaoId: 1, status: 1, updatedAt: -1 },
       name: 'payment_session_edition_status',
     },
+    {
+      key: { owner: 1, createdAt: -1 },
+      name: 'payment_session_owner_created',
+    },
+    {
+      key: { 'installmentPlan.installmentId': 1 },
+      name: 'payment_session_installment_unique',
+      unique: true,
+      partialFilterExpression: { 'installmentPlan.installmentId': { $type: 'string' } },
+    },
   ]);
 
-  await db.collection('pagamentos.webhook_eventos').createIndexes([
+  await db.collection('pagamentos.webhook_eventos_v2').createIndexes([
     {
       key: { provider: 1, eventId: 1 },
-      name: 'payment_webhook_event_unique',
+      name: 'payment_webhook_event_v2_unique',
       unique: true,
     },
     {
-      key: { processedAt: 1 },
-      name: 'payment_webhook_processed_ttl_90d',
-      expireAfterSeconds: 90 * 24 * 60 * 60,
-      partialFilterExpression: { status: 'PROCESSED' },
+      key: { status: 1, nextAttemptAt: 1, leaseUntil: 1, receivedAt: 1 },
+      name: 'payment_webhook_event_v2_work_queue',
+    },
+    {
+      key: { purchaseId: 1, status: 1, receivedAt: -1 },
+      name: 'payment_webhook_event_v2_purchase_status',
+    },
+    {
+      key: { installmentId: 1, status: 1, receivedAt: -1 },
+      name: 'payment_webhook_event_v2_installment_status',
+      partialFilterExpression: { installmentId: { $type: 'string' } },
+    },
+    {
+      key: { expiresAt: 1 },
+      name: 'payment_webhook_event_v2_ttl',
+      expireAfterSeconds: 0,
     },
   ]);
 

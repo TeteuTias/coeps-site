@@ -330,8 +330,8 @@ export async function releaseDiscountReservation(
     db: Db,
     compraId: ObjectId,
     mongoSession?: ClientSession,
-): Promise<void> {
-    await db.collection(PAYMENT_CODES_COLLECTION).updateOne(
+): Promise<boolean> {
+    const result = await db.collection(PAYMENT_CODES_COLLECTION).updateOne(
         {
             tipo: 'DESCONTO',
             status: 'RESERVADO',
@@ -346,6 +346,7 @@ export async function releaseDiscountReservation(
         },
         { session: mongoSession },
     );
+    return result.matchedCount === 1;
 }
 
 export async function consumeDiscountCode(
@@ -463,7 +464,7 @@ export async function updateUserRegistrationAfterRefund(
 
     if (otherConfirmed) {
         await db.collection('usuarios').updateOne(
-            { _id: usuarioId },
+            { _id: usuarioId, 'pagamento.compraId': refundedPurchaseId },
             {
                 $set: {
                     'pagamento.situacao': 1,
@@ -477,7 +478,7 @@ export async function updateUserRegistrationAfterRefund(
     }
 
     await db.collection('usuarios').updateOne(
-        { _id: usuarioId },
+        { _id: usuarioId, 'pagamento.compraId': refundedPurchaseId },
         {
             $set: {
                 'pagamento.situacao': 0,
@@ -495,7 +496,7 @@ export async function updatePaymentAssignment(
     status: PaymentAssignmentStatus,
     payment?: PaymentAssignmentDocument['pagamento'],
     mongoSession?: ClientSession,
-): Promise<void> {
+): Promise<boolean> {
     const now = new Date();
     const set: Record<string, unknown> = {
         status,
@@ -514,9 +515,10 @@ export async function updatePaymentAssignment(
         set.confirmedAt = now;
     }
 
-    await db
+    const result = await db
         .collection(PAYMENT_ASSIGNMENTS_COLLECTION)
         .updateOne({ compraId }, { $set: set }, { session: mongoSession });
+    return result.matchedCount === 1;
 }
 
 export async function cancelPaymentAfterLostDiscountReservation(

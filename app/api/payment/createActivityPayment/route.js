@@ -3,6 +3,8 @@ import { withApiAuthRequired } from '@/lib/auth0-compat';
 import { getSession } from '@/lib/auth0-compat';
 import { connectToDatabase } from '@/app/lib/mongodb';
 import { DateTime } from "luxon"
+import { asaasRequestHeaders } from '@/lib/payments/asaas';
+import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
 //
 //
 //
@@ -10,6 +12,7 @@ import { DateTime } from "luxon"
 //
 /** @type {any} */
 export const POST = withApiAuthRequired(async function POST(request) {
+    if (!isPaymentSalesEnabled()) return paymentSalesPausedResponse();
     try {
         // Verificando se ele está logado
         // 
@@ -164,11 +167,11 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
         const options = {
             method: 'POST',
-            headers: {
-                accept: 'application/json',
-                'content-type': 'application/json',
-                access_token: ASAAS_API_KEY
-            },
+            headers: asaasRequestHeaders(ASAAS_API_KEY, {
+                json: true,
+                apiUrl: process.env.ASAAS_API_URL,
+            }),
+            signal: AbortSignal.timeout(10_000),
             body: JSON.stringify({
                 billingType: 'PIX',
                 discount: { value: desconto },

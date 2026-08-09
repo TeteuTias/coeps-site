@@ -1,0 +1,28 @@
+name: Payment reconciliation
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: payment-reconciliation-production
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Call reconciliation endpoint
+        env:
+          PAYMENT_RECONCILIATION_URL: ${{ secrets.PAYMENT_RECONCILIATION_URL }}
+          PAYMENT_RECONCILIATION_BEARER: ${{ secrets.PAYMENT_RECONCILIATION_BEARER }}
+        run: |
+          test -n "$PAYMENT_RECONCILIATION_URL"
+          test -n "$PAYMENT_RECONCILIATION_BEARER"
+          curl --fail-with-body --silent --show-error \
+            --max-time 120 \
+            --request POST \
+            --header "Authorization: Bearer $PAYMENT_RECONCILIATION_BEARER" \
+            "$PAYMENT_RECONCILIATION_URL"

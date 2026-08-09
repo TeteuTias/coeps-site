@@ -11,8 +11,11 @@ import {
 } from '@/lib/payments/codes';
 import { runPaymentTransaction } from '@/lib/payments/transactions';
 import { isPaymentMethodAllowedForSession } from '@/lib/payments/config';
+import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
+import { asaasRequestHeaders, isAsaasRetryableStatus } from '@/lib/payments/asaas';
 
 export const POST = withApiAuthRequired(async function POST(request: Request) {
+    if (!isPaymentSalesEnabled()) return paymentSalesPausedResponse();
     try {
         const userId = await getUserId(request);
         const body = await request.json();
@@ -178,11 +181,8 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
         try {
             gatewayResponse = await fetch(`${apiUrl}/checkouts`, {
                 method: 'POST',
-                headers: {
-                    accept: 'application/json',
-                    'content-type': 'application/json',
-                    access_token: apiKey,
-                },
+                headers: asaasRequestHeaders(apiKey, { json: true, apiUrl }),
+                signal: AbortSignal.timeout(10_000),
                 body: JSON.stringify(checkoutRequest),
             });
         } catch (error) {
@@ -207,7 +207,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
 
         const gatewayBody = await gatewayResponse.json().catch(() => ({}));
         if (!gatewayResponse.ok) {
-            if (gatewayResponse.status >= 500) {
+            if (isAsaasRetryableStatus(gatewayResponse.status)) {
                 await db.collection('pagamentos.sessoes').updateOne(
                     { _id: sessionId, status: 'CREATING_PAYMENT' },
                     {
@@ -236,7 +236,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                         gatewayBody?.errors?.[0]?.description ||
                         'Não foi possível criar o checkout PIX.',
                 },
-                { status: gatewayResponse.status >= 500 ? 503 : 422 },
+                    { status: isAsaasRetryableStatus(gatewayResponse.status) ? 503 : 422 },
             );
         }
 
@@ -278,19 +278,23 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                     throw new Error('A sessão PIX mudou durante a criação da cobrança.');
                 }
 
-                await db.collection('usuarios').updateOne(
+                const userUpdate = await db.collection('usuarios').updateOne(
                 { _id: owner, 'pagamento.situacao': { $ne: 1 } },
                 { $set: { 'pagamento.situacao': 2 } },
                 { session: mongoSession },
                 );
-                await updatePaymentAssignment(
+                if (userUpdate.matchedCount !== 1) {
+                    throw new Error('PAYMENT_SESSION_OWNER_UPDATE_FAILED');
+                }
+                const assignmentUpdated = await updatePaymentAssignment(
                     db,
                     sessionId,
                     'PAGAMENTO_PENDENTE',
                     { metodo: 'PIX', checkoutId: gatewayBody.id },
                     mongoSession,
                 );
-                await db.collection('pagamentos.atribuicoes').updateOne(
+                if (!assignmentUpdated) throw new Error('PAYMENT_ASSIGNMENT_UPDATE_FAILED');
+                const assignmentValuesUpdate = await db.collection('pagamentos.atribuicoes').updateOne(
                     { compraId: sessionId },
                     {
                         $set: {
@@ -303,6 +307,9 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                     },
                     { session: mongoSession },
                 );
+                if (assignmentValuesUpdate.matchedCount !== 1) {
+                    throw new Error('PAYMENT_ASSIGNMENT_VALUES_UPDATE_FAILED');
+                }
             });
         } catch (transactionError) {
             await db.collection('pagamentos.sessoes').updateOne(

@@ -1,7 +1,7 @@
 'use client'
 import { useUser } from "@/lib/auth0-client"
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import TelaLoading from "@/app/components/TelaLoading";
 import PaginaErrorPadrao from "@/app/components/PaginaErrorPadrao";
 import { Button, Modal, StatusBanner } from "@/app/components/cieps";
@@ -171,7 +171,7 @@ export default function UpdateData() {
             {
                 openLgpd &&
                 <LgpdModal
-                    open={() => { setOpenLgdp(true) }}
+                    open={openLgpd}
                     onClose={() => { setOpenLgdp(false) }}
                     onConfirm={async () => {
                         setIsLoadingForms(true)
@@ -211,7 +211,7 @@ export default function UpdateData() {
                         }
                         router.push('/pagamentos')
                     }} // ………………
-                    isLoading={() => { }}
+                    isLoading={Boolean(isLoadingForms)}
                 />}
             <AvisoModal texto={avisoErro} handler={handleChangeAvisoErro} />
             {
@@ -414,11 +414,6 @@ const InputComponent = ({ type_text = "text", placeholder, value, onChange, aria
 function LgpdModal({ open, onClose, onConfirm, isLoading }) {
     const [agreed, setAgreed] = useState(false);
 
-    // Reseta o checkbox toda vez que o modal abre
-    useEffect(() => {
-        if (open) setAgreed(false);
-    }, [open]);
-
     if (!open) return null;
 
     return (
@@ -498,6 +493,7 @@ function LgpdModal({ open, onClose, onConfirm, isLoading }) {
                     </Button>
                     <Button
                         onClick={onConfirm}
+                        disabled={!agreed || Boolean(isLoading)}
                         className={`w-full sm:w-auto ${!agreed ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                         Finalizar Cadastro

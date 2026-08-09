@@ -23,8 +23,10 @@ import {
 import { applyDiscountToLot } from '@/lib/payments/prices';
 import { toPublicPaymentSession } from '@/lib/payments/public-session';
 import { runPaymentTransaction } from '@/lib/payments/transactions';
+import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
 
 export const POST = withApiAuthRequired(async function POST(request: Request) {
+    if (!isPaymentSalesEnabled()) return paymentSalesPausedResponse();
     let reservedPurchaseId: ObjectId | null = null;
 
     try {

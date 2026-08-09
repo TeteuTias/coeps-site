@@ -11,6 +11,8 @@ import {
 } from '@/lib/payments/codes';
 import { runPaymentTransaction } from '@/lib/payments/transactions';
 import { isPaymentMethodAllowedForSession } from '@/lib/payments/config';
+import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
+import { asaasRequestHeaders, isAsaasRetryableStatus } from '@/lib/payments/asaas';
 
 function formatDate(date: Date): string {
     const year = date.getFullYear();
@@ -40,7 +42,37 @@ function paymentHistoryEntry(payment: Record<string, unknown>, userId: string, d
     };
 }
 
+function gatewayResponseMatchesAdvancedSession(
+    paymentSession: Record<string, any> | null,
+    gatewayResponse: Record<string, any>,
+    installmentCount: number,
+): boolean {
+    if (
+        !paymentSession ||
+        !['PAYMENT_PENDING', 'CONFIRMED', 'PAYMENT_REVIEW_REQUIRED', 'REFUNDED'].includes(
+            String(paymentSession.status),
+        ) ||
+        paymentSession.metodoPagamento !== 'CREDIT_CARD'
+    ) {
+        return false;
+    }
+    if (installmentCount > 1) {
+        return Boolean(
+            gatewayResponse.installment &&
+            paymentSession.installmentPlan?.installmentId &&
+            String(gatewayResponse.installment) ===
+                String(paymentSession.installmentPlan.installmentId),
+        );
+    }
+    return Boolean(
+        gatewayResponse.id &&
+        paymentSession.paymentId &&
+        String(gatewayResponse.id) === String(paymentSession.paymentId),
+    );
+}
+
 export const POST = withApiAuthRequired(async function POST(request: Request) {
+    if (!isPaymentSalesEnabled()) return paymentSalesPausedResponse();
     try {
         const userId = await getUserId(request);
         const data = await request.json();
@@ -188,10 +220,66 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             (installment) => Number(installment.codigo) === Number(data.idPagamento),
         );
         const finalCents = Math.round(totalValue * 100);
+        const installmentValueCentavos = Math.round(
+            Number(selectedInstallment.valorCadaParcela) * 100,
+        );
         const originalCents = originalInstallment
             ? Math.round(Number(originalInstallment.valorCadaParcela) * 100) *
               Number(originalInstallment.totalParcelas)
             : finalCents;
+        const selectedValueSnapshot = {
+            original: originalCents,
+            desconto: originalCents - finalCents,
+            final: finalCents,
+        };
+        const provisionalInstallmentPlan = installmentCount > 1
+            ? {
+                installmentId: null,
+                count: installmentCount,
+                totalValueCentavos: finalCents,
+                installmentValueCentavos,
+                observedPayments: [],
+            }
+            : null;
+
+        await runPaymentTransaction(client, async (mongoSession) => {
+            const sessionPreparation = await db.collection('pagamentos.sessoes').updateOne(
+                { _id: sessionId, owner, status: 'CREATING_PAYMENT' },
+                {
+                    $set: {
+                        selectedInstallmentCode: selectedInstallment.codigo,
+                        valorSelecionadoCentavos: selectedValueSnapshot,
+                        ...(provisionalInstallmentPlan
+                            ? { installmentPlan: provisionalInstallmentPlan }
+                            : {}),
+                        updatedAt: new Date(),
+                    },
+                    ...(provisionalInstallmentPlan
+                        ? {}
+                        : { $unset: { installmentPlan: '' } }),
+                },
+                { session: mongoSession },
+            );
+            const assignmentPreparation = await db.collection('pagamentos.atribuicoes').updateOne(
+                { compraId: sessionId, usuarioId: owner },
+                {
+                    $set: {
+                        valorSelecionadoCentavos: selectedValueSnapshot,
+                        ...(provisionalInstallmentPlan
+                            ? { installmentPlan: provisionalInstallmentPlan }
+                            : {}),
+                        updatedAt: new Date(),
+                    },
+                    ...(provisionalInstallmentPlan
+                        ? {}
+                        : { $unset: { installmentPlan: '' } }),
+                },
+                { session: mongoSession },
+            );
+            if (sessionPreparation.matchedCount !== 1 || assignmentPreparation.matchedCount !== 1) {
+                throw new Error('PAYMENT_INSTALLMENT_PREPARATION_FAILED');
+            }
+        });
         const requestBody: Record<string, unknown> = {
             customer: user.id_api,
             billingType: 'CREDIT_CARD',
@@ -244,11 +332,8 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
         try {
             gatewayResponse = await fetch(`${apiUrl}/payments`, {
                 method: 'POST',
-                headers: {
-                    accept: 'application/json',
-                    'content-type': 'application/json',
-                    access_token: apiKey,
-                },
+                headers: asaasRequestHeaders(apiKey, { json: true, apiUrl }),
+                signal: AbortSignal.timeout(10_000),
                 body: JSON.stringify(requestBody),
             });
         } catch (error) {
@@ -268,7 +353,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
 
         const responseBody = await gatewayResponse.json().catch(() => ({}));
         if (!gatewayResponse.ok) {
-            if (gatewayResponse.status >= 500) {
+            if (isAsaasRetryableStatus(gatewayResponse.status)) {
                 await db.collection('pagamentos.sessoes').updateOne(
                     { _id: sessionId, status: 'CREATING_PAYMENT' },
                     { $set: { gatewayState: 'RECONCILIATION_REQUIRED', updatedAt: new Date() } },
@@ -292,11 +377,11 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                         responseBody?.errors?.[0]?.description ||
                         'Não foi possível criar a cobrança.',
                 },
-                { status: gatewayResponse.status >= 500 ? 503 : 422 },
+                    { status: isAsaasRetryableStatus(gatewayResponse.status) ? 503 : 422 },
             );
         }
 
-        if (!responseBody?.id) {
+        if (!responseBody?.id || (installmentCount > 1 && !responseBody?.installment)) {
             await db.collection('pagamentos.sessoes').updateOne(
                 { _id: sessionId, status: 'CREATING_PAYMENT' },
                 {
@@ -312,8 +397,49 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             );
         }
 
+        const installmentPlan = installmentCount > 1
+            ? {
+                installmentId: String(responseBody.installment),
+                count: installmentCount,
+                totalValueCentavos: finalCents,
+                installmentValueCentavos,
+                observedPayments: [{
+                    paymentId: String(responseBody.id),
+                    invoiceNumber: responseBody.invoiceNumber
+                        ? String(responseBody.invoiceNumber)
+                        : null,
+                    installmentNumber: Number(responseBody.installmentNumber || 1),
+                    status: String(responseBody.status || 'PENDING'),
+                    value: installmentValueCentavos / 100,
+                    valueCentavos: installmentValueCentavos,
+                    lastEvent: 'PAYMENT_CREATED',
+                    lastEventId: null,
+                    observedAt: new Date(),
+                }],
+            }
+            : null;
+
         try {
             await runPaymentTransaction(client, async (mongoSession) => {
+                const currentInstallmentPlan = installmentPlan
+                    ? await db.collection('pagamentos.sessoes').findOne(
+                        { _id: sessionId },
+                        { projection: { installmentPlan: 1 }, session: mongoSession },
+                    )
+                    : null;
+                const installmentPlanForCommit = installmentPlan
+                    ? {
+                        ...installmentPlan,
+                        observedPayments: [
+                            ...(Array.isArray(currentInstallmentPlan?.installmentPlan?.observedPayments)
+                                ? currentInstallmentPlan.installmentPlan.observedPayments.filter(
+                                    (item) => String(item?.paymentId || '') !== String(responseBody.id),
+                                )
+                                : []),
+                            ...installmentPlan.observedPayments,
+                        ],
+                    }
+                    : null;
                 const sessionUpdate = await db.collection('pagamentos.sessoes').updateOne(
                 { _id: sessionId, status: 'CREATING_PAYMENT' },
                 {
@@ -324,6 +450,9 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                         invoiceNumber: responseBody.invoiceNumber,
                         paymentUrl: responseBody.invoiceUrl || null,
                         selectedInstallmentCode: selectedInstallment.codigo,
+                        ...(installmentPlanForCommit
+                            ? { installmentPlan: installmentPlanForCommit }
+                            : {}),
                         updatedAt: new Date(),
                     },
                 },
@@ -333,7 +462,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                     throw new Error('A sessão de cartão mudou durante a criação da cobrança.');
                 }
 
-                await db.collection('usuarios').updateOne(
+                const userUpdate = await db.collection('usuarios').updateOne(
                 { _id: owner },
                 {
                     $push: {
@@ -347,7 +476,10 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                 },
                 { session: mongoSession },
                 );
-                await updatePaymentAssignment(
+                if (userUpdate.matchedCount !== 1) {
+                    throw new Error('PAYMENT_SESSION_OWNER_UPDATE_FAILED');
+                }
+                const assignmentUpdated = await updatePaymentAssignment(
                     db,
                     sessionId,
                     'PAGAMENTO_PENDENTE',
@@ -358,21 +490,59 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                     },
                     mongoSession,
                 );
-                await db.collection('pagamentos.atribuicoes').updateOne(
+                if (!assignmentUpdated) throw new Error('PAYMENT_ASSIGNMENT_UPDATE_FAILED');
+                const assignmentValuesUpdate = await db.collection('pagamentos.atribuicoes').updateOne(
                     { compraId: sessionId },
                     {
                         $set: {
-                            valorSelecionadoCentavos: {
-                                original: originalCents,
-                                desconto: originalCents - finalCents,
-                                final: finalCents,
-                            },
+                            valorSelecionadoCentavos: selectedValueSnapshot,
+                            ...(installmentPlanForCommit
+                                ? { installmentPlan: installmentPlanForCommit }
+                                : {}),
                         },
                     },
                     { session: mongoSession },
                 );
+                if (assignmentValuesUpdate.matchedCount !== 1) {
+                    throw new Error('PAYMENT_ASSIGNMENT_VALUES_UPDATE_FAILED');
+                }
             });
         } catch (transactionError) {
+            const advancedSession = await db.collection('pagamentos.sessoes').findOne(
+                { _id: sessionId, owner },
+                {
+                    projection: {
+                        status: 1,
+                        metodoPagamento: 1,
+                        paymentId: 1,
+                        paymentUrl: 1,
+                        installmentPlan: 1,
+                    },
+                },
+            );
+            if (gatewayResponseMatchesAdvancedSession(
+                advancedSession,
+                responseBody,
+                installmentCount,
+            )) {
+                await db.collection('pagamentos.sessoes').updateOne(
+                    { _id: sessionId, owner },
+                    {
+                        $set: {
+                            paymentUrl: responseBody.invoiceUrl || advancedSession?.paymentUrl || null,
+                            selectedInstallmentCode: selectedInstallment.codigo,
+                            updatedAt: new Date(),
+                        },
+                    },
+                );
+                return NextResponse.json(
+                    {
+                        success: true,
+                        message: 'A cobrança foi criada e o pagamento já está sendo processado.',
+                    },
+                    { status: 200 },
+                );
+            }
             await db.collection('pagamentos.sessoes').updateOne(
                 { _id: sessionId, status: 'CREATING_PAYMENT' },
                 {
