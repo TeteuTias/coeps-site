@@ -469,8 +469,7 @@ function PaymentSessionActive({
                     handleIsModalError={(value: string | false) => {
                         setTextError(false)
                         void hydratePage()
-                    }
-                    }
+                    }}
                 />
             )}
 
@@ -645,6 +644,7 @@ function PaymentSessionActive({
 }
 //
 function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: PaymentConfigView; hydratePage: () => void }) {
+    const [actionModalError, setActionModalError] = useState<(() => void | undefined)>(undefined);
     const [step, setStep] = useState(0);
     const [textoModal, setTextoModal] = useState<string | false>(false);
     const [loadingModal, setLoadingModal] = useState<boolean>(false);
@@ -835,6 +835,8 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
             }
             await hydratePage();
         } catch (error) {
+            // …………
+            setActionModalError(() => window.location.reload())
             setTextoModal(error instanceof Error ? error.message : "Ocorreu um erro ao processar seu pagamento.");
         } finally {
             ticketRequestInFlight.current = false;
@@ -845,7 +847,7 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
     return (
         <div className='pagamentos-main'>
             {loadingModal && <LoadingModal />}
-            {textoModal && <ModalError texto={textoModal} handleIsModalError={(value) => setTextoModal(value)} />}
+            {textoModal && <ModalError texto={textoModal} handleIsModalError={(value) => setTextoModal(value)} action={actionModalError} />}
 
             {/* ETAPA 0: INFORMAÇÕES E VALORES INICIAIS */}
             {step === 0 && (
@@ -1224,7 +1226,6 @@ const LoadingScreen = () => {
                                 <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--cieps-red)]"></span>
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -1242,11 +1243,14 @@ const LoadingModal = () => {
 };
 
 // Componente de erro (mantido do código original)
-const ModalError = ({ texto, handleIsModalError }: { texto: string; handleIsModalError: (value: string | false) => void }) => {
+const ModalError = ({ texto, handleIsModalError, action }: { texto: string; handleIsModalError: (value: string | false) => void, action?: () => void }) => {
     return (
         <Modal open onClose={() => handleIsModalError(false)} title="Não foi possível concluir">
             <StatusBanner tone="error" title="O pagamento não foi processado">{texto}</StatusBanner>
-            <Button className="mt-5" full onClick={() => handleIsModalError(false)}>Entendi</Button>
+            <Button className="mt-5" full onClick={() => {
+                handleIsModalError(false);
+                action?.();
+            }}>Entendi</Button>
         </Modal>
     );
 };

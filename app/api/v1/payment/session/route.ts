@@ -178,7 +178,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             return NextResponse.json(
                 {
                     error: 'payment_lot_changed',
-                    message: 'O lote vigente foi atualizado. Recarregue os valores.',
+                    message: 'O lote vigente foi atualizado. Clique no botão abaixo para recarregar os valores.',
                     loteVigente: currentLot,
                 },
                 { status: 409 },
