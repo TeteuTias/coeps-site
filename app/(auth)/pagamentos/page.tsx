@@ -553,7 +553,9 @@ function PaymentSessionActive({
                         <button
                             type="button"
                             onClick={() => setpaymentType("CREDIT_CARD")}
-                            disabled={hasPixCheckout || (Boolean(paymentMethodLocked) && paymentMethodLocked !== "CREDIT_CARD")}
+                            disabled={
+                                paymentConfig.pagamentosAceitos?.indexOf("CREDIT_CARD") === -1
+                            }
                             className={`p-4 rounded-xl border-2 font-bold transition-all text-center disabled:cursor-not-allowed disabled:opacity-60 ${paymentType === "CREDIT_CARD" ? 'border-goles bg-goles/10 text-goles' : 'border-linha bg-white text-muted hover:border-goles/40'}`}
                         >
                             Cartão de Crédito
@@ -590,41 +592,41 @@ function PaymentSessionActive({
                                             {copied ? 'Código copiado' : 'Copiar Código PIX'}
                                         </button>
                                     </div> : isCreatingPix ?
-                                    <div className='flex flex-col items-center gap-3 py-4 text-center text-muted' role="status" aria-live="polite">
-                                        <Loader2 className='animate-spin text-[#2f7651]' size={28} aria-hidden="true" />
-                                        <p>Preparando sua cobrança PIX segura...</p>
-                                    </div> : paymentSession.paymentUrl ?
-                                    <div className='flex flex-col items-center justify-center text-center gap-3 w-full'>
-                                        <div className='flex flex-col gap-1'>
-                                            <p className='text-[var(--cieps-ink)] font-bold text-lg'>
-                                                Seu ambiente de pagamento está pronto!
-                                            </p>
-                                            <p className='text-[var(--cieps-muted)] text-sm max-w-sm'>
-                                                Clique no botão abaixo para acessar a página segura e concluir sua transação.
-                                            </p>
-                                        </div>
+                                        <div className='flex flex-col items-center gap-3 py-4 text-center text-muted' role="status" aria-live="polite">
+                                            <Loader2 className='animate-spin text-[#2f7651]' size={28} aria-hidden="true" />
+                                            <p>Preparando sua cobrança PIX segura...</p>
+                                        </div> : paymentSession.paymentUrl ?
+                                            <div className='flex flex-col items-center justify-center text-center gap-3 w-full'>
+                                                <div className='flex flex-col gap-1'>
+                                                    <p className='text-[var(--cieps-ink)] font-bold text-lg'>
+                                                        Seu ambiente de pagamento está pronto!
+                                                    </p>
+                                                    <p className='text-[var(--cieps-muted)] text-sm max-w-sm'>
+                                                        Clique no botão abaixo para acessar a página segura e concluir sua transação.
+                                                    </p>
+                                                </div>
 
-                                        <button
-                                            type="button"
-                                            className='mt-2 inline-flex w-full sm:w-auto items-center justify-center gap-2 px-8 py-3 bg-[#2f7651] text-white font-bold rounded-xl hover:bg-[#245f41] transition-all shadow-md hover:shadow-lg active:scale-95'
-                                            onClick={() => {
-                                                window.open(paymentSession.paymentUrl ?? '', "_blank", 'noopener,noreferrer');
-                                            }}
-                                        >
-                                            Ir para pagamento
-                                            <ArrowRight size={20} aria-hidden="true" />
-                                        </button>
-                                    </div> :
-                                    <div className='flex flex-col items-center justify-center gap-3 text-center'>
-                                        <p className='text-sm text-muted'>A cobrança PIX ainda não foi criada.</p>
-                                        <button
-                                            type="button"
-                                            className='inline-flex items-center justify-center rounded-lg bg-[#2f7651] px-5 py-2.5 font-bold text-white hover:bg-[#245f41]'
-                                            onClick={() => void handleSelectPix()}
-                                        >
-                                            Tentar novamente
-                                        </button>
-                                    </div>
+                                                <button
+                                                    type="button"
+                                                    className='mt-2 inline-flex w-full sm:w-auto items-center justify-center gap-2 px-8 py-3 bg-[#2f7651] text-white font-bold rounded-xl hover:bg-[#245f41] transition-all shadow-md hover:shadow-lg active:scale-95'
+                                                    onClick={() => {
+                                                        window.open(paymentSession.paymentUrl ?? '', "_blank", 'noopener,noreferrer');
+                                                    }}
+                                                >
+                                                    Ir para pagamento
+                                                    <ArrowRight size={20} aria-hidden="true" />
+                                                </button>
+                                            </div> :
+                                            <div className='flex flex-col items-center justify-center gap-3 text-center'>
+                                                <p className='text-sm text-muted'>A cobrança PIX ainda não foi criada.</p>
+                                                <button
+                                                    type="button"
+                                                    className='inline-flex items-center justify-center rounded-lg bg-[#2f7651] px-5 py-2.5 font-bold text-white hover:bg-[#245f41]'
+                                                    onClick={() => void handleSelectPix()}
+                                                >
+                                                    Tentar novamente
+                                                </button>
+                                            </div>
                             }
                         </div>
                     )}
