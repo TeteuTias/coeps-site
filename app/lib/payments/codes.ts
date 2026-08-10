@@ -61,17 +61,17 @@ export async function enforcePaymentCodePreviewRateLimit(
     const attempt = await db
         .collection<PaymentCodeAttemptDocument>(PAYMENT_CODE_ATTEMPTS_COLLECTION)
         .findOneAndUpdate(
-        { _id: key },
-        {
-            $inc: { count: 1 },
-            $setOnInsert: {
-                userId,
-                windowStartedAt: new Date(minuteWindow * 60_000),
-                expiresAt: new Date(now.getTime() + 10 * 60_000),
+            { _id: key },
+            {
+                $inc: { count: 1 },
+                $setOnInsert: {
+                    userId,
+                    windowStartedAt: new Date(minuteWindow * 60_000),
+                    expiresAt: new Date(now.getTime() + 10 * 60_000),
+                },
             },
-        },
-        { upsert: true, returnDocument: 'after' },
-    );
+            { upsert: true, returnDocument: 'after' },
+        );
 
     if (Number(attempt?.count ?? 0) > 10) {
         throw new PaymentCodeError(
@@ -565,7 +565,7 @@ export async function expireOpenSessionsForOwner(
             owner,
             type: 'ticket',
             ...(edicaoId ? { edicaoId } : {}),
-            status: 'OPEN',
+            status: { $in: ['OPEN', 'PAYMENT_PENDING'] },
             expiresAt: { $lte: now },
         })
         .project<{ _id: ObjectId }>({ _id: 1 })
@@ -573,7 +573,7 @@ export async function expireOpenSessionsForOwner(
 
     for (const session of expiredSessions) {
         const result = await db.collection('pagamentos.sessoes').updateOne(
-            { _id: session._id, status: 'OPEN' },
+            { _id: session._id, status: { $in: ['OPEN', 'PAYMENT_PENDING'] } },
             {
                 $set: { status: 'EXPIRED', updatedAt: now },
                 $unset: { activeKey: '' },
