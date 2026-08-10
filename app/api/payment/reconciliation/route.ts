@@ -9,6 +9,10 @@ import {
 } from '../../../lib/payments/codes.ts';
 import { runPaymentTransaction } from '../../../lib/payments/transactions.ts';
 import {
+    requestCheckoutCancellation,
+    switchPixSessionToCreditCard,
+} from '../../../lib/payments/pix-switch.ts';
+import {
     cancellationEligibleAtForDelinquency,
     gatewayDeletionWasConfirmed,
     getPaymentOverdueGraceDays,
@@ -371,6 +375,27 @@ export async function POST(request: Request) {
 
         try {
 
+        if (
+            lease.paymentMethodSwitch?.target === 'CREDIT_CARD' &&
+            ['CANCELLING', 'RETRYABLE'].includes(String(lease.paymentMethodSwitch?.status || ''))
+        ) {
+            const switchResult = await switchPixSessionToCreditCard({
+                db,
+                client,
+                owner: lease.owner as ObjectId,
+                sessionId: lease._id as ObjectId,
+                apiUrl,
+                apiKey,
+            });
+            await db.collection('pagamentos.sessoes').updateOne(
+                { _id: lease._id },
+                { $unset: { reconciliationLeaseUntil: '' } },
+            );
+            if (switchResult.kind === 'completed') counters.recovered += 1;
+            else counters.pending += 1;
+            continue;
+        }
+
         if (lease.installmentPlan?.installmentId) {
             const lookup = await lookupInstallmentPayments(apiUrl, apiKey, lease);
             if (!lookup.conclusive) {
@@ -707,6 +732,29 @@ export async function POST(request: Request) {
                 Number(checkedPending.reconciliationEmptyChecks || 0) >= 2 &&
                 now.getTime() >= safeCancellationTime
             ) {
+                if (checkedPending.orderId) {
+                    const checkoutCancellation = await requestCheckoutCancellation(
+                        apiUrl,
+                        apiKey,
+                        String(checkedPending.orderId),
+                    );
+                    if (!checkoutCancellation.confirmed) {
+                        await db.collection('pagamentos.sessoes').updateOne(
+                            { _id: checkedPending._id },
+                            {
+                                $set: {
+                                    gatewayState: 'CHECKOUT_CANCELLATION_UNCONFIRMED',
+                                    reconciliationReason: 'CHECKOUT_CANCELLATION_UNCONFIRMED',
+                                    reviewRequiredAt: new Date(),
+                                    gatewayCancellationLastStatus: checkoutCancellation.status,
+                                    updatedAt: new Date(),
+                                },
+                            },
+                        );
+                        counters.pending += 1;
+                        continue;
+                    }
+                }
                 if (
                     await cancelUnpaidSession(
                         db,

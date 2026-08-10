@@ -7,6 +7,7 @@ import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { runPaymentTransaction } from '../../transactions.ts';
 import { findLegacyPaymentContext } from '../../webhook-legacy.ts';
 import { updateUserRegistrationAfterRefund } from '../../codes.ts';
+import { switchPixSessionToCreditCard } from '../../pix-switch.ts';
 import {
     CUSTOMER_PROVISIONING_COLLECTION,
     ensureAsaasCustomer,
@@ -792,6 +793,139 @@ test('handler recusa webhook sem configuracao ou token e aceita somente o header
         if (previousRoot === undefined) delete process.env.PAYMENT_RECONCILIATION_SECRET;
         else process.env.PAYMENT_RECONCILIATION_SECRET = previousRoot;
     }
+});
+
+test('troca PIX cancelada no Asaas cria uma unica sessao de cartao e transfere a reserva', async () => {
+    const db = client.db('webhook_tests');
+    const owner = new ObjectId();
+    const purchaseId = new ObjectId();
+    const codeId = new ObjectId();
+    const values = {
+        original: { PIX: 500, CREDIT_CARD: 500, BOLETO: 500, DEBIT_CARD: 500 },
+        desconto: { PIX: 100, CREDIT_CARD: 100, BOLETO: 100, DEBIT_CARD: 100 },
+        final: { PIX: 400, CREDIT_CARD: 400, BOLETO: 400, DEBIT_CARD: 400 },
+    };
+    const discount = { codigoId: codeId, codigo: 'TESTE', codigoNormalizado: 'TESTE', tipo: 'DESCONTO', percentualDesconto: 20 };
+    await Promise.all([
+        db.collection('pagamentos.sessoes').insertOne({
+            _id: purchaseId,
+            activeKey: `CIEPS-2026:${owner.toHexString()}:ticket`,
+            owner,
+            edicaoId: 'CIEPS-2026',
+            type: 'ticket',
+            status: 'PAYMENT_PENDING',
+            metodoPagamento: 'PIX',
+            orderId: 'checkout_switch',
+            paymentUrl: 'https://sandbox.asaas.com/checkout',
+            expiresAt: new Date(Date.now() - 60_000),
+            metodosPagamentoPermitidos: ['PIX', 'CREDIT_CARD'],
+            paymentConfig: { nome: 'Lote teste', precos: { parcelamentos: [] } },
+            paymentConfigOriginal: { nome: 'Lote teste', precos: { parcelamentos: [] } },
+            valoresCentavos: values,
+            codigoDesconto: discount,
+            codigoRastreio: { codigo: 'RASTREIO', tipo: 'RASTREIO' },
+            userProps: { name: 'Teste' },
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        }),
+        db.collection('pagamentos.atribuicoes').insertOne({
+            compraId: purchaseId,
+            edicaoId: 'CIEPS-2026',
+            usuarioId: owner,
+            valoresCentavos: values,
+            status: 'PAGAMENTO_PENDENTE',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        }),
+        db.collection('pagamentos.codigos').insertOne({
+            _id: codeId,
+            tipo: 'DESCONTO',
+            status: 'RESERVADO',
+            reserva: { compraId: purchaseId, usuarioId: owner, cobrancaExternaCriada: true, reservadoAte: null },
+        }),
+        db.collection('usuarios').insertOne({ _id: owner, pagamento: { situacao: 2 } }),
+    ]);
+    let cancelCalls = 0;
+    const fetcher = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+            cancelCalls += 1;
+            return Response.json({ status: 'CANCELED' });
+        }
+        return Response.json({ data: [] });
+    }) as typeof fetch;
+
+    const result = await switchPixSessionToCreditCard({
+        db,
+        client,
+        owner,
+        sessionId: purchaseId,
+        apiUrl: 'https://api-sandbox.asaas.com/v3',
+        apiKey: 'fixture-key',
+        fetcher,
+    });
+    assert.equal(result.kind, 'completed');
+    assert.equal(cancelCalls, 1);
+    const replacementId = result.kind === 'completed' ? result.session._id as ObjectId : null;
+    const [oldSession, replacement, code, assignments] = await Promise.all([
+        db.collection('pagamentos.sessoes').findOne({ _id: purchaseId }),
+        db.collection('pagamentos.sessoes').findOne({ _id: replacementId }),
+        db.collection('pagamentos.codigos').findOne({ _id: codeId }),
+        db.collection('pagamentos.atribuicoes').find({ usuarioId: owner }).toArray(),
+    ]);
+    assert.equal(oldSession?.status, 'CANCELLED');
+    assert.equal(replacement?.status, 'OPEN');
+    assert.equal(replacement?.metodoPagamento, 'CREDIT_CARD');
+    assert.deepEqual(replacement?.valoresCentavos, values);
+    assert.equal(String(code?.reserva?.compraId), String(replacementId));
+    assert.deepEqual(assignments.map((item) => item.status).sort(), ['ABERTA', 'CANCELADA']);
+});
+
+test('timeout ao cancelar PIX preserva sessao, vaga e desconto', async () => {
+    const db = client.db('webhook_tests');
+    const owner = new ObjectId();
+    const purchaseId = new ObjectId();
+    await Promise.all([
+        db.collection('pagamentos.sessoes').insertOne({
+            _id: purchaseId,
+            owner,
+            edicaoId: 'CIEPS-2026',
+            type: 'ticket',
+            status: 'PAYMENT_PENDING',
+            metodoPagamento: 'PIX',
+            orderId: 'checkout_timeout',
+            expiresAt: new Date(Date.now() - 60_000),
+            metodosPagamentoPermitidos: ['PIX', 'CREDIT_CARD'],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        }),
+        db.collection('pagamentos.atribuicoes').insertOne({ compraId: purchaseId, usuarioId: owner, status: 'PAGAMENTO_PENDENTE' }),
+        db.collection('pagamentos.codigos').insertOne({ tipo: 'DESCONTO', status: 'RESERVADO', reserva: { compraId: purchaseId } }),
+    ]);
+    const fetcher = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === 'POST') throw new Error('timeout');
+        return Response.json({ data: [] });
+    }) as typeof fetch;
+    const result = await switchPixSessionToCreditCard({
+        db,
+        client,
+        owner,
+        sessionId: purchaseId,
+        apiUrl: 'https://api-sandbox.asaas.com/v3',
+        apiKey: 'fixture-key',
+        fetcher,
+    });
+    const [session, assignment, code, replacementCount] = await Promise.all([
+        db.collection('pagamentos.sessoes').findOne({ _id: purchaseId }),
+        db.collection('pagamentos.atribuicoes').findOne({ compraId: purchaseId }),
+        db.collection('pagamentos.codigos').findOne({ 'reserva.compraId': purchaseId }),
+        db.collection('pagamentos.sessoes').countDocuments({ previousSessionId: purchaseId }),
+    ]);
+    assert.equal(result.kind, 'pending');
+    assert.equal(session?.status, 'PAYMENT_PENDING');
+    assert.equal(session?.paymentMethodSwitch?.status, 'RETRYABLE');
+    assert.equal(assignment?.status, 'PAGAMENTO_PENDENTE');
+    assert.equal(code?.status, 'RESERVADO');
+    assert.equal(replacementCount, 0);
 });
 
 test('migracao index-only exige digest e preserva ledger legado e pagamento protegido', async () => {

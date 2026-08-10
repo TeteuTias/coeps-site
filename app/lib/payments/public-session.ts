@@ -22,6 +22,7 @@ export function toPublicPaymentSession(session: Document | null) {
         owner: _owner,
         codigoDesconto,
         codigoRastreio,
+        paymentMethodSwitch,
         ...publicSession
     } = session;
 
@@ -32,6 +33,16 @@ export function toPublicPaymentSession(session: Document | null) {
             : {}),
         ...(codigoRastreio
             ? { codigoRastreio: publicCodeSnapshot(codigoRastreio) }
+            : {}),
+        ...(paymentMethodSwitch && typeof paymentMethodSwitch === 'object'
+            ? {
+                paymentMethodSwitch: {
+                    target: paymentMethodSwitch.target,
+                    status: paymentMethodSwitch.status,
+                    replacementSessionId: paymentMethodSwitch.replacementSessionId,
+                    reason: paymentMethodSwitch.reason,
+                },
+            }
             : {}),
     };
 }

@@ -58,6 +58,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                     success: true,
                     paymentUrl: existingSession.paymentUrl,
                     checkoutId: existingSession.orderId,
+                    checkoutExpiresAt: existingSession.checkoutExpiresAt ?? null,
                 },
                 { status: 200 },
             );
@@ -141,7 +142,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
 
         const checkoutRequest = {
             billingTypes: ['PIX'],
-            minutesToExpire: 14,
+            minutesToExpire: 15,
             customer: user.id_api,
             chargeTypes: ['DETACHED'],
             externalReference: sessionId.toHexString(),
@@ -259,6 +260,8 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             );
         }
 
+        const checkoutExpiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
         try {
             await runPaymentTransaction(client, async (mongoSession) => {
                 const sessionUpdate = await db.collection('pagamentos.sessoes').updateOne(
@@ -269,6 +272,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                         gatewayState: 'CREATED',
                         orderId: gatewayBody.id,
                         paymentUrl: gatewayBody.link,
+                        checkoutExpiresAt,
                         updatedAt: new Date(),
                     },
                 },
@@ -331,6 +335,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                 success: true,
                 paymentUrl: gatewayBody.link,
                 checkoutId: gatewayBody.id,
+                checkoutExpiresAt,
             },
             { status: 201 },
         );

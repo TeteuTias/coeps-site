@@ -326,6 +326,38 @@ export async function restoreDiscountAfterRejectedCharge(
     );
 }
 
+export async function transferDiscountReservation(
+    db: Db,
+    fromPurchaseId: ObjectId,
+    toPurchaseId: ObjectId,
+    usuarioId: ObjectId,
+    reservadoAte: Date,
+    mongoSession?: ClientSession,
+): Promise<boolean> {
+    const now = new Date();
+    const result = await db.collection(PAYMENT_CODES_COLLECTION).updateOne(
+        {
+            tipo: 'DESCONTO',
+            status: 'RESERVADO',
+            'reserva.compraId': fromPurchaseId,
+        },
+        {
+            $set: {
+                reserva: {
+                    compraId: toPurchaseId,
+                    usuarioId,
+                    reservadoEm: now,
+                    reservadoAte,
+                    cobrancaExternaCriada: false,
+                },
+                updatedAt: now,
+            },
+        },
+        { session: mongoSession },
+    );
+    return result.matchedCount === 1;
+}
+
 export async function releaseDiscountReservation(
     db: Db,
     compraId: ObjectId,
@@ -565,7 +597,7 @@ export async function expireOpenSessionsForOwner(
             owner,
             type: 'ticket',
             ...(edicaoId ? { edicaoId } : {}),
-            status: { $in: ['OPEN', 'PAYMENT_PENDING'] },
+            status: 'OPEN',
             expiresAt: { $lte: now },
         })
         .project<{ _id: ObjectId }>({ _id: 1 })
@@ -573,7 +605,7 @@ export async function expireOpenSessionsForOwner(
 
     for (const session of expiredSessions) {
         const result = await db.collection('pagamentos.sessoes').updateOne(
-            { _id: session._id, status: { $in: ['OPEN', 'PAYMENT_PENDING'] } },
+            { _id: session._id, status: 'OPEN' },
             {
                 $set: { status: 'EXPIRED', updatedAt: now },
                 $unset: { activeKey: '' },

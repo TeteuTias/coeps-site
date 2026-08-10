@@ -18,6 +18,7 @@ import {
 } from '../../../../lib/payments/webhook-auth.ts';
 import { findLegacyPaymentContext } from '../../../../lib/payments/webhook-legacy.ts';
 import { asaasRequestHeaders } from '../../../../lib/payments/asaas.ts';
+import { completePixToCardSwitch } from '../../../../lib/payments/pix-switch.ts';
 import {
   acquireWebhookWorkerLease,
   claimWebhookEvent,
@@ -734,6 +735,13 @@ async function confirmSessionPayment(db, session, payload, mongoSession) {
         invoiceNumber: payment.invoiceNumber || session.invoiceNumber,
         confirmedAt: now,
         updatedAt: now,
+        ...(session.paymentMethodSwitch?.target === 'CREDIT_CARD'
+          ? {
+              'paymentMethodSwitch.status': 'PAYMENT_DETECTED',
+              'paymentMethodSwitch.reason': 'PIX_PAYMENT_CONFIRMED_DURING_SWITCH',
+              'paymentMethodSwitch.updatedAt': now,
+            }
+          : {}),
       },
       $unset: {
         activeKey: '',
@@ -741,6 +749,7 @@ async function confirmSessionPayment(db, session, payload, mongoSession) {
         reconciliationReason: '',
         reviewRequiredAt: '',
         pixSettlementStatus: '',
+        'paymentMethodSwitch.leaseUntil': '',
       },
     },
     { session: mongoSession },
@@ -1108,6 +1117,13 @@ async function recordCreatedCheckout(db, session, payload, mongoSession) {
     return 'REVIEW_REQUIRED';
   }
   const now = new Date();
+  const checkoutMinutes = Number(checkout.minutesToExpire || 15);
+  const checkoutExpiresAt = session.checkoutExpiresAt || new Date(
+    now.getTime() +
+    (Number.isFinite(checkoutMinutes) && checkoutMinutes >= 10 && checkoutMinutes <= 1440
+      ? checkoutMinutes
+      : 15) * 60_000,
+  );
   const transition = await db.collection('pagamentos.sessoes').updateOne(
     {
       _id: session._id,
@@ -1119,6 +1135,7 @@ async function recordCreatedCheckout(db, session, payload, mongoSession) {
         gatewayState: 'CHECKOUT_CREATED',
         orderId: String(checkout.id),
         paymentUrl: checkout.link || checkout.url || session.paymentUrl || null,
+        checkoutExpiresAt,
         updatedAt: now,
       },
     },
@@ -1460,22 +1477,37 @@ export async function processEvent(db, payload, mongoSession) {
         { session: mongoSession },
       );
     } else if (isCancelledEvent(event)) {
-      const cancellationResult = await cancelSessionPayment(
-        db,
-        session,
-        payload,
-        mongoSession,
-      );
-      if (cancellationResult === 'REVIEW_REQUIRED') {
-        requiresReview = true;
-        reviewReason = 'PAYMENT_CANCELLATION_REQUIRES_REVIEW';
-      } else if (
-        cancellationResult === 'TERMINAL_IGNORED' &&
-        ['CONFIRMED', 'REFUNDED'].includes(session.status)
-      ) {
-        reviewReason = `CANCELLATION_AFTER_${session.status}`;
-        await markSessionForReview(db, session, reviewReason, mongoSession);
-        requiresReview = true;
+      const shouldCompleteCardSwitch =
+        event.startsWith('CHECKOUT_') &&
+        session.paymentMethodSwitch?.target === 'CREDIT_CARD' &&
+        session.paymentMethodSwitch?.status !== 'COMPLETED';
+      if (shouldCompleteCardSwitch) {
+        try {
+          await completePixToCardSwitch(db, session._id, mongoSession, event);
+        } catch (error) {
+          reviewReason = 'PIX_SWITCH_COMPLETION_FAILED';
+          await markSessionForReview(db, session, reviewReason, mongoSession);
+          requiresReview = true;
+          console.error('Falha ao concluir troca de PIX por cartÃ£o via webhook:', error);
+        }
+      } else {
+        const cancellationResult = await cancelSessionPayment(
+          db,
+          session,
+          payload,
+          mongoSession,
+        );
+        if (cancellationResult === 'REVIEW_REQUIRED') {
+          requiresReview = true;
+          reviewReason = 'PAYMENT_CANCELLATION_REQUIRES_REVIEW';
+        } else if (
+          cancellationResult === 'TERMINAL_IGNORED' &&
+          ['CONFIRMED', 'REFUNDED'].includes(session.status)
+        ) {
+          reviewReason = `CANCELLATION_AFTER_${session.status}`;
+          await markSessionForReview(db, session, reviewReason, mongoSession);
+          requiresReview = true;
+        }
       }
     } else if (isFullRefundEvent(event) || isPartialRefundEvent(event)) {
       if (!(await validateSessionPayment(db, session, payload, mongoSession))) {
