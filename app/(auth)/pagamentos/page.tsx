@@ -3,7 +3,7 @@
 import PagamentosManual from './paginaPagamentoAntigo';
 import 'react-credit-cards-2/dist/es/styles-compiled.css';
 import { useUser } from "@/lib/auth0-client"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import Link from "next/link";
 import Cards from 'react-credit-cards-2';
 import { IUser } from "@/app/lib/types/user/user.t"
@@ -363,7 +363,10 @@ function PaymentSessionActive({
     const [isSwitchingToCard, setIsSwitchingToCard] = useState(false);
     const [switchMessage, setSwitchMessage] = useState<string | null>(null);
     const [checkoutAwaitingVerification, setCheckoutAwaitingVerification] = useState(false);
+    const [isRefreshingProcessing, setIsRefreshingProcessing] = useState(false);
+    const [processingRefreshError, setProcessingRefreshError] = useState<string | null>(null);
     const expirationRefreshRequested = useRef(false);
+    const processingRefreshInFlight = useRef(false);
 
     const paymentSession = paymentConfig.sessaoPagamentoAutomáticoAtiva;
     const lote = paymentSession.paymentConfig;
@@ -377,6 +380,59 @@ function PaymentSessionActive({
     const cardAllowed = paymentSession.metodosPagamentoPermitidos
         ? paymentSession.metodosPagamentoPermitidos.includes("CREDIT_CARD")
         : paymentConfig.pagamentosAceitos?.includes("CREDIT_CARD") !== false;
+    const isAwaitingPaymentCreation = sessionStatus === "CREATING_PAYMENT" || (
+        (sessionStatus === "PAYMENT_PENDING" || sessionStatus === "PENDING") && !hasPixCheckout
+    );
+
+    const refreshProcessingPayment = useCallback(async (showError: boolean) => {
+        if (processingRefreshInFlight.current) return;
+        processingRefreshInFlight.current = true;
+        setIsRefreshingProcessing(true);
+
+        try {
+            const response = await fetchWithTimeout('/api/payment/paymentConfigs', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            if (!response.ok) {
+                throw new Error('Não foi possível consultar a situação do pagamento.');
+            }
+
+            const refreshedConfig = await response.json() as PaymentConfigView;
+            if (refreshedConfig.sessaoPagamentoAutomáticoAtiva === false) {
+                await hydratePage();
+                return;
+            }
+
+            setPaymentConfig(refreshedConfig as IPaymentConfig & {
+                sessaoPagamentoAutomáticoAtiva: PaymentTicketProps;
+            });
+            setProcessingRefreshError(null);
+        } catch {
+            if (showError) {
+                setProcessingRefreshError('Não foi possível atualizar agora. Aguarde alguns segundos e tente novamente.');
+            }
+        } finally {
+            processingRefreshInFlight.current = false;
+            setIsRefreshingProcessing(false);
+        }
+    }, [hydratePage]);
+
+    useEffect(() => {
+        if (!isAwaitingPaymentCreation) return;
+
+        const initialRefresh = window.setTimeout(() => {
+            void refreshProcessingPayment(false);
+        }, 1500);
+        const refreshInterval = window.setInterval(() => {
+            void refreshProcessingPayment(false);
+        }, 5000);
+
+        return () => {
+            window.clearTimeout(initialRefresh);
+            window.clearInterval(refreshInterval);
+        };
+    }, [isAwaitingPaymentCreation, refreshProcessingPayment]);
 
     const handleSelectPix = async () => {
         setpaymentType("PIX");
@@ -506,12 +562,58 @@ function PaymentSessionActive({
             </div>
         )
     }
-    if (sessionStatus === "CREATING_PAYMENT" || ((sessionStatus === "PAYMENT_PENDING" || sessionStatus === "PENDING") && !hasPixCheckout)) {
+    if (isAwaitingPaymentCreation) {
         return (
-            <div className='pagamentos-main max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-sm border border-linha'>
-                <h1>Seu pagamento está sendo processado</h1>
-                <h1>Aguarde.</h1>
-            </div>
+            <PageShell className="flex items-center justify-center px-4 py-10 sm:px-6">
+                <section
+                    className="w-full max-w-3xl overflow-hidden rounded-lg border border-linha bg-[var(--cieps-paper-strong)] shadow-[var(--cieps-shadow)]"
+                    role="status"
+                    aria-live="polite"
+                >
+                    <div className="h-1.5 w-full bg-gradient-to-r from-goles via-ipe to-araguari" aria-hidden="true" />
+                    <div className="flex min-h-[360px] flex-col items-center justify-center px-6 py-12 text-center sm:px-12">
+                        <span className="mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-goles/20 bg-goles/10 text-goles">
+                            <Loader2 className="animate-spin" size={30} strokeWidth={2.25} aria-hidden="true" />
+                        </span>
+
+                        <span className="text-xs font-bold uppercase tracking-[0.12em] text-goles">
+                            Pagamento seguro
+                        </span>
+                        <h1 className="cieps-display mt-3 text-[clamp(1.75rem,4vw,2.7rem)] font-semibold leading-tight tracking-[-0.03em] text-tinta">
+                            Estamos preparando seu pagamento
+                        </h1>
+                        <p className="mt-4 max-w-xl font-sans text-[0.98rem] leading-7 text-muted">
+                            Estamos confirmando os dados da cobrança com o Asaas. Isso normalmente leva apenas alguns segundos.
+                        </p>
+
+                        <div className="mt-7 flex max-w-xl items-start gap-3 rounded-md border border-araguari/25 bg-araguari/5 px-4 py-3 text-left text-sm leading-6 text-muted">
+                            <CheckCircle className="mt-0.5 shrink-0 text-araguari" size={19} aria-hidden="true" />
+                            <p>
+                                Sua vaga e os valores escolhidos continuam reservados. Não tente gerar outra cobrança enquanto esta verificação estiver em andamento.
+                            </p>
+                        </div>
+
+                        {processingRefreshError && (
+                            <p className="mt-5 max-w-xl text-sm font-semibold text-goles" role="alert">
+                                {processingRefreshError}
+                            </p>
+                        )}
+
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="mt-7"
+                            loading={isRefreshingProcessing}
+                            onClick={() => void refreshProcessingPayment(true)}
+                        >
+                            Atualizar situação
+                        </Button>
+                        <p className="mt-4 text-xs text-muted">
+                            A situação também é atualizada automaticamente nesta página.
+                        </p>
+                    </div>
+                </section>
+            </PageShell>
         )
     }
     if (sessionStatus === "CONFIRMED" || sessionStatus === "PAID") {
