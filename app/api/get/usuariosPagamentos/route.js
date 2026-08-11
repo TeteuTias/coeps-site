@@ -1,8 +1,8 @@
 import { connectToDatabase } from '../../../lib/mongodb'
 import { NextResponse } from 'next/server';
-import { getAccessToken, withApiAuthRequired } from '@/lib/auth0-compat';
-import { execOnce } from 'next/dist/shared/lib/utils';
+import { withApiAuthRequired } from '@/lib/auth0-compat';
 import { ObjectId } from 'mongodb';
+import { mergePaymentHistory } from '@/lib/payments/payment-history';
 
 
 import { getSession } from '@/lib/auth0-compat';
@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic'
 
 
 /** @type {any} */
-export const GET = withApiAuthRequired(async function GET(request, { params }) {
+export const GET = withApiAuthRequired(async function GET() {
     try {
 
         // Verificando se há sessão    
@@ -27,13 +27,14 @@ export const GET = withApiAuthRequired(async function GET(request, { params }) {
         //
         // Puxando informações de DB
         const { db } = await connectToDatabase();
-        const query = { "_id": new ObjectId(userId) }
-        const result = await db.collection('usuarios').find(
-            query,
+        const owner = new ObjectId(userId);
+        const result = await db.collection('usuarios').findOne(
+            { _id: owner },
             {
                 projection: {
                     "_id": 0,
                     "pagamento.situacao": 1,
+                    "pagamento.lista_pagamentos.id": 1,
                     "pagamento.lista_pagamentos.dateCreated": 1,
                     "pagamento.lista_pagamentos.status": 1,
                     "pagamento.lista_pagamentos.value": 1,
@@ -47,15 +48,78 @@ export const GET = withApiAuthRequired(async function GET(request, { params }) {
 
 
                 }
-            }
-        ).toArray()
-        // result[0] => { pagamento: IUser["pagamento"] }
-        return NextResponse.json({ "data": result[0] });
+            },
+        );
+        if (!result) {
+            return NextResponse.json({ error: 'user_not_found' }, { status: 404 });
+        }
+
+        const assignments = await db.collection('pagamentos.atribuicoes')
+            .find(
+                { usuarioId: owner },
+                {
+                    projection: {
+                        compraId: 1,
+                        edicaoId: 1,
+                        status: 1,
+                        pagamento: 1,
+                        valorSelecionadoCentavos: 1,
+                        valoresCentavos: 1,
+                        refundStatus: 1,
+                        refundsSnapshot: 1,
+                        chargebackStatus: 1,
+                        chargebackResolution: 1,
+                        paymentFailureStatus: 1,
+                        financialReviewEvent: 1,
+                        reviewRequiredAt: 1,
+                        createdAt: 1,
+                        updatedAt: 1,
+                    },
+                    sort: { createdAt: -1 },
+                },
+            )
+            .toArray();
+        const purchaseIds = assignments
+            .map((assignment) => assignment.compraId)
+            .filter((compraId) => compraId instanceof ObjectId);
+        const sessions = purchaseIds.length
+            ? await db.collection('pagamentos.sessoes')
+                .find(
+                    { _id: { $in: purchaseIds } },
+                    {
+                        projection: {
+                            status: 1,
+                            metodoPagamento: 1,
+                            paymentId: 1,
+                            invoiceNumber: 1,
+                            orderId: 1,
+                            paymentUrl: 1,
+                            createdAt: 1,
+                        },
+                    },
+                )
+                .toArray()
+            : [];
+
+        const legacyPayments = Array.isArray(result.pagamento?.lista_pagamentos)
+            ? result.pagamento.lista_pagamentos
+            : [];
+        return NextResponse.json({
+            data: {
+                ...result,
+                pagamento: {
+                    situacao: result.pagamento?.situacao ?? 0,
+                    lista_pagamentos: mergePaymentHistory(legacyPayments, assignments, sessions),
+                },
+            },
+        });
 
     }
     catch (error) {
-        console.log(error)
-        return NextResponse.json({ "error": error }, { status: 500 })
+        console.error('Falha ao carregar histórico de pagamentos', {
+            error: error instanceof Error ? error.message.slice(0, 200) : 'unknown_error',
+        });
+        return NextResponse.json({ error: 'payment_history_failed' }, { status: 500 })
     }
 })
 /*

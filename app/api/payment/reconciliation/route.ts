@@ -1,29 +1,25 @@
-import { timingSafeEqual } from 'crypto';
 import { ObjectId } from 'mongodb';
-import { connectToDatabase } from '@/lib/mongodb';
+import { connectToDatabase } from '../../../lib/mongodb.js';
+import { isReconciliationAuthorized } from '../../../lib/payments/webhook-auth.ts';
+import { asaasRequestHeaders } from '../../../lib/payments/asaas.ts';
+import { drainPendingWebhookEvents, processEvent } from '../webhook/payment_notification/route.js';
 import {
-    consumeDiscountCode,
     releaseDiscountReservation,
     updatePaymentAssignment,
-    updateUserRegistrationAfterRefund,
-} from '@/lib/payments/codes';
-import { runPaymentTransaction } from '@/lib/payments/transactions';
+} from '../../../lib/payments/codes.ts';
+import { runPaymentTransaction } from '../../../lib/payments/transactions.ts';
+import {
+    requestCheckoutCancellation,
+    switchPixSessionToCreditCard,
+} from '../../../lib/payments/pix-switch.ts';
 import {
     cancellationEligibleAtForDelinquency,
     gatewayDeletionWasConfirmed,
     getPaymentOverdueGraceDays,
     isCancellationEligible,
-} from '@/lib/payments/overdue';
+} from '../../../lib/payments/overdue.ts';
 
-function secureEquals(received: string | null, expected: string | undefined): boolean {
-    if (!received || !expected) return false;
-    const receivedBuffer = Buffer.from(received);
-    const expectedBuffer = Buffer.from(expected);
-    return (
-        receivedBuffer.length === expectedBuffer.length &&
-        timingSafeEqual(receivedBuffer, expectedBuffer)
-    );
-}
+export const maxDuration = 110;
 
 function firstGatewayItem(payload: unknown): Record<string, unknown> | null {
     if (!payload || typeof payload !== 'object') return null;
@@ -37,12 +33,14 @@ function gatewayStatus(record: Record<string, unknown>): string {
     return String(record.status || '').toUpperCase();
 }
 
-function isGatewayPaymentConfirmed(status: string): boolean {
-    return ['CONFIRMED', 'RECEIVED', 'RECEIVED_IN_CASH'].includes(status);
+function isGatewayPaymentConfirmed(record: Record<string, unknown>): boolean {
+    const status = gatewayStatus(record);
+    if (['RECEIVED', 'RECEIVED_IN_CASH'].includes(status)) return true;
+    return status === 'CONFIRMED' && String(record.billingType || '').toUpperCase() !== 'PIX';
 }
 
 function isGatewayPaymentRefunded(status: string): boolean {
-    return ['REFUNDED', 'CHARGEBACK_DISPUTE_LOST'].includes(status);
+    return status === 'REFUNDED';
 }
 
 function isGatewayPaymentCancelled(status: string): boolean {
@@ -54,16 +52,21 @@ async function lookupPendingPayment(
     apiKey: string,
     paymentSession: Record<string, unknown>,
 ): Promise<{ conclusive: boolean; record: Record<string, unknown> | null }> {
-    const headers = { accept: 'application/json', access_token: apiKey };
+    const headers = asaasRequestHeaders(apiKey, { apiUrl });
     const paymentId = typeof paymentSession.paymentId === 'string'
         ? paymentSession.paymentId
         : null;
+    const checkoutId = typeof paymentSession.orderId === 'string'
+        ? paymentSession.orderId
+        : null;
     const url = paymentId
         ? `${apiUrl}/payments/${encodeURIComponent(paymentId)}`
-        : `${apiUrl}/payments?externalReference=${encodeURIComponent(String(paymentSession._id))}&limit=1`;
+        : checkoutId
+            ? `${apiUrl}/payments?checkoutSession=${encodeURIComponent(checkoutId)}&limit=2`
+            : `${apiUrl}/payments?externalReference=${encodeURIComponent(String(paymentSession._id))}&limit=2`;
 
     try {
-        const response = await fetch(url, { headers });
+        const response = await fetch(url, { headers, signal: AbortSignal.timeout(8_000) });
         if (response.status === 404) return { conclusive: true, record: null };
         if (!response.ok) return { conclusive: false, record: null };
 
@@ -90,7 +93,8 @@ async function deletePendingGatewayPayment(
             `${apiUrl}/payments/${encodeURIComponent(paymentId)}`,
             {
                 method: 'DELETE',
-                headers: { accept: 'application/json', access_token: apiKey },
+                headers: asaasRequestHeaders(apiKey, { apiUrl }),
+                signal: AbortSignal.timeout(8_000),
             },
         );
         const payload = await response.json().catch(() => null);
@@ -104,143 +108,126 @@ async function deletePendingGatewayPayment(
     }
 }
 
-async function confirmPendingPayment(
+async function reconcileConfirmedPayment(
     db: Awaited<ReturnType<typeof connectToDatabase>>['db'],
     client: Awaited<ReturnType<typeof connectToDatabase>>['client'],
     paymentSession: Record<string, any>,
     payment: Record<string, any>,
 ): Promise<boolean> {
     return runPaymentTransaction(client, async (mongoSession) => {
-        const now = new Date();
-        const transition = await db.collection('pagamentos.sessoes').updateOne(
-            {
-                _id: paymentSession._id,
-                status: { $in: ['PAYMENT_PENDING', 'PAYMENT_REVIEW_REQUIRED'] },
-            },
-            {
-                $set: {
-                    status: 'CONFIRMED',
-                    gatewayState: gatewayStatus(payment),
-                    paymentId: payment.id || paymentSession.paymentId || null,
-                    invoiceNumber: payment.invoiceNumber || paymentSession.invoiceNumber || null,
-                    paymentUrl: payment.invoiceUrl || paymentSession.paymentUrl || null,
-                    confirmedAt: now,
-                    updatedAt: now,
-                },
-                $unset: { activeKey: '', reconciliationLeaseUntil: '' },
-            },
-            { session: mongoSession },
-        );
-        if (transition.modifiedCount !== 1) return false;
-
-        await db.collection('usuarios').updateOne(
-            { _id: paymentSession.owner },
-            {
-                $set: {
-                    'pagamento.situacao': 1,
-                    'pagamento.tipo_pagamento': 'asaas',
-                    'pagamento.edicaoId': paymentSession.edicaoId,
-                    'pagamento.compraId': paymentSession._id,
-                },
-            },
-            { session: mongoSession },
-        );
-        await updatePaymentAssignment(
+        const status = gatewayStatus(payment);
+        await processEvent(
             db,
-            paymentSession._id as ObjectId,
-            'CONFIRMADA',
             {
-                metodo: String(payment.billingType || paymentSession.metodoPagamento || '') || undefined,
-                checkoutId: String(payment.checkoutSession || paymentSession.orderId || '') || undefined,
-                paymentId: String(payment.id || paymentSession.paymentId || '') || undefined,
-                invoiceNumber:
-                    String(payment.invoiceNumber || paymentSession.invoiceNumber || '') || undefined,
+                id: `reconciliation:${paymentSession._id}:${String(payment.id || 'unknown')}:${status}`,
+                event: ['RECEIVED', 'RECEIVED_IN_CASH'].includes(status)
+                    ? 'PAYMENT_RECEIVED'
+                    : 'PAYMENT_CONFIRMED',
+                payment,
             },
             mongoSession,
         );
-        await db.collection('pagamentos.comprovantes').updateOne(
-            { compraId: paymentSession._id },
-            {
-                $setOnInsert: {
-                    compraId: paymentSession._id,
-                    owner: paymentSession.owner,
-                    type: 'ticket',
-                    title: 'EM BREVE!',
-                    createdAt: now,
-                },
-                $set: { status: 'PAID', updatedAt: now },
-            },
-            { upsert: true, session: mongoSession },
+        const updated = await db.collection('pagamentos.sessoes').findOneAndUpdate(
+            { _id: paymentSession._id },
+            { $unset: { reconciliationLeaseUntil: '' } },
+            { returnDocument: 'after', projection: { status: 1 }, session: mongoSession },
         );
-        const discountConsumed = await consumeDiscountCode(
-            db,
-            paymentSession._id as ObjectId,
-            mongoSession,
-            paymentSession.codigoDesconto?.codigoId,
-        );
-        if (paymentSession.codigoDesconto && !discountConsumed) {
-            throw new Error('A conciliação não conseguiu marcar o desconto como usado.');
-        }
-        return true;
+        return updated?.status === 'CONFIRMED';
     });
 }
 
-async function refundPendingPayment(
+async function lookupInstallmentPayments(
+    apiUrl: string,
+    apiKey: string,
+    paymentSession: Record<string, any>,
+): Promise<{ conclusive: boolean; records: Record<string, any>[] }> {
+    const installmentId = String(paymentSession.installmentPlan?.installmentId || '');
+    const expectedCount = Number(paymentSession.installmentPlan?.count || 0);
+    if (!installmentId || !Number.isInteger(expectedCount) || expectedCount < 2) {
+        return { conclusive: true, records: [] };
+    }
+    const headers = asaasRequestHeaders(apiKey, { apiUrl });
+    const records: Record<string, any>[] = [];
+    try {
+        for (let offset = 0; offset < expectedCount; offset += 100) {
+            const limit = Math.min(100, expectedCount - offset);
+            const response = await fetch(
+                `${apiUrl}/payments?installment=${encodeURIComponent(installmentId)}&limit=${limit}&offset=${offset}`,
+                { headers, signal: AbortSignal.timeout(8_000) },
+            );
+            if (!response.ok) return { conclusive: false, records: [] };
+            const body = await response.json().catch(() => null);
+            const page = Array.isArray(body?.data) ? body.data : [];
+            records.push(...page);
+            if (!body?.hasMore || page.length === 0) break;
+        }
+        return { conclusive: true, records };
+    } catch (error) {
+        console.error('Falha temporária ao consultar plano parcelado:', error);
+        return { conclusive: false, records: [] };
+    }
+}
+
+function eventForGatewayPayment(payment: Record<string, any>): string {
+    const status = gatewayStatus(payment);
+    if (status === 'RECEIVED' || status === 'RECEIVED_IN_CASH') return 'PAYMENT_RECEIVED';
+    if (status === 'CONFIRMED') return 'PAYMENT_CONFIRMED';
+    if (status === 'REFUNDED') return 'PAYMENT_REFUNDED';
+    if (status === 'OVERDUE') return 'PAYMENT_OVERDUE';
+    if (['DELETED', 'CANCELLED', 'CANCELED'].includes(status)) return 'PAYMENT_DELETED';
+    return 'PAYMENT_UPDATED';
+}
+
+async function reconcileInstallmentPayments(
     db: Awaited<ReturnType<typeof connectToDatabase>>['db'],
     client: Awaited<ReturnType<typeof connectToDatabase>>['client'],
     paymentSession: Record<string, any>,
+    records: Record<string, any>[],
+): Promise<string> {
+    const ordered = [...records].sort(
+        (left, right) => Number(left.installmentNumber || 0) - Number(right.installmentNumber || 0),
+    );
+    for (const payment of ordered) {
+        await runPaymentTransaction(client, (mongoSession) => processEvent(
+            db,
+            {
+                id: `reconciliation:${paymentSession._id}:${String(payment.id || 'unknown')}:${gatewayStatus(payment)}`,
+                event: eventForGatewayPayment(payment),
+                payment,
+            },
+            mongoSession,
+        ));
+    }
+    const updated = await db.collection('pagamentos.sessoes').findOneAndUpdate(
+        { _id: paymentSession._id },
+        { $unset: { reconciliationLeaseUntil: '' } },
+        { returnDocument: 'after', projection: { status: 1 } },
+    );
+    return String(updated?.status || paymentSession.status);
+}
+
+async function reconcileRefundedPayment(
+    db: Awaited<ReturnType<typeof connectToDatabase>>['db'],
+    client: Awaited<ReturnType<typeof connectToDatabase>>['client'],
+    paymentSession: Record<string, any>,
+    payment: Record<string, any>,
 ): Promise<boolean> {
     return runPaymentTransaction(client, async (mongoSession) => {
-        const now = new Date();
-        const transition = await db.collection('pagamentos.sessoes').updateOne(
+        await processEvent(
+            db,
             {
-                _id: paymentSession._id,
-                status: {
-                    $in: ['PAYMENT_PENDING', 'PAYMENT_REVIEW_REQUIRED', 'CONFIRMED'],
-                },
+                id: `reconciliation:${paymentSession._id}:${String(payment.id || 'unknown')}:REFUNDED`,
+                event: 'PAYMENT_REFUNDED',
+                payment,
             },
-            {
-                $set: {
-                    status: 'REFUNDED',
-                    refundStatus: 'FULL',
-                    terminalAt: now,
-                    updatedAt: now,
-                },
-                $unset: { activeKey: '', reconciliationLeaseUntil: '' },
-            },
-            { session: mongoSession },
-        );
-        if (transition.modifiedCount !== 1) return false;
-
-        await updatePaymentAssignment(
-            db,
-            paymentSession._id as ObjectId,
-            'ESTORNADA',
-            undefined,
             mongoSession,
         );
-        const discountConsumed = await consumeDiscountCode(
-            db,
-            paymentSession._id as ObjectId,
-            mongoSession,
-            paymentSession.codigoDesconto?.codigoId,
+        const updated = await db.collection('pagamentos.sessoes').findOneAndUpdate(
+            { _id: paymentSession._id },
+            { $unset: { reconciliationLeaseUntil: '' } },
+            { returnDocument: 'after', projection: { status: 1 }, session: mongoSession },
         );
-        if (paymentSession.codigoDesconto && !discountConsumed) {
-            throw new Error('A conciliação não conseguiu preservar o consumo do desconto.');
-        }
-        await updateUserRegistrationAfterRefund(
-            db,
-            paymentSession.owner,
-            paymentSession.edicaoId,
-            paymentSession._id,
-            mongoSession,
-        );
-        await db.collection('pagamentos.comprovantes').updateOne(
-            { compraId: paymentSession._id },
-            { $set: { status: 'REFUNDED', refundedAt: now, updatedAt: now } },
-            { session: mongoSession },
-        );
-        return true;
+        return updated?.status === 'REFUNDED';
     });
 }
 
@@ -298,9 +285,8 @@ async function cancelUnpaidSession(
 }
 
 export async function POST(request: Request) {
-    const expectedSecret = process.env.PAYMENT_RECONCILIATION_SECRET;
     const receivedSecret = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? null;
-    if (!secureEquals(receivedSecret, expectedSecret)) {
+    if (!isReconciliationAuthorized(receivedSecret)) {
         return Response.json({ error: 'unauthorized' }, { status: 401 });
     }
 
@@ -310,6 +296,8 @@ export async function POST(request: Request) {
         return Response.json({ error: 'payment_gateway_not_configured' }, { status: 503 });
     }
 
+    const reconciliationDeadline = Date.now() + 100_000;
+    const webhookEvents = await drainPendingWebhookEvents(1_000, 45_000);
     const { db, client } = await connectToDatabase();
     const now = new Date();
     const staleCreatingCutoff = new Date(now.getTime() - 2 * 60 * 1000);
@@ -354,6 +342,7 @@ export async function POST(request: Request) {
         .toArray();
 
     const counters = {
+        webhookEvents,
         inspected: 0,
         recovered: 0,
         confirmed: 0,
@@ -363,6 +352,7 @@ export async function POST(request: Request) {
     };
 
     for (const candidate of candidates) {
+        if (Date.now() >= reconciliationDeadline) break;
         const lease = await db.collection('pagamentos.sessoes').findOneAndUpdate(
             {
                 _id: candidate._id,
@@ -385,6 +375,95 @@ export async function POST(request: Request) {
 
         try {
 
+        if (
+            lease.paymentMethodSwitch?.target === 'CREDIT_CARD' &&
+            ['CANCELLING', 'RETRYABLE'].includes(String(lease.paymentMethodSwitch?.status || ''))
+        ) {
+            const switchResult = await switchPixSessionToCreditCard({
+                db,
+                client,
+                owner: lease.owner as ObjectId,
+                sessionId: lease._id as ObjectId,
+                apiUrl,
+                apiKey,
+            });
+            await db.collection('pagamentos.sessoes').updateOne(
+                { _id: lease._id },
+                { $unset: { reconciliationLeaseUntil: '' } },
+            );
+            if (switchResult.kind === 'completed') counters.recovered += 1;
+            else counters.pending += 1;
+            continue;
+        }
+
+        if (lease.installmentPlan?.installmentId) {
+            const lookup = await lookupInstallmentPayments(apiUrl, apiKey, lease);
+            if (!lookup.conclusive) {
+                await db.collection('pagamentos.sessoes').updateOne(
+                    { _id: lease._id },
+                    {
+                        $set: { lastReconciliationErrorAt: new Date(), updatedAt: new Date() },
+                        $unset: { reconciliationLeaseUntil: '' },
+                    },
+                );
+                counters.pending += 1;
+                continue;
+            }
+            const expectedId = String(lease.installmentPlan.installmentId);
+            const expectedValue = Number(lease.installmentPlan.installmentValueCentavos);
+            const expectedCount = Number(lease.installmentPlan.count);
+            const installmentNumbers = lookup.records.map((record) => Number(record.installmentNumber));
+            const invalidPlan = lookup.records.length > expectedCount ||
+                new Set(installmentNumbers.filter(Number.isInteger)).size !==
+                    installmentNumbers.filter(Number.isInteger).length ||
+                lookup.records.some((record) =>
+                    String(record.installment || '') !== expectedId ||
+                    Math.round(Number(record.value) * 100) !== expectedValue,
+                );
+            if (invalidPlan) {
+                const reviewAt = new Date();
+                await Promise.all([
+                    db.collection('pagamentos.sessoes').updateOne(
+                        { _id: lease._id },
+                        {
+                            $set: {
+                                status: lease.status === 'CONFIRMED'
+                                    ? 'CONFIRMED'
+                                    : 'PAYMENT_REVIEW_REQUIRED',
+                                gatewayState: 'PAYMENT_REVIEW_REQUIRED',
+                                reconciliationReason: 'INSTALLMENT_PLAN_RECONCILIATION_MISMATCH',
+                                reviewRequiredAt: reviewAt,
+                                updatedAt: reviewAt,
+                            },
+                            $unset: { reconciliationLeaseUntil: '' },
+                        },
+                    ),
+                    db.collection('pagamentos.atribuicoes').updateOne(
+                        { compraId: lease._id },
+                        {
+                            $set: {
+                                reconciliationReason: 'INSTALLMENT_PLAN_RECONCILIATION_MISMATCH',
+                                reviewRequiredAt: reviewAt,
+                                updatedAt: reviewAt,
+                            },
+                        },
+                    ),
+                ]);
+                counters.pending += 1;
+                continue;
+            }
+            const finalStatus = await reconcileInstallmentPayments(
+                db,
+                client,
+                lease,
+                lookup.records,
+            );
+            if (finalStatus === 'REFUNDED') counters.refunded += 1;
+            else if (finalStatus === 'CONFIRMED') counters.confirmed += 1;
+            else counters.pending += 1;
+            continue;
+        }
+
         if (lease.status === 'CONFIRMED') {
             const lookup = await lookupPendingPayment(apiUrl, apiKey, lease);
             if (!lookup.conclusive) {
@@ -403,7 +482,7 @@ export async function POST(request: Request) {
             }
 
             if (lookup.record && isGatewayPaymentRefunded(gatewayStatus(lookup.record))) {
-                if (await refundPendingPayment(db, client, lease)) {
+                if (await reconcileRefundedPayment(db, client, lease, lookup.record)) {
                     counters.refunded += 1;
                 }
                 continue;
@@ -411,7 +490,7 @@ export async function POST(request: Request) {
 
             if (
                 !lookup.record ||
-                !isGatewayPaymentConfirmed(gatewayStatus(lookup.record))
+                !isGatewayPaymentConfirmed(lookup.record)
             ) {
                 await db.collection('pagamentos.sessoes').updateOne(
                     { _id: lease._id, status: 'CONFIRMED' },
@@ -469,14 +548,14 @@ export async function POST(request: Request) {
 
             if (lookup.record) {
                 const status = gatewayStatus(lookup.record);
-                if (isGatewayPaymentConfirmed(status)) {
-                    if (await confirmPendingPayment(db, client, lease, lookup.record)) {
+                if (isGatewayPaymentConfirmed(lookup.record)) {
+                    if (await reconcileConfirmedPayment(db, client, lease, lookup.record)) {
                         counters.confirmed += 1;
                     }
                     continue;
                 }
                 if (isGatewayPaymentRefunded(status)) {
-                    if (await refundPendingPayment(db, client, lease)) {
+                    if (await reconcileRefundedPayment(db, client, lease, lookup.record)) {
                         counters.refunded += 1;
                     }
                     continue;
@@ -653,6 +732,29 @@ export async function POST(request: Request) {
                 Number(checkedPending.reconciliationEmptyChecks || 0) >= 2 &&
                 now.getTime() >= safeCancellationTime
             ) {
+                if (checkedPending.orderId) {
+                    const checkoutCancellation = await requestCheckoutCancellation(
+                        apiUrl,
+                        apiKey,
+                        String(checkedPending.orderId),
+                    );
+                    if (!checkoutCancellation.confirmed) {
+                        await db.collection('pagamentos.sessoes').updateOne(
+                            { _id: checkedPending._id },
+                            {
+                                $set: {
+                                    gatewayState: 'CHECKOUT_CANCELLATION_UNCONFIRMED',
+                                    reconciliationReason: 'CHECKOUT_CANCELLATION_UNCONFIRMED',
+                                    reviewRequiredAt: new Date(),
+                                    gatewayCancellationLastStatus: checkoutCancellation.status,
+                                    updatedAt: new Date(),
+                                },
+                            },
+                        );
+                        counters.pending += 1;
+                        continue;
+                    }
+                }
                 if (
                     await cancelUnpaidSession(
                         db,
@@ -683,11 +785,11 @@ export async function POST(request: Request) {
             checkoutRecord = { id: lease.orderId, link: lease.paymentUrl };
         } else {
             const externalReference = encodeURIComponent(String(lease._id));
-            const headers = { accept: 'application/json', access_token: apiKey };
+            const headers = asaasRequestHeaders(apiKey, { apiUrl });
             try {
                 const paymentsResponse = await fetch(
                     `${apiUrl}/payments?externalReference=${externalReference}&limit=1`,
-                    { headers },
+                    { headers, signal: AbortSignal.timeout(8_000) },
                 );
                 if (paymentsResponse.ok) {
                     providerRecord = firstGatewayItem(
@@ -701,6 +803,47 @@ export async function POST(request: Request) {
                 lookupConclusive = false;
                 console.error('Falha temporária ao consultar cobrança para conciliação:', error);
             }
+        }
+
+        if (
+            providerRecord &&
+            lease.installmentPlan &&
+            !lease.installmentPlan.installmentId &&
+            providerRecord.installment
+        ) {
+            const hydration = await runPaymentTransaction(client, (mongoSession) => processEvent(
+                db,
+                {
+                    id: `reconciliation:${lease._id}:${String(providerRecord?.id || 'unknown')}:PAYMENT_CREATED`,
+                    event: 'PAYMENT_CREATED',
+                    payment: providerRecord,
+                },
+                mongoSession,
+            ));
+            if (hydration.requiresReview) {
+                await db.collection('pagamentos.sessoes').updateOne(
+                    { _id: lease._id },
+                    { $unset: { reconciliationLeaseUntil: '' } },
+                );
+                counters.pending += 1;
+                continue;
+            }
+            lease.installmentPlan.installmentId = String(providerRecord.installment);
+        }
+
+        if (providerRecord && isGatewayPaymentConfirmed(providerRecord)) {
+            if (await reconcileConfirmedPayment(db, client, lease, providerRecord)) {
+                counters.confirmed += 1;
+                counters.recovered += 1;
+            }
+            continue;
+        }
+        if (providerRecord && isGatewayPaymentRefunded(gatewayStatus(providerRecord))) {
+            if (await reconcileRefundedPayment(db, client, lease, providerRecord)) {
+                counters.refunded += 1;
+                counters.recovered += 1;
+            }
+            continue;
         }
 
         if (providerRecord || checkoutRecord) {
@@ -723,6 +866,13 @@ export async function POST(request: Request) {
                                 checkoutRecord?.link ||
                                 lease.paymentUrl ||
                                 null,
+                            ...(providerRecord?.installment && lease.installmentPlan
+                                ? {
+                                    'installmentPlan.installmentId': String(
+                                        providerRecord.installment,
+                                    ),
+                                }
+                                : {}),
                             updatedAt: new Date(),
                         },
                         $unset: { reconciliationLeaseUntil: '' },
@@ -745,6 +895,20 @@ export async function POST(request: Request) {
                     },
                     mongoSession,
                 );
+                if (providerRecord?.installment && lease.installmentPlan) {
+                    await db.collection('pagamentos.atribuicoes').updateOne(
+                        { compraId: lease._id },
+                        {
+                            $set: {
+                                'installmentPlan.installmentId': String(
+                                    providerRecord.installment,
+                                ),
+                                updatedAt: new Date(),
+                            },
+                        },
+                        { session: mongoSession },
+                    );
+                }
                 await db.collection('usuarios').updateOne(
                     { _id: lease.owner, 'pagamento.situacao': { $ne: 1 } },
                     { $set: { 'pagamento.situacao': 2 } },

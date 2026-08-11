@@ -36,4 +36,12 @@ export default interface PaymentTicketProps {
     status: PaymentSessionStatus;
     paymentUrl?: string | null;
     expiresAt: Date | string;
+    checkoutExpiresAt?: Date | string | null;
+    previousSessionId?: ObjectId | string;
+    paymentMethodSwitch?: {
+        target?: "CREDIT_CARD";
+        status?: "CANCELLING" | "RETRYABLE" | "REVIEW_REQUIRED" | "PAYMENT_DETECTED" | "COMPLETED";
+        replacementSessionId?: ObjectId | string;
+        reason?: string;
+    };
 }

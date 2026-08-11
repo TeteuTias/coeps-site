@@ -43,10 +43,7 @@ export async function getActivePaymentConfig(db: Db): Promise<ActivePaymentConfi
             edicaoId: configuredEdition,
             ativo: true,
         });
-
-        if (byEdition) {
-            return byEdition as ActivePaymentConfig;
-        }
+        return byEdition as ActivePaymentConfig | null;
     }
 
     const explicitlyActive = await db.collection('ingressos_config').findOne(
@@ -148,7 +145,7 @@ export async function getCurrentAutomaticLot(
         {
             'pagamento.situacao': 1,
             'pagamento.edicaoId': edicaoId,
-            // 'pagamento.compraId': { $exists: false },
+            'pagamento.compraId': { $exists: false },
             'pagamento.tipo_pagamento': { $not: /^organizador$/i },
         },
         { session: mongoSession },

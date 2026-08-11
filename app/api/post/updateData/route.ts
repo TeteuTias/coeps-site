@@ -1,149 +1,117 @@
-import { connectToDatabase } from '../../../lib/mongodb'
 import { ObjectId } from 'bson';
+import { connectToDatabase } from '../../../lib/mongodb';
 import { getSession, withApiAuthRequired } from '@/lib/auth0-compat';
-import { IUser } from '@/lib/types/user/user.t';
-//
-//
-// Aqui ele sempre pega os mesmos parametros para realizar o update.
-// assim, SEMPRE ENNVIE NESSE FORMATO: {cpf, numero_telefone, nome}
-/** @type {any} */
+import type { IUser } from '@/lib/types/user/user.t';
+import { asaasRequestHeaders, isAsaasRetryableStatus } from '@/lib/payments/asaas';
+import { ensureAsaasCustomer } from '@/lib/payments/customer-provisioning';
+
 export const POST = withApiAuthRequired(async function POST(request) {
     try {
-        // Puxando informações
         const { user } = await getSession();
-        
-        const userId = user.sub.replace("auth0|", ""); // Retirando o auth0|  
-
-        if (!userId) {
-            return Response.json({ "erro": "!userId" })
+        const userId = String(user.sub || '').replace(/^auth0\|/, '');
+        if (!ObjectId.isValid(userId)) {
+            return Response.json(
+                { error: 'invalid_user_id', message: 'Identificador de usuário inválido.' },
+                { status: 400 },
+            );
         }
 
-        const ASAAS_API_KEY = process.env.ASAAS_API_KEY //process.env.ASAAS_API_KEY
-        const ASAAS_API_URL = process.env.ASAAS_API_URL + "/customers"
+        const apiKey = process.env.ASAAS_API_KEY;
+        const apiUrl = process.env.ASAAS_API_URL;
+        if (!apiKey || !apiUrl) {
+            return Response.json(
+                { error: 'payment_gateway_not_configured', message: 'Gateway não configurado.' },
+                { status: 503 },
+            );
+        }
 
-        const data = await request.json()
-
+        const data = await request.json();
+        const userObjectId = new ObjectId(userId);
         const { db } = await connectToDatabase();
+        const userDb: IUser | null = await db.collection('usuarios').findOne({
+            _id: userObjectId,
+        });
+        const customerPayload = {
+            name: data.nome,
+            email: String(user.email || ''),
+            cpfCnpj: data.cpf,
+            mobilePhone: data.numero_telefone,
+            observations: userId,
+            notificationDisabled: true as const,
+            externalReference: userId,
+            phone: data.phone,
+            address: data.address,
+            addressNumber: data.addressNumber,
+            complement: data.complement,
+            province: data.province,
+            postalCode: data.postalCode,
+            city: data.cidade_nome,
+        };
 
-        const userDb: IUser | null = await db.collection('usuarios').findOne({ "_id": new ObjectId(userId) })
-        if (!userDb) {
-            const b = new ObjectId(userId)
-            //
-            // Para não ficar criando um Customer novo sempre, vou verificar se já existe. Caso exista, 
-            // vamos apenas atualiza-lo. Caso contrário, será criado normalmente.
-            const options = {
-                method: 'POST',
-                headers: {
-                    accept: 'application/json',
-                    'content-type': 'application/json',
-                    access_token: ASAAS_API_KEY
-                },
-                body: JSON.stringify({
-                    'name': data.nome,
-                    'email': user.email,
-                    'cpfCnpj': data.cpf,
-                    'mobilePhone': data.numero_telefone,
-                    'observations': userId,
-                    'notificationDisabled': true,
-                    "externalReference": userId,
-                    // NOVO
-                    phone: data.phone,
-                    address: data.address,
-                    addressNumber: data.addressNumber,
-                    complement: data.complement,
-                    province: data.province,
-                    postalCode: data.postalCode,
-                    city: data.cidade_nome
-                })
+        let customerId = typeof userDb?.id_api === 'string' && userDb.id_api.trim()
+            ? userDb.id_api.trim()
+            : null;
+        if (!customerId) {
+            const ensuredCustomer = await ensureAsaasCustomer({
+                db,
+                userId,
+                customer: customerPayload,
+                apiUrl,
+                apiKey,
+            });
+            if (ensuredCustomer.ok === false) {
+                return Response.json(
+                    {
+                        error: ensuredCustomer.code.toLowerCase(),
+                        message: ensuredCustomer.status === 409
+                            ? 'O cadastro do cliente já está em processamento ou exige revisão.'
+                            : 'Não foi possível confirmar o cadastro do cliente no gateway.',
+                    },
+                    { status: ensuredCustomer.status },
+                );
             }
-            //
-            var id_api = ""
-            const response = await fetch(ASAAS_API_URL, options)
-            // console.log(responseJson)
-            if (!response.ok) {
-                const errorText = await response.json()
-                throw ({ "message": errorText.errors[0].description })
-            }
-            var responseJson = await response.json()
-            id_api = responseJson.id
-            //
-            //
-            //
-            const userInsert: IUser = {
-                //@ts-expect-error: Apenas um problema de tipificação.
-                _id: b,
-                id_api: id_api,
-                isPos_registration: true,
-                informacoes_usuario: {
-                    cpf: data.cpf,
-                    numero_telefone: data.numero_telefone,
-                    nome: data.nome,
-                    email: user.email,
-                    data_criacao: new Date(),
-                    titulo_honorario: '',
-                    país: data.pais,
-                    cidade: data.cidade,
-                    data_nascimento: data.data_nascimento,
-                    onde_conheceu: data.onde_conheceu,
-                    curso: data.curso,
-                    ano_conclusao: Number(data.ano_conclusao),
-                    semestre_conclusao: Number(data.semestre_conclusao)
-                },
-                pagamento: {
-                    //@ts-expect-error: Apenas um problema de tipificação.
-                    _id: b,
-                    situacao: 0,
-                    lista_pagamentos: [],
-                    situacao_animacao: false,
-                    tipo_pagamento: ''
+            customerId = ensuredCustomer.customerId;
+        } else {
+            // Comportamento existente preservado para Customer já vinculado.
+            try {
+                const response = await fetch(
+                    `${apiUrl.replace(/\/$/, '')}/customers/${encodeURIComponent(customerId)}`,
+                    {
+                        method: 'PUT',
+                        headers: asaasRequestHeaders(apiKey, { json: true, apiUrl }),
+                        signal: AbortSignal.timeout(10_000),
+                        body: JSON.stringify(customerPayload),
+                    },
+                );
+                if (!response.ok) {
+                    const retryable =
+                        isAsaasRetryableStatus(response.status) ||
+                        [401, 403].includes(response.status);
+                    return Response.json(
+                        {
+                            error: 'customer_update_failed',
+                            message: 'Não foi possível atualizar o cliente no gateway.',
+                        },
+                        { status: retryable ? 503 : 422 },
+                    );
                 }
+            } catch {
+                return Response.json(
+                    {
+                        error: 'customer_update_response_unknown',
+                        message: 'Não foi possível confirmar a atualização do cliente no gateway.',
+                    },
+                    { status: 503 },
+                );
             }
-            await db.collection('usuarios').insertOne(userInsert)
-            return Response.json({ "sucesso": "Ocorreu Tudo Certo!" })
         }
-        // Se o userDb existir, vamos apenas atualizar os dados
-        //
-        // Para não ficar criando um Customer novo sempre, vou verificar se já existe. Caso exista, 
-        // vamos apenas atualiza-lo. Caso contrário, será criado normalmente.
-        const options = {
-            method: 'PUT',
-            headers: {
-                accept: 'application/json',
-                'content-type': 'application/json',
-                access_token: ASAAS_API_KEY
-            },
-            body: JSON.stringify({
-                'name': data.nome,
-                'email': user.email,
-                'cpfCnpj': data.cpf,
-                'mobilePhone': data.numero_telefone,
-                'observations': userId,
-                'notificationDisabled': true,
-                "externalReference": userId,
-                // NOVO
-                phone: data.phone,
-                address: data.address,
-                addressNumber: data.addressNumber,
-                complement: data.complement,
-                province: data.province,
-                postalCode: data.postalCode,
-                city: data.cidade_nome
 
-            })
-        }
-        //
-        const response = await fetch(`${ASAAS_API_URL}/${userDb.id_api}`, options)
-        if (!response.ok) {
-            const errorText = await response.json()
-            throw ({ "message": errorText.errors[0].description })
-        }
-        var responseJson = await response.json()
-        const putUser: IUser["informacoes_usuario"] = { // informações que vão ser atualizadas sobre o usuário.
+        const userInformation: IUser['informacoes_usuario'] = {
             cpf: data.cpf,
             numero_telefone: data.numero_telefone,
             nome: data.nome,
-            email: user.email,
-            data_criacao: userDb.informacoes_usuario.data_criacao,
+            email: String(user.email || ''),
+            data_criacao: userDb?.informacoes_usuario?.data_criacao || new Date(),
             titulo_honorario: '',
             país: data.pais,
             cidade: data.cidade,
@@ -151,22 +119,33 @@ export const POST = withApiAuthRequired(async function POST(request) {
             onde_conheceu: data.onde_conheceu,
             curso: data.curso,
             ano_conclusao: Number(data.ano_conclusao),
-            semestre_conclusao: Number(data.semestre_conclusao)
-        }
-        await db.collection('usuarios').findOneAndUpdate({ "_id": new ObjectId(userId) }, {
-            "$set": {
-                'isPos_registration': true,
-                'informacoes_usuario': putUser
-            }
-        })
-        return Response.json({ "sucesso": "Ocorreu Tudo Certo!" })
-    }
-    catch {
+            semestre_conclusao: Number(data.semestre_conclusao),
+        };
+        await db.collection('usuarios').updateOne(
+            { _id: userObjectId },
+            {
+                $set: {
+                    id_api: customerId,
+                    isPos_registration: true,
+                    informacoes_usuario: userInformation,
+                },
+                $setOnInsert: {
+                    pagamento: {
+                        _id: userObjectId,
+                        situacao: 0,
+                        lista_pagamentos: [],
+                        situacao_animacao: false,
+                        tipo_pagamento: '',
+                    },
+                },
+            },
+            { upsert: true },
+        );
+        return Response.json({ sucesso: 'Ocorreu Tudo Certo!' });
+    } catch {
         return Response.json(
-            { error: "internal_server_error", message: "Não foi possível salvar os dados do usuário." },
-            { status: 500 }
-        )
+            { error: 'internal_server_error', message: 'Não foi possível salvar os dados do usuário.' },
+            { status: 500 },
+        );
     }
-
-
-})
+});

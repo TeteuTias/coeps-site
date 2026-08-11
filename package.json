@@ -9,7 +9,10 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test:payments": "node --experimental-strip-types --test \"app/lib/payments/__tests__/*.test.ts\"",
-    "migrate:payment-codes": "node scripts/migrations/setup-payment-codes.mjs"
+    "test:payments:integration": "node --experimental-strip-types --test --test-concurrency=1 \"app/lib/payments/__tests__/integration/*.test.ts\"",
+    "migrate:payment-codes": "node scripts/migrations/setup-payment-codes.mjs",
+    "migrate:payment-indexes": "node scripts/migrations/setup-payment-indexes.mjs",
+    "payment:credentials": "node scripts/payments/derive-payment-credentials.mjs"
   },
   "dependencies": {
     "@auth0/nextjs-auth0": "^4.22.0",
@@ -40,6 +43,7 @@
     "@types/react": "^19.1.8",
     "eslint": "^9.0.0",
     "eslint-config-next": "16.2.7",
+    "mongodb-memory-server": "11.2.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.8.3"

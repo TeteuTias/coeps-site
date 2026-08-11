@@ -3,7 +3,7 @@
 import PagamentosManual from './paginaPagamentoAntigo';
 import 'react-credit-cards-2/dist/es/styles-compiled.css';
 import { useUser } from "@/lib/auth0-client"
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import Link from "next/link";
 import Cards from 'react-credit-cards-2';
 import { IUser } from "@/app/lib/types/user/user.t"
@@ -353,11 +353,20 @@ function PaymentSessionActive({
     const [textError, setTextError] = useState<string | false>(false);
     const [paymentType, setpaymentType] = useState<"PIX" | "CREDIT_CARD" | "NONE">(() => {
         const session = dataPayment.sessaoPagamentoAutomáticoAtiva;
+        if (session.metodoPagamento === "CREDIT_CARD") return "CREDIT_CARD";
         return session.metodoPagamento === "PIX" || (!session.metodoPagamento && session.paymentUrl) ? "PIX" : "NONE";
     });
     const [copied, setCopied] = useState(false);
     const [isCreatingPix, setIsCreatingPix] = useState(false);
     const [pixError, setPixError] = useState<string | null>(null);
+    const [switchConfirmOpen, setSwitchConfirmOpen] = useState(false);
+    const [isSwitchingToCard, setIsSwitchingToCard] = useState(false);
+    const [switchMessage, setSwitchMessage] = useState<string | null>(null);
+    const [checkoutAwaitingVerification, setCheckoutAwaitingVerification] = useState(false);
+    const [isRefreshingProcessing, setIsRefreshingProcessing] = useState(false);
+    const [processingRefreshError, setProcessingRefreshError] = useState<string | null>(null);
+    const expirationRefreshRequested = useRef(false);
+    const processingRefreshInFlight = useRef(false);
 
     const paymentSession = paymentConfig.sessaoPagamentoAutomáticoAtiva;
     const lote = paymentSession.paymentConfig;
@@ -367,6 +376,63 @@ function PaymentSessionActive({
         (paymentSession.paymentUrl && (!paymentSession.metodoPagamento || paymentSession.metodoPagamento === "PIX")),
     );
     const paymentMethodLocked = paymentSession.metodoPagamento;
+    const isPixPending = sessionStatus === "PAYMENT_PENDING" && paymentMethodLocked === "PIX";
+    const cardAllowed = paymentSession.metodosPagamentoPermitidos
+        ? paymentSession.metodosPagamentoPermitidos.includes("CREDIT_CARD")
+        : paymentConfig.pagamentosAceitos?.includes("CREDIT_CARD") !== false;
+    const isAwaitingPaymentCreation = sessionStatus === "CREATING_PAYMENT" || (
+        (sessionStatus === "PAYMENT_PENDING" || sessionStatus === "PENDING") && !hasPixCheckout
+    );
+
+    const refreshProcessingPayment = useCallback(async (showError: boolean) => {
+        if (processingRefreshInFlight.current) return;
+        processingRefreshInFlight.current = true;
+        setIsRefreshingProcessing(true);
+
+        try {
+            const response = await fetchWithTimeout('/api/payment/paymentConfigs', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            if (!response.ok) {
+                throw new Error('Não foi possível consultar a situação do pagamento.');
+            }
+
+            const refreshedConfig = await response.json() as PaymentConfigView;
+            if (refreshedConfig.sessaoPagamentoAutomáticoAtiva === false) {
+                await hydratePage();
+                return;
+            }
+
+            setPaymentConfig(refreshedConfig as IPaymentConfig & {
+                sessaoPagamentoAutomáticoAtiva: PaymentTicketProps;
+            });
+            setProcessingRefreshError(null);
+        } catch {
+            if (showError) {
+                setProcessingRefreshError('Não foi possível atualizar agora. Aguarde alguns segundos e tente novamente.');
+            }
+        } finally {
+            processingRefreshInFlight.current = false;
+            setIsRefreshingProcessing(false);
+        }
+    }, [hydratePage]);
+
+    useEffect(() => {
+        if (!isAwaitingPaymentCreation) return;
+
+        const initialRefresh = window.setTimeout(() => {
+            void refreshProcessingPayment(false);
+        }, 1500);
+        const refreshInterval = window.setInterval(() => {
+            void refreshProcessingPayment(false);
+        }, 5000);
+
+        return () => {
+            window.clearTimeout(initialRefresh);
+            window.clearInterval(refreshInterval);
+        };
+    }, [isAwaitingPaymentCreation, refreshProcessingPayment]);
 
     const handleSelectPix = async () => {
         setpaymentType("PIX");
@@ -388,6 +454,7 @@ function PaymentSessionActive({
             const result = (await response.json().catch(() => ({}))) as {
                 paymentUrl?: string;
                 pixCode?: string | null;
+                checkoutExpiresAt?: string | null;
                 message?: string;
             };
 
@@ -401,6 +468,7 @@ function PaymentSessionActive({
                     ...current.sessaoPagamentoAutomáticoAtiva,
                     paymentUrl: result.paymentUrl,
                     pixCode: result.pixCode ?? current.sessaoPagamentoAutomáticoAtiva.pixCode ?? null,
+                    checkoutExpiresAt: result.checkoutExpiresAt ?? current.sessaoPagamentoAutomáticoAtiva.checkoutExpiresAt ?? null,
                     metodoPagamento: "PIX",
                     status: "PAYMENT_PENDING",
                 },
@@ -412,8 +480,50 @@ function PaymentSessionActive({
         }
     };
 
+    const handleSwitchToCard = async () => {
+        if (isSwitchingToCard) return;
+        setIsSwitchingToCard(true);
+        setSwitchMessage(null);
+        try {
+            const response = await fetchWithTimeout('/api/v1/payment/session/switch-to-credit-card', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: paymentSession._id }),
+            }, 30_000);
+            const result = (await response.json().catch(() => ({}))) as {
+                message?: string;
+                session?: PaymentTicketProps;
+            };
+            if (response.status === 200 && result.session) {
+                setPaymentConfig((current) => ({
+                    ...current,
+                    sessaoPagamentoAutomáticoAtiva: result.session as PaymentTicketProps,
+                }));
+                setpaymentType("CREDIT_CARD");
+                setSwitchConfirmOpen(false);
+                await hydratePage();
+                return;
+            }
+            setSwitchConfirmOpen(false);
+            setSwitchMessage(result.message || 'O cancelamento do PIX ainda precisa ser verificado.');
+            await hydratePage();
+        } catch (error) {
+            setSwitchConfirmOpen(false);
+            setSwitchMessage(
+                error instanceof Error
+                    ? error.message
+                    : 'O cancelamento do PIX ainda precisa ser verificado.',
+            );
+        } finally {
+            setIsSwitchingToCard(false);
+        }
+    };
+
     useEffect(() => {
-        const dataExpiracao = new Date(paymentConfig.sessaoPagamentoAutomáticoAtiva.expiresAt).getTime();
+        const expirationValue = isPixPending && paymentSession.checkoutExpiresAt
+            ? paymentSession.checkoutExpiresAt
+            : paymentSession.expiresAt;
+        const dataExpiracao = new Date(expirationValue).getTime();
         const timer = setInterval(() => {
             const agora = new Date().getTime();
             const diferenca = dataExpiracao - agora;
@@ -421,7 +531,15 @@ function PaymentSessionActive({
             if (diferenca <= 0) {
                 clearInterval(timer);
                 setTempoRestante("00:00");
-                setTextError("O tempo para realizar o pagamento expirou!  Mas não se preocupe, você pode tentar pagar novamente, com o valor atualizado.");
+                if (isPixPending) {
+                    setCheckoutAwaitingVerification(true);
+                    if (!expirationRefreshRequested.current) {
+                        expirationRefreshRequested.current = true;
+                        void hydratePage();
+                    }
+                } else {
+                    setTextError("O tempo da reserva terminou. Atualize para consultar o lote e os valores vigentes.");
+                }
             } else {
                 const minutos = Math.floor((diferenca % (1000 * 60 * 60)) / (1000 * 60));
                 const segundos = Math.floor((diferenca % (1000 * 60)) / 1000);
@@ -434,7 +552,7 @@ function PaymentSessionActive({
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [paymentConfig.sessaoPagamentoAutomáticoAtiva.expiresAt, paymentConfig.sessaoPagamentoAutomáticoAtiva.status]);
+    }, [hydratePage, isPixPending, paymentSession.checkoutExpiresAt, paymentSession.expiresAt]);
 
     if (sessionStatus === "PAYMENT_REVIEW_REQUIRED") {
         return (
@@ -444,12 +562,58 @@ function PaymentSessionActive({
             </div>
         )
     }
-    if (sessionStatus === "CREATING_PAYMENT" || ((sessionStatus === "PAYMENT_PENDING" || sessionStatus === "PENDING") && !hasPixCheckout)) {
+    if (isAwaitingPaymentCreation) {
         return (
-            <div className='pagamentos-main max-w-3xl mx-auto p-6 bg-white rounded-xl shadow-sm border border-linha'>
-                <h1>Seu pagamento está sendo processado</h1>
-                <h1>Aguarde.</h1>
-            </div>
+            <PageShell className="flex items-center justify-center px-4 py-10 sm:px-6">
+                <section
+                    className="w-full max-w-3xl overflow-hidden rounded-lg border border-linha bg-[var(--cieps-paper-strong)] shadow-[var(--cieps-shadow)]"
+                    role="status"
+                    aria-live="polite"
+                >
+                    <div className="h-1.5 w-full bg-gradient-to-r from-goles via-ipe to-araguari" aria-hidden="true" />
+                    <div className="flex min-h-[360px] flex-col items-center justify-center px-6 py-12 text-center sm:px-12">
+                        <span className="mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-goles/20 bg-goles/10 text-goles">
+                            <Loader2 className="animate-spin" size={30} strokeWidth={2.25} aria-hidden="true" />
+                        </span>
+
+                        <span className="text-xs font-bold uppercase tracking-[0.12em] text-goles">
+                            Pagamento seguro
+                        </span>
+                        <h1 className="cieps-display mt-3 text-[clamp(1.75rem,4vw,2.7rem)] font-semibold leading-tight tracking-[-0.03em] text-tinta">
+                            Estamos preparando seu pagamento
+                        </h1>
+                        <p className="mt-4 max-w-xl font-sans text-[0.98rem] leading-7 text-muted">
+                            Estamos confirmando os dados da cobrança com o Asaas. Isso normalmente leva apenas alguns segundos.
+                        </p>
+
+                        <div className="mt-7 flex max-w-xl items-start gap-3 rounded-md border border-araguari/25 bg-araguari/5 px-4 py-3 text-left text-sm leading-6 text-muted">
+                            <CheckCircle className="mt-0.5 shrink-0 text-araguari" size={19} aria-hidden="true" />
+                            <p>
+                                Sua vaga e os valores escolhidos continuam reservados. Não tente gerar outra cobrança enquanto esta verificação estiver em andamento.
+                            </p>
+                        </div>
+
+                        {processingRefreshError && (
+                            <p className="mt-5 max-w-xl text-sm font-semibold text-goles" role="alert">
+                                {processingRefreshError}
+                            </p>
+                        )}
+
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="mt-7"
+                            loading={isRefreshingProcessing}
+                            onClick={() => void refreshProcessingPayment(true)}
+                        >
+                            Atualizar situação
+                        </Button>
+                        <p className="mt-4 text-xs text-muted">
+                            A situação também é atualizada automaticamente nesta página.
+                        </p>
+                    </div>
+                </section>
+            </PageShell>
         )
     }
     if (sessionStatus === "CONFIRMED" || sessionStatus === "PAID") {
@@ -469,12 +633,64 @@ function PaymentSessionActive({
                     handleIsModalError={(value: string | false) => {
                         setTextError(false)
                         void hydratePage()
-                    }
-                    }
+                    }}
                 />
             )}
+            <Modal
+                open={switchConfirmOpen}
+                onClose={() => {
+                    if (!isSwitchingToCard) setSwitchConfirmOpen(false);
+                }}
+                title="Cancelar PIX e trocar para cartão"
+            >
+                <StatusBanner
+                    tone="warning"
+                    title="Confirme antes de continuar"
+                >
+                    O código PIX atual será cancelado no Asaas. Se você já realizou o PIX, não continue: aguarde a confirmação do pagamento.
+                </StatusBanner>
+                <p className='mt-4 text-sm text-muted'>
+                    Após o cancelamento confirmado, criaremos uma nova sessão de cartão com o mesmo lote, preço e desconto.
+                </p>
+                <div className='mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end'>
+                    <Button
+                        variant="ghost"
+                        disabled={isSwitchingToCard}
+                        onClick={() => setSwitchConfirmOpen(false)}
+                    >
+                        Manter PIX
+                    </Button>
+                    <Button
+                        disabled={isSwitchingToCard}
+                        onClick={() => void handleSwitchToCard()}
+                    >
+                        {isSwitchingToCard ? 'Cancelando PIX...' : 'Confirmar troca'}
+                    </Button>
+                </div>
+            </Modal>
 
             <div className='flex flex-col gap-6'>
+
+                {switchMessage && (
+                    <StatusBanner tone="warning" title="Troca de pagamento em verificação">
+                        {switchMessage}
+                    </StatusBanner>
+                )}
+                {checkoutAwaitingVerification && (
+                    <StatusBanner tone="warning" title="Verificando a situação do PIX">
+                        O prazo exibido terminou, mas sua vaga e seu desconto continuam reservados até o Asaas confirmar o estado da cobrança.
+                    </StatusBanner>
+                )}
+                {['CANCELLING', 'RETRYABLE', 'REVIEW_REQUIRED'].includes(String(paymentSession.paymentMethodSwitch?.status || '')) && (
+                    <StatusBanner tone="warning" title="Cancelamento do PIX em andamento">
+                        Não realize um pagamento por cartão enquanto o cancelamento do PIX não for confirmado.
+                    </StatusBanner>
+                )}
+                {paymentSession.paymentMethodSwitch?.status === 'PAYMENT_DETECTED' && (
+                    <StatusBanner tone="info" title="Pagamento PIX identificado">
+                        Aguarde a confirmação do PIX. Uma nova cobrança de cartão não será criada.
+                    </StatusBanner>
+                )}
 
                 {/* CABEÇALHO DE SUCESSO E CRONÔMETRO */}
                 <div className='flex items-center gap-2 text-[#2f7651] font-bold w-full text-center'>
@@ -485,7 +701,9 @@ function PaymentSessionActive({
                         🎉 Parabéns! Sua vaga está reservada.
                     </div>
                     <div className='bg-white px-4 py-2 rounded-md shadow-sm border border-red-200 text-red-600 font-bold flex items-center gap-2'>
-                        <span className='text-sm uppercase tracking-wider text-red-400'>Tempo Restante:</span>
+                        <span className='text-sm uppercase tracking-wider text-red-400'>
+                            {isPixPending ? 'PIX disponível:' : 'Tempo restante:'}
+                        </span>
                         <span className='text-xl'>{tempoRestante}</span>
                     </div>
                 </div>
@@ -553,12 +771,22 @@ function PaymentSessionActive({
                         <button
                             type="button"
                             onClick={() => setpaymentType("CREDIT_CARD")}
-                            disabled={hasPixCheckout || (Boolean(paymentMethodLocked) && paymentMethodLocked !== "CREDIT_CARD")}
+                            disabled={hasPixCheckout || (Boolean(paymentMethodLocked) && paymentMethodLocked !== "CREDIT_CARD") || !cardAllowed}
                             className={`p-4 rounded-xl border-2 font-bold transition-all text-center disabled:cursor-not-allowed disabled:opacity-60 ${paymentType === "CREDIT_CARD" ? 'border-goles bg-goles/10 text-goles' : 'border-linha bg-white text-muted hover:border-goles/40'}`}
                         >
                             Cartão de Crédito
                         </button>
                     </div>
+                    {isPixPending && cardAllowed && (
+                        <button
+                            type="button"
+                            disabled={isSwitchingToCard || paymentSession.paymentMethodSwitch?.status === 'PAYMENT_DETECTED'}
+                            onClick={() => setSwitchConfirmOpen(true)}
+                            className='inline-flex min-h-11 items-center justify-center rounded-lg border border-goles px-5 py-2.5 font-bold text-goles transition-colors hover:bg-goles/5 disabled:cursor-not-allowed disabled:opacity-60'
+                        >
+                            Cancelar PIX e trocar para cartão
+                        </button>
+                    )}
                 </div>
 
                 {/* RENDERIZAÇÃO CONDICIONAL DOS MÉTODOS */}
@@ -580,7 +808,8 @@ function PaymentSessionActive({
                                         </div>
                                         <button
                                             type="button"
-                                            className='mt-2 inline-flex items-center justify-center gap-2 px-6 py-2 bg-[var(--cieps-red)] text-white font-medium rounded-lg hover:bg-[#8f2323] transition-colors'
+                                            disabled={checkoutAwaitingVerification}
+                                            className='mt-2 inline-flex items-center justify-center gap-2 px-6 py-2 bg-[var(--cieps-red)] text-white font-medium rounded-lg hover:bg-[#8f2323] transition-colors disabled:cursor-not-allowed disabled:opacity-60'
                                             onClick={async () => {
                                                 await navigator.clipboard.writeText(paymentSession.pixCode ?? '');
                                                 setCopied(true);
@@ -590,41 +819,42 @@ function PaymentSessionActive({
                                             {copied ? 'Código copiado' : 'Copiar Código PIX'}
                                         </button>
                                     </div> : isCreatingPix ?
-                                    <div className='flex flex-col items-center gap-3 py-4 text-center text-muted' role="status" aria-live="polite">
-                                        <Loader2 className='animate-spin text-[#2f7651]' size={28} aria-hidden="true" />
-                                        <p>Preparando sua cobrança PIX segura...</p>
-                                    </div> : paymentSession.paymentUrl ?
-                                    <div className='flex flex-col items-center justify-center text-center gap-3 w-full'>
-                                        <div className='flex flex-col gap-1'>
-                                            <p className='text-[var(--cieps-ink)] font-bold text-lg'>
-                                                Seu ambiente de pagamento está pronto!
-                                            </p>
-                                            <p className='text-[var(--cieps-muted)] text-sm max-w-sm'>
-                                                Clique no botão abaixo para acessar a página segura e concluir sua transação.
-                                            </p>
-                                        </div>
+                                        <div className='flex flex-col items-center gap-3 py-4 text-center text-muted' role="status" aria-live="polite">
+                                            <Loader2 className='animate-spin text-[#2f7651]' size={28} aria-hidden="true" />
+                                            <p>Preparando sua cobrança PIX segura...</p>
+                                        </div> : paymentSession.paymentUrl ?
+                                            <div className='flex flex-col items-center justify-center text-center gap-3 w-full'>
+                                                <div className='flex flex-col gap-1'>
+                                                    <p className='text-[var(--cieps-ink)] font-bold text-lg'>
+                                                        Seu ambiente de pagamento está pronto!
+                                                    </p>
+                                                    <p className='text-[var(--cieps-muted)] text-sm max-w-sm'>
+                                                        Clique no botão abaixo para acessar a página segura e concluir sua transação.
+                                                    </p>
+                                                </div>
 
-                                        <button
-                                            type="button"
-                                            className='mt-2 inline-flex w-full sm:w-auto items-center justify-center gap-2 px-8 py-3 bg-[#2f7651] text-white font-bold rounded-xl hover:bg-[#245f41] transition-all shadow-md hover:shadow-lg active:scale-95'
-                                            onClick={() => {
-                                                window.open(paymentSession.paymentUrl ?? '', "_blank", 'noopener,noreferrer');
-                                            }}
-                                        >
-                                            Ir para pagamento
-                                            <ArrowRight size={20} aria-hidden="true" />
-                                        </button>
-                                    </div> :
-                                    <div className='flex flex-col items-center justify-center gap-3 text-center'>
-                                        <p className='text-sm text-muted'>A cobrança PIX ainda não foi criada.</p>
-                                        <button
-                                            type="button"
-                                            className='inline-flex items-center justify-center rounded-lg bg-[#2f7651] px-5 py-2.5 font-bold text-white hover:bg-[#245f41]'
-                                            onClick={() => void handleSelectPix()}
-                                        >
-                                            Tentar novamente
-                                        </button>
-                                    </div>
+                                                <button
+                                                    type="button"
+                                                    disabled={checkoutAwaitingVerification}
+                                                    className='mt-2 inline-flex w-full sm:w-auto items-center justify-center gap-2 px-8 py-3 bg-[#2f7651] text-white font-bold rounded-xl hover:bg-[#245f41] transition-all shadow-md hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-60'
+                                                    onClick={() => {
+                                                        window.open(paymentSession.paymentUrl ?? '', "_blank", 'noopener,noreferrer');
+                                                    }}
+                                                >
+                                                    Ir para pagamento
+                                                    <ArrowRight size={20} aria-hidden="true" />
+                                                </button>
+                                            </div> :
+                                            <div className='flex flex-col items-center justify-center gap-3 text-center'>
+                                                <p className='text-sm text-muted'>A cobrança PIX ainda não foi criada.</p>
+                                                <button
+                                                    type="button"
+                                                    className='inline-flex items-center justify-center rounded-lg bg-[#2f7651] px-5 py-2.5 font-bold text-white hover:bg-[#245f41]'
+                                                    onClick={() => void handleSelectPix()}
+                                                >
+                                                    Tentar novamente
+                                                </button>
+                                            </div>
                             }
                         </div>
                     )}
@@ -643,6 +873,7 @@ function PaymentSessionActive({
 }
 //
 function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: PaymentConfigView; hydratePage: () => void }) {
+    const [modalAction, setModalAction] = useState<'refresh-lot' | null>(null);
     const [step, setStep] = useState(0);
     const [textoModal, setTextoModal] = useState<string | false>(false);
     const [loadingModal, setLoadingModal] = useState<boolean>(false);
@@ -816,6 +1047,7 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
 
         ticketRequestInFlight.current = true;
         setLoadingModal(true);
+        setModalAction(null);
         try {
             const paymentPostResponse = await fetchWithTimeout(`/api/v1/payment/session/`, {
                 method: 'POST',
@@ -827,12 +1059,19 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                     codigoRastreio: normalizePaymentCode(codigoRastreio) || null,
                 }),
             });
-            const responseData: { message?: string } = await paymentPostResponse.json().catch(() => ({}));
+            const responseData: { error?: string; message?: string } = await paymentPostResponse.json().catch(() => ({}));
             if (!paymentPostResponse.ok) {
+                if (String(responseData.error || '').toLowerCase() === 'payment_lot_changed') {
+                    resetCodesPreview();
+                    setModalAction('refresh-lot');
+                    setTextoModal(responseData.message || 'O lote vigente foi atualizado.');
+                    return;
+                }
                 throw new Error(responseData.message || "Ocorreu um erro ao processar seu pagamento.");
             }
             await hydratePage();
         } catch (error) {
+            setModalAction(null);
             setTextoModal(error instanceof Error ? error.message : "Ocorreu um erro ao processar seu pagamento.");
         } finally {
             ticketRequestInFlight.current = false;
@@ -843,7 +1082,20 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
     return (
         <div className='pagamentos-main'>
             {loadingModal && <LoadingModal />}
-            {textoModal && <ModalError texto={textoModal} handleIsModalError={(value) => setTextoModal(value)} />}
+            {textoModal && (
+                <ModalError
+                    texto={textoModal}
+                    handleIsModalError={(value) => setTextoModal(value)}
+                    actionLabel={modalAction === 'refresh-lot' ? 'Atualizar valores' : undefined}
+                    onAction={modalAction === 'refresh-lot'
+                        ? async () => {
+                            setStep(0);
+                            resetCodesPreview();
+                            await hydratePage();
+                        }
+                        : undefined}
+                />
+            )}
 
             {/* ETAPA 0: INFORMAÇÕES E VALORES INICIAIS */}
             {step === 0 && (
@@ -1222,7 +1474,6 @@ const LoadingScreen = () => {
                                 <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--cieps-red)]"></span>
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
@@ -1240,11 +1491,24 @@ const LoadingModal = () => {
 };
 
 // Componente de erro (mantido do código original)
-const ModalError = ({ texto, handleIsModalError }: { texto: string; handleIsModalError: (value: string | false) => void }) => {
+const ModalError = ({
+    texto,
+    handleIsModalError,
+    actionLabel,
+    onAction,
+}: {
+    texto: string;
+    handleIsModalError: (value: string | false) => void;
+    actionLabel?: string;
+    onAction?: () => void | Promise<void>;
+}) => {
     return (
         <Modal open onClose={() => handleIsModalError(false)} title="Não foi possível concluir">
             <StatusBanner tone="error" title="O pagamento não foi processado">{texto}</StatusBanner>
-            <Button className="mt-5" full onClick={() => handleIsModalError(false)}>Entendi</Button>
+            <Button className="mt-5" full onClick={() => {
+                handleIsModalError(false);
+                void onAction?.();
+            }}>{actionLabel || 'Entendi'}</Button>
         </Modal>
     );
 };
