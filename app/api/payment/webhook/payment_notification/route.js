@@ -1737,6 +1737,8 @@ export async function handleAsaasWebhookRequest(
       { status: 503 },
     );
   }
+  console.log("Token do Webhook:", derivePaymentCredential('webhook', { apiUrl: process.env.ASAAS_API_URL }))
+  console.log("Token do Webhook RECEBIDO:", receivedToken)
   if (!secureEquals(receivedToken, expectedToken)) {
     return Response.json(
       { error: 'invalid_webhook_token', message: 'Token inválido.' },
