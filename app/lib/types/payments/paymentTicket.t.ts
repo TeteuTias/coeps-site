@@ -44,4 +44,12 @@ export default interface PaymentTicketProps {
         replacementSessionId?: ObjectId | string;
         reason?: string;
     };
+    purchaseCancellation?: {
+        status?: "CANCELLING" | "RETRYABLE" | "REVIEW_REQUIRED" | "PAYMENT_DETECTED" | "COMPLETED";
+        reason?: string;
+        requestedAt?: Date | string;
+        updatedAt?: Date | string;
+        completedAt?: Date | string;
+        gatewayCancellationConfirmedAt?: Date | string;
+    };
 }

@@ -5,6 +5,7 @@ import 'react-credit-cards-2/dist/es/styles-compiled.css';
 import { useUser } from "@/lib/auth0-client"
 import { useState, useEffect, useRef, useCallback } from "react"
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
 import Cards from 'react-credit-cards-2';
 import { IUser } from "@/app/lib/types/user/user.t"
 import { ILoteAutomatico, IPaymentConfig, IParcelamento } from '@/lib/types/payments/payment.t';
@@ -17,6 +18,7 @@ import {
     BarChart3,
     Copy,
     QrCode,
+    CircleX,
 } from 'lucide-react';
 import './style.css';
 import PaymentTicketProps from '@/lib/types/payments/paymentTicket.t';
@@ -348,6 +350,7 @@ function PaymentSessionActive({
     dataPayment: IPaymentConfig & { sessaoPagamentoAutomáticoAtiva: PaymentTicketProps },
     hydratePage: () => void
 }) {
+    const router = useRouter();
     const [paymentConfig, setPaymentConfig] = useState<IPaymentConfig & { sessaoPagamentoAutomáticoAtiva: PaymentTicketProps }>(dataPayment)
     const [tempoRestante, setTempoRestante] = useState<string>("Calculando...");
     const [textError, setTextError] = useState<string | false>(false);
@@ -365,8 +368,12 @@ function PaymentSessionActive({
     const [checkoutAwaitingVerification, setCheckoutAwaitingVerification] = useState(false);
     const [isRefreshingProcessing, setIsRefreshingProcessing] = useState(false);
     const [processingRefreshError, setProcessingRefreshError] = useState<string | null>(null);
+    const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+    const [isCancellingPurchase, setIsCancellingPurchase] = useState(false);
+    const [cancelMessage, setCancelMessage] = useState<string | null>(null);
     const expirationRefreshRequested = useRef(false);
     const processingRefreshInFlight = useRef(false);
+    const purchaseCancellationInFlight = useRef(false);
 
     const paymentSession = paymentConfig.sessaoPagamentoAutomáticoAtiva;
     const lote = paymentSession.paymentConfig;
@@ -382,6 +389,22 @@ function PaymentSessionActive({
         : paymentConfig.pagamentosAceitos?.includes("CREDIT_CARD") !== false;
     const isAwaitingPaymentCreation = sessionStatus === "CREATING_PAYMENT" || (
         (sessionStatus === "PAYMENT_PENDING" || sessionStatus === "PENDING") && !hasPixCheckout
+    );
+    const paymentSwitchStatus = String(paymentSession.paymentMethodSwitch?.status || '');
+    const purchaseCancellationStatus = String(paymentSession.purchaseCancellation?.status || '');
+    const paymentSwitchInProgress = ['CANCELLING', 'RETRYABLE', 'REVIEW_REQUIRED']
+        .includes(paymentSwitchStatus);
+    const purchaseCancellationInProgress = ['CANCELLING', 'RETRYABLE', 'REVIEW_REQUIRED']
+        .includes(purchaseCancellationStatus);
+    const purchaseCancellationDetected = purchaseCancellationStatus === 'PAYMENT_DETECTED';
+    const canOfferPurchaseCancellation = (
+        (sessionStatus === 'OPEN' || isPixPending) &&
+        !isCreatingPix &&
+        !isSwitchingToCard &&
+        !paymentSwitchInProgress &&
+        paymentSwitchStatus !== 'PAYMENT_DETECTED' &&
+        !purchaseCancellationInProgress &&
+        !purchaseCancellationDetected
     );
 
     const refreshProcessingPayment = useCallback(async (showError: boolean) => {
@@ -516,6 +539,46 @@ function PaymentSessionActive({
             );
         } finally {
             setIsSwitchingToCard(false);
+        }
+    };
+
+    const handleCancelPurchase = async () => {
+        if (purchaseCancellationInFlight.current) return;
+        purchaseCancellationInFlight.current = true;
+        setIsCancellingPurchase(true);
+        setCancelMessage(null);
+        try {
+            const response = await fetchWithTimeout('/api/v1/payment/session/cancel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: paymentSession._id }),
+            }, 30_000);
+            const result = (await response.json().catch(() => ({}))) as {
+                message?: string;
+            };
+
+            if (response.status === 200) {
+                setCancelConfirmOpen(false);
+                router.replace('/');
+                return;
+            }
+
+            setCancelConfirmOpen(false);
+            setCancelMessage(
+                result.message || 'O cancelamento ainda precisa ser verificado.',
+            );
+            await refreshProcessingPayment(false);
+        } catch (error) {
+            setCancelConfirmOpen(false);
+            setCancelMessage(
+                error instanceof Error
+                    ? error.message
+                    : 'Não foi possível confirmar o cancelamento agora.',
+            );
+            await refreshProcessingPayment(false);
+        } finally {
+            purchaseCancellationInFlight.current = false;
+            setIsCancellingPurchase(false);
         }
     };
 
@@ -668,9 +731,56 @@ function PaymentSessionActive({
                     </Button>
                 </div>
             </Modal>
+            <Modal
+                open={cancelConfirmOpen}
+                onClose={() => {
+                    if (!isCancellingPurchase) setCancelConfirmOpen(false);
+                }}
+                title="Desistir da compra e sair"
+            >
+                <StatusBanner tone="warning" title="Esta ação libera sua reserva">
+                    {isPixPending
+                        ? 'O checkout PIX será consultado e cancelado no Asaas. Se você já realizou o pagamento, não continue: aguarde a confirmação.'
+                        : 'Sua vaga e o eventual código de desconto serão liberados imediatamente.'}
+                </StatusBanner>
+                <p className='mt-4 text-sm text-muted'>
+                    Ao voltar, a disponibilidade, o lote e os valores podem ser diferentes. O cancelamento não pode ser desfeito.
+                </p>
+                <div className='mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end'>
+                    <Button
+                        variant="ghost"
+                        disabled={isCancellingPurchase}
+                        onClick={() => setCancelConfirmOpen(false)}
+                    >
+                        Continuar compra
+                    </Button>
+                    <Button
+                        variant="danger"
+                        loading={isCancellingPurchase}
+                        onClick={() => void handleCancelPurchase()}
+                    >
+                        {isCancellingPurchase ? 'Cancelando compra...' : 'Cancelar compra e sair'}
+                    </Button>
+                </div>
+            </Modal>
 
             <div className='flex flex-col gap-6'>
 
+                {cancelMessage && (
+                    <StatusBanner tone="warning" title="Cancelamento em verificação">
+                        {cancelMessage}
+                    </StatusBanner>
+                )}
+                {purchaseCancellationInProgress && (
+                    <StatusBanner tone="warning" title="Cancelamento da compra em andamento">
+                        A vaga e o desconto continuam reservados até a confirmação segura do cancelamento.
+                    </StatusBanner>
+                )}
+                {purchaseCancellationDetected && (
+                    <StatusBanner tone="info" title="Pagamento PIX identificado">
+                        A compra não foi cancelada. Aguarde a confirmação do pagamento antes de sair.
+                    </StatusBanner>
+                )}
                 {switchMessage && (
                     <StatusBanner tone="warning" title="Troca de pagamento em verificação">
                         {switchMessage}
@@ -762,7 +872,7 @@ function PaymentSessionActive({
                         <button
                             type="button"
                             onClick={() => void handleSelectPix()}
-                            disabled={isCreatingPix || (Boolean(paymentMethodLocked) && paymentMethodLocked !== "PIX")}
+                            disabled={isCreatingPix || purchaseCancellationInProgress || purchaseCancellationDetected || (Boolean(paymentMethodLocked) && paymentMethodLocked !== "PIX")}
                             aria-busy={isCreatingPix}
                             className={`p-4 rounded-xl border-2 font-bold transition-all text-center disabled:cursor-not-allowed disabled:opacity-60 ${paymentType === "PIX" ? 'border-[#2f7651] bg-[#2f7651]/10 text-[#2f7651]' : 'border-linha bg-white text-muted hover:border-[#2f7651]/40'}`}
                         >
@@ -771,7 +881,7 @@ function PaymentSessionActive({
                         <button
                             type="button"
                             onClick={() => setpaymentType("CREDIT_CARD")}
-                            disabled={hasPixCheckout || (Boolean(paymentMethodLocked) && paymentMethodLocked !== "CREDIT_CARD") || !cardAllowed}
+                            disabled={hasPixCheckout || purchaseCancellationInProgress || purchaseCancellationDetected || (Boolean(paymentMethodLocked) && paymentMethodLocked !== "CREDIT_CARD") || !cardAllowed}
                             className={`p-4 rounded-xl border-2 font-bold transition-all text-center disabled:cursor-not-allowed disabled:opacity-60 ${paymentType === "CREDIT_CARD" ? 'border-goles bg-goles/10 text-goles' : 'border-linha bg-white text-muted hover:border-goles/40'}`}
                         >
                             Cartão de Crédito
@@ -780,12 +890,25 @@ function PaymentSessionActive({
                     {isPixPending && cardAllowed && (
                         <button
                             type="button"
-                            disabled={isSwitchingToCard || paymentSession.paymentMethodSwitch?.status === 'PAYMENT_DETECTED'}
+                            disabled={isSwitchingToCard || purchaseCancellationInProgress || purchaseCancellationDetected || paymentSession.paymentMethodSwitch?.status === 'PAYMENT_DETECTED'}
                             onClick={() => setSwitchConfirmOpen(true)}
                             className='inline-flex min-h-11 items-center justify-center rounded-lg border border-goles px-5 py-2.5 font-bold text-goles transition-colors hover:bg-goles/5 disabled:cursor-not-allowed disabled:opacity-60'
                         >
                             Cancelar PIX e trocar para cartão
                         </button>
+                    )}
+                    {canOfferPurchaseCancellation && (
+                        <div className='flex justify-stretch pt-2 sm:justify-end'>
+                            <Button
+                                type="button"
+                                variant="danger"
+                                className="w-full sm:w-auto"
+                                onClick={() => setCancelConfirmOpen(true)}
+                            >
+                                <CircleX size={18} aria-hidden="true" />
+                                Desistir da compra e sair
+                            </Button>
+                        </div>
                     )}
                 </div>
 

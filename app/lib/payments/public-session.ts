@@ -23,6 +23,7 @@ export function toPublicPaymentSession(session: Document | null) {
         codigoDesconto,
         codigoRastreio,
         paymentMethodSwitch,
+        purchaseCancellation,
         ...publicSession
     } = session;
 
@@ -41,6 +42,14 @@ export function toPublicPaymentSession(session: Document | null) {
                     status: paymentMethodSwitch.status,
                     replacementSessionId: paymentMethodSwitch.replacementSessionId,
                     reason: paymentMethodSwitch.reason,
+                },
+            }
+            : {}),
+        ...(purchaseCancellation && typeof purchaseCancellation === 'object'
+            ? {
+                purchaseCancellation: {
+                    status: purchaseCancellation.status,
+                    reason: purchaseCancellation.reason,
                 },
             }
             : {}),
