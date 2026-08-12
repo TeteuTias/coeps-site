@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X } from 'lucide-react';
+import { CircleUserRound, Menu, X } from 'lucide-react';
 
 const menuItems = [
   { name: 'Sobre', href: '/#sobre' },
@@ -13,9 +13,6 @@ const menuItems = [
   { name: 'Informações', href: '/anais' },
   { name: 'Araguari', href: '/#araguari' },
   { name: 'Contato', href: '/#contato' },
-  {
-    name: "Login", href: "/painel/"
-  },
 ];
 
 export default function Header() {
@@ -47,11 +44,9 @@ export default function Header() {
   }, [menuAberto]);
 
   const itemIsActive = (href: string) => {
-    if (!href.includes("#")) {
-      return;
-    }
-    const route = href.split('#')[0] || '/';
-    if (route === '/') return pathname === '/' && !href.includes('#');
+    if (href.includes('#')) return false;
+    const route = href.replace(/\/$/, '') || '/';
+    if (route === '/') return pathname === '/';
     return pathname === route || pathname.startsWith(`${route}/`);
   };
 
@@ -75,13 +70,16 @@ export default function Header() {
               href={item.href}
               prefetch={false}
               aria-current={itemIsActive(item.href) ? 'page' : undefined}
-              className={`${item.name.toLocaleLowerCase() === "painel" && "underline underline-offset-1 decoration-red-700 font-extrabold"}`}
             >
               {item.name}
             </Link>
           ))}
         </nav>
-        <div className='cieps-header-cta'>
+        <div className="cieps-header-actions">
+          <Link href="/painel/" prefetch={false} className="cieps-header-login">
+            <CircleUserRound size={18} aria-hidden="true" />
+            Área do congressista
+          </Link>
           <Link href="/inscricoes" prefetch={true} className="cieps-header-cta">
             Inscrições
           </Link>
@@ -112,6 +110,15 @@ export default function Header() {
               {item.name}
             </Link>
           ))}
+          <Link
+            href="/painel/"
+            prefetch={false}
+            className="cieps-mobile-login"
+            onClick={() => setMenuAberto(false)}
+          >
+            <CircleUserRound size={18} aria-hidden="true" />
+            Área do congressista
+          </Link>
           <Link
             href="/inscricoes"
             prefetch={false}

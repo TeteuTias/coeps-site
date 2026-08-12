@@ -10,8 +10,13 @@ import {
     transferDiscountReservation,
     updatePaymentAssignment,
 } from './codes.ts';
+import {
+    checkoutPaymentIsCorrelated,
+    lookupCheckoutPayments,
+    paymentPreventsCheckoutCancellation,
+    requestCheckoutCancellation,
+} from './checkout-cancellation.ts';
 import { runPaymentTransaction } from './transactions.ts';
-import { asaasRequestHeaders, isAsaasRetryableStatus } from './asaas.ts';
 
 const SWITCH_LEASE_MS = 45_000;
 const REPLACEMENT_SESSION_MS = 15 * 60_000;
@@ -40,96 +45,6 @@ type SwitchDependencies = {
     fetcher?: typeof fetch;
     now?: Date;
 };
-
-function paymentStatus(payment: Record<string, unknown>): string {
-    return String(payment.status || '').toUpperCase();
-}
-
-export function paymentPreventsPixCancellation(payment: Record<string, unknown>): boolean {
-    const safelyCancellable = new Set([
-        'PENDING',
-        'OVERDUE',
-        'DELETED',
-        'CANCELED',
-        'CANCELLED',
-        'REPROVED',
-        'REFUSED',
-    ]);
-    return !safelyCancellable.has(paymentStatus(payment));
-}
-
-function gatewayPayments(payload: unknown): Record<string, unknown>[] {
-    if (!payload || typeof payload !== 'object') return [];
-    const data = (payload as { data?: unknown }).data;
-    return Array.isArray(data)
-        ? data.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object'))
-        : [];
-}
-
-async function lookupCheckoutPayments(
-    apiUrl: string,
-    apiKey: string,
-    checkoutId: string,
-    fetcher: typeof fetch,
-): Promise<{ conclusive: boolean; payments: Record<string, unknown>[]; status: number | null }> {
-    try {
-        const response = await fetcher(
-            `${apiUrl}/payments?checkoutSession=${encodeURIComponent(checkoutId)}&limit=100`,
-            {
-                headers: asaasRequestHeaders(apiKey, { apiUrl }),
-                signal: AbortSignal.timeout(8_000),
-            },
-        );
-        if (!response.ok) {
-            return { conclusive: false, payments: [], status: response.status };
-        }
-        return {
-            conclusive: true,
-            payments: gatewayPayments(await response.json().catch(() => null)),
-            status: response.status,
-        };
-    } catch {
-        return { conclusive: false, payments: [], status: null };
-    }
-}
-
-export async function requestCheckoutCancellation(
-    apiUrl: string,
-    apiKey: string,
-    checkoutId: string,
-    fetcher: typeof fetch = fetch,
-): Promise<{ confirmed: boolean; retryable: boolean; status: number | null }> {
-    try {
-        const response = await fetcher(
-            `${apiUrl}/checkouts/${encodeURIComponent(checkoutId)}/cancel`,
-            {
-                method: 'POST',
-                headers: asaasRequestHeaders(apiKey, { json: true, apiUrl }),
-                signal: AbortSignal.timeout(10_000),
-            },
-        );
-        return {
-            confirmed: response.status === 200,
-            retryable: isAsaasRetryableStatus(response.status),
-            status: response.status,
-        };
-    } catch {
-        return { confirmed: false, retryable: true, status: null };
-    }
-}
-
-function checkoutPaymentIsCorrelated(
-    payment: Record<string, unknown>,
-    sessionId: ObjectId,
-    checkoutId: string,
-): boolean {
-    const externalReference = String(payment.externalReference || '');
-    const checkoutSession = String(payment.checkoutSession || '');
-    return (
-        (!externalReference || externalReference === sessionId.toHexString()) &&
-        (!checkoutSession || checkoutSession === checkoutId)
-    );
-}
 
 async function setSwitchState(
     db: Db,
@@ -367,9 +282,19 @@ async function acquireSwitchIntent(
             status: 'PAYMENT_PENDING',
             metodoPagamento: 'PIX',
             orderId: { $type: 'string' },
-            $or: [
-                { 'paymentMethodSwitch.leaseUntil': { $exists: false } },
-                { 'paymentMethodSwitch.leaseUntil': { $lte: now } },
+            $and: [
+                {
+                    $or: [
+                        { 'paymentMethodSwitch.leaseUntil': { $exists: false } },
+                        { 'paymentMethodSwitch.leaseUntil': { $lte: now } },
+                    ],
+                },
+                {
+                    $or: [
+                        { purchaseCancellation: { $exists: false } },
+                        { 'purchaseCancellation.status': 'COMPLETED' },
+                    ],
+                },
             ],
         },
         {
@@ -429,9 +354,10 @@ export async function switchPixSessionToCreditCard(
         };
     }
 
+    const sessionId = dependencies.sessionId.toHexString();
     const mismatchedPayment = preflight.payments.some((payment) =>
-        !checkoutPaymentIsCorrelated(payment, dependencies.sessionId, checkoutId));
-    const blockingPayment = preflight.payments.some(paymentPreventsPixCancellation);
+        !checkoutPaymentIsCorrelated(payment, sessionId, checkoutId));
+    const blockingPayment = preflight.payments.some(paymentPreventsCheckoutCancellation);
     if (mismatchedPayment || blockingPayment) {
         await setSwitchState(dependencies.db, dependencies.sessionId, 'PAYMENT_DETECTED', now, {
             'paymentMethodSwitch.reason': mismatchedPayment
@@ -476,7 +402,9 @@ export async function switchPixSessionToCreditCard(
                 checkoutId,
                 fetcher,
             );
-            const paymentDetected = afterFailure.payments.some(paymentPreventsPixCancellation);
+            const paymentDetected = afterFailure.payments.some(
+                paymentPreventsCheckoutCancellation,
+            );
             await setSwitchState(
                 dependencies.db,
                 dependencies.sessionId,

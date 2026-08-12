@@ -8,10 +8,9 @@ import {
     updatePaymentAssignment,
 } from '../../../lib/payments/codes.ts';
 import { runPaymentTransaction } from '../../../lib/payments/transactions.ts';
-import {
-    requestCheckoutCancellation,
-    switchPixSessionToCreditCard,
-} from '../../../lib/payments/pix-switch.ts';
+import { requestCheckoutCancellation } from '../../../lib/payments/checkout-cancellation.ts';
+import { switchPixSessionToCreditCard } from '../../../lib/payments/pix-switch.ts';
+import { cancelPaymentSession } from '../../../lib/payments/purchase-cancellation.ts';
 import {
     cancellationEligibleAtForDelinquency,
     gatewayDeletionWasConfirmed,
@@ -324,6 +323,22 @@ export async function POST(request: Request) {
                             updatedAt: { $lte: staleCreatingCutoff },
                         },
                         {
+                            status: 'OPEN',
+                            $or: [
+                                {
+                                    'purchaseCancellation.status': {
+                                        $in: ['CANCELLING', 'RETRYABLE'],
+                                    },
+                                },
+                                {
+                                    'purchaseCancellation.status': 'REVIEW_REQUIRED',
+                                    'purchaseCancellation.gatewayCancellationConfirmedAt': {
+                                        $exists: true,
+                                    },
+                                },
+                            ],
+                        },
+                        {
                             status: 'CONFIRMED',
                             updatedAt: { $lte: staleConfirmedCutoff },
                         },
@@ -374,6 +389,35 @@ export async function POST(request: Request) {
         counters.inspected += 1;
 
         try {
+
+        if (
+            ['CANCELLING', 'RETRYABLE'].includes(
+                String(lease.purchaseCancellation?.status || ''),
+            ) || (
+                lease.purchaseCancellation?.status === 'REVIEW_REQUIRED' &&
+                lease.purchaseCancellation?.gatewayCancellationConfirmedAt
+            )
+        ) {
+            const cancellationResult = await cancelPaymentSession({
+                db,
+                client,
+                owner: lease.owner as ObjectId,
+                sessionId: lease._id as ObjectId,
+                apiUrl,
+                apiKey,
+            });
+            await db.collection('pagamentos.sessoes').updateOne(
+                { _id: lease._id },
+                { $unset: { reconciliationLeaseUntil: '' } },
+            );
+            if (cancellationResult.kind === 'completed') {
+                counters.cancelled += 1;
+                counters.recovered += 1;
+            } else {
+                counters.pending += 1;
+            }
+            continue;
+        }
 
         if (
             lease.paymentMethodSwitch?.target === 'CREDIT_CARD' &&

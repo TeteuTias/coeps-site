@@ -170,6 +170,10 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                 owner,
                 status: 'OPEN',
                 expiresAt: { $gt: new Date() },
+                $or: [
+                    { purchaseCancellation: { $exists: false } },
+                    { 'purchaseCancellation.status': 'COMPLETED' },
+                ],
             },
             {
                 $set: {

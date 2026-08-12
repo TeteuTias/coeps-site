@@ -8,6 +8,8 @@ import { runPaymentTransaction } from '../../transactions.ts';
 import { findLegacyPaymentContext } from '../../webhook-legacy.ts';
 import { updateUserRegistrationAfterRefund } from '../../codes.ts';
 import { switchPixSessionToCreditCard } from '../../pix-switch.ts';
+import { cancelPaymentSession } from '../../purchase-cancellation.ts';
+import { countReservedTicketPlaces } from '../../config.ts';
 import {
     CUSTOMER_PROVISIONING_COLLECTION,
     ensureAsaasCustomer,
@@ -926,6 +928,337 @@ test('timeout ao cancelar PIX preserva sessao, vaga e desconto', async () => {
     assert.equal(assignment?.status, 'PAGAMENTO_PENDENTE');
     assert.equal(code?.status, 'RESERVADO');
     assert.equal(replacementCount, 0);
+});
+
+test('desistencia OPEN cancela atomicamente, libera vaga e desconto e e idempotente', async () => {
+    const db = client.db('webhook_tests');
+    const owner = new ObjectId();
+    const purchaseId = new ObjectId();
+    const codeId = new ObjectId();
+    const editionId = 'CIEPS-2026';
+    await Promise.all([
+        db.collection('pagamentos.sessoes').insertOne({
+            _id: purchaseId,
+            activeKey: `${editionId}:${owner.toHexString()}:ticket`,
+            owner,
+            edicaoId: editionId,
+            type: 'ticket',
+            status: 'OPEN',
+            expiresAt: new Date(Date.now() + 15 * 60_000),
+            codigoDesconto: { codigoId: codeId, codigo: 'SAIR20', tipo: 'DESCONTO' },
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        }),
+        db.collection('pagamentos.atribuicoes').insertOne({
+            compraId: purchaseId,
+            usuarioId: owner,
+            edicaoId: editionId,
+            status: 'ABERTA',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        }),
+        db.collection('pagamentos.codigos').insertOne({
+            _id: codeId,
+            tipo: 'DESCONTO',
+            status: 'RESERVADO',
+            reserva: {
+                compraId: purchaseId,
+                usuarioId: owner,
+                cobrancaExternaCriada: false,
+                reservadoAte: new Date(Date.now() + 15 * 60_000),
+            },
+        }),
+        db.collection('usuarios').insertOne({
+            _id: owner,
+            pagamento: { situacao: 0 },
+        }),
+    ]);
+    assert.equal(await countReservedTicketPlaces(db, editionId), 1);
+
+    const dependencies = { db, client, owner, sessionId: purchaseId };
+    const concurrentResults = await Promise.all([
+        cancelPaymentSession(dependencies),
+        cancelPaymentSession(dependencies),
+    ]);
+    assert.equal(
+        concurrentResults.some((result) => result.kind === 'completed'),
+        true,
+    );
+
+    const repeated = await cancelPaymentSession(dependencies);
+    assert.equal(repeated.kind, 'completed');
+    const [session, assignment, code, user] = await Promise.all([
+        db.collection('pagamentos.sessoes').findOne({ _id: purchaseId }),
+        db.collection('pagamentos.atribuicoes').findOne({ compraId: purchaseId }),
+        db.collection('pagamentos.codigos').findOne({ _id: codeId }),
+        db.collection('usuarios').findOne({ _id: owner }),
+    ]);
+    assert.equal(session?.status, 'CANCELLED');
+    assert.equal(session?.activeKey, undefined);
+    assert.equal(session?.purchaseCancellation?.status, 'COMPLETED');
+    assert.equal(assignment?.status, 'CANCELADA');
+    assert.equal(code?.status, 'ATIVO');
+    assert.equal(code?.reserva, undefined);
+    assert.equal(user?.pagamento?.situacao, 0);
+    assert.equal(await countReservedTicketPlaces(db, editionId), 0);
+});
+
+test('desistencia nao permite cancelar sessao de outro usuario', async () => {
+    const db = client.db('webhook_tests');
+    const owner = new ObjectId();
+    const purchaseId = new ObjectId();
+    await Promise.all([
+        db.collection('pagamentos.sessoes').insertOne({
+            _id: purchaseId,
+            activeKey: `CIEPS-2026:${owner.toHexString()}:ticket`,
+            owner,
+            edicaoId: 'CIEPS-2026',
+            type: 'ticket',
+            status: 'OPEN',
+            expiresAt: new Date(Date.now() + 15 * 60_000),
+        }),
+        db.collection('pagamentos.atribuicoes').insertOne({
+            compraId: purchaseId,
+            usuarioId: owner,
+            status: 'ABERTA',
+        }),
+    ]);
+
+    const result = await cancelPaymentSession({
+        db,
+        client,
+        owner: new ObjectId(),
+        sessionId: purchaseId,
+    });
+    assert.equal(result.kind, 'not_found');
+    assert.equal(
+        (await db.collection('pagamentos.sessoes').findOne({ _id: purchaseId }))?.status,
+        'OPEN',
+    );
+});
+
+test('desistencia PIX confirmada no Asaas libera recursos sem criar substituta', async () => {
+    const db = client.db('webhook_tests');
+    const owner = new ObjectId();
+    const purchaseId = new ObjectId();
+    const codeId = new ObjectId();
+    await Promise.all([
+        db.collection('pagamentos.sessoes').insertOne({
+            _id: purchaseId,
+            activeKey: `CIEPS-2026:${owner.toHexString()}:ticket`,
+            owner,
+            edicaoId: 'CIEPS-2026',
+            type: 'ticket',
+            status: 'PAYMENT_PENDING',
+            metodoPagamento: 'PIX',
+            orderId: 'checkout_cancel_purchase',
+            expiresAt: new Date(Date.now() - 60_000),
+            codigoDesconto: { codigoId: codeId, codigo: 'PIX20', tipo: 'DESCONTO' },
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        }),
+        db.collection('pagamentos.atribuicoes').insertOne({
+            compraId: purchaseId,
+            usuarioId: owner,
+            status: 'PAGAMENTO_PENDENTE',
+        }),
+        db.collection('pagamentos.codigos').insertOne({
+            _id: codeId,
+            tipo: 'DESCONTO',
+            status: 'RESERVADO',
+            reserva: {
+                compraId: purchaseId,
+                usuarioId: owner,
+                cobrancaExternaCriada: true,
+                reservadoAte: null,
+            },
+        }),
+        db.collection('usuarios').insertOne({
+            _id: owner,
+            pagamento: { situacao: 2 },
+        }),
+    ]);
+    let cancelCalls = 0;
+    const fetcher = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+            cancelCalls += 1;
+            return Response.json({ status: 'CANCELED' });
+        }
+        return Response.json({ data: [] });
+    }) as typeof fetch;
+
+    const result = await cancelPaymentSession({
+        db,
+        client,
+        owner,
+        sessionId: purchaseId,
+        apiUrl: 'https://api-sandbox.asaas.com/v3',
+        apiKey: 'test-key',
+        fetcher,
+    });
+    assert.equal(result.kind, 'completed');
+    assert.equal(cancelCalls, 1);
+    const [session, assignment, code, user, replacementCount] = await Promise.all([
+        db.collection('pagamentos.sessoes').findOne({ _id: purchaseId }),
+        db.collection('pagamentos.atribuicoes').findOne({ compraId: purchaseId }),
+        db.collection('pagamentos.codigos').findOne({ _id: codeId }),
+        db.collection('usuarios').findOne({ _id: owner }),
+        db.collection('pagamentos.sessoes').countDocuments({ previousSessionId: purchaseId }),
+    ]);
+    assert.equal(session?.status, 'CANCELLED');
+    assert.equal(session?.purchaseCancellation?.status, 'COMPLETED');
+    assert.ok(session?.purchaseCancellation?.gatewayCancellationConfirmedAt);
+    assert.equal(assignment?.status, 'CANCELADA');
+    assert.equal(code?.status, 'ATIVO');
+    assert.equal(user?.pagamento?.situacao, 0);
+    assert.equal(replacementCount, 0);
+});
+
+test('pagamento PIX detectado impede desistencia e preserva vaga e desconto', async () => {
+    const db = client.db('webhook_tests');
+    const owner = new ObjectId();
+    const purchaseId = new ObjectId();
+    await Promise.all([
+        db.collection('pagamentos.sessoes').insertOne({
+            _id: purchaseId,
+            activeKey: `CIEPS-2026:${owner.toHexString()}:ticket`,
+            owner,
+            edicaoId: 'CIEPS-2026',
+            type: 'ticket',
+            status: 'PAYMENT_PENDING',
+            metodoPagamento: 'PIX',
+            orderId: 'checkout_payment_detected',
+            expiresAt: new Date(Date.now() - 60_000),
+            codigoDesconto: { codigo: 'PIX10', tipo: 'DESCONTO' },
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        }),
+        db.collection('pagamentos.atribuicoes').insertOne({
+            compraId: purchaseId,
+            usuarioId: owner,
+            status: 'PAGAMENTO_PENDENTE',
+        }),
+        db.collection('pagamentos.codigos').insertOne({
+            tipo: 'DESCONTO',
+            status: 'RESERVADO',
+            reserva: { compraId: purchaseId, usuarioId: owner },
+        }),
+    ]);
+    let cancelCalls = 0;
+    const fetcher = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === 'POST') {
+            cancelCalls += 1;
+            return Response.json({ status: 'CANCELED' });
+        }
+        return Response.json({
+            data: [{
+                status: 'RECEIVED',
+                externalReference: purchaseId.toHexString(),
+                checkoutSession: 'checkout_payment_detected',
+            }],
+        });
+    }) as typeof fetch;
+
+    const result = await cancelPaymentSession({
+        db,
+        client,
+        owner,
+        sessionId: purchaseId,
+        apiUrl: 'https://api-sandbox.asaas.com/v3',
+        apiKey: 'test-key',
+        fetcher,
+    });
+    const [session, assignment, code] = await Promise.all([
+        db.collection('pagamentos.sessoes').findOne({ _id: purchaseId }),
+        db.collection('pagamentos.atribuicoes').findOne({ compraId: purchaseId }),
+        db.collection('pagamentos.codigos').findOne({ 'reserva.compraId': purchaseId }),
+    ]);
+    assert.equal(result.kind, 'payment_detected');
+    assert.equal(cancelCalls, 0);
+    assert.equal(session?.status, 'PAYMENT_PENDING');
+    assert.equal(session?.purchaseCancellation?.status, 'PAYMENT_DETECTED');
+    assert.equal(assignment?.status, 'PAGAMENTO_PENDENTE');
+    assert.equal(code?.status, 'RESERVADO');
+});
+
+test('timeout na desistencia PIX permanece RETRYABLE e pode ser conciliado depois', async () => {
+    const db = client.db('webhook_tests');
+    const owner = new ObjectId();
+    const purchaseId = new ObjectId();
+    await Promise.all([
+        db.collection('pagamentos.sessoes').insertOne({
+            _id: purchaseId,
+            activeKey: `CIEPS-2026:${owner.toHexString()}:ticket`,
+            owner,
+            edicaoId: 'CIEPS-2026',
+            type: 'ticket',
+            status: 'PAYMENT_PENDING',
+            metodoPagamento: 'PIX',
+            orderId: 'checkout_retry_cancel',
+            expiresAt: new Date(Date.now() - 60_000),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        }),
+        db.collection('pagamentos.atribuicoes').insertOne({
+            compraId: purchaseId,
+            usuarioId: owner,
+            status: 'PAGAMENTO_PENDENTE',
+        }),
+    ]);
+    const timeoutFetcher = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === 'POST') throw new Error('timeout');
+        return Response.json({ data: [] });
+    }) as typeof fetch;
+    const dependencies = {
+        db,
+        client,
+        owner,
+        sessionId: purchaseId,
+        apiUrl: 'https://api-sandbox.asaas.com/v3',
+        apiKey: 'test-key',
+    };
+    const pending = await cancelPaymentSession({ ...dependencies, fetcher: timeoutFetcher });
+    assert.equal(pending.kind, 'pending');
+    assert.equal(
+        (await db.collection('pagamentos.sessoes').findOne({ _id: purchaseId }))
+            ?.purchaseCancellation?.status,
+        'RETRYABLE',
+    );
+
+    const successFetcher = (async (_input: RequestInfo | URL, init?: RequestInit) =>
+        init?.method === 'POST'
+            ? Response.json({ status: 'CANCELED' })
+            : Response.json({ data: [] })) as typeof fetch;
+    const completed = await cancelPaymentSession({ ...dependencies, fetcher: successFetcher });
+    assert.equal(completed.kind, 'completed');
+    assert.equal(
+        (await db.collection('pagamentos.sessoes').findOne({ _id: purchaseId }))?.status,
+        'CANCELLED',
+    );
+});
+
+test('falha transacional local preserva sessao OPEN e seus recursos', async () => {
+    const db = client.db('webhook_tests');
+    const owner = new ObjectId();
+    const purchaseId = new ObjectId();
+    await db.collection('pagamentos.sessoes').insertOne({
+        _id: purchaseId,
+        activeKey: `CIEPS-2026:${owner.toHexString()}:ticket`,
+        owner,
+        edicaoId: 'CIEPS-2026',
+        type: 'ticket',
+        status: 'OPEN',
+        expiresAt: new Date(Date.now() + 15 * 60_000),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+    });
+
+    const result = await cancelPaymentSession({ db, client, owner, sessionId: purchaseId });
+    const session = await db.collection('pagamentos.sessoes').findOne({ _id: purchaseId });
+    assert.equal(result.kind, 'pending');
+    assert.equal(session?.status, 'OPEN');
+    assert.ok(session?.activeKey);
+    assert.equal(session?.purchaseCancellation?.status, 'RETRYABLE');
 });
 
 test('migracao index-only exige digest e preserva ledger legado e pagamento protegido', async () => {

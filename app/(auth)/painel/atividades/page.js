@@ -4,7 +4,7 @@ import { createPortal } from "react-dom"
 import WarningModal from "@/components/WarningModal"
 import { DateTime } from "luxon"
 import Link from "next/link"
-import { DollarSign, Users, Calendar, Info, XCircle, CheckCircle, Clock, BookOpen, UserCheck, GraduationCap, Presentation, FlaskConical, Music, Award, Gamepad2, Heart, Stethoscope, Sparkles, Brain, Search } from 'lucide-react';
+import { DollarSign, Users, Calendar, Info, XCircle, CheckCircle, Clock, BookOpen, GraduationCap, Presentation, FlaskConical, Music, Award, Gamepad2, Heart, Sparkles, Brain, Search, MapPin, CheckCircle2 } from 'lucide-react';
 import { AsyncStatePanel } from '@/components/cieps';
 import { fetchWithTimeout, readJsonResponse } from '@/lib/client/fetchWithTimeout';
 import './style.css';
@@ -145,9 +145,9 @@ export default function Minicursos() {
                         });
                         
                         return filteredEvents.length > 0 ? (
-                            <div className="w-full grid grid-cols-1 gap-x-10 gap-y-10 p-4 2xl:grid-cols-3 2xl:gap-2 2xl:gap-x-10 2xl:gap-y-10 lg:grid-cols-2 lg:gap-2 lg:gap-x-10 lg:gap-y-10">
+                            <div className="atividades-grid">
                                 {filteredEvents.map((value, index) => (
-                                    <div key={value._id} className="atividades-card">
+                                    <div key={value._id} className="atividade-card-slot">
                                         <BannerAtividade activity={value} color={activityColors[index % activityColors.length]} userId={data._id} />
                                     </div>
                                 ))}
@@ -185,6 +185,48 @@ const isDateEqualOrAfterToday = (inputDate, participants, maxParticipants) => {
     }
     return 'INSCREVER'
 }
+
+const formatTimeline = (timeline) => {
+    if (!Array.isArray(timeline) || timeline.length === 0) {
+        return [{ label: 'Data e horário a confirmar', location: '' }]
+    }
+
+    return timeline.map((item) => {
+        const start = DateTime.fromISO(item?.date_init || '', { zone: 'America/Sao_Paulo' })
+            .setLocale('pt-BR')
+        const end = DateTime.fromISO(item?.date_end || '', { zone: 'America/Sao_Paulo' })
+            .setLocale('pt-BR')
+
+        if (!start.isValid || !end.isValid) {
+            return {
+                label: 'Data e horário a confirmar',
+                location: item?.local || item?.local_description || '',
+            }
+        }
+
+        const sameDay = start.hasSame(end, 'day')
+        return {
+            label: sameDay
+                ? `${start.toFormat("dd 'de' LLLL")} · ${start.toFormat('HH:mm')}–${end.toFormat('HH:mm')}`
+                : `${start.toFormat("dd LLL, HH:mm")} – ${end.toFormat("dd LLL, HH:mm")}`,
+            location: item?.local || item?.local_description || '',
+        }
+    })
+}
+
+const formatOpeningDate = (value) => {
+    const date = DateTime.fromISO(value || '', { zone: 'America/Sao_Paulo' }).setLocale('pt-BR')
+    return date.isValid ? date.toFormat("dd 'de' LLLL, HH:mm") : null
+}
+
+const activityPriceLabel = (activity) => {
+    if (activity.isFree) return 'Gratuita'
+    if (activity.value === undefined || activity.value === null || activity.value === '') {
+        return 'Atividade paga'
+    }
+    return `R$ ${String(activity.value).replace(/^R\$\s*/i, '')}`
+}
+
 const BannerAtividade = ({ activity, userId, color }) => {
     /*
     name
@@ -196,14 +238,34 @@ const BannerAtividade = ({ activity, userId, color }) => {
     _id
     participants
     */
-    const [buttonText, setButtonText] = useState(isDateEqualOrAfterToday(activity.dateOpen, activity.participants.length, activity.maxParticipants))
-    const [includesUser, setIncludesUser] = useState(activity.participants.includes(userId))
+    const initialParticipants = Array.isArray(activity.participants) ? activity.participants : []
+    const [participantCount, setParticipantCount] = useState(initialParticipants.length)
+    const [buttonText, setButtonText] = useState(isDateEqualOrAfterToday(activity.dateOpen, initialParticipants.length, activity.maxParticipants))
+    const [includesUser, setIncludesUser] = useState(initialParticipants.includes(userId))
     const [modalMessage, setModalMessage] = useState(0)
     const [modalMessage3, setModalMessage3] = useState(0)
     const [modal3Link, setModal3Link] = useState("/pagamentos")
     const [loadingModal, setLoadingModal] = useState(0)
     const [showConfirmRemove, setShowConfirmRemove] = useState(false)
-    const nVagas = activity.maxParticipants - activity.participants.length < 0 ? "0" : activity.maxParticipants - activity.participants.length
+    const nVagas = Math.max(0, Number(activity.maxParticipants || 0) - participantCount)
+    const timeline = formatTimeline(activity.timeline)
+    const openingDate = formatOpeningDate(activity.dateOpen)
+    const visualState = includesUser
+        ? 'registered'
+        : !activity.isOpen
+            ? 'closed'
+            : buttonText === 'CHEIO'
+                ? 'full'
+                : buttonText === 'FECHADO'
+                    ? 'not-open'
+                    : 'open'
+    const stateLabel = {
+        registered: 'Inscrito',
+        closed: 'Inscrições encerradas',
+        full: 'Vagas esgotadas',
+        'not-open': 'Inscrições em breve',
+        open: 'Inscrições abertas',
+    }[visualState]
     // const buttonText = isDateEqualOrAfterToday(activity.dateOpen)
     const handleRegister = async (eventId) => {
         setLoadingModal(1)
@@ -250,6 +312,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
             }
             // handleAlreadyInscribed()
             setIncludesUser(1)
+            setParticipantCount((count) => count + 1)
             setModalMessage(result.message)
             setButtonText('INSCRITO')
         } catch (error) {
@@ -303,6 +366,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
             }
             // handleAlreadyInscribed()
             setIncludesUser(1)
+            setParticipantCount((count) => count + 1)
             setModalMessage3(result.message)
             setModal3Link(result.link || "/pagamentos")
             setButtonText('INSCRITO')
@@ -349,7 +413,8 @@ const BannerAtividade = ({ activity, userId, color }) => {
             setButtonText('INSCREVER')
             */
             setIncludesUser(0)
-            setButtonText(isDateEqualOrAfterToday(activity.dateOpen, Math.max(0, activity.participants.length - 1), activity.maxParticipants))
+            setParticipantCount((count) => Math.max(0, count - 1))
+            setButtonText(isDateEqualOrAfterToday(activity.dateOpen, Math.max(0, participantCount - 1), activity.maxParticipants))
             setModalMessage(result.message)
         } catch (error) {
             setModalMessage(error instanceof Error ? error.message : 'Não foi possível retirar sua inscrição.')
@@ -358,7 +423,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
         }
     };
     return (
-        <div className="atividades-card-container">
+        <article className={`atividades-card-container atividade-state-${visualState}`} style={{ '--atividade-accent': color }}>
             <WarningModal message={modalMessage} textButton={"FECHAR"} closeModal={() => { setModalMessage(0) }} isModal={modalMessage} />
             <WarningModalPayment href={modal3Link} message={modalMessage3} textButton={"FECHAR"} closeModal={() => { setModalMessage3(0) }} isModal={modalMessage3} />
             <LoadingModal isLoading={loadingModal} />
@@ -372,14 +437,14 @@ const BannerAtividade = ({ activity, userId, color }) => {
             {
                 !activity.isFree ?
                     <div className="atividades-preco-tag">
-                        <span>{activity?.value ? activity?.value : ""}</span>
+                        <span>{activityPriceLabel(activity)}</span>
                         <DollarSign size={18} style={{ color: '#541A2C' }} />
                     </div> : ""
             }
             {
                 buttonText == "INSCREVER" && !includesUser ?
                     <div className="atividades-vagas-tag">
-                        <span>{nVagas} Vagas</span>
+                        <span>{nVagas} {nVagas === 1 ? 'vaga' : 'vagas'}</span>
                     </div> : ""
             }
             <div className="atividades-card-content">
@@ -388,24 +453,27 @@ const BannerAtividade = ({ activity, userId, color }) => {
                     {
                         includesUser && activity.isFree ?
                             <div className="atividades-remove-button-container">
-                                <button className="atividades-remove-button" onClick={() => { setShowConfirmRemove(true) }}>
-                                    <XCircle size={24} />
+                                <button type="button" className="atividades-remove-button" aria-label="Cancelar inscrição" title="Cancelar inscrição" onClick={() => { setShowConfirmRemove(true) }}>
+                                    <XCircle size={24} aria-hidden="true" />
+                                    <span className="sr-only">Cancelar inscrição</span>
                                 </button>
                             </div> : ""
                     }
                     {
                         includesUser && !activity.isFree ?
                             <div className="atividades-remove-button-container">
-                                <button className="atividades-remove-button" onClick={() => { setModalMessage("Para cancelar sua inscrição de um evento PAGO, entre em contato com a equipe CIEPS.") }}>
-                                    <XCircle size={24} />
+                                <button type="button" className="atividades-remove-button" aria-label="Ver orientações para cancelar inscrição paga" title="Ver orientações para cancelar inscrição paga" onClick={() => { setModalMessage("Para cancelar sua inscrição de um evento PAGO, entre em contato com a equipe CIEPS.") }}>
+                                    <XCircle size={24} aria-hidden="true" />
+                                    <span className="sr-only">Ver orientações para cancelar</span>
                                 </button>
                             </div> : ""
                     }
-                    <div className="atividades-card-icon">{getActivityIcon(activity)}</div>
+                    <div className="atividades-card-icon">{getActivityIcon(activity, 32)}</div>
                     <div className="atividades-card-title">
                         <h1 className="font-bold text-center" >{activity.name.toLocaleUpperCase()}</h1>
                         <div className='text-[13px] font-semibold text-center pt-2'>
-                            <h2>{new Date(activity.timeline[0].date_init).toLocaleString()} às {new Date(activity.timeline[0].date_end).toLocaleString()}</h2>
+                            <p className="atividades-card-date"><Calendar size={15} aria-hidden="true" /> {timeline[0].label}</p>
+                            {timeline[0].location && <p className="atividades-card-location"><MapPin size={14} aria-hidden="true" /> {timeline[0].location}</p>}
                         </div>
                     </div>
                     <div className="atividades-card-description">
@@ -413,43 +481,37 @@ const BannerAtividade = ({ activity, userId, color }) => {
                             {activity.description}
                         </h1>
                     </div>
-                    <h1>{ }</h1>
-                </div>
-                <div className="atividades-card-footer">
-                    <button className="atividades-card-button" onClick={() => {
-                        activity.isFree ? handleRegister(activity._id) : handlePayedRegister(activity._id)
-                    }} style={{ 'backgroundColor': color }} >
-                        {
-                            ""
-                        }
-
-                    </button> {/* INSCREVER|JÁ INSCRITO|FECHADO  */}
+                    {timeline.length > 1 && <p className="atividades-card-more-dates">+ {timeline.length - 1} outro{timeline.length > 2 ? 's' : ''} horário{timeline.length > 2 ? 's' : ''}</p>}
                 </div>
             </div>
             {
-                (buttonText === 'FECHADO' || !activity.isOpen) &&
-                    <div className="atividades-fechado">FECHADO</div>
+                ['closed', 'not-open'].includes(visualState) &&
+                    <div className="atividades-fechado">
+                        <strong>{stateLabel}</strong>
+                        {visualState === 'not-open' && openingDate && <span>Disponível em {openingDate}</span>}
+                    </div>
             }
             {
-                buttonText === 'CHEIO' &&
-                    <div className="atividades-cheio">CHEIO</div>
+                visualState === 'full' &&
+                    <div className="atividades-cheio">{stateLabel}</div>
             }
             {
-                buttonText === 'INSCREVER' && !includesUser && activity.isOpen &&
-                    <div 
+                visualState === 'open' &&
+                    <button
+                        type="button"
                         className="atividades-inscrever" 
                         onClick={() => {
                             activity.isFree ? handleRegister(activity._id) : handlePayedRegister(activity._id)
                         }}
-                        style={{ cursor: 'pointer' }}
+                        disabled={Boolean(loadingModal)}
                     >
-                        INSCREVER
-                    </div>
+                        {loadingModal ? 'PROCESSANDO...' : activity.isFree ? 'INSCREVER-SE' : 'INSCREVER-SE E PAGAR'}
+                    </button>
             }
             {
-                includesUser && <div className="atividades-inscrito">INSCRITO</div>
+                visualState === 'registered' && <div className="atividades-inscrito"><CheckCircle2 size={15} /> {stateLabel}</div>
             }
-        </div>
+        </article>
     )
 }
 
@@ -556,20 +618,20 @@ const ConfirmRemoveModal = ({ isOpen, onClose, onConfirm, activityName }) => {
 };
 
 // No BannerAtividade, trocar o emoji do topo por um ícone Lucide apropriado conforme o tipo de atividade
-const getActivityIcon = (activity) => {
-  if (!activity) return <BookOpen size={48} />;
+const getActivityIcon = (activity, size = 32) => {
+  if (!activity) return <BookOpen size={size} />;
   const name = activity.name?.toLowerCase() || '';
-  if (!activity.isFree) return <DollarSign size={48} color="#541A2C" />;
-  if (name.includes('minicurso') || name.includes('workshop') || name.includes('curso')) return <GraduationCap size={48} color="#1B305F" />;
-  if (name.includes('palestra') || name.includes('conferência') || name.includes('apresentação')) return <Presentation size={48} color="#1B305F" />;
-  if (name.includes('pesquisa') || name.includes('científico') || name.includes('estudo')) return <FlaskConical size={48} color="#1B305F" />;
-  if (name.includes('festa') || name.includes('social') || name.includes('confraternização')) return <Music size={48} color="#1B305F" />;
-  if (name.includes('premiação') || name.includes('competição') || name.includes('concurso') || name.includes('premio')) return <Award size={48} color="#1B305F" />;
-  if (name.includes('mesa') || name.includes('grupo') || name.includes('equipe')) return <Users size={48} color="#1B305F" />;
-  if (name.includes('trabalho') || name.includes('artigo') || name.includes('publicação')) return <BookOpen size={48} color="#1B305F" />;
-  if (name.includes('jogo') || name.includes('lúdico') || name.includes('interativo')) return <Gamepad2 size={48} color="#1B305F" />;
-  if (name.includes('saúde') || name.includes('médico') || name.includes('clínico') || name.includes('cardio')) return <Heart size={48} color="#1B305F" />;
-  if (name.includes('inovação') || name.includes('tecnologia') || name.includes('moderno')) return <Brain size={48} color="#1B305F" />;
-  if (name.includes('vivência') || name.includes('atividade') || name.includes('experiência')) return <Sparkles size={48} color="#1B305F" />;
-  return <Calendar size={48} color="#1B305F" />;
+  if (!activity.isFree) return <DollarSign size={size} />;
+  if (name.includes('minicurso') || name.includes('workshop') || name.includes('curso')) return <GraduationCap size={size} />;
+  if (name.includes('palestra') || name.includes('conferência') || name.includes('apresentação')) return <Presentation size={size} />;
+  if (name.includes('pesquisa') || name.includes('científico') || name.includes('estudo')) return <FlaskConical size={size} />;
+  if (name.includes('festa') || name.includes('social') || name.includes('confraternização')) return <Music size={size} />;
+  if (name.includes('premiação') || name.includes('competição') || name.includes('concurso') || name.includes('premio')) return <Award size={size} />;
+  if (name.includes('mesa') || name.includes('grupo') || name.includes('equipe')) return <Users size={size} />;
+  if (name.includes('trabalho') || name.includes('artigo') || name.includes('publicação')) return <BookOpen size={size} />;
+  if (name.includes('jogo') || name.includes('lúdico') || name.includes('interativo')) return <Gamepad2 size={size} />;
+  if (name.includes('saúde') || name.includes('médico') || name.includes('clínico') || name.includes('cardio')) return <Heart size={size} />;
+  if (name.includes('inovação') || name.includes('tecnologia') || name.includes('moderno')) return <Brain size={size} />;
+  if (name.includes('vivência') || name.includes('atividade') || name.includes('experiência')) return <Sparkles size={size} />;
+  return <Calendar size={size} />;
 };
