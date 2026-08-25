@@ -199,12 +199,7 @@ export default function Home() {
               />
               <strong>DADG</strong>
             </div>
-          </div>
-        </article>
 
-        <article className="landing-institution-group landing-institution-support">
-          <span className="landing-institution-label">Apoio</span>
-          <div className="landing-logo-row landing-support-row">
             <div className="landing-logo-item landing-logo-imepac" aria-label="IMEPAC Araguari">
               <Image
                 className="imepac-symbol"
@@ -219,7 +214,12 @@ export default function Home() {
                 <small>ARAGUARI</small>
               </span>
             </div>
+          </div>
+        </article>
 
+        <article className="landing-institution-group landing-institution-support">
+          <span className="landing-institution-label">Apoio</span>
+          <div className="landing-logo-row landing-support-row">
             <div
               className="landing-logo-item landing-logo-prefeitura"
               aria-label="Prefeitura de Araguari"
