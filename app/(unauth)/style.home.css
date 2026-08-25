@@ -183,6 +183,7 @@
 
 .landing-hero-photo img {
   object-fit: cover;
+  object-position: center bottom;
 }
 
 .landing-origin {
@@ -419,7 +420,7 @@
   border-top: 1px solid var(--cieps-line);
   display: grid;
   gap: clamp(1.5rem, 5vw, 5rem);
-  grid-template-columns: minmax(240px, 0.45fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.45fr);
   min-height: 92px;
   padding-bottom: 0.9rem;
   padding-top: 0.9rem;
