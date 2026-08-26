@@ -70,4 +70,6 @@ test('cadastro usa reconciliacao para cliente sem id e preserva PUT somente para
     assert.ok(linkedCustomerBranch > ensureCall);
     assert.ok(putCall > linkedCustomerBranch);
     assert.equal(source.includes("method: 'POST'"), false);
+    assert.match(source, /normalizeAsaasCustomerAddress/);
+    assert.equal(source.includes('city: data.cidade_nome'), false);
 });

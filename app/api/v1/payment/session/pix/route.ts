@@ -12,7 +12,11 @@ import {
 import { runPaymentTransaction } from '@/lib/payments/transactions';
 import { isPaymentMethodAllowedForSession } from '@/lib/payments/config';
 import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
-import { asaasRequestHeaders, isAsaasRetryableStatus } from '@/lib/payments/asaas';
+import { isAsaasRetryableStatus } from '@/lib/payments/asaas';
+import {
+    createAsaasCheckoutWithCustomerCityRepair,
+    isAsaasMissingCustomerCityError,
+} from '@/lib/payments/customer-provisioning';
 
 export const POST = withApiAuthRequired(async function POST(request: Request) {
     if (!isPaymentSalesEnabled()) return paymentSalesPausedResponse();
@@ -182,15 +186,21 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                 { status: 409 },
             );
         }
-        let gatewayResponse: Response;
-        try {
-            gatewayResponse = await fetch(`${apiUrl}/checkouts`, {
-                method: 'POST',
-                headers: asaasRequestHeaders(apiKey, { json: true, apiUrl }),
-                signal: AbortSignal.timeout(10_000),
-                body: JSON.stringify(checkoutRequest),
-            });
-        } catch (error) {
+        const checkoutResult = await createAsaasCheckoutWithCustomerCityRepair({
+            customerId: String(user.id_api),
+            address: {
+                postalCode: lockedSession.userProps?.zipCode,
+                address: lockedSession.userProps?.street,
+                addressNumber: lockedSession.userProps?.number,
+                province: lockedSession.userProps?.neighborhood,
+                complement: lockedSession.userProps?.complement,
+            },
+            apiUrl,
+            apiKey,
+            checkout: checkoutRequest,
+        });
+
+        if (checkoutResult.kind === 'checkout_unknown') {
             await db.collection('pagamentos.sessoes').updateOne(
                 { _id: sessionId, status: 'CREATING_PAYMENT' },
                 {
@@ -200,7 +210,10 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                     },
                 },
             );
-            console.error('Resultado desconhecido ao criar checkout PIX:', error);
+            console.error(
+                'Resultado desconhecido ao criar checkout PIX.',
+                { customerCityRepairAttempted: checkoutResult.repairAttempted },
+            );
             return NextResponse.json(
                 {
                     error: 'payment_reconciliation_required',
@@ -210,8 +223,32 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             );
         }
 
-        const gatewayBody = await gatewayResponse.json().catch(() => ({}));
+        if (checkoutResult.kind === 'repair_failed') {
+            await restoreDiscountAfterRejectedCharge(
+                db,
+                sessionId,
+                new Date(existingSession.expiresAt),
+            );
+            await db.collection('pagamentos.sessoes').updateOne(
+                { _id: sessionId, status: 'CREATING_PAYMENT' },
+                { $set: { status: 'OPEN', metodoPagamento: null, updatedAt: new Date() } },
+            );
+            return NextResponse.json(
+                {
+                    error: checkoutResult.repair.code.toLowerCase(),
+                    message: checkoutResult.repair.code === 'CUSTOMER_ADDRESS_INVALID'
+                        ? 'Não foi possível identificar a cidade pelo CEP informado. Revise o endereço.'
+                        : checkoutResult.repair.status === 503
+                          ? 'Não foi possível confirmar o endereço no gateway. Tente novamente.'
+                          : 'O gateway recusou a atualização do endereço. Revise seus dados.',
+                },
+                { status: checkoutResult.repair.status },
+            );
+        }
+
+        const { response: gatewayResponse, body: gatewayBody } = checkoutResult;
         if (!gatewayResponse.ok) {
+            const missingCustomerCity = isAsaasMissingCustomerCityError(gatewayBody);
             if (isAsaasRetryableStatus(gatewayResponse.status)) {
                 await db.collection('pagamentos.sessoes').updateOne(
                     { _id: sessionId, status: 'CREATING_PAYMENT' },
@@ -236,12 +273,15 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
 
             return NextResponse.json(
                 {
-                    error: 'pix_checkout_failed',
-                    message:
-                        gatewayBody?.errors?.[0]?.description ||
-                        'Não foi possível criar o checkout PIX.',
+                    error: missingCustomerCity
+                        ? 'payment_customer_address_invalid'
+                        : 'pix_checkout_failed',
+                    message: missingCustomerCity
+                        ? 'Não foi possível identificar a cidade pelo CEP informado. Revise o endereço.'
+                        : gatewayBody?.errors?.[0]?.description ||
+                          'Não foi possível criar o checkout PIX.',
                 },
-                    { status: isAsaasRetryableStatus(gatewayResponse.status) ? 503 : 422 },
+                { status: isAsaasRetryableStatus(gatewayResponse.status) ? 503 : 422 },
             );
         }
 

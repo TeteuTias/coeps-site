@@ -26,8 +26,43 @@ export type AsaasCustomerPayload = {
     complement?: string;
     province?: string;
     postalCode?: string;
-    city?: string;
 };
+
+export type AsaasCustomerAddress = Pick<
+    AsaasCustomerPayload,
+    'address' | 'addressNumber' | 'complement' | 'province' | 'postalCode'
+>;
+
+type AsaasErrorPayload = {
+    errors?: Array<{
+        code?: unknown;
+        description?: unknown;
+    }>;
+};
+
+export type AsaasCustomerCityRepairResult =
+    | { ok: true; city: string | number }
+    | {
+        ok: false;
+        code: 'CUSTOMER_ADDRESS_INVALID' | 'CUSTOMER_ADDRESS_UPDATE_FAILED';
+        status: 422 | 503;
+    };
+
+export type AsaasCheckoutWithCityRepairResult =
+    | {
+        kind: 'response';
+        response: Response;
+        body: Record<string, any>;
+        repairAttempted: boolean;
+    }
+    | {
+        kind: 'checkout_unknown';
+        repairAttempted: boolean;
+    }
+    | {
+        kind: 'repair_failed';
+        repair: Exclude<AsaasCustomerCityRepairResult, { ok: true }>;
+    };
 
 type EnsureCustomerOptions = {
     db: Db;
@@ -37,6 +72,18 @@ type EnsureCustomerOptions = {
     apiKey: string;
     fetchImpl?: typeof fetch;
     now?: () => Date;
+};
+
+type RepairCustomerCityOptions = {
+    customerId: string;
+    address: Record<string, unknown>;
+    apiUrl: string;
+    apiKey: string;
+    fetchImpl?: typeof fetch;
+};
+
+type CheckoutWithCityRepairOptions = RepairCustomerCityOptions & {
+    checkout: Record<string, unknown>;
 };
 
 export type EnsureCustomerResult =
@@ -62,6 +109,183 @@ function isDuplicateKey(error: unknown) {
 
 function customerId(value: unknown) {
     return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function optionalString(value: unknown): string | undefined {
+    if (value === null || value === undefined) return undefined;
+    const normalized = String(value).trim();
+    return normalized ? normalized : undefined;
+}
+
+function asaasCity(value: unknown): string | number | null {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) return value;
+    if (typeof value === 'string' && value.trim()) return value.trim();
+    return null;
+}
+
+export function normalizeAsaasCustomerAddress(
+    address: Record<string, unknown>,
+): AsaasCustomerAddress {
+    const postalCodeDigits = String(address.postalCode || '').replace(/\D/g, '');
+    const complement = optionalString(address.complement);
+    const normalized: AsaasCustomerAddress = {
+        ...(optionalString(address.address) ? { address: optionalString(address.address) } : {}),
+        ...(optionalString(address.addressNumber)
+            ? { addressNumber: optionalString(address.addressNumber) }
+            : {}),
+        ...(complement && complement.toLocaleLowerCase('pt-BR') !== 'não informado'
+            ? { complement }
+            : {}),
+        ...(optionalString(address.province) ? { province: optionalString(address.province) } : {}),
+        ...(postalCodeDigits.length === 8 ? { postalCode: postalCodeDigits } : {}),
+    };
+    return normalized;
+}
+
+export function isAsaasMissingCustomerCityError(payload: unknown): boolean {
+    const errors = (payload as AsaasErrorPayload | null)?.errors;
+    if (!Array.isArray(errors)) return false;
+
+    return errors.some((error) => {
+        if (String(error?.code || '').toLowerCase() !== 'invalid_object') return false;
+        const description = String(error?.description || '').toLowerCase();
+        return (
+            description.includes('campo city') &&
+            description.includes('deve existir') &&
+            description.includes('customer')
+        );
+    });
+}
+
+export async function repairAsaasCustomerCity({
+    customerId: rawCustomerId,
+    address,
+    apiUrl,
+    apiKey,
+    fetchImpl = fetch,
+}: RepairCustomerCityOptions): Promise<AsaasCustomerCityRepairResult> {
+    const normalizedCustomerId = customerId(rawCustomerId);
+    const normalizedAddress = normalizeAsaasCustomerAddress(address);
+    if (!normalizedCustomerId || !normalizedAddress.postalCode) {
+        return { ok: false, code: 'CUSTOMER_ADDRESS_INVALID', status: 422 };
+    }
+
+    const customerUrl = `${apiUrl.replace(/\/$/, '')}/customers/${encodeURIComponent(normalizedCustomerId)}`;
+    let updateResponse: Response;
+    try {
+        updateResponse = await fetchImpl(customerUrl, {
+            method: 'PUT',
+            headers: asaasRequestHeaders(apiKey, { json: true, apiUrl }),
+            signal: AbortSignal.timeout(10_000),
+            body: JSON.stringify(normalizedAddress),
+        });
+    } catch {
+        return { ok: false, code: 'CUSTOMER_ADDRESS_UPDATE_FAILED', status: 503 };
+    }
+
+    const updateBody = await updateResponse.json().catch(() => null) as Record<string, unknown> | null;
+    if (!updateResponse.ok) {
+        const retryable =
+            isAsaasRetryableStatus(updateResponse.status) ||
+            [401, 403].includes(updateResponse.status);
+        return {
+            ok: false,
+            code: 'CUSTOMER_ADDRESS_UPDATE_FAILED',
+            status: retryable ? 503 : 422,
+        };
+    }
+
+    const updatedCity = asaasCity(updateBody?.city);
+    if (updatedCity !== null) return { ok: true, city: updatedCity };
+
+    let lookupResponse: Response;
+    try {
+        lookupResponse = await fetchImpl(customerUrl, {
+            headers: asaasRequestHeaders(apiKey, { apiUrl }),
+            signal: AbortSignal.timeout(10_000),
+        });
+    } catch {
+        return { ok: false, code: 'CUSTOMER_ADDRESS_UPDATE_FAILED', status: 503 };
+    }
+
+    const lookupBody = await lookupResponse.json().catch(() => null) as Record<string, unknown> | null;
+    if (!lookupResponse.ok) {
+        const retryable =
+            isAsaasRetryableStatus(lookupResponse.status) ||
+            [401, 403].includes(lookupResponse.status);
+        return {
+            ok: false,
+            code: 'CUSTOMER_ADDRESS_UPDATE_FAILED',
+            status: retryable ? 503 : 422,
+        };
+    }
+
+    const confirmedCity = asaasCity(lookupBody?.city);
+    return confirmedCity !== null
+        ? { ok: true, city: confirmedCity }
+        : { ok: false, code: 'CUSTOMER_ADDRESS_INVALID', status: 422 };
+}
+
+async function createAsaasCheckout(
+    apiUrl: string,
+    apiKey: string,
+    checkout: Record<string, unknown>,
+    fetchImpl: typeof fetch,
+) {
+    try {
+        const response = await fetchImpl(`${apiUrl.replace(/\/$/, '')}/checkouts`, {
+            method: 'POST',
+            headers: asaasRequestHeaders(apiKey, { json: true, apiUrl }),
+            signal: AbortSignal.timeout(10_000),
+            body: JSON.stringify(checkout),
+        });
+        const body = await response.json().catch(() => ({})) as Record<string, any>;
+        return { ok: true as const, response, body };
+    } catch {
+        return { ok: false as const };
+    }
+}
+
+export async function createAsaasCheckoutWithCustomerCityRepair({
+    customerId: rawCustomerId,
+    address,
+    apiUrl,
+    apiKey,
+    checkout,
+    fetchImpl = fetch,
+}: CheckoutWithCityRepairOptions): Promise<AsaasCheckoutWithCityRepairResult> {
+    const firstAttempt = await createAsaasCheckout(apiUrl, apiKey, checkout, fetchImpl);
+    if (!firstAttempt.ok) {
+        return { kind: 'checkout_unknown', repairAttempted: false };
+    }
+    if (firstAttempt.response.ok || !isAsaasMissingCustomerCityError(firstAttempt.body)) {
+        return {
+            kind: 'response',
+            response: firstAttempt.response,
+            body: firstAttempt.body,
+            repairAttempted: false,
+        };
+    }
+
+    const repair = await repairAsaasCustomerCity({
+        customerId: rawCustomerId,
+        address,
+        apiUrl,
+        apiKey,
+        fetchImpl,
+    });
+    if (repair.ok === false) return { kind: 'repair_failed', repair };
+
+    const secondAttempt = await createAsaasCheckout(apiUrl, apiKey, checkout, fetchImpl);
+    if (!secondAttempt.ok) {
+        return { kind: 'checkout_unknown', repairAttempted: true };
+    }
+    return {
+        kind: 'response',
+        response: secondAttempt.response,
+        body: secondAttempt.body,
+        repairAttempted: true,
+    };
 }
 
 async function setProvisioningState(

@@ -3,7 +3,10 @@ import { connectToDatabase } from '../../../lib/mongodb';
 import { getSession, withApiAuthRequired } from '@/lib/auth0-compat';
 import type { IUser } from '@/lib/types/user/user.t';
 import { asaasRequestHeaders, isAsaasRetryableStatus } from '@/lib/payments/asaas';
-import { ensureAsaasCustomer } from '@/lib/payments/customer-provisioning';
+import {
+    ensureAsaasCustomer,
+    normalizeAsaasCustomerAddress,
+} from '@/lib/payments/customer-provisioning';
 
 export const POST = withApiAuthRequired(async function POST(request) {
     try {
@@ -31,6 +34,19 @@ export const POST = withApiAuthRequired(async function POST(request) {
         const userDb: IUser | null = await db.collection('usuarios').findOne({
             _id: userObjectId,
         });
+        const customerAddress = normalizeAsaasCustomerAddress({
+            address: data.address,
+            addressNumber: data.addressNumber,
+            complement: data.complement,
+            province: data.province,
+            postalCode: data.postalCode,
+        });
+        if (!customerAddress.postalCode) {
+            return Response.json(
+                { error: 'invalid_customer_address', message: 'Informe um CEP válido com 8 números.' },
+                { status: 400 },
+            );
+        }
         const customerPayload = {
             name: data.nome,
             email: String(user.email || ''),
@@ -40,12 +56,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
             notificationDisabled: true as const,
             externalReference: userId,
             phone: data.phone,
-            address: data.address,
-            addressNumber: data.addressNumber,
-            complement: data.complement,
-            province: data.province,
-            postalCode: data.postalCode,
-            city: data.cidade_nome,
+            ...customerAddress,
         };
 
         let customerId = typeof userDb?.id_api === 'string' && userDb.id_api.trim()
