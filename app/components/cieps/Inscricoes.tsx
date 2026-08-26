@@ -1,4 +1,5 @@
 import { ButtonLink, Card, ImageBox, Kicker } from './ui';
+import { buildSignupEntryPath } from '@/lib/auth-migration-notice';
 
 export default function Inscricoes({ heroImage }: { heroImage?: string }) {
   return (
@@ -13,7 +14,7 @@ export default function Inscricoes({ heroImage }: { heroImage?: string }) {
             A 1ª Edição Internacional recebe estudantes, profissionais e pesquisadores para quatro
             dias de programação, encontros e produção científica em Araguari.
           </p>
-          <ButtonLink href="/painel" className="self-start">
+          <ButtonLink href={buildSignupEntryPath('/painel')} className="self-start">
             Cadastrar agora
           </ButtonLink>
         </div>
@@ -38,7 +39,7 @@ export default function Inscricoes({ heroImage }: { heroImage?: string }) {
           kicker="Fluxo"
           title="Como realizar sua inscrição"
           action={
-            <ButtonLink href="/painel" variant="outline" className="mt-2 self-start">
+            <ButtonLink href={buildSignupEntryPath('/painel')} variant="outline" className="mt-2 self-start">
               Ir para cadastro
             </ButtonLink>
           }

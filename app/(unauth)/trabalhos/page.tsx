@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Button, StatusBanner } from '@/components/cieps';
 import { IAcademicWorksProps } from '@/lib/types/academicWorks/academicWorks.t';
 import { fetchWithTimeout } from '@/lib/client/fetchWithTimeout';
+import { buildAuthEntryPath } from '@/lib/auth-migration-notice';
 import { ArrowRight, CalendarDays, Compass, ExternalLink, FileText, Loader2, Send, Sparkles } from 'lucide-react';
 import './style.css';
 
@@ -117,7 +118,7 @@ export default function Trabalhos() {
             <div className="trabalhos-action-row">
               {config.link_edital && <Link href={config.link_edital} target="_blank" rel="noopener noreferrer" className="cieps-button-outline"><FileText size={18} aria-hidden="true" />Ver edital</Link>}
               {config.link_guia && <Link href={config.link_guia} target="_blank" rel="noopener noreferrer" className="cieps-button-outline"><Compass size={18} aria-hidden="true" />Ver guia</Link>}
-              <Link href="/painel/trabalhos" className="cieps-button"><Send size={18} aria-hidden="true" />Enviar trabalho</Link>
+              <Link href={buildAuthEntryPath('/painel/trabalhos')} className="cieps-button"><Send size={18} aria-hidden="true" />Enviar trabalho</Link>
             </div>
           )}
         </article>
