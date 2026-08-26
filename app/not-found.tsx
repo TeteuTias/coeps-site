@@ -1,4 +1,5 @@
 import { ButtonLink, PageShell, StatusBanner } from '@/components/cieps';
+import { buildAuthEntryPath } from '@/lib/auth-migration-notice';
 
 export default function NotFound() {
   return (
@@ -11,7 +12,7 @@ export default function NotFound() {
         </StatusBanner>
         <div className="mt-6 flex flex-wrap gap-3">
           <ButtonLink href="/">Ir para o início</ButtonLink>
-          <ButtonLink href="/painel" variant="outline">Área do congressista</ButtonLink>
+          <ButtonLink href={buildAuthEntryPath('/painel')} variant="outline">Área do congressista</ButtonLink>
         </div>
       </section>
     </PageShell>

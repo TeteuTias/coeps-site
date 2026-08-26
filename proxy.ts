@@ -3,6 +3,11 @@ import { getAuth0Client, isAuth0Configured } from './app/lib/auth0';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'bson';
 import { IUser } from '@/lib/types/user/user.t';
+import {
+  AUTH_MIGRATION_GATE_COOKIE_NAME,
+  buildAuthEntryPath,
+  isAuthMigrationGateSatisfied,
+} from '@/lib/auth-migration-notice';
 
 const protectedRoutes = [
   '/painel',
@@ -51,15 +56,22 @@ export async function proxy(req) {
   // ============== DAQUI PARA BAIXO, SÓ ROTAS PROTEGIDAS ==============
 
   const session = await auth0.getSession(req);
+  const returnTo = `${req.nextUrl.pathname}${req.nextUrl.search}`;
+  const gateCookie = req.cookies.get(AUTH_MIGRATION_GATE_COOKIE_NAME)?.value;
+  const gateSatisfied = isAuthMigrationGateSatisfied(gateCookie);
 
   // 4. Se não tem sessão em rota protegida, força o login
   if (!session) {
-    const returnTo = `${req.nextUrl.pathname}${req.nextUrl.search}`;
+    if (!gateSatisfied) {
+      return NextResponse.redirect(new URL(buildAuthEntryPath(returnTo), req.nextUrl.origin));
+    }
     return auth0.startInteractiveLogin({ returnTo });
   }
 
   if (!session.user?.sub) {
-    const returnTo = `${req.nextUrl.pathname}${req.nextUrl.search}`;
+    if (!gateSatisfied) {
+      return NextResponse.redirect(new URL(buildAuthEntryPath(returnTo), req.nextUrl.origin));
+    }
     return auth0.startInteractiveLogin({ returnTo });
   }
 
@@ -68,7 +80,9 @@ export async function proxy(req) {
   const { db } = await connectToDatabase();
   const userId = session.user.sub.replace(/^auth0\|/, '');
   if (!ObjectId.isValid(userId)) {
-    const returnTo = `${req.nextUrl.pathname}${req.nextUrl.search}`;
+    if (!gateSatisfied) {
+      return NextResponse.redirect(new URL(buildAuthEntryPath(returnTo), req.nextUrl.origin));
+    }
     return auth0.startInteractiveLogin({ returnTo });
   }
   const user: IUser | null = await db.collection("usuarios").findOne({ _id: new ObjectId(userId) });

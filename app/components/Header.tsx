@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CircleUserRound, Menu, X } from 'lucide-react';
+import { buildAuthEntryPath } from '@/lib/auth-migration-notice';
 
 const menuItems = [
   { name: 'Sobre', href: '/#sobre' },
@@ -14,6 +15,8 @@ const menuItems = [
   { name: 'Araguari', href: '/#araguari' },
   { name: 'Contato', href: '/#contato' },
 ];
+
+const congressistEntryPath = buildAuthEntryPath('/painel');
 
 export default function Header() {
   const [menuAberto, setMenuAberto] = useState(false);
@@ -76,7 +79,7 @@ export default function Header() {
           ))}
         </nav>
         <div className="cieps-header-actions">
-          <Link href="/painel/" prefetch={false} className="cieps-header-login">
+          <Link href={congressistEntryPath} prefetch={false} className="cieps-header-login">
             <CircleUserRound size={18} aria-hidden="true" />
             Área do congressista
           </Link>
@@ -111,7 +114,7 @@ export default function Header() {
             </Link>
           ))}
           <Link
-            href="/painel/"
+            href={congressistEntryPath}
             prefetch={false}
             className="cieps-mobile-login"
             onClick={() => setMenuAberto(false)}

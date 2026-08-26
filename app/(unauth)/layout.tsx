@@ -1,6 +1,7 @@
 import Header from '@/app/components/Header';
 import Image from 'next/image';
 import Link from 'next/link';
+import { buildAuthEntryPath } from '@/lib/auth-migration-notice';
 import './style.home.css';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -54,7 +55,7 @@ function Footer() {
           <Link href="/programacao" prefetch={false}>Programação</Link>
           <Link href="/trabalhos" prefetch={false}>Trabalhos científicos</Link>
           <Link href="/anais" prefetch={false}>Anais</Link>
-          <Link href="/painel" prefetch={false}>Área do congressista</Link>
+          <Link href={buildAuthEntryPath('/painel')} prefetch={false}>Área do congressista</Link>
         </div>
 
         <div className="cieps-footer-column cieps-footer-meta">

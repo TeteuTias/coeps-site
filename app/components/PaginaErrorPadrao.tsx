@@ -1,4 +1,5 @@
 import { ButtonLink, PageShell, StatusBanner } from '@/components/cieps';
+import { buildAuthEntryPath } from '@/lib/auth-migration-notice';
 
 export default function PaginaErrorPadrao({
   title = 'Não foi possível abrir esta página',
@@ -16,7 +17,7 @@ export default function PaginaErrorPadrao({
           {message}
         </StatusBanner>
         <div className="mt-6 flex flex-wrap gap-3">
-          <ButtonLink href="/painel">Voltar ao painel</ButtonLink>
+          <ButtonLink href={buildAuthEntryPath('/painel')}>Voltar ao painel</ButtonLink>
           <ButtonLink href="/" variant="outline">Ir para o site</ButtonLink>
         </div>
       </section>

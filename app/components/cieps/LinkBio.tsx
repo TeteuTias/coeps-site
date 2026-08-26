@@ -1,11 +1,12 @@
 import { ButtonLink, Logo, Stripe } from './ui';
 import { Instagram, Mail, MessageCircle } from 'lucide-react';
+import { buildAuthEntryPath, buildSignupEntryPath } from '@/lib/auth-migration-notice';
 
 const links = [
-  { label: 'Inscrição', href: '/painel', variant: 'solid' as const },
+  { label: 'Inscrição', href: buildSignupEntryPath('/painel'), variant: 'solid' as const },
   { label: 'Conheça nosso site', href: '/', variant: 'outline' as const },
   { label: 'Programação', href: '/programacao', variant: 'outline' as const },
-  { label: 'Submeter trabalho', href: '/painel/trabalhos/enviarTrabalho', variant: 'outline' as const },
+  { label: 'Submeter trabalho', href: buildAuthEntryPath('/painel/trabalhos/enviarTrabalho'), variant: 'outline' as const },
   { label: 'WhatsApp / contato', href: 'https://api.whatsapp.com/send?phone=5562983306426', variant: 'outline' as const },
 ];
 
