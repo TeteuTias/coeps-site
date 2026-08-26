@@ -597,12 +597,11 @@ export async function expireOpenSessionsForOwner(
             owner,
             type: 'ticket',
             ...(edicaoId ? { edicaoId } : {}),
-            status: 'OPEN',
+            status: { $in: ['OPEN', 'PAYMENT_PENDING'] },
             expiresAt: { $lte: now },
         })
         .project<{ _id: ObjectId }>({ _id: 1 })
         .toArray();
-
     for (const session of expiredSessions) {
         const result = await db.collection('pagamentos.sessoes').updateOne(
             {
