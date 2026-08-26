@@ -70,16 +70,26 @@ export default function PasswordMigrationNotice({ returnTo }: { returnTo: string
           <h3 id="password-migration-steps-title">Como recuperar seu acesso</h3>
         </div>
         <ol>
-          <li>Clique em <strong>“Continuar para o login”</strong>.</li>
-          <li>Informe o <strong>mesmo e-mail</strong> que você já utilizava no CIEPS.</li>
           <li>
-            Na tela segura de login do Auth0, clique em <strong>“Redefinir senha”</strong>.
+            <span>Clique em <strong>“Continuar para o login”</strong>.</span>
           </li>
           <li>
-            Abra o e-mail enviado pelo Auth0 — verifique também <strong>Spam</strong> e
-            <strong> Lixo eletrônico</strong> — e defina uma nova senha.
+            <span>Informe o <strong>mesmo e-mail</strong> que você já utilizava no CIEPS.</span>
           </li>
-          <li>Volte ao login e entre utilizando essa nova senha.</li>
+          <li>
+            <span>
+              Na tela segura de login do Auth0, clique em <strong>“Redefinir senha”</strong>.
+            </span>
+          </li>
+          <li>
+            <span>
+              Abra o e-mail enviado pelo Auth0 — verifique também <strong>Spam</strong> e
+              <strong> Lixo eletrônico</strong> — e defina uma nova senha.
+            </span>
+          </li>
+          <li>
+            <span>Volte ao login e entre utilizando essa nova senha.</span>
+          </li>
         </ol>
       </section>
 

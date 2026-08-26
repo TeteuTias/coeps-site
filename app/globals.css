@@ -415,6 +415,10 @@ a {
   grid-template-columns: 2rem 1fr;
 }
 
+.auth-migration-notice-steps li > span {
+  min-width: 0;
+}
+
 .auth-migration-notice-steps li::before {
   align-items: center;
   background: var(--cieps-red);
