@@ -605,7 +605,10 @@ export async function expireOpenSessionsForOwner(
 
     for (const session of expiredSessions) {
         const result = await db.collection('pagamentos.sessoes').updateOne(
-            { _id: session._id, status: 'OPEN' },
+            {
+                _id: session._id,
+                status: { $in: ['OPEN', 'PAYMENT_PENDING'] } // Operador $in correto
+            },
             {
                 $set: { status: 'EXPIRED', updatedAt: now },
                 $unset: { activeKey: '' },
