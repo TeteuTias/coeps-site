@@ -201,15 +201,28 @@ const Pagamentos = () => {
         setRequestVersion((version) => version + 1);
     };
 
-    return (
-        <div>
-            <main className="min-h-screen font-[family-name:var(--cieps-body)] text-[var(--cieps-ink)] pb-12">
-                <div className="mx-auto w-full max-w-[1320px] px-[clamp(1rem,3vw,2rem)] pt-[clamp(2rem,4vw,4rem)]">
-                    <RegistrationTimer />
-                </div>
-            </main>
-        </div>
-    )
+    const [isBeforeNoon, setIsBeforeNoon] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        // Define a data limite para hoje às 12:00:00
+        const target = new Date();
+        target.setHours(12, 0, 0, 0);
+
+        // Condição: verdadeiro se a data atual for menor que hoje às 12:00
+        setIsBeforeNoon(new Date() < target);
+    }, []);
+    if (isBeforeNoon) {
+
+        return (
+            <div>
+                <main className="min-h-screen font-[family-name:var(--cieps-body)] text-[var(--cieps-ink)] pb-12">
+                    <div className="mx-auto w-full max-w-[1320px] px-[clamp(1rem,3vw,2rem)] pt-[clamp(2rem,4vw,4rem)]">
+                        <RegistrationTimer />
+                    </div>
+                </main>
+            </div>
+        )
+    }
 
     if (isFetchingData || isLoadingPaymentData) {
         return <LoadingScreen />;
