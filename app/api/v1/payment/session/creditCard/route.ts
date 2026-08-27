@@ -13,6 +13,8 @@ import { runPaymentTransaction } from '@/lib/payments/transactions';
 import { isPaymentMethodAllowedForSession } from '@/lib/payments/config';
 import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
 import { asaasRequestHeaders, isAsaasRetryableStatus } from '@/lib/payments/asaas';
+import { normalizeCardHolderInput } from '@/lib/payments/customer-sync';
+import { getPaymentRemoteIp } from '@/lib/payments/remote-ip';
 
 function formatDate(date: Date): string {
     const year = date.getFullYear();
@@ -76,6 +78,8 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
     try {
         const userId = await getUserId(request);
         const data = await request.json();
+        const cardHolder = normalizeCardHolderInput(data.personalInfo);
+        const remoteIp = getPaymentRemoteIp(request);
 
         if (
             !userId ||
@@ -93,12 +97,23 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             !data.cardInfo?.number ||
             !data.cardInfo?.expiry ||
             !data.cardInfo?.cvc ||
-            !data.personalInfo?.name ||
-            !data.personalInfo?.email ||
-            !data.personalInfo?.cpfCnpj
+            !data.cardInfo?.name ||
+            cardHolder.ok === false
         ) {
             return NextResponse.json(
-                { error: 'invalid_card_data', message: 'Preencha os dados do cartão.' },
+                {
+                    error: 'invalid_card_data',
+                    message: cardHolder.ok === true ? 'Preencha os dados do cartão.' : cardHolder.message,
+                },
+                { status: 400 },
+            );
+        }
+        if (!remoteIp) {
+            return NextResponse.json(
+                {
+                    error: 'payment_remote_ip_missing',
+                    message: 'Não foi possível identificar a origem segura do pagamento.',
+                },
                 { status: 400 },
             );
         }
@@ -208,11 +223,6 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             );
         }
 
-        const forwardedFor = request.headers.get('x-forwarded-for');
-        const remoteIp =
-            forwardedFor?.split(',')[0]?.trim() ||
-            request.headers.get('x-real-ip') ||
-            '127.0.0.1';
         const [expiryMonth, shortExpiryYear] = String(data.cardInfo.expiry).split('/');
         const expiryYear =
             shortExpiryYear?.length === 2 ? `20${shortExpiryYear}` : shortExpiryYear;
@@ -290,20 +300,20 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             dueDate: formatDate(new Date()),
             externalReference: sessionId.toHexString(),
             creditCard: {
-                holderName: data.personalInfo.name,
+                holderName: data.cardInfo.name,
                 number: data.cardInfo.number,
                 expiryMonth,
                 expiryYear,
                 ccv: data.cardInfo.cvc,
             },
             creditCardHolderInfo: {
-                name: data.personalInfo.name,
-                email: data.personalInfo.email,
-                cpfCnpj: data.personalInfo.cpfCnpj,
-                postalCode: data.personalInfo.postalCode,
-                addressNumber: data.personalInfo.addressNumber,
-                addressComplement: data.personalInfo.addressComplement || '',
-                phone: data.personalInfo.phone,
+                name: cardHolder.value.name,
+                email: cardHolder.value.email,
+                cpfCnpj: cardHolder.value.cpfCnpj,
+                postalCode: cardHolder.value.postalCode,
+                addressNumber: cardHolder.value.addressNumber,
+                addressComplement: cardHolder.value.complement || '',
+                phone: cardHolder.value.phone,
             },
             remoteIp,
         };

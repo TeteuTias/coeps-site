@@ -1,6 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { withApiAuthRequired } from '@/lib/auth0-compat';
-import { getUserId } from '@/lib/getUserId';
+import { getSession, withApiAuthRequired } from '@/lib/auth0-compat';
 import { connectToDatabase } from '@/lib/mongodb';
 import { getActivePaymentConfig, getEditionId, isPaymentSalesOpen } from '@/lib/payments/config';
 import { prepareManualTicketPurchase } from '@/lib/payments/manual-purchase';
@@ -17,6 +16,7 @@ import { runPaymentTransaction } from '@/lib/payments/transactions';
 import { getPaymentOverdueGraceDays } from '@/lib/payments/overdue';
 import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
 import { asaasRequestHeaders, isAsaasRetryableStatus } from '@/lib/payments/asaas';
+import { preparePaymentCustomer } from '@/lib/payments/customer-sync';
 
 const METHODS = ['PIX', 'BOLETO', 'DEBIT_CARD', 'CREDIT_CARD'];
 
@@ -56,7 +56,8 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
   try {
     const data = await request.json();
-    const userId = await getUserId(request);
+    const authSession = await getSession(request);
+    const userId = String(authSession?.user?.sub || '').replace(/^auth0\|/, '');
     if (!userId || !ObjectId.isValid(userId)) {
       return Response.json({ error: 'not_authenticated', message: 'Sessão inválida.' }, { status: 401 });
     }
@@ -70,7 +71,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
       db.collection('usuarios').findOne({ _id: owner }, { projection: { id_api: 1 } }),
       getActivePaymentConfig(db),
     ]);
-    if (!user?.id_api || !config) {
+    if (!config) {
       return Response.json({ error: 'payment_config_not_found', message: 'Pagamento indisponível.' }, { status: 404 });
     }
     if (config.modo !== 'manual') {
@@ -139,11 +140,39 @@ export const POST = withApiAuthRequired(async function POST(request) {
       );
     }
 
+    const preparedCustomer = await preparePaymentCustomer({
+      db,
+      owner,
+      userId,
+      existingCustomerId: user?.id_api,
+      payer: data.payer,
+      email: authSession?.user?.email,
+      apiUrl,
+      apiKey,
+    });
+    if (!preparedCustomer.ok) {
+      return Response.json(
+        { error: preparedCustomer.code.toLowerCase(), message: preparedCustomer.message },
+        { status: preparedCustomer.status },
+      );
+    }
+
     purchase = await prepareManualTicketPurchase(db, {
       owner,
       config,
       codigoDesconto: data.codigoDesconto,
       codigoRastreio: data.codigoRastreio,
+      userProps: {
+        name: preparedCustomer.payer.name,
+        cpf: preparedCustomer.payer.cpfCnpj,
+        zipCode: preparedCustomer.payer.postalCode,
+        number: preparedCustomer.payer.addressNumber,
+        complement: preparedCustomer.payer.complement || '',
+        email: String(authSession?.user?.email || ''),
+        phone: '',
+        street: '',
+        neighborhood: '',
+      },
     });
     const value = valueForMethod(purchase, data.typePayment);
     if (!Number.isFinite(value) || value <= 0) {
@@ -151,7 +180,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
     }
 
     const payload = {
-      customer: user.id_api,
+      customer: preparedCustomer.customerId,
       name: config.nome,
       billingType: data.typePayment === 'DEBIT_CARD' ? 'UNDEFINED' : data.typePayment,
       value,

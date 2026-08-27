@@ -8,6 +8,7 @@ import {
   buildAuthEntryPath,
   isAuthMigrationGateSatisfied,
 } from '@/lib/auth-migration-notice';
+import { getRegistrationRedirect } from '@/lib/registration-gate';
 
 const protectedRoutes = [
   '/painel',
@@ -47,8 +48,6 @@ export async function proxy(req) {
 
   // 3. Fazemos a classificação antes de consultar a sessão para manter
   // todas as rotas públicas livres de dependências de autenticação.
-  const isPagamentos = path.startsWith("/pagamentos");
-
   if (!isProtectedRoute(path)) {
     return NextResponse.next();
   }
@@ -87,34 +86,16 @@ export async function proxy(req) {
   }
   const user: IUser | null = await db.collection("usuarios").findOne({ _id: new ObjectId(userId) });
 
-  // 6. Verificação de Perfil Incompleto
-
-  if (!user || !user.isPos_registration) {
-    if (path === "/painel/dadosIniciais") { // Usar === evita falsos positivos
-      return NextResponse.next();
-    }
-    return NextResponse.redirect(new URL("/painel/dadosIniciais", req.nextUrl.origin));
-  }
-
-  // 7. Verificação de Pagamento Pendente
-  const pago = user.pagamento?.situacao === 1;
-  const isCertificados = path.startsWith("/painel/certificados");
-
-  if (!pago && !isCertificados && !isPagamentos) {
-    return NextResponse.redirect(new URL("/pagamentos", req.nextUrl.origin));
-  }
-
-  // 8. Lógica da Animação de Confirmação de Inscrição
-  const isAnimacaoPage = path.startsWith("/painel/suaInscricaoFoiConfirmada");
-
-  // Regra A: Se ele PAGOU, NÃO VIU a animação, e NÃO ESTÁ na página -> manda pra lá
-  if (pago && !user.pagamento?.situacao_animacao && !isAnimacaoPage) {
-    return NextResponse.redirect(new URL("/painel/suaInscricaoFoiConfirmada", req.nextUrl.origin));
-  }
-
-  // Regra B: Se ele JÁ VIU a animação, e TENTAR ENTRAR na página -> bloqueia e manda pro painel
-  if (user.pagamento?.situacao_animacao && isAnimacaoPage) {
-    return NextResponse.redirect(new URL("/painel", req.nextUrl.origin));
+  // 6. Pagamento vem antes do cadastro completo. A confirmação financeira
+  // é a única condição que libera o formulário congressista e a LGPD.
+  const redirect = getRegistrationRedirect({
+    path,
+    profileComplete: Boolean(user?.isPos_registration),
+    paymentConfirmed: user?.pagamento?.situacao === 1,
+    confirmationSeen: Boolean(user?.pagamento?.situacao_animacao),
+  });
+  if (redirect) {
+    return NextResponse.redirect(new URL(redirect, req.nextUrl.origin));
   }
 
   // 9. Se sobreviveu a tudo, passa o middleware do Auth0

@@ -18,11 +18,11 @@ export default interface PaymentTicketProps {
         name: string,
         cpf: number | string,
         zipCode: number | string,
-        street: string,
+        street?: string,
         number: number | string,
-        neighborhood: string,
-        complement: string,
-        phone: string,
+        neighborhood?: string,
+        complement?: string,
+        phone?: string,
         email: string
     },
     paymentConfig: ILoteAutomatico;

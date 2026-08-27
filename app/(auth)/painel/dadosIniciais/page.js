@@ -1,11 +1,12 @@
 'use client'
 import { useUser } from "@/lib/auth0-client"
 import { useRouter } from 'next/navigation';
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import TelaLoading from "@/app/components/TelaLoading";
 import PaginaErrorPadrao from "@/app/components/PaginaErrorPadrao";
 import { Button, Modal, StatusBanner } from "@/app/components/cieps";
 import { fetchWithTimeout, readJsonResponse } from '@/lib/client/fetchWithTimeout';
+import { LGPD_CONSENT_VERSION } from '@/lib/registration-consent';
 
 const PAISES = [
     "Afeganistão", "África do Sul", "Albânia", "Alemanha", "Andorra", "Angola", "Antígua e Barbuda", "Arábia Saudita", "Argélia", "Argentina", "Armênia", "Austrália", "Áustria", "Azerbaijão", "Bahamas", "Bangladesh", "Barbados", "Bahrein", "Bélgica", "Belize", "Benim", "Bielorrússia", "Bolívia", "Bósnia e Herzegovina", "Botsuana", "Brasil", "Brunei", "Bulgária", "Burquina Faso", "Burundi", "Butão", "Cabo Verde", "Camarões", "Camboja", "Canadá", "Catar", "Cazaquistão", "Chade", "Chile", "China", "Chipre", "Colômbia", "Comores", "Congo-Brazzaville", "Coreia do Norte", "Coreia do Sul", "Costa do Marfim", "Costa Rica", "Croácia", "Cuba", "Dinamarca", "Djibuti", "Dominica", "Egito", "El Salvador", "Emirados Árabes Unidos", "Equador", "Eritreia", "Eslováquia", "Eslovênia", "Espanha", "Essuatíni", "Estados Unidos", "Estônia", "Etiópia", "Fiji", "Filipinas", "Finlândia", "França", "Gabão", "Gâmbia", "Gana", "Geórgia", "Granada", "Grécia", "Guatemala", "Guiana", "Guiné", "Guiné Equatorial", "Guiné-Bissau", "Haiti", "Honduras", "Hungria", "Iêmen", "Ilhas Marshall", "Índia", "Indonésia", "Irã", "Iraque", "Irlanda", "Islândia", "Israel", "Itália", "Jamaica", "Japão", "Jordânia", "Kiribati", "Kuwait", "Laos", "Lesoto", "Letônia", "Líbano", "Libéria", "Líbia", "Liechtenstein", "Lituânia", "Luxemburgo", "Macedônia do Norte", "Madagascar", "Malásia", "Malaui", "Maldivas", "Mali", "Malta", "Marrocos", "Maurício", "Mauritânia", "México", "Mianmar", "Micronésia", "Moçambique", "Moldávia", "Mônaco", "Mongólia", "Montenegro", "Namíbia", "Nauru", "Nepal", "Nicarágua", "Níger", "Nigéria", "Noruega", "Nova Zelândia", "Omã", "Países Baixos", "Palau", "Panamá", "Papua Nova Guiné", "Paquistão", "Paraguai", "Peru", "Polônia", "Portugal", "Quênia", "Quirguistão", "Reino Unido", "República Centro-Africana", "República Checa", "República Democrática do Congo", "República Dominicana", "Romênia", "Ruanda", "Rússia", "Samoa", "San Marino", "Santa Lúcia", "São Cristóvão e Neves", "São Tomé e Príncipe", "São Vicente e Granadinas", "Seicheles", "Senegal", "Serra Leoa", "Sérvia", "Singapura", "Síria", "Somália", "Sri Lanka", "Sudão", "Sudão do Sul", "Suécia", "Suíça", "Suriname", "Tailândia", "Tajiquistão", "Tanzânia", "Timor-Leste", "Togo", "Tonga", "Trinidad e Tobago", "Tunísia", "Turcomenistão", "Turquia", "Tuvalu", "Ucrânia", "Uganda", "Uruguai", "Uzbequistão", "Vanuatu", "Vaticano", "Venezuela", "Vietnã", "Zâmbia", "Zimbábue"
@@ -18,7 +19,6 @@ export default function UpdateData() {
     // Estados Pessoais
     const [value_name, setValueName] = useState('');
     const [openLgpd, setOpenLgdp] = useState(false)
-    const [value_email, setValueEmail] = useState('');
     const [value_telefone, setValueTelefone] = useState('');
     const [value_cpf, setValueCpf] = useState('');
     const [value_data_nascimento, setValueDataNascimento] = useState('');
@@ -41,6 +41,7 @@ export default function UpdateData() {
 
     const [avisoErro, setAvisoErro] = useState('')
     const [isLoadingForms, setIsLoadingForms] = useState(0)
+    const [draftLoaded, setDraftLoaded] = useState(false)
 
     const handleChangeAvisoErro = (event) => setAvisoErro(event);
     const handleChangeSetIsLoadingForms = (bool) => setIsLoadingForms(bool);
@@ -65,12 +66,48 @@ export default function UpdateData() {
     const handleChangeSemestre = (event) => setValueSemestre(event.target.value);
     const handleChangeOndeConheceu = (event) => setValueOndeConheceu(event.target.value);
 
+    useEffect(() => {
+        if (!user || draftLoaded) return;
+        const loadDraft = async () => {
+            try {
+                const response = await fetchWithTimeout('/api/get/registrationDraft', { method: 'GET' });
+                if (!response.ok) throw new Error('Não foi possível carregar os dados do pagamento.');
+                const draft = await response.json();
+                setValueName(draft.name || '');
+                setValueCpf(draft.cpfCnpj || '');
+                setValueTelefone(draft.phone || '');
+                setValuePostalCode(draft.postalCode || '');
+                setValueAddress(draft.address || '');
+                setValueAddressNumber(draft.addressNumber || '');
+                setValueComplement(draft.complement || '');
+                setValueProvince(draft.province || '');
+                setValueCidadeNome(draft.city || '');
+                setValuePais(draft.country || 'Brasil');
+                setValueDataNascimento(draft.birthDate || '');
+                setValueOndeConheceu(draft.referral || '');
+                setValueSituacao(draft.academicStatus || '');
+                setValueCurso(draft.course || '');
+                setValueAno(draft.graduationYear || '');
+                setValueSemestre(draft.graduationSemester || '');
+            } catch (error) {
+                setAvisoErro(error instanceof Error ? error.message : 'Não foi possível carregar seus dados.');
+            } finally {
+                setDraftLoaded(true);
+            }
+        };
+        void loadDraft();
+    }, [user, draftLoaded]);
+
     if (isLoading) {
         return <TelaLoading />
     }
 
     if (!user) {
         return <PaginaErrorPadrao title="Sua sessão expirou" message="Entre novamente para concluir seu cadastro." />
+    }
+
+    if (!draftLoaded) {
+        return <TelaLoading />
     }
 
     const fetchData = async () => {
@@ -186,7 +223,7 @@ export default function UpdateData() {
                                 "cpf": value_cpf.trim(),
                                 "numero_telefone": value_telefone.trim(),
                                 "address": value_address,
-                                "addressNumber": parseInt(value_addressNumber, 10),
+                                "addressNumber": value_addressNumber.trim(),
                                 "complement": value_complement.substring(0, 255),
                                 "province": value_province,
                                 "postalCode": value_postalCode,
@@ -198,7 +235,9 @@ export default function UpdateData() {
                                 "situacao_academica": value_situacao,
                                 "curso": value_curso,
                                 "ano_conclusao": value_ano,
-                                "semestre_conclusao": value_semestre
+                                "semestre_conclusao": value_semestre,
+                                "lgpdAccepted": true,
+                                "lgpdVersion": LGPD_CONSENT_VERSION
                             })
                         })
 
@@ -209,7 +248,8 @@ export default function UpdateData() {
                             handleChangeSetIsLoadingForms(0)
                             throw new Error('Erro ao carregar os dados');
                         }
-                        router.push('/pagamentos')
+                        router.push('/painel/suaInscricaoFoiConfirmada')
+                        router.refresh()
                     }} // ………………
                     isLoading={Boolean(isLoadingForms)}
                 />}
@@ -225,8 +265,8 @@ export default function UpdateData() {
                 <div className="cieps-surface flex flex-col rounded-lg p-5 lg:p-10">
                     <div className="text-center mb-6">
                         <span className="cieps-kicker">Cadastro do congressista</span>
-                        <h1 className="cieps-display mt-3 text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-none text-tinta">Primeiros passos</h1>
-                        <p className="mt-3 text-muted">Antes de continuar, precisamos de algumas informações para concluir seu cadastro.</p>
+                        <h1 className="cieps-display mt-3 text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-none text-tinta">Complete sua inscrição</h1>
+                        <p className="mt-3 text-muted">Seu pagamento foi confirmado. Agora precisamos dos dados do congressista para liberar o painel.</p>
                     </div>
 
                     <div className="flex flex-col space-y-8">

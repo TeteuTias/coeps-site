@@ -59,17 +59,15 @@ test('cartão persiste o plano provisório antes do POST e aceita a corrida do w
     }
 });
 
-test('cadastro usa reconciliacao para cliente sem id e preserva PUT somente para vinculado', async () => {
-    const source = await readFile('app/api/post/updateData/route.ts', 'utf8');
-    const missingCustomerBranch = source.indexOf('if (!customerId)');
-    const ensureCall = source.indexOf('await ensureAsaasCustomer');
-    const linkedCustomerBranch = source.indexOf('} else {', missingCustomerBranch);
-    const putCall = source.indexOf("method: 'PUT'", linkedCustomerBranch);
-    assert.ok(missingCustomerBranch >= 0);
-    assert.ok(ensureCall > missingCustomerBranch);
-    assert.ok(linkedCustomerBranch > ensureCall);
-    assert.ok(putCall > linkedCustomerBranch);
-    assert.equal(source.includes("method: 'POST'"), false);
-    assert.match(source, /normalizeAsaasCustomerAddress/);
-    assert.equal(source.includes('city: data.cidade_nome'), false);
+test('pagamento provisiona Customer e cadastro posterior apenas sincroniza o ID existente', async () => {
+    const preparation = await readFile('app/lib/payments/customer-sync.ts', 'utf8');
+    const registration = await readFile('app/api/post/updateData/route.ts', 'utf8');
+    assert.match(preparation, /if \(storedCustomerId\)/);
+    assert.match(preparation, /await updateExistingAsaasCustomer/);
+    assert.match(preparation, /await ensureAsaasCustomer/);
+    assert.match(registration, /pagamento\?\.situacao !== 1/);
+    assert.match(registration, /await syncPendingAsaasCustomer/);
+    assert.equal(registration.includes('ensureAsaasCustomer'), false);
+    assert.equal(registration.includes("method: 'POST'"), false);
+    assert.equal(preparation.includes('city:'), false);
 });

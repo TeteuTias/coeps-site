@@ -1,6 +1,5 @@
 import { ObjectId } from 'mongodb';
-import { withApiAuthRequired } from '@/lib/auth0-compat';
-import { getUserId } from '@/lib/getUserId';
+import { getSession, withApiAuthRequired } from '@/lib/auth0-compat';
 import { connectToDatabase } from '@/lib/mongodb';
 import { getActivePaymentConfig, getEditionId, isPaymentSalesOpen } from '@/lib/payments/config';
 import { prepareManualTicketPurchase } from '@/lib/payments/manual-purchase';
@@ -16,6 +15,11 @@ import {
 import { runPaymentTransaction } from '@/lib/payments/transactions';
 import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
 import { asaasRequestHeaders, isAsaasRetryableStatus } from '@/lib/payments/asaas';
+import {
+  normalizeCardHolderInput,
+  preparePaymentCustomer,
+} from '@/lib/payments/customer-sync';
+import { getPaymentRemoteIp } from '@/lib/payments/remote-ip';
 
 function historyEntry(payment, userId, description) {
   return {
@@ -69,19 +73,26 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
   try {
     const data = await request.json();
-    const userId = await getUserId(request);
+    const authSession = await getSession(request);
+    const userId = String(authSession?.user?.sub || '').replace(/^auth0\|/, '');
     if (!userId || !ObjectId.isValid(userId)) {
       return Response.json({ error: 'not_authenticated', message: 'Sessão inválida.' }, { status: 401 });
     }
+    const cardHolder = normalizeCardHolderInput(data.personalInfo);
     if (
       !data.cardInfo?.name ||
       !data.cardInfo?.number ||
       !data.cardInfo?.expiry ||
       !data.cardInfo?.cvc ||
-      !data.personalInfo?.email ||
-      !data.personalInfo?.cpfCnpj
+      !cardHolder.ok
     ) {
-      return Response.json({ error: 'invalid_card_data', message: 'Preencha os dados do cartão.' }, { status: 400 });
+      return Response.json(
+        {
+          error: 'invalid_card_data',
+          message: cardHolder.ok ? 'Preencha os dados do cartão.' : cardHolder.message,
+        },
+        { status: 400 },
+      );
     }
 
     const owner = new ObjectId(userId);
@@ -90,7 +101,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
       db.collection('usuarios').findOne({ _id: owner }, { projection: { id_api: 1 } }),
       getActivePaymentConfig(db),
     ]);
-    if (!user?.id_api || !config) {
+    if (!config) {
       return Response.json({ error: 'payment_config_not_found', message: 'Pagamento indisponível.' }, { status: 404 });
     }
     if (config.modo !== 'manual') {
@@ -148,20 +159,52 @@ export const POST = withApiAuthRequired(async function POST(request) {
       );
     }
 
+    const remoteIp = getPaymentRemoteIp(request);
+    if (!remoteIp) {
+      return Response.json(
+        { error: 'payment_remote_ip_missing', message: 'Não foi possível identificar a origem segura do pagamento.' },
+        { status: 400 },
+      );
+    }
+    const preparedCustomer = await preparePaymentCustomer({
+      db,
+      owner,
+      userId,
+      existingCustomerId: user?.id_api,
+      payer: data.payer ?? data.personalInfo,
+      email: authSession?.user?.email,
+      apiUrl,
+      apiKey,
+    });
+    if (!preparedCustomer.ok) {
+      return Response.json(
+        { error: preparedCustomer.code.toLowerCase(), message: preparedCustomer.message },
+        { status: preparedCustomer.status },
+      );
+    }
+
     purchase = await prepareManualTicketPurchase(db, {
       owner,
       config,
       codigoDesconto: data.codigoDesconto,
       codigoRastreio: data.codigoRastreio,
+      userProps: {
+        name: preparedCustomer.payer.name,
+        cpf: preparedCustomer.payer.cpfCnpj,
+        zipCode: preparedCustomer.payer.postalCode,
+        number: preparedCustomer.payer.addressNumber,
+        complement: preparedCustomer.payer.complement || '',
+        email: String(authSession?.user?.email || ''),
+        phone: '',
+        street: '',
+        neighborhood: '',
+      },
     });
     const installment = purchase.paymentConfig.precos.parcelamentos.find(
       (item) => Number(item.codigo) === Number(data.idPagamento),
     );
     if (!installment) throw new Error('Parcelamento inválido.');
 
-    const forwardedFor = request.headers.get('x-forwarded-for');
-    const remoteIp =
-      forwardedFor?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || '127.0.0.1';
     const [expiryMonth, shortExpiryYear] = String(data.cardInfo.expiry).split('/');
     const expiryYear = shortExpiryYear?.length === 2 ? `20${shortExpiryYear}` : shortExpiryYear;
     const installmentCount = Number(installment.totalParcelas);
@@ -222,7 +265,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
       }
     });
     const payload = {
-      customer: user.id_api,
+      customer: preparedCustomer.customerId,
       billingType: 'CREDIT_CARD',
       ...(installmentCount > 1
         ? { installmentCount, totalValue }
@@ -237,13 +280,13 @@ export const POST = withApiAuthRequired(async function POST(request) {
         ccv: data.cardInfo.cvc,
       },
       creditCardHolderInfo: {
-        name: data.cardInfo.name,
-        email: data.personalInfo.email,
-        cpfCnpj: data.personalInfo.cpfCnpj,
-        postalCode: data.personalInfo.postalCode,
-        addressNumber: data.personalInfo.addressNumber,
-        addressComplement: data.personalInfo.addressComplement || '',
-        phone: data.personalInfo.phone,
+        name: cardHolder.value.name,
+        email: cardHolder.value.email,
+        cpfCnpj: cardHolder.value.cpfCnpj,
+        postalCode: cardHolder.value.postalCode,
+        addressNumber: cardHolder.value.addressNumber,
+        addressComplement: cardHolder.value.complement || '',
+        phone: cardHolder.value.phone,
       },
       remoteIp,
     };

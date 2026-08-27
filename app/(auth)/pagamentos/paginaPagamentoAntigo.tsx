@@ -47,6 +47,7 @@ type PersonalInfo = {
   cpfCnpj: string;
   postalCode: string;
   addressNumber: string;
+  addressComplement: string;
   phone: string;
 };
 
@@ -64,6 +65,7 @@ const emptyPersonalInfo: PersonalInfo = {
   cpfCnpj: '',
   postalCode: '',
   addressNumber: '',
+  addressComplement: '',
   phone: '',
 };
 
@@ -175,12 +177,14 @@ export default function PagamentosManual({
   initialPayment,
   config,
   onRefresh,
+  defaultEmail,
 }: {
   initialPayment: IPayment;
   config: IPaymentConfig & {
     sessaoPagamentoAutomáticoAtiva?: PaymentTicketProps | false;
   };
   onRefresh: () => void;
+  defaultEmail: string;
 }) {
   const router = useRouter();
   const requestInFlight = useRef(false);
@@ -190,7 +194,10 @@ export default function PagamentosManual({
   const [creatingPayment, setCreatingPayment] = useState(false);
   const [cardOpen, setCardOpen] = useState(false);
   const [cardStep, setCardStep] = useState<1 | 2>(1);
-  const [personalInfo, setPersonalInfo] = useState<PersonalInfo>(emptyPersonalInfo);
+  const [personalInfo, setPersonalInfo] = useState<PersonalInfo>({
+    ...emptyPersonalInfo,
+    email: defaultEmail,
+  });
   const [cardInfo, setCardInfo] = useState<CardInfo>(emptyCardInfo);
   const [selectedInstallment, setSelectedInstallment] = useState<number | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -286,7 +293,6 @@ export default function PagamentosManual({
     if (cardRequestInFlight.current && !force) return;
     setCardOpen(false);
     setCardStep(1);
-    setPersonalInfo(emptyPersonalInfo);
     setCardInfo(emptyCardInfo);
     setSelectedInstallment(null);
     setFormError(null);
@@ -294,6 +300,9 @@ export default function PagamentosManual({
 
   const createPayment = async () => {
     if (!selectedMethod || requestInFlight.current) return;
+    const payerError = validateCustomerInfo();
+    setFormError(payerError);
+    if (payerError) return;
     if (!codesAreReady()) {
       setSelectedMethod(null);
       setMessage({ tone: 'error', text: 'Valide os códigos informados antes de criar a cobrança.' });
@@ -309,6 +318,13 @@ export default function PagamentosManual({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           typePayment: selectedMethod,
+          payer: {
+            name: personalInfo.name,
+            cpfCnpj: personalInfo.cpfCnpj,
+            postalCode: personalInfo.postalCode,
+            addressNumber: personalInfo.addressNumber,
+            complement: personalInfo.addressComplement,
+          },
           codigoDesconto: normalizePaymentCode(codigoDesconto) || null,
           codigoRastreio: normalizePaymentCode(codigoRastreio) || null,
         }),
@@ -331,8 +347,17 @@ export default function PagamentosManual({
     }
   };
 
+  const validateCustomerInfo = () => {
+    if (personalInfo.name.trim().length < 5) return 'Informe o nome completo do pagador.';
+    if (personalInfo.cpfCnpj.replace(/\D/g, '').length !== 11) return 'Informe um CPF válido.';
+    if (personalInfo.postalCode.replace(/\D/g, '').length !== 8) return 'Informe um CEP válido.';
+    if (!personalInfo.addressNumber.trim()) return 'Informe o número do endereço.';
+    return null;
+  };
+
   const validatePersonalInfo = () => {
-    if (personalInfo.name.trim().length < 6) return 'Informe o nome completo do pagador.';
+    const payerError = validateCustomerInfo();
+    if (payerError) return payerError;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(personalInfo.email)) return 'Informe um e-mail válido.';
     if (personalInfo.cpfCnpj.replace(/\D/g, '').length < 11) return 'Informe um CPF válido.';
     if (personalInfo.postalCode.replace(/\D/g, '').length !== 8) return 'Informe um CEP válido.';
@@ -380,6 +405,13 @@ export default function PagamentosManual({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           personalInfo,
+          payer: {
+            name: personalInfo.name,
+            cpfCnpj: personalInfo.cpfCnpj,
+            postalCode: personalInfo.postalCode,
+            addressNumber: personalInfo.addressNumber,
+            complement: personalInfo.addressComplement,
+          },
           cardInfo,
           idPagamento: selectedInstallment,
           _id: config._id,
@@ -619,7 +651,11 @@ export default function PagamentosManual({
 
       <Modal
         open={selectedMethod !== null}
-        onClose={() => !creatingPayment && setSelectedMethod(null)}
+        onClose={() => {
+          if (creatingPayment) return;
+          setSelectedMethod(null);
+          setFormError(null);
+        }}
         title="Criar nova cobrança?"
         description={selectedMethod ? `Forma de pagamento: ${methodLabels[selectedMethod]}.` : undefined}
         footer={(
@@ -629,7 +665,17 @@ export default function PagamentosManual({
           </>
         )}
       >
-        <p className="text-sm leading-6 text-muted">Ao continuar, você será direcionado à página segura da cobrança.</p>
+        <p className="text-sm leading-6 text-muted">Informe somente os dados necessários para vincular a cobrança ao seu cadastro.</p>
+        {formError && <StatusBanner className="mt-4" tone="error" title="Revise os dados">{formError}</StatusBanner>}
+        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <TextField id="manual-customer-name" label="Nome completo" value={personalInfo.name} autoComplete="name" onChange={(value) => setPersonalInfo((current) => ({ ...current, name: value }))} />
+          <TextField id="manual-customer-cpf" label="CPF" value={personalInfo.cpfCnpj} inputMode="numeric" onChange={(value) => setPersonalInfo((current) => ({ ...current, cpfCnpj: value.replace(/\D/g, '').slice(0, 11) }))} />
+          <TextField id="manual-customer-zip" label="CEP" value={personalInfo.postalCode} inputMode="numeric" autoComplete="postal-code" onChange={(value) => setPersonalInfo((current) => ({ ...current, postalCode: value.replace(/\D/g, '').slice(0, 8) }))} />
+          <TextField id="manual-customer-number" label="Número do endereço" value={personalInfo.addressNumber} autoComplete="address-line2" onChange={(value) => setPersonalInfo((current) => ({ ...current, addressNumber: value }))} />
+          <div className="sm:col-span-2">
+            <TextField id="manual-customer-complement" label="Complemento (opcional)" value={personalInfo.addressComplement} autoComplete="address-line2" onChange={(value) => setPersonalInfo((current) => ({ ...current, addressComplement: value }))} />
+          </div>
+        </div>
         {codesPreview && selectedMethod && (
           <div className="mt-4 rounded-md bg-papel p-3">
             <PaymentAmountsSummary amounts={codesPreview.valoresCentavos} methods={[selectedMethod]} />
@@ -666,6 +712,7 @@ export default function PagamentosManual({
             <TextField id="manual-payer-phone" label="Telefone" value={personalInfo.phone} inputMode="tel" autoComplete="tel" onChange={(value) => setPersonalInfo((current) => ({ ...current, phone: value }))} />
             <TextField id="manual-payer-zip" label="CEP" value={personalInfo.postalCode} inputMode="numeric" autoComplete="postal-code" onChange={(value) => setPersonalInfo((current) => ({ ...current, postalCode: value.replace(/\D/g, '').slice(0, 8) }))} />
             <TextField id="manual-payer-number" label="Número do endereço" value={personalInfo.addressNumber} autoComplete="address-line2" onChange={(value) => setPersonalInfo((current) => ({ ...current, addressNumber: value }))} />
+            <TextField id="manual-payer-complement" label="Complemento (opcional)" value={personalInfo.addressComplement} autoComplete="address-line2" onChange={(value) => setPersonalInfo((current) => ({ ...current, addressComplement: value }))} />
           </div>
         ) : (
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
