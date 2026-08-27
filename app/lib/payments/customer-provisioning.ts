@@ -14,12 +14,12 @@ export interface CustomerProvisioningDocument extends Document {
 
 export type AsaasCustomerPayload = {
     name: string;
-    email: string;
     cpfCnpj: string;
-    mobilePhone: string;
     observations: string;
     notificationDisabled: true;
     externalReference: string;
+    email?: string;
+    mobilePhone?: string;
     phone?: string;
     address?: string;
     addressNumber?: string;

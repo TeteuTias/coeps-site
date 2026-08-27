@@ -1,7 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { NextResponse } from 'next/server';
-import { withApiAuthRequired } from '@/lib/auth0-compat';
-import { getUserId } from '@/lib/getUserId';
+import { getSession, withApiAuthRequired } from '@/lib/auth0-compat';
 import { connectToDatabase } from '@/lib/mongodb';
 import {
     PaymentCodeError,
@@ -24,13 +23,15 @@ import { applyDiscountToLot } from '@/lib/payments/prices';
 import { toPublicPaymentSession } from '@/lib/payments/public-session';
 import { runPaymentTransaction } from '@/lib/payments/transactions';
 import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
+import { preparePaymentCustomer } from '@/lib/payments/customer-sync';
 
 export const POST = withApiAuthRequired(async function POST(request: Request) {
     if (!isPaymentSalesEnabled()) return paymentSalesPausedResponse();
     let reservedPurchaseId: ObjectId | null = null;
 
     try {
-        const userId = await getUserId(request);
+        const authSession = await getSession(request);
+        const userId = String(authSession?.user?.sub || '').replace(/^auth0\|/, '');
         if (!userId || !ObjectId.isValid(userId)) {
             return NextResponse.json(
                 { error: 'not_authenticated', message: 'Sessão inválida.' },
@@ -39,32 +40,11 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const {
-            nome,
-            cpf,
-            cep,
-            rua,
-            numero,
-            bairro,
-            complemento,
-            telefone,
-            email,
-            codigoDesconto,
-            codigoRastreio,
-        } = body;
+        const { codigoDesconto, codigoRastreio } = body;
+        const payerInput = body.payer ?? body;
         const loteCodigo = body.loteCodigo ?? body.loteAtualFrontEnd?.codigo;
 
-        if (
-            !nome ||
-            !cpf ||
-            !cep ||
-            !rua ||
-            !numero ||
-            !bairro ||
-            !telefone ||
-            !email ||
-            loteCodigo === undefined
-        ) {
+        if (loteCodigo === undefined) {
             return NextResponse.json(
                 { error: 'invalid_payment_data', message: 'Preencha todos os campos obrigatórios.' },
                 { status: 400 },
@@ -185,6 +165,31 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             );
         }
 
+        const apiUrl = process.env.ASAAS_API_URL;
+        const apiKey = process.env.ASAAS_API_KEY;
+        if (!apiUrl || !apiKey) {
+            return NextResponse.json(
+                { error: 'payment_gateway_not_configured', message: 'Gateway não configurado.' },
+                { status: 503 },
+            );
+        }
+        const preparedCustomer = await preparePaymentCustomer({
+            db,
+            owner,
+            userId,
+            existingCustomerId: user?.id_api,
+            payer: payerInput,
+            email: authSession?.user?.email,
+            apiUrl,
+            apiKey,
+        });
+        if (preparedCustomer.ok === false) {
+            return NextResponse.json(
+                { error: preparedCustomer.code.toLowerCase(), message: preparedCustomer.message },
+                { status: preparedCustomer.status },
+            );
+        }
+
         const compraId = new ObjectId();
         const expiresAt = new Date(now.getTime() + 15 * 60 * 1000);
 
@@ -251,15 +256,15 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                     pixCode: null,
                     metodoPagamento: null,
                     userProps: {
-                        name: String(nome),
-                        cpf: String(cpf),
-                        zipCode: String(cep),
-                        phone: String(telefone),
-                        email: String(email),
-                        street: String(rua),
-                        number: String(numero),
-                        neighborhood: String(bairro),
-                        complement: complemento ? String(complemento) : 'Não informado',
+                        name: preparedCustomer.payer.name,
+                        cpf: preparedCustomer.payer.cpfCnpj,
+                        zipCode: preparedCustomer.payer.postalCode,
+                        number: preparedCustomer.payer.addressNumber,
+                        complement: preparedCustomer.payer.complement || '',
+                        email: String(authSession?.user?.email || ''),
+                        phone: '',
+                        street: '',
+                        neighborhood: '',
                     },
                 };
 

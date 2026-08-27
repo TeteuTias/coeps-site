@@ -1,17 +1,24 @@
-import { ObjectId } from 'bson';
+import { ObjectId } from 'mongodb';
 import { connectToDatabase } from '../../../lib/mongodb';
 import { getSession, withApiAuthRequired } from '@/lib/auth0-compat';
-import type { IUser } from '@/lib/types/user/user.t';
-import { asaasRequestHeaders, isAsaasRetryableStatus } from '@/lib/payments/asaas';
-import {
-    ensureAsaasCustomer,
-    normalizeAsaasCustomerAddress,
-} from '@/lib/payments/customer-provisioning';
+import { normalizePaymentCustomerInput } from '@/lib/payments/customer-sync';
+import { syncPendingAsaasCustomer } from '@/lib/payments/customer-profile-sync';
+import { LGPD_CONSENT_VERSION } from '@/lib/registration-consent';
 
-export const POST = withApiAuthRequired(async function POST(request) {
+function requiredString(value: unknown): string {
+    return typeof value === 'string' ? value.trim() : '';
+}
+
+function dateIsValid(value: string): boolean {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const date = new Date(`${value}T12:00:00Z`);
+    return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+}
+
+export const POST = withApiAuthRequired(async function POST(request: Request) {
     try {
-        const { user } = await getSession();
-        const userId = String(user.sub || '').replace(/^auth0\|/, '');
+        const { user } = await getSession(request);
+        const userId = String(user?.sub || '').replace(/^auth0\|/, '');
         if (!ObjectId.isValid(userId)) {
             return Response.json(
                 { error: 'invalid_user_id', message: 'Identificador de usuário inválido.' },
@@ -19,140 +26,143 @@ export const POST = withApiAuthRequired(async function POST(request) {
             );
         }
 
-        const apiKey = process.env.ASAAS_API_KEY;
-        const apiUrl = process.env.ASAAS_API_URL;
-        if (!apiKey || !apiUrl) {
-            return Response.json(
-                { error: 'payment_gateway_not_configured', message: 'Gateway não configurado.' },
-                { status: 503 },
-            );
-        }
-
         const data = await request.json();
-        const userObjectId = new ObjectId(userId);
-        const { db } = await connectToDatabase();
-        const userDb: IUser | null = await db.collection('usuarios').findOne({
-            _id: userObjectId,
-        });
-        const customerAddress = normalizeAsaasCustomerAddress({
-            address: data.address,
-            addressNumber: data.addressNumber,
-            complement: data.complement,
-            province: data.province,
-            postalCode: data.postalCode,
-        });
-        if (!customerAddress.postalCode) {
+        if (data.lgpdAccepted !== true || data.lgpdVersion !== LGPD_CONSENT_VERSION) {
             return Response.json(
-                { error: 'invalid_customer_address', message: 'Informe um CEP válido com 8 números.' },
+                { error: 'lgpd_consent_required', message: 'Aceite os termos de privacidade para concluir.' },
                 { status: 400 },
             );
         }
-        const customerPayload = {
-            name: data.nome,
-            email: String(user.email || ''),
-            cpfCnpj: data.cpf,
-            mobilePhone: data.numero_telefone,
-            observations: userId,
-            notificationDisabled: true as const,
-            externalReference: userId,
-            phone: data.phone,
-            ...customerAddress,
-        };
 
-        let customerId = typeof userDb?.id_api === 'string' && userDb.id_api.trim()
-            ? userDb.id_api.trim()
-            : null;
-        if (!customerId) {
-            const ensuredCustomer = await ensureAsaasCustomer({
-                db,
-                userId,
-                customer: customerPayload,
-                apiUrl,
-                apiKey,
-            });
-            if (ensuredCustomer.ok === false) {
-                return Response.json(
-                    {
-                        error: ensuredCustomer.code.toLowerCase(),
-                        message: ensuredCustomer.status === 409
-                            ? 'O cadastro do cliente já está em processamento ou exige revisão.'
-                            : 'Não foi possível confirmar o cadastro do cliente no gateway.',
-                    },
-                    { status: ensuredCustomer.status },
-                );
-            }
-            customerId = ensuredCustomer.customerId;
-        } else {
-            // Comportamento existente preservado para Customer já vinculado.
-            try {
-                const response = await fetch(
-                    `${apiUrl.replace(/\/$/, '')}/customers/${encodeURIComponent(customerId)}`,
-                    {
-                        method: 'PUT',
-                        headers: asaasRequestHeaders(apiKey, { json: true, apiUrl }),
-                        signal: AbortSignal.timeout(10_000),
-                        body: JSON.stringify(customerPayload),
-                    },
-                );
-                if (!response.ok) {
-                    const retryable =
-                        isAsaasRetryableStatus(response.status) ||
-                        [401, 403].includes(response.status);
-                    return Response.json(
-                        {
-                            error: 'customer_update_failed',
-                            message: 'Não foi possível atualizar o cliente no gateway.',
-                        },
-                        { status: retryable ? 503 : 422 },
-                    );
-                }
-            } catch {
-                return Response.json(
-                    {
-                        error: 'customer_update_response_unknown',
-                        message: 'Não foi possível confirmar a atualização do cliente no gateway.',
-                    },
-                    { status: 503 },
-                );
-            }
+        const owner = new ObjectId(userId);
+        const { db } = await connectToDatabase();
+        const userDb = await db.collection('usuarios').findOne({ _id: owner });
+        if (!userDb || userDb.pagamento?.situacao !== 1) {
+            return Response.json(
+                {
+                    error: 'payment_not_confirmed',
+                    message: 'O cadastro completo será liberado após a confirmação do pagamento.',
+                },
+                { status: 403 },
+            );
         }
 
-        const userInformation: IUser['informacoes_usuario'] = {
-            cpf: data.cpf,
-            numero_telefone: data.numero_telefone,
-            nome: data.nome,
-            email: String(user.email || ''),
-            data_criacao: userDb?.informacoes_usuario?.data_criacao || new Date(),
-            titulo_honorario: '',
-            país: data.pais,
-            cidade: data.cidade,
-            data_nascimento: data.data_nascimento,
-            onde_conheceu: data.onde_conheceu,
-            curso: data.curso,
-            ano_conclusao: Number(data.ano_conclusao),
-            semestre_conclusao: Number(data.semestre_conclusao),
+        const payer = normalizePaymentCustomerInput({
+            name: data.nome,
+            cpfCnpj: data.cpf,
+            postalCode: data.postalCode,
+            addressNumber: data.addressNumber,
+            complement: data.complement,
+        });
+        if (payer.ok === false) {
+            return Response.json(
+                { error: 'invalid_registration_data', message: payer.message },
+                { status: 400 },
+            );
+        }
+
+        const phone = String(data.numero_telefone ?? '').replace(/\D/g, '');
+        const address = requiredString(data.address);
+        const province = requiredString(data.province);
+        const cityName = requiredString(data.cidade);
+        const country = requiredString(data.pais) || 'Brasil';
+        const birthDate = requiredString(data.data_nascimento);
+        const referral = requiredString(data.onde_conheceu);
+        const academicStatus = requiredString(data.situacao_academica);
+        const course = requiredString(data.curso);
+        const graduationYear = Number(data.ano_conclusao);
+        const graduationSemester = Number(data.semestre_conclusao);
+        if (
+            phone.length < 10 ||
+            phone.length > 11 ||
+            !address ||
+            !province ||
+            !cityName ||
+            !dateIsValid(birthDate) ||
+            !referral ||
+            !['estudante', 'formado'].includes(academicStatus) ||
+            !course ||
+            !Number.isInteger(graduationYear) ||
+            graduationYear < 1900 ||
+            graduationYear > 2100 ||
+            ![1, 2].includes(graduationSemester)
+        ) {
+            return Response.json(
+                { error: 'invalid_registration_data', message: 'Revise os campos obrigatórios do cadastro.' },
+                { status: 400 },
+            );
+        }
+
+        const now = new Date();
+        const previousConsent = userDb.consentimentos?.lgpd;
+        const acceptedAt = previousConsent?.aceito === true &&
+            previousConsent?.versao === LGPD_CONSENT_VERSION
+            ? previousConsent.aceitoEm
+            : now;
+        const email = String(user?.email || userDb.informacoes_usuario?.email || '').trim();
+        const userInformation = {
+            cpf: payer.value.cpfCnpj,
+            numero_telefone: phone,
+            nome: payer.value.name,
+            email,
+            data_criacao: userDb.informacoes_usuario?.data_criacao || now,
+            titulo_honorario: userDb.informacoes_usuario?.titulo_honorario || '',
+            país: country,
+            cidade: cityName,
+            data_nascimento: birthDate,
+            onde_conheceu: referral,
+            situacao_academica: academicStatus,
+            curso: course,
+            ano_conclusao: graduationYear,
+            semestre_conclusao: graduationSemester,
+            endereco: {
+                postalCode: payer.value.postalCode,
+                address,
+                addressNumber: payer.value.addressNumber,
+                complement: payer.value.complement || '',
+                province,
+            },
         };
-        await db.collection('usuarios').updateOne(
-            { _id: userObjectId },
+        const hasCustomerId = typeof userDb.id_api === 'string' && Boolean(userDb.id_api.trim());
+        const updateResult = await db.collection('usuarios').updateOne(
+            { _id: owner, 'pagamento.situacao': 1 },
             {
                 $set: {
-                    id_api: customerId,
                     isPos_registration: true,
                     informacoes_usuario: userInformation,
-                },
-                $setOnInsert: {
-                    pagamento: {
-                        _id: userObjectId,
-                        situacao: 0,
-                        lista_pagamentos: [],
-                        situacao_animacao: false,
-                        tipo_pagamento: '',
+                    'consentimentos.lgpd': {
+                        aceito: true,
+                        aceitoEm: acceptedAt,
+                        versao: LGPD_CONSENT_VERSION,
+                    },
+                    'integracoes.asaas.customerSync': {
+                        status: hasCustomerId ? 'PENDING' : 'REVIEW_REQUIRED',
+                        attempts: 0,
+                        updatedAt: now,
+                        ...(!hasCustomerId ? { lastError: 'CUSTOMER_ID_MISSING' } : {}),
                     },
                 },
             },
-            { upsert: true },
         );
-        return Response.json({ sucesso: 'Ocorreu Tudo Certo!' });
+
+        if (updateResult.matchedCount !== 1) {
+            return Response.json(
+                { error: 'payment_state_changed', message: 'O pagamento precisa estar confirmado para concluir o cadastro.' },
+                { status: 409 },
+            );
+        }
+
+        const sync = hasCustomerId
+            ? await syncPendingAsaasCustomer({
+                db,
+                owner,
+                userId,
+                apiUrl: process.env.ASAAS_API_URL,
+                apiKey: process.env.ASAAS_API_KEY,
+            })
+            : { status: 'REVIEW_REQUIRED' as const };
+
+        return Response.json({ success: true, asaasSync: sync.status });
     } catch {
         return Response.json(
             { error: 'internal_server_error', message: 'Não foi possível salvar os dados do usuário.' },

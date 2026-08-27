@@ -16,6 +16,7 @@ export async function prepareManualTicketPurchase(
         config: ActivePaymentConfig;
         codigoDesconto?: unknown;
         codigoRastreio?: unknown;
+        userProps?: Record<string, unknown>;
     },
 ) {
     const now = new Date();
@@ -79,6 +80,7 @@ export async function prepareManualTicketPurchase(
             orderId: null,
             paymentUrl: null,
             metodoPagamento: null,
+            userProps: input.userProps,
         };
 
         await db.collection('pagamentos.sessoes').insertOne(session);

@@ -50,9 +50,12 @@ export const GET = withApiAuthRequired(async function GET() {
                 }
             },
         );
-        if (!result) {
-            return NextResponse.json({ error: 'user_not_found' }, { status: 404 });
-        }
+        const userPayment = result?.pagamento ?? {
+            situacao: 0,
+            lista_pagamentos: [],
+            situacao_animacao: false,
+            tipo_pagamento: '',
+        };
 
         const assignments = await db.collection('pagamentos.atribuicoes')
             .find(
@@ -101,14 +104,14 @@ export const GET = withApiAuthRequired(async function GET() {
                 .toArray()
             : [];
 
-        const legacyPayments = Array.isArray(result.pagamento?.lista_pagamentos)
-            ? result.pagamento.lista_pagamentos
+        const legacyPayments = Array.isArray(userPayment.lista_pagamentos)
+            ? userPayment.lista_pagamentos
             : [];
         return NextResponse.json({
             data: {
-                ...result,
                 pagamento: {
-                    situacao: result.pagamento?.situacao ?? 0,
+                    ...userPayment,
+                    situacao: userPayment.situacao ?? 0,
                     lista_pagamentos: mergePaymentHistory(legacyPayments, assignments, sessions),
                 },
             },

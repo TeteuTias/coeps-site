@@ -107,6 +107,7 @@ function PaymentAmountsSummary({
 const Pagamentos = () => {
     const [data, setData] = useState<{ pagamento: IUser["pagamento"] } | undefined>(undefined);
     const { user, isLoading } = useUser();
+    const router = useRouter();
     const [isLoadingPaymentData, setIsLoadingPaymentData] = useState<boolean>(true);
     const [dataPaymentConfig, setDataPaymentConfig] = useState<PaymentConfigView | undefined>(undefined);
     const [isFetchingData, setIsFetchingData] = useState<boolean>(true);
@@ -132,6 +133,10 @@ const Pagamentos = () => {
 
                 const responseData: { data: { pagamento: IUser["pagamento"] } } = await response.json();
                 setData(responseData.data)
+                if (responseData.data.pagamento.situacao === 1) {
+                    router.replace('/painel');
+                    router.refresh();
+                }
 
                 handleIsFetchingData(false);
             } catch {
@@ -144,7 +149,7 @@ const Pagamentos = () => {
         if (!isLoading) {
             enviarRequisicaoGet();
         }
-    }, [isLoading, user, requestVersion]);
+    }, [isLoading, user, requestVersion, router]);
 
     useEffect(() => {
         const enviarRequisicaoGet = async () => {
@@ -173,19 +178,21 @@ const Pagamentos = () => {
     const hidratarPágina = async () => {
         setIsLoadingPaymentData(true);
         try {
-            const response = await fetchWithTimeout("/api/payment/paymentConfigs", {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
+            const [configResponse, userResponse] = await Promise.all([
+                fetchWithTimeout('/api/payment/paymentConfigs', { method: 'GET' }),
+                fetchWithTimeout('/api/get/usuariosPagamentos', { method: 'GET' }),
+            ]);
+            if (!configResponse.ok || !userResponse.ok) {
                 throw new Error('Falha ao enviar a requisição GET');
             }
-
-            const responseData: PaymentConfigView = await response.json();
+            const responseData: PaymentConfigView = await configResponse.json();
+            const userData = await userResponse.json() as { data: { pagamento: IUser['pagamento'] } };
             setDataPaymentConfig(responseData);
+            setData(userData.data);
+            if (userData.data.pagamento.situacao === 1) {
+                router.replace('/painel');
+                router.refresh();
+            }
             setPageError(null);
         } catch {
             setPageError('Não foi possível atualizar a sessão de pagamento.');
@@ -358,6 +365,7 @@ const Pagamentos = () => {
                         initialPayment={data.pagamento}
                         config={dataPaymentConfig}
                         onRefresh={retryPage}
+                        defaultEmail={String(user?.email || '')}
                     />
                 )
             }
@@ -1103,23 +1111,12 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
         nome: '',
         cpf: '',
         cep: '',
-        rua: '',
         numero: '',
         complemento: '',
-        bairro: '',
-        telefone: '',
-        email: '',
     });
 
     // Estado para guardar mensagens de erro
     const [erros, setErros] = useState<{ [key: string]: string }>({});
-
-    // --- NOVA FUNÇÃO DE VALIDAÇÃO DE E-MAIL ---
-    const validarEmail = (email: string) => {
-        // Expressão regular simples para validar formato nome@dominio.com
-        const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return regex.test(email);
-    };
 
     const validarCPF = (cpf: string) => {
         // Rejeita imediatamente se houver pontuação, letras ou se não tiver exatamente 11 números
@@ -1150,16 +1147,6 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
             novosErros.cpf = 'CPF inválido. Verifique os números.';
         }
 
-        // Validação de Telefone (adicionado para não deixar passar em branco)
-        if (!formData.telefone.trim()) novosErros.telefone = 'O telefone é obrigatório.';
-
-        // --- NOVA VALIDAÇÃO DE E-MAIL AQUI ---
-        if (!formData.email.trim()) {
-            novosErros.email = 'O e-mail é obrigatório.';
-        } else if (!validarEmail(formData.email)) {
-            novosErros.email = 'E-mail inválido. Verifique o formato.';
-        }
-
         if (Object.keys(novosErros).length > 0) {
             setErros(novosErros);
         } else {
@@ -1179,9 +1166,7 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
         }
 
         if (!formData.cep.trim()) novosErros.cep = 'O CEP é obrigatório.';
-        if (!formData.rua.trim()) novosErros.rua = 'A rua é obrigatória.';
         if (!formData.numero.trim()) novosErros.numero = 'O número é obrigatório.';
-        if (!formData.bairro.trim()) novosErros.bairro = 'O bairro é obrigatório.';
 
         if (Object.keys(novosErros).length > 0) {
             setErros(novosErros);
@@ -1198,7 +1183,13 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    ...formData,
+                    payer: {
+                        name: formData.nome,
+                        cpfCnpj: formData.cpf,
+                        postalCode: formData.cep,
+                        addressNumber: formData.numero,
+                        complement: formData.complemento,
+                    },
                     loteAtualFrontEnd: loteAtual,
                     codigoDesconto: normalizePaymentCode(codigoDesconto) || null,
                     codigoRastreio: normalizePaymentCode(codigoRastreio) || null,
@@ -1436,7 +1427,7 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                     {/* ETAPA 1: DADOS PESSOAIS */}
                     {step === 1 && (
                         <div className='flex flex-col gap-4'>
-                            <h3 className='font-semibold text-tinta mb-2'>Passo 1: Dados Pessoais</h3>
+                            <h3 className='font-semibold text-tinta mb-2'>Passo 1: Identificação do pagador</h3>
 
                             <div>
                                 <label htmlFor="payer-name" className='block text-sm font-medium text-tinta mb-1'>Nome completo do pagador</label>
@@ -1465,30 +1456,6 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                                 />
                                 {erros.cpf && <span className="text-red-500 text-xs mt-1 block">{erros.cpf}</span>}
                             </div>
-                            <div>
-                                <label htmlFor="payer-phone" className='block text-sm font-medium text-tinta mb-1'>Telefone</label>
-                                <input
-                                    id="payer-phone"
-                                    type="tel"
-                                    value={formData.telefone}
-                                    onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                                    className={`w-full border rounded-lg p-3 text-tinta focus:outline-none focus:ring-1 ${erros.telefone ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-linha focus:border-goles focus:ring-goles'}`}
-                                />
-                                {erros.telefone && <span className="text-red-500 text-xs mt-1 block">{erros.telefone}</span>}
-                            </div>
-                            <div>
-                                <label htmlFor="payer-email" className='block text-sm font-medium text-tinta mb-1'>E-mail</label>
-                                <input
-                                    id="payer-email"
-                                    type="email"
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    placeholder="exemplo@email.com"
-                                    className={`w-full border rounded-lg p-3 text-tinta focus:outline-none focus:ring-1 ${erros.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-linha focus:border-goles focus:ring-goles'}`}
-                                />
-                                {erros.email && <span className="text-red-500 text-xs mt-1 block">{erros.email}</span>}
-                            </div>
-
                             <div className='flex justify-between mt-4'>
                                 <button onClick={() => setStep(0)} className='text-muted hover:text-tinta font-medium px-4 py-2'>
                                     Voltar
@@ -1503,7 +1470,7 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                     {/* ETAPA 2: ENDEREÇO */}
                     {step === 2 && (
                         <div className='flex flex-col gap-4'>
-                            <h3 className='font-semibold text-tinta mb-2'>Passo 2: Endereço</h3>
+                            <h3 className='font-semibold text-tinta mb-2'>Passo 2: Endereço mínimo</h3>
 
                             <div>
                                 <label htmlFor="payer-zip" className='block text-sm font-medium text-tinta mb-1'>CEP - sem pontuação</label>
@@ -1519,19 +1486,8 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                                 {erros.cep && <span className="text-red-500 text-xs mt-1 block">{erros.cep}</span>}
                             </div>
 
-                            <div className='grid grid-cols-1 gap-4 sm:grid-cols-4'>
-                                <div className='sm:col-span-3'>
-                                    <label htmlFor="payer-street" className='block text-sm font-medium text-tinta mb-1'>Rua / Logradouro</label>
-                                    <input
-                                        id="payer-street"
-                                        type="text"
-                                        value={formData.rua}
-                                        onChange={(e) => setFormData({ ...formData, rua: e.target.value })}
-                                        className={`w-full border rounded-lg p-3 text-tinta focus:outline-none focus:ring-1 ${erros.rua ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-linha focus:border-goles focus:ring-goles'}`}
-                                    />
-                                    {erros.rua && <span className="text-red-500 text-xs mt-1 block">{erros.rua}</span>}
-                                </div>
-                                <div className='sm:col-span-1'>
+                            <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+                                <div>
                                     <label htmlFor="payer-number" className='block text-sm font-medium text-tinta mb-1'>Número</label>
                                     <input
                                         id="payer-number"
@@ -1557,17 +1513,6 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                                 />
                             </div>
 
-                            <div>
-                                <label htmlFor="payer-neighborhood" className='block text-sm font-medium text-tinta mb-1'>Bairro</label>
-                                <input
-                                    id="payer-neighborhood"
-                                    type="text"
-                                    value={formData.bairro}
-                                    onChange={(e) => setFormData({ ...formData, bairro: e.target.value })}
-                                    className={`w-full border rounded-lg p-3 text-tinta focus:outline-none focus:ring-1 ${erros.bairro ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-linha focus:border-goles focus:ring-goles'}`}
-                                />
-                                {erros.bairro && <span className="text-red-500 text-xs mt-1 block">{erros.bairro}</span>}
-                            </div>
                             <div className='flex justify-between mt-4'>
                                 <button onClick={() => setStep(1)} className='text-muted hover:text-tinta font-medium px-4 py-2'>
                                     Voltar

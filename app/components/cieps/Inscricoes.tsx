@@ -40,12 +40,12 @@ export default function Inscricoes({ heroImage }: { heroImage?: string }) {
           title="Como realizar sua inscrição"
           action={
             <ButtonLink href={buildSignupEntryPath('/painel')} variant="outline" className="mt-2 self-start">
-              Ir para cadastro
+              Iniciar inscrição
             </ButtonLink>
           }
         >
-          Crie sua conta pelo Auth0, conclua o cadastro e siga para o pagamento. A vaga fica
-          reservada na hora.
+          Crie sua conta, informe apenas os dados necessários para o pagamento e garanta sua vaga.
+          Depois da confirmação, complete os dados do congressista e aceite os termos de privacidade.
         </Card>
         <Card kicker="Políticas" title="Acesso pessoal e protegido">
           O acesso ao painel é individual, protegido por autenticação, e deve ser usado de forma

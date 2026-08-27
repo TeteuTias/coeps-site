@@ -8,7 +8,7 @@
     "start": "next start -H 0.0.0.0 -p 3000",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test:auth-entry": "node --experimental-strip-types --test \"app/lib/__tests__/auth-migration-notice.test.ts\"",
+    "test:auth-entry": "node --experimental-strip-types --test \"app/lib/__tests__/*.test.ts\"",
     "test:payments": "node --experimental-strip-types --test \"app/lib/payments/__tests__/*.test.ts\"",
     "test:payments:integration": "node --experimental-strip-types --test --test-concurrency=1 \"app/lib/payments/__tests__/integration/*.test.ts\"",
     "migrate:payment-codes": "node scripts/migrations/setup-payment-codes.mjs",
