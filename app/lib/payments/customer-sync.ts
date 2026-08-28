@@ -128,11 +128,13 @@ export function buildAsaasCustomerPayload(input: {
     userId: string;
     payer: NormalizedPaymentCustomer;
     email?: unknown;
+    phone?: unknown;
     mobilePhone?: unknown;
     address?: unknown;
     province?: unknown;
 }): AsaasCustomerPayload {
     const email = optionalString(input.email);
+    const phone = optionalString(input.phone)?.replace(/\D/g, '');
     const mobilePhone = optionalString(input.mobilePhone)?.replace(/\D/g, '');
     const address = normalizeAsaasCustomerAddress({
         postalCode: input.payer.postalCode,
@@ -149,6 +151,7 @@ export function buildAsaasCustomerPayload(input: {
         notificationDisabled: true,
         externalReference: input.userId,
         ...(email ? { email } : {}),
+        ...(phone ? { phone } : {}),
         ...(mobilePhone ? { mobilePhone } : {}),
         ...address,
     };

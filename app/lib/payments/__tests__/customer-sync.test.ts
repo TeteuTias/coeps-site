@@ -40,12 +40,16 @@ test('normaliza os quatro dados mínimos e nunca envia city textual', () => {
         userId: '507f1f77bcf86cd799439011',
         payer: normalized.value,
         email: 'maria@example.com',
+        phone: '(34) 3333-4444',
+        mobilePhone: '(34) 99999-9999',
         address: '',
         province: null,
     });
 
     assert.equal(payload.postalCode, '38440000');
     assert.equal(payload.addressNumber, '120');
+    assert.equal(payload.phone, '3433334444');
+    assert.equal(payload.mobilePhone, '34999999999');
     assert.equal('city' in payload, false);
     assert.equal('address' in payload, false);
     assert.equal('province' in payload, false);
