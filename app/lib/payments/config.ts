@@ -110,28 +110,52 @@ export async function countReservedTicketPlaces(
     now = new Date(),
     mongoSession?: ClientSession,
 ): Promise<number> {
-    return db.collection('pagamentos.sessoes').countDocuments(
+    return db.collection('pagamentos.sessoes').aggregate([
+        // Filtro original do countDocuments para buscar as sessões válidas/ativas
         {
-            type: 'ticket',
-            edicaoId,
-            $or: [
-                {
-                    status: 'OPEN',
-                    expiresAt: { $gt: now },
-                },
-                {
-                    status: {
-                        $in: [
-                            'CREATING_PAYMENT',
-                            'PAYMENT_PENDING',
-                            'PAYMENT_REVIEW_REQUIRED',
-                        ],
+            $match: {
+                type: 'ticket',
+                edicaoId,
+                $or: [
+                    {
+                        status: 'OPEN',
+                        expiresAt: { $gt: now },
                     },
-                },
-            ],
+                    {
+                        status: {
+                            $in: [
+                                'CREATING_PAYMENT',
+                                'PAYMENT_PENDING',
+                                'PAYMENT_REVIEW_REQUIRED',
+                            ],
+                        },
+                    },
+                ],
+            },
         },
-        { session: mongoSession },
-    );
+        // Faz o Join com a coleção de códigos
+        {
+            $lookup: {
+                from: 'pagamentos.codigos',
+                localField: 'codigoDesconto.codigoNormalizado',
+                foreignField: 'codigoNormalizado',
+                as: 'dadosDoCodigo',
+            },
+        },
+        // Remove da contagem caso o perfil atrelado ao código seja CONGRESSISTA.
+        // Sessões sem código (null) passarão normalmente por aqui.
+        {
+            $match: {
+                'dadosDoCodigo.perfilUtilizador': { $ne: 'CONGRESSISTA' },
+            },
+        },
+        // Conta quantas sessões restaram
+        {
+            $count: 'totalSessoes',
+        },
+    ], { session: mongoSession })
+        .toArray()
+        .then(result => result[0]?.totalSessoes || 0);
 }
 
 export async function getCurrentAutomaticLot(
