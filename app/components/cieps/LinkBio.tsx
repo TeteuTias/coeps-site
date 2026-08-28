@@ -7,7 +7,7 @@ const links = [
   { label: 'Conheça nosso site', href: '/', variant: 'outline' as const },
   { label: 'Programação', href: '/programacao', variant: 'outline' as const },
   { label: 'Submeter trabalho', href: buildAuthEntryPath('/painel/trabalhos/enviarTrabalho'), variant: 'outline' as const },
-  { label: 'WhatsApp / contato', href: 'https://api.whatsapp.com/send?phone=5562983306426', variant: 'outline' as const },
+  { label: 'WhatsApp / contato', href: 'https://api.whatsapp.com/send?phone=5534991209359', variant: 'outline' as const },
 ];
 
 export default function LinkBio() {
@@ -33,7 +33,7 @@ export default function LinkBio() {
 
       <nav className="mt-2 flex items-center gap-2" aria-label="Contato e redes sociais">
         <a className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-linha bg-white text-goles transition-colors hover:bg-goles/10" href="https://www.instagram.com/coeps.araguari/" target="_blank" rel="noopener noreferrer" aria-label="Instagram do CIEPS"><Instagram size={19} aria-hidden="true" /></a>
-        <a className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-linha bg-white text-goles transition-colors hover:bg-goles/10" href="https://api.whatsapp.com/send?phone=5562983306426" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp do CIEPS"><MessageCircle size={19} aria-hidden="true" /></a>
+        <a className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-linha bg-white text-goles transition-colors hover:bg-goles/10" href="https://api.whatsapp.com/send?phone=5534991209359" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp do CIEPS"><MessageCircle size={19} aria-hidden="true" /></a>
         <a className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-linha bg-white text-goles transition-colors hover:bg-goles/10" href="mailto:dadg.imepac@gmail.com" aria-label="E-mail do CIEPS"><Mail size={19} aria-hidden="true" /></a>
       </nav>
     </main>
