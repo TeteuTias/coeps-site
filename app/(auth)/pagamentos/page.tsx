@@ -217,29 +217,6 @@ const Pagamentos = () => {
         setRequestVersion((version) => version + 1);
     };
 
-    const [isBeforeNoon, setIsBeforeNoon] = useState<boolean | null>(null);
-
-    useEffect(() => {
-        // Define a data limite para hoje às 12:00:00
-        const target = new Date();
-        target.setHours(12, 0, 0, 0);
-
-        // Condição: verdadeiro se a data atual for menor que hoje às 12:00
-        setIsBeforeNoon(new Date() < target);
-    }, []);
-    if (isBeforeNoon) {
-
-        return (
-            <div>
-                <main className="min-h-screen font-[family-name:var(--cieps-body)] text-[var(--cieps-ink)] pb-12">
-                    <div className="mx-auto w-full max-w-[1320px] px-[clamp(1rem,3vw,2rem)] pt-[clamp(2rem,4vw,4rem)]">
-                        <RegistrationTimer />
-                    </div>
-                </main>
-            </div>
-        )
-    }
-
     if (isFetchingData || isLoadingPaymentData) {
         return <LoadingScreen />;
     }
@@ -2255,109 +2232,6 @@ interface TimeLeft {
     seconds: number;
 }
 
-function RegistrationTimer() {
-    const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null);
-    const [isExpired, setIsExpired] = useState<boolean>(false);
 
-    useEffect(() => {
-        // Define a data alvo para o próximo meio-dia (12:00:00)
-        const target = new Date();
-        target.setHours(12, 0, 0, 0);
-
-        // Se já passou do meio-dia de hoje, define para o meio-dia de amanhã
-        if (Date.now() >= target.getTime()) {
-            target.setDate(target.getDate() + 1);
-        }
-
-        const targetTime = target.getTime();
-
-        const updateTimer = () => {
-            const now = Date.now();
-            const difference = targetTime - now;
-
-            if (difference <= 0) {
-                setIsExpired(true);
-                setTimeLeft({ hours: 0, minutes: 0, seconds: 0 });
-            } else {
-                const hours = Math.floor(difference / (1000 * 60 * 60));
-                const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-
-                setTimeLeft({ hours, minutes, seconds });
-            }
-        };
-
-        updateTimer(); // Executa imediatamente para evitar lag inicial
-        const interval = setInterval(updateTimer, 1000);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    const formatNumber = (num: number): string => String(num).padStart(2, "0");
-
-    // Estado de carregamento até o client montar (evita erro de hidratação no SSR)
-    if (!timeLeft && !isExpired) {
-        return (
-            <div className="flex justify-center items-center p-12 text-[var(--cieps-ink)]/50">
-                Carregando contagem...
-            </div>
-        );
-    }
-
-    return (
-        <div className="flex flex-col items-center justify-center rounded-3xl border border-[var(--cieps-ink)]/10 bg-white/50 p-8 md:p-12 shadow-xl backdrop-blur-md text-center max-w-2xl mx-auto">
-            <span className="inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold uppercase tracking-wider rounded-full bg-[var(--cieps-ink)]/5 text-[var(--cieps-ink)] mb-4">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                Contagem Regressiva
-            </span>
-
-            <h2 className="text-2xl md:text-4xl font-bold tracking-tight mb-2">
-                As inscrições abrem em breve!
-            </h2>
-
-            <p className="text-sm md:text-base text-[var(--cieps-ink)]/70 mb-8 max-w-md">
-                Prepare-se! O lote de inscrições estará disponível exatamente às 12:00.
-            </p>
-
-            {isExpired ? (
-                <div className="text-xl font-bold text-emerald-600 bg-emerald-50 px-6 py-4 rounded-xl border border-emerald-200">
-                    🎉 As inscrições estão abertas!
-                </div>
-            ) : (
-                <div className="grid grid-cols-3 gap-3 md:gap-6 w-full max-w-md">
-                    {/* Horas */}
-                    <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-[var(--cieps-ink)] text-white shadow-lg">
-                        <span className="text-3xl md:text-5xl font-extrabold font-mono tracking-tight">
-                            {formatNumber(timeLeft.hours)}
-                        </span>
-                        <span className="text-[10px] md:text-xs uppercase tracking-widest text-white/70 mt-1">
-                            Horas
-                        </span>
-                    </div>
-
-                    {/* Minutos */}
-                    <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-[var(--cieps-ink)] text-white shadow-lg">
-                        <span className="text-3xl md:text-5xl font-extrabold font-mono tracking-tight">
-                            {formatNumber(timeLeft.minutes)}
-                        </span>
-                        <span className="text-[10px] md:text-xs uppercase tracking-widest text-white/70 mt-1">
-                            Minutos
-                        </span>
-                    </div>
-
-                    {/* Segundos */}
-                    <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-[var(--cieps-ink)] text-white shadow-lg">
-                        <span className="text-3xl md:text-5xl font-extrabold font-mono tracking-tight">
-                            {formatNumber(timeLeft.seconds)}
-                        </span>
-                        <span className="text-[10px] md:text-xs uppercase tracking-widest text-white/70 mt-1">
-                            Segundos
-                        </span>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-}
 export default Pagamentos;
 
