@@ -78,3 +78,20 @@ test('pagamento provisiona Customer e cadastro posterior apenas sincroniza o ID 
     assert.equal(registration.includes("method: 'POST'"), false);
     assert.equal(preparation.includes('city:'), false);
 });
+
+test('PIX confirma telefone no Customer antes de criar o checkout', async () => {
+    const page = await readFile('app/(auth)/pagamentos/page.tsx', 'utf8');
+    const pixRoute = await readFile('app/api/v1/payment/session/pix/route.ts', 'utf8');
+    const holderValidation = pixRoute.indexOf('normalizeCardHolderInput(body.personalInfo)');
+    const customerUpdate = pixRoute.indexOf('await updateExistingAsaasCustomer');
+    const checkoutCreation = pixRoute.indexOf('await createAsaasCheckoutWithCustomerCityRepair');
+
+    assert.ok(holderValidation >= 0, 'o PIX deve validar os dados do titular');
+    assert.ok(customerUpdate > holderValidation, 'o PIX deve atualizar o Customer após validar o titular');
+    assert.ok(checkoutCreation > customerUpdate, 'o PIX deve atualizar o telefone antes do checkout');
+    assert.match(pixRoute, /phone: payer\.value\.phone/);
+    assert.match(pixRoute, /mobilePhone: payer\.value\.phone/);
+    assert.match(pixRoute, /'userProps\.phone': payer\.value\.phone/);
+    assert.match(page, /JSON\.stringify\(\{ sessionId: paymentSession\._id, personalInfo \}\)/);
+    assert.match(page, /paymentMethod === "PIX" \? 'Criar cobrança PIX' : 'Continuar'/);
+});

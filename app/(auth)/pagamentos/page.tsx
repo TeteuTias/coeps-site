@@ -49,6 +49,15 @@ type PaymentCodesPreview = {
     valoresCentavos: PaymentAmountsSnapshot;
 };
 
+type PaymentHolderInfo = {
+    name: string;
+    email: string;
+    cpfCnpj: string;
+    postalCode: string;
+    addressNumber: string;
+    phone: string;
+};
+
 const paymentAmountLabels: Record<keyof PaymentAmountsByMethod, string> = {
     PIX: 'PIX',
     BOLETO: 'Boleto',
@@ -487,22 +496,29 @@ function PaymentSessionActive({
         };
     }, [isAwaitingPaymentCreation, refreshProcessingPayment]);
 
-    const handleSelectPix = async () => {
-        setpaymentType("PIX");
+    const handleSelectPix = () => {
         setPixError(null);
 
-        if (hasPixCheckout || isCreatingPix) return;
+        if (hasPixCheckout || isCreatingPix) {
+            setpaymentType("PIX");
+            return;
+        }
         if (paymentMethodLocked && paymentMethodLocked !== "PIX") {
             setPixError("Esta sessão já está vinculada a outra forma de pagamento.");
             return;
         }
 
+        setpaymentType("PIX");
+    };
+
+    const handleCreatePix = async (personalInfo: PaymentHolderInfo) => {
+        if (hasPixCheckout || isCreatingPix) return;
         setIsCreatingPix(true);
         try {
             const response = await fetchWithTimeout('/api/v1/payment/session/pix', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId: paymentSession._id }),
+                body: JSON.stringify({ sessionId: paymentSession._id, personalInfo }),
             }, 30_000);
             const result = (await response.json().catch(() => ({}))) as {
                 paymentUrl?: string;
@@ -524,10 +540,21 @@ function PaymentSessionActive({
                     checkoutExpiresAt: result.checkoutExpiresAt ?? current.sessaoPagamentoAutomáticoAtiva.checkoutExpiresAt ?? null,
                     metodoPagamento: "PIX",
                     status: "PAYMENT_PENDING",
+                    userProps: {
+                        ...current.sessaoPagamentoAutomáticoAtiva.userProps,
+                        name: personalInfo.name,
+                        email: personalInfo.email,
+                        cpf: personalInfo.cpfCnpj,
+                        zipCode: personalInfo.postalCode,
+                        number: personalInfo.addressNumber,
+                        phone: personalInfo.phone,
+                    },
                 },
             }));
         } catch (error) {
-            setPixError(error instanceof Error ? error.message : 'Não foi possível criar a cobrança PIX.');
+            const message = error instanceof Error ? error.message : 'Não foi possível criar a cobrança PIX.';
+            setPixError(message);
+            throw error instanceof Error ? error : new Error(message);
         } finally {
             setIsCreatingPix(false);
         }
@@ -901,7 +928,7 @@ function PaymentSessionActive({
                     <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                         <button
                             type="button"
-                            onClick={() => void handleSelectPix()}
+                            onClick={handleSelectPix}
                             disabled={isCreatingPix || purchaseCancellationInProgress || purchaseCancellationDetected || (Boolean(paymentMethodLocked) && paymentMethodLocked !== "PIX")}
                             aria-busy={isCreatingPix}
                             className={`p-4 rounded-xl border-2 font-bold transition-all text-center disabled:cursor-not-allowed disabled:opacity-60 ${paymentType === "PIX" ? 'border-[#2f7651] bg-[#2f7651]/10 text-[#2f7651]' : 'border-linha bg-white text-muted hover:border-[#2f7651]/40'}`}
@@ -1003,7 +1030,7 @@ function PaymentSessionActive({
                                                 <button
                                                     type="button"
                                                     className='inline-flex items-center justify-center rounded-lg bg-[#2f7651] px-5 py-2.5 font-bold text-white hover:bg-[#245f41]'
-                                                    onClick={() => void handleSelectPix()}
+                                                    onClick={handleSelectPix}
                                                 >
                                                     Tentar novamente
                                                 </button>
@@ -1013,10 +1040,12 @@ function PaymentSessionActive({
                     )}
 
                     <PaymentForm
-                        isModalOpen={paymentType === "CREDIT_CARD"}
+                        isModalOpen={paymentType === "CREDIT_CARD" || (paymentType === "PIX" && !hasPixCheckout)}
                         onClose={() => setpaymentType("NONE")}
                         dataPaymentConfig={paymentConfig}
                         hydratePage={hydratePage}
+                        paymentMethod={paymentType === "PIX" ? "PIX" : "CREDIT_CARD"}
+                        onCreatePix={handleCreatePix}
                     />
                 </div>
 
@@ -1604,12 +1633,26 @@ const ModalError = ({
 };
 
 // Componente de formulário de pagamento (mantido do código original)
-const PaymentForm = ({ isModalOpen, onClose, dataPaymentConfig, hydratePage }: { isModalOpen: boolean; onClose: () => void, dataPaymentConfig: IPaymentConfig & { sessaoPagamentoAutomáticoAtiva: PaymentTicketProps }; hydratePage: () => void }) => {
+const PaymentForm = ({
+    isModalOpen,
+    onClose,
+    dataPaymentConfig,
+    hydratePage,
+    paymentMethod,
+    onCreatePix,
+}: {
+    isModalOpen: boolean;
+    onClose: () => void;
+    dataPaymentConfig: IPaymentConfig & { sessaoPagamentoAutomáticoAtiva: PaymentTicketProps };
+    hydratePage: () => void;
+    paymentMethod: "PIX" | "CREDIT_CARD";
+    onCreatePix: (personalInfo: PaymentHolderInfo) => Promise<void>;
+}) => {
     const [step, setStep] = useState(1); // 1 para informações pessoais, 2 para informações do cartão
     const [messageModalWarning2, setMessageModalWarning2] = useState("")
     const [messageModalWarning, setMessageModalWarning] = useState("")
     const [textoPagamentoEscolhido, setTextoPagametoEscolhido] = useState("")
-    const [personalInfo, setPersonalInfo] = useState({
+    const [personalInfo, setPersonalInfo] = useState<PaymentHolderInfo>({
         name: String(dataPaymentConfig.sessaoPagamentoAutomáticoAtiva.userProps.name || ''),
         email: String(dataPaymentConfig.sessaoPagamentoAutomáticoAtiva.userProps.email || ''),
         cpfCnpj: String(dataPaymentConfig.sessaoPagamentoAutomáticoAtiva.userProps.cpf || ''),
@@ -1677,11 +1720,26 @@ const PaymentForm = ({ isModalOpen, onClose, dataPaymentConfig, hydratePage }: {
         setCardInfo((prev) => ({ ...prev, focus: evt.target.name }));
     };
 
-    const handleSubmitPersonalInfo = (evt) => {
+    const handleSubmitPersonalInfo = async (evt) => {
         evt.preventDefault();
-        if (isPersonalInfoValid()) {
-            setStep(2);
+        if (!isPersonalInfoValid()) return;
+
+        if (paymentMethod === "PIX") {
+            setLoading(true);
+            setMessageModalWarning2("");
+            try {
+                await onCreatePix(personalInfo);
+            } catch (error) {
+                setMessageModalWarning2(
+                    error instanceof Error ? error.message : 'Não foi possível criar a cobrança PIX.',
+                );
+            } finally {
+                setLoading(false);
+            }
+            return;
         }
+
+        setStep(2);
     };
 
     const handleSubmitCardInfo = (evt) => {
@@ -1754,12 +1812,15 @@ const PaymentForm = ({ isModalOpen, onClose, dataPaymentConfig, hydratePage }: {
     };
 
     const isPersonalInfoValid = () => {
+        const postalCode = personalInfo.postalCode.replace(/\D/g, '');
+        const phone = personalInfo.phone.replace(/\D/g, '');
         return validateName(personalInfo.name) &&
             validateEmail(personalInfo.email) &&
             validateCpfCnpj(personalInfo.cpfCnpj) &&
-            personalInfo.postalCode &&
-            personalInfo.addressNumber &&
-            personalInfo.phone;
+            postalCode.length === 8 &&
+            Boolean(personalInfo.addressNumber.trim()) &&
+            phone.length >= 10 &&
+            phone.length <= 11;
     };
 
     const validateName = (name) => name.length > 5;
@@ -1800,7 +1861,9 @@ const PaymentForm = ({ isModalOpen, onClose, dataPaymentConfig, hydratePage }: {
                     onClose()
                 }}
                 title={step === 1 ? 'Dados do titular' : 'Dados do cartão'}
-                description="Preencha os dados com atenção para concluir o pagamento."
+                description={paymentMethod === "PIX"
+                    ? "Confirme os dados e o telefone para criar sua cobrança PIX."
+                    : "Preencha os dados com atenção para concluir o pagamento."}
                 className="max-w-lg"
             >
                 {step === 2 && (
@@ -1885,12 +1948,12 @@ const PaymentForm = ({ isModalOpen, onClose, dataPaymentConfig, hydratePage }: {
                                 className={`bg-blue-500 text-white py-2 px-4 rounded font-bold text-[20px] ${isPersonalInfoValid() ? '' : 'opacity-50 cursor-not-allowed'}`}
                                 disabled={!isPersonalInfoValid()}
                             >
-                                Continuar
+                                    {paymentMethod === "PIX" ? 'Criar cobrança PIX' : 'Continuar'}
                             </button>
                         </div>
                     </form>
                 )}
-                {step === 2 && (
+                {paymentMethod === "CREDIT_CARD" && step === 2 && (
                     <div className=''>
                         <div className='text-center font-bold text-[#3e4095] text-[20px] mb-5'>
                             <h1>{dataPaymentConfig.nome || "PAGAMENTOS"}</h1>
@@ -2007,7 +2070,7 @@ const PaymentForm = ({ isModalOpen, onClose, dataPaymentConfig, hydratePage }: {
             </Modal>
 
             {/* Modal de Confirmação */}
-            <Modal open={isConfirmationOpen} onClose={handleCancel} title="Confirmar pagamento">
+            <Modal open={paymentMethod === "CREDIT_CARD" && isConfirmationOpen} onClose={handleCancel} title="Confirmar pagamento">
                 <StatusBanner tone="warning" title="Confira a opção selecionada">{textoPagamentoEscolhido}.</StatusBanner>
                 <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                     <Button variant="ghost" onClick={handleCancel}>Voltar</Button>
@@ -2017,7 +2080,10 @@ const PaymentForm = ({ isModalOpen, onClose, dataPaymentConfig, hydratePage }: {
 
             {/* Loading Spinner */}
             <Modal open={isLoading} onClose={() => undefined} title="Processando pagamento" description="Não feche esta janela.">
-                <AsyncStatePanel status="loading" loadingTitle="Enviando os dados com segurança" />
+                <AsyncStatePanel
+                    status="loading"
+                    loadingTitle={paymentMethod === "PIX" ? "Criando sua cobrança PIX" : "Enviando os dados com segurança"}
+                />
             </Modal>
         </>
     );

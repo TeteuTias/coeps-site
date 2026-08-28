@@ -17,6 +17,11 @@ import {
     createAsaasCheckoutWithCustomerCityRepair,
     isAsaasMissingCustomerCityError,
 } from '@/lib/payments/customer-provisioning';
+import {
+    buildAsaasCustomerPayload,
+    normalizeCardHolderInput,
+    updateExistingAsaasCustomer,
+} from '@/lib/payments/customer-sync';
 
 export const POST = withApiAuthRequired(async function POST(request: Request) {
     if (!isPaymentSalesEnabled()) return paymentSalesPausedResponse();
@@ -65,6 +70,14 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                     checkoutExpiresAt: existingSession.checkoutExpiresAt ?? null,
                 },
                 { status: 200 },
+            );
+        }
+
+        const payer = normalizeCardHolderInput(body.personalInfo);
+        if (payer.ok === false) {
+            return NextResponse.json(
+                { error: 'invalid_pix_payer_data', message: payer.message },
+                { status: 400 },
             );
         }
 
@@ -148,6 +161,64 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             );
         }
 
+        const customerUpdate = await updateExistingAsaasCustomer({
+            customerId: String(user.id_api),
+            customer: buildAsaasCustomerPayload({
+                userId,
+                payer: payer.value,
+                email: payer.value.email,
+                phone: payer.value.phone,
+                mobilePhone: payer.value.phone,
+            }),
+            apiUrl,
+            apiKey,
+        });
+        if (customerUpdate.ok === false) {
+            await db.collection('pagamentos.sessoes').updateOne(
+                { _id: sessionId, status: 'CREATING_PAYMENT' },
+                { $set: { status: 'OPEN', metodoPagamento: null, updatedAt: new Date() } },
+            );
+            return NextResponse.json(
+                {
+                    error: customerUpdate.status === 404
+                        ? 'payment_customer_reconciliation_required'
+                        : customerUpdate.code.toLowerCase(),
+                    message: customerUpdate.status === 404
+                        ? 'O cadastro de pagamento precisa de revisão antes de criar o PIX.'
+                        : customerUpdate.retryable
+                          ? 'Não foi possível confirmar o telefone no gateway. Tente novamente.'
+                          : 'O gateway recusou os dados do titular. Revise o telefone informado.',
+                },
+                { status: customerUpdate.status === 404 ? 409 : customerUpdate.retryable ? 503 : 422 },
+            );
+        }
+
+        const payerSessionUpdate = await db.collection('pagamentos.sessoes').updateOne(
+            { _id: sessionId, owner, status: 'CREATING_PAYMENT' },
+            {
+                $set: {
+                    'userProps.name': payer.value.name,
+                    'userProps.email': payer.value.email,
+                    'userProps.cpf': payer.value.cpfCnpj,
+                    'userProps.zipCode': payer.value.postalCode,
+                    'userProps.number': payer.value.addressNumber,
+                    'userProps.complement': payer.value.complement || '',
+                    'userProps.phone': payer.value.phone,
+                    updatedAt: new Date(),
+                },
+            },
+        );
+        if (payerSessionUpdate.matchedCount !== 1) {
+            await db.collection('pagamentos.sessoes').updateOne(
+                { _id: sessionId, owner, status: 'CREATING_PAYMENT' },
+                { $set: { status: 'OPEN', metodoPagamento: null, updatedAt: new Date() } },
+            );
+            return NextResponse.json(
+                { error: 'payment_session_changed', message: 'A sessão mudou durante a confirmação dos dados.' },
+                { status: 409 },
+            );
+        }
+
         const checkoutRequest = {
             billingTypes: ['PIX'],
             minutesToExpire: 15,
@@ -189,11 +260,11 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
         const checkoutResult = await createAsaasCheckoutWithCustomerCityRepair({
             customerId: String(user.id_api),
             address: {
-                postalCode: lockedSession.userProps?.zipCode,
+                postalCode: payer.value.postalCode,
                 address: lockedSession.userProps?.street,
-                addressNumber: lockedSession.userProps?.number,
+                addressNumber: payer.value.addressNumber,
                 province: lockedSession.userProps?.neighborhood,
-                complement: lockedSession.userProps?.complement,
+                complement: payer.value.complement,
             },
             apiUrl,
             apiKey,
