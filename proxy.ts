@@ -8,7 +8,10 @@ import {
   buildAuthEntryPath,
   isAuthMigrationGateSatisfied,
 } from '@/lib/auth-migration-notice';
-import { getRegistrationRedirect } from '@/lib/registration-gate';
+import {
+  getRegistrationRedirect,
+  isRegistrationProfileComplete,
+} from '@/lib/registration-gate';
 
 const protectedRoutes = [
   '/painel',
@@ -90,7 +93,7 @@ export async function proxy(req) {
   // é a única condição que libera o formulário congressista e a LGPD.
   const redirect = getRegistrationRedirect({
     path,
-    profileComplete: Boolean(user?.isPos_registration),
+    profileComplete: isRegistrationProfileComplete(user),
     paymentConfirmed: user?.pagamento?.situacao === 1,
     confirmationSeen: Boolean(user?.pagamento?.situacao_animacao),
   });

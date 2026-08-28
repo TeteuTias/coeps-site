@@ -5,6 +5,26 @@ export type RegistrationGateInput = {
     confirmationSeen: boolean;
 };
 
+type RegistrationUser = {
+    isPos_registration?: unknown;
+    informacoes_usuario?: {
+        nome?: unknown;
+        cpf?: unknown;
+        numero_telefone?: unknown;
+    } | null;
+} | null | undefined;
+
+export function isRegistrationProfileComplete(user: RegistrationUser): boolean {
+    if (!user?.isPos_registration) return false;
+
+    const profile = user.informacoes_usuario;
+    const name = typeof profile?.nome === 'string' ? profile.nome.trim() : '';
+    const cpf = String(profile?.cpf ?? '').replace(/\D/g, '');
+    const phone = String(profile?.numero_telefone ?? '').replace(/\D/g, '');
+
+    return name.length >= 5 && [11, 14].includes(cpf.length) && phone.length >= 10;
+}
+
 export function getRegistrationRedirect({
     path,
     profileComplete,
