@@ -356,11 +356,11 @@ const PasswordCard = ({
                                 </div>
         <div className="form-content">
           <p className="intro-text">
-            Para alterar sua senha, entre em contato com a equipe CIEPS através do email: dadg.imepac@gmail.com ou pelo WhatsApp: (15) 98812-3011
+            Para alterar sua senha, entre em contato com a equipe CIEPS através do email: dadg.imepac@gmail.com ou pelo WhatsApp: +55 34 99120-9359
           </p>
                                         <button
             className="password-button"
-            onClick={() => setModal("Para alterar sua senha, entre em contato com a equipe CIEPS através do email: dadg.imepac@gmail.com ou pelo WhatsApp: (15) 98812-3011")}
+            onClick={() => setModal("Para alterar sua senha, entre em contato com a equipe CIEPS através do email: dadg.imepac@gmail.com ou pelo WhatsApp: +55 34 99120-9359")}
           >
             <AlertCircle size={18} style={{ marginRight: '8px' }} />
             {labelButton}

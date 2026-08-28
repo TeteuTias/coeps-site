@@ -131,7 +131,7 @@ export default function Anais() {
         <div><span className="cieps-kicker">Contato</span><h2 className="cieps-display">Precisa confirmar uma publicação?</h2></div>
         <div className="anais-contact-list">
           <a href="mailto:dadg.imepac@gmail.com"><Mail size={18} aria-hidden="true" />dadg.imepac@gmail.com</a>
-          <a href="https://api.whatsapp.com/send?phone=5562983306426" target="_blank" rel="noopener noreferrer"><Phone size={18} aria-hidden="true" />+55 34 99120-9359</a>
+          <a href="https://api.whatsapp.com/send?phone=5534991209359" target="_blank" rel="noopener noreferrer"><Phone size={18} aria-hidden="true" />+55 34 99120-9359</a>
         </div>
       </section>
     </main>

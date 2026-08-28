@@ -35,7 +35,7 @@ function Footer() {
           <h2>Contato</h2>
           <a href="mailto:dadg.imepac@gmail.com">dadg.imepac@gmail.com</a>
           <a
-            href="https://api.whatsapp.com/send?phone=5562983306426"
+            href="https://api.whatsapp.com/send?phone=5534991209359"
             target="_blank"
             rel="noopener noreferrer"
           >
