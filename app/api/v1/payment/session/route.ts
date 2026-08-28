@@ -58,13 +58,6 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             { projection: { id_api: 1 } },
         );
 
-        if (!user?.id_api) {
-            return NextResponse.json(
-                { error: 'payment_customer_not_found', message: 'Cadastro de pagamento não encontrado.' },
-                { status: 404 },
-            );
-        }
-
         const config = await getActivePaymentConfig(db);
         if (!config) {
             return NextResponse.json(
