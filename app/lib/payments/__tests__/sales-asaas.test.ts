@@ -60,8 +60,15 @@ test('cartão persiste o plano provisório antes do POST e aceita a corrida do w
 });
 
 test('pagamento provisiona Customer e cadastro posterior apenas sincroniza o ID existente', async () => {
+    const sessionRoute = await readFile('app/api/v1/payment/session/route.ts', 'utf8');
     const preparation = await readFile('app/lib/payments/customer-sync.ts', 'utf8');
     const registration = await readFile('app/api/post/updateData/route.ts', 'utf8');
+    const customerLookup = sessionRoute.indexOf("db.collection('usuarios').findOne");
+    const customerPreparation = sessionRoute.indexOf('await preparePaymentCustomer');
+    assert.ok(customerLookup >= 0, 'a sessão deve consultar o vínculo Asaas existente');
+    assert.ok(customerPreparation > customerLookup, 'a sessão deve provisionar o Customer após a consulta');
+    assert.equal(sessionRoute.includes('payment_customer_not_found'), false);
+    assert.equal(sessionRoute.includes('if (!user?.id_api)'), false);
     assert.match(preparation, /if \(storedCustomerId\)/);
     assert.match(preparation, /await updateExistingAsaasCustomer/);
     assert.match(preparation, /await ensureAsaasCustomer/);

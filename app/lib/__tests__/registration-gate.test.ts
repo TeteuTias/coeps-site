@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getRegistrationRedirect } from '../registration-gate.ts';
+import {
+    getRegistrationRedirect,
+    isRegistrationProfileComplete,
+} from '../registration-gate.ts';
 
 const decide = (
     path: string,
@@ -25,4 +28,19 @@ test('usuário completo preserva gate financeiro e confirmação visual', () => 
     assert.equal(decide('/painel/suaInscricaoFoiConfirmada', true, true), null);
     assert.equal(decide('/painel/suaInscricaoFoiConfirmada', true, true, true), '/painel');
     assert.equal(decide('/painel/trabalhos', true, true, true), null);
+});
+
+test('flag de cadastro sem perfil real não permite pular o formulário', () => {
+    assert.equal(isRegistrationProfileComplete({
+        isPos_registration: true,
+        informacoes_usuario: { nome: '', cpf: '', numero_telefone: '' },
+    }), false);
+    assert.equal(isRegistrationProfileComplete({
+        isPos_registration: true,
+        informacoes_usuario: {
+            nome: 'Maria da Silva',
+            cpf: '529.982.247-25',
+            numero_telefone: '(34) 99999-9999',
+        },
+    }), true);
 });
