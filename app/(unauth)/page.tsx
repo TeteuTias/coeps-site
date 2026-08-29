@@ -29,7 +29,7 @@ const metrics = [
 ];
 
 const programacao = [
-  ['12 nov', 'Abertura oficial', 'Palavra magna e simpósios'],
+  ['12 nov', 'Abertura oficial', 'Palestra magna e mesa de autoridades'],
   ['13 nov', 'Mesas-redondas', 'Comunicações orais e workshops'],
   ['14 nov', 'Minicursos', 'Vivências e sessões temáticas'],
   ['15 nov', 'Encerramento', 'Apresentações finais e celebração'],

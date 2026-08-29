@@ -6,9 +6,6 @@ export const metadata = {
     template: '%s | I CIEPS',
   },
   description: 'Site oficial da 1ª Edição Internacional do Congresso Internacional de Estudantes e Profissionais da Saúde.',
-  icons: {
-    icon: '/icon.png',
-  },
 };
 
 export const viewport = {
