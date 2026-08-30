@@ -75,8 +75,8 @@ export async function isPaymentMethodAllowedForSession(
     const config = await getActivePaymentConfig(db);
     return Boolean(
         config &&
-            getEditionId(config) === session.edicaoId &&
-            config.pagamentosAceitos?.includes(method),
+        getEditionId(config) === session.edicaoId &&
+        config.pagamentosAceitos?.includes(method),
     );
 }
 
@@ -110,28 +110,52 @@ export async function countReservedTicketPlaces(
     now = new Date(),
     mongoSession?: ClientSession,
 ): Promise<number> {
-    return db.collection('pagamentos.sessoes').countDocuments(
+    return db.collection('pagamentos.sessoes').aggregate([
+        // Filtro original do countDocuments para buscar as sessões válidas/ativas
         {
-            type: 'ticket',
-            edicaoId,
-            $or: [
-                {
-                    status: 'OPEN',
-                    expiresAt: { $gt: now },
-                },
-                {
-                    status: {
-                        $in: [
-                            'CREATING_PAYMENT',
-                            'PAYMENT_PENDING',
-                            'PAYMENT_REVIEW_REQUIRED',
-                        ],
+            $match: {
+                type: 'ticket',
+                edicaoId,
+                $or: [
+                    {
+                        status: 'OPEN',
+                        expiresAt: { $gt: now },
                     },
-                },
-            ],
+                    {
+                        status: {
+                            $in: [
+                                'CREATING_PAYMENT',
+                                'PAYMENT_PENDING',
+                                'PAYMENT_REVIEW_REQUIRED',
+                            ],
+                        },
+                    },
+                ],
+            },
         },
-        { session: mongoSession },
-    );
+        // Faz o Join com a coleção de códigos
+        {
+            $lookup: {
+                from: 'pagamentos.codigos',
+                localField: 'codigoDesconto.codigoNormalizado',
+                foreignField: 'codigoNormalizado',
+                as: 'dadosDoCodigo',
+            },
+        },
+        // Remove da contagem caso o perfil atrelado ao código seja CONGRESSISTA.
+        // Sessões sem código (null) passarão normalmente por aqui.
+        {
+            $match: {
+                'dadosDoCodigo.perfilUtilizador': { $ne: 'CONGRESSISTA' },
+            },
+        },
+        // Conta quantas sessões restaram
+        {
+            $count: 'totalSessoes',
+        },
+    ], { session: mongoSession })
+        .toArray()
+        .then(result => result[0]?.totalSessoes || 0);
 }
 
 export async function getCurrentAutomaticLot(
@@ -151,13 +175,37 @@ export async function getCurrentAutomaticLot(
         { session: mongoSession },
     );
     const [confirmedAssignments, reservedPlaces] = await Promise.all([
-        db.collection('pagamentos.atribuicoes').countDocuments(
+        db.collection('pagamentos.atribuicoes').aggregate([
+            // Filtro inicial
             {
-                edicaoId,
-                status: 'CONFIRMADA',
+                $match: {
+                    edicaoId,
+                    status: 'CONFIRMADA',
+                },
             },
-            { session: mongoSession },
-        ),
+            // Busca o código na coleção de códigos
+            {
+                $lookup: {
+                    from: 'pagamentos.codigos',
+                    localField: 'codigoDesconto.codigoNormalizado',
+                    foreignField: 'codigoNormalizado',
+                    as: 'dadosDoCodigo',
+                },
+            },
+            // Mantém apenas onde o perfil NÃO é CONGRESSISTA.
+            // Se o código for NULL, o 'dadosDoCodigo' será vazio e passará por essa regra.
+            {
+                $match: {
+                    'dadosDoCodigo.perfilUtilizador': { $ne: 'CONGRESSISTA' },
+                },
+            },
+            // 4. Conta os documentos restantes
+            {
+                $count: 'totalVagas',
+            },
+        ], { session: mongoSession })
+            .toArray()
+            .then(result => result[0]?.totalVagas || 0),
         countReservedTicketPlaces(db, edicaoId, now, mongoSession),
     ]);
     const occupied = legacyPaidUsers + confirmedAssignments + reservedPlaces;

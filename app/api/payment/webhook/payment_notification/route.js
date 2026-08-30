@@ -205,7 +205,7 @@ export function normalizeRefundsSnapshot(payment, capturedAt = new Date()) {
           : null,
       transactionReceiptUrl:
         typeof rawRefund?.transactionReceiptUrl === 'string' &&
-        rawRefund.transactionReceiptUrl.trim()
+          rawRefund.transactionReceiptUrl.trim()
           ? rawRefund.transactionReceiptUrl.trim()
           : null,
     };
@@ -646,10 +646,10 @@ async function validateSessionPayment(db, session, payload, mongoSession) {
 
   const expectedCents = Number(
     session.installmentPlan?.installmentValueCentavos ??
-      assignment?.installmentPlan?.installmentValueCentavos ??
-      session.valorSelecionadoCentavos?.final ??
-      assignment?.valorSelecionadoCentavos?.final ??
-      assignment?.valoresCentavos?.final?.[session.metodoPagamento],
+    assignment?.installmentPlan?.installmentValueCentavos ??
+    session.valorSelecionadoCentavos?.final ??
+    assignment?.valorSelecionadoCentavos?.final ??
+    assignment?.valoresCentavos?.final?.[session.metodoPagamento],
   );
   const receivedCents = paymentValueInCents(payment.value);
   if (!Number.isInteger(expectedCents) || receivedCents === null || expectedCents !== receivedCents) {
@@ -737,10 +737,10 @@ async function confirmSessionPayment(db, session, payload, mongoSession) {
         updatedAt: now,
         ...(session.paymentMethodSwitch?.target === 'CREDIT_CARD'
           ? {
-              'paymentMethodSwitch.status': 'PAYMENT_DETECTED',
-              'paymentMethodSwitch.reason': 'PIX_PAYMENT_CONFIRMED_DURING_SWITCH',
-              'paymentMethodSwitch.updatedAt': now,
-            }
+            'paymentMethodSwitch.status': 'PAYMENT_DETECTED',
+            'paymentMethodSwitch.reason': 'PIX_PAYMENT_CONFIRMED_DURING_SWITCH',
+            'paymentMethodSwitch.updatedAt': now,
+          }
           : {}),
       },
       $unset: {
@@ -755,28 +755,57 @@ async function confirmSessionPayment(db, session, payload, mongoSession) {
     { session: mongoSession },
   );
   if (transition.modifiedCount !== 1) return 'NOOP';
+  //
+  // ----- ALTERANDO TIPO_PAGAMENTO PARA ASAAS ----- //
+  let tipo_pagamento = "asaas"; // Default
 
-  const userUpdate = await db.collection('usuarios').updateOne(
-      { _id: session.owner },
+  const updatedSession = await db.collection('pagamentos.sessoes').findOne(
+    { _id: session._id },
+    { session: mongoSession }
+  );
+
+  // Verifica se a sessão realmente possui um código de desconto antes de ir ao banco
+  if (updatedSession?.codigoDesconto?.codigoNormalizado) {
+
+    // Substituído count() por countDocuments() e adicionado { session: mongoSession }
+    const codigoPagamento = await db.collection('pagamentos.codigos').countDocuments(
       {
-        $set: {
-          'pagamento.situacao': 1,
-          'pagamento.tipo_pagamento': 'asaas',
-          'pagamento.edicaoId': session.edicaoId,
-          'pagamento.compraId': session._id,
-        },
+        codigoNormalizado: updatedSession.codigoDesconto.codigoNormalizado,
+        perfilUtilizador: "ORGANIZADOR"
       },
-      { session: mongoSession },
+      { session: mongoSession } // <- Muito importante manter a transação!
+    );
+
+    // CADA CUPOM POSSUI APENAS UM CODIGO NORMALIZADO, SEGUNDO INDEX EM MONGODB. 
+    if (codigoPagamento === 1) {
+      // SE UM CUPOM FOR ENCONTRADO, SIGNIFICA QUE ESTE CUPOM FOI UTILIZADO POR UM ORGANIZADOR
+      // PORTANTO, pagamento.tipo_pagamento SERÁ ORGANIZADOR.
+      tipo_pagamento = "organizador";
+    }
+  }
+  //
+  //
+  const userUpdate = await db.collection('usuarios').updateOne(
+    { _id: session.owner },
+    {
+      $set: {
+        'pagamento.situacao': 1,
+        'pagamento.tipo_pagamento': tipo_pagamento,
+        'pagamento.edicaoId': session.edicaoId,
+        'pagamento.compraId': session._id,
+      },
+    },
+    { session: mongoSession },
   );
   if (userUpdate.matchedCount !== 1) {
     throw new Error('PAYMENT_SESSION_OWNER_UPDATE_FAILED');
   }
   const assignmentUpdated = await updatePaymentAssignment(db, session._id, 'CONFIRMADA', {
-      metodo: payment.billingType || session.metodoPagamento,
-      checkoutId: payment.checkoutSession || session.orderId,
-      paymentId: payment.id || session.paymentId,
-      invoiceNumber: payment.invoiceNumber || session.invoiceNumber,
-    }, mongoSession);
+    metodo: payment.billingType || session.metodoPagamento,
+    checkoutId: payment.checkoutSession || session.orderId,
+    paymentId: payment.id || session.paymentId,
+    invoiceNumber: payment.invoiceNumber || session.invoiceNumber,
+  }, mongoSession);
   if (!assignmentUpdated) {
     throw new Error('PAYMENT_ASSIGNMENT_UPDATE_FAILED');
   }
@@ -793,18 +822,18 @@ async function confirmSessionPayment(db, session, payload, mongoSession) {
     { session: mongoSession },
   );
   await db.collection('pagamentos.comprovantes').updateOne(
-      { compraId: session._id },
-      {
-        $setOnInsert: {
-          compraId: session._id,
-          owner: session.owner,
-          type: 'ticket',
-          title: 'EM BREVE!',
-          createdAt: now,
-        },
-        $set: { status: 'PAID', updatedAt: now },
+    { compraId: session._id },
+    {
+      $setOnInsert: {
+        compraId: session._id,
+        owner: session.owner,
+        type: 'ticket',
+        title: 'EM BREVE!',
+        createdAt: now,
       },
-      { upsert: true, session: mongoSession },
+      $set: { status: 'PAID', updatedAt: now },
+    },
+    { upsert: true, session: mongoSession },
   );
   const discountConsumed = await consumeDiscountCode(
     db,
@@ -860,9 +889,9 @@ async function cancelSessionPayment(db, session, payload, mongoSession) {
       updatePaymentAssignment(db, session._id, assignmentStatus, undefined, mongoSession),
     ]);
     await db.collection('usuarios').updateOne(
-        { _id: session.owner, 'pagamento.situacao': { $ne: 1 } },
-        { $set: { 'pagamento.situacao': 0 } },
-        { session: mongoSession },
+      { _id: session.owner, 'pagamento.situacao': { $ne: 1 } },
+      { $set: { 'pagamento.situacao': 0 } },
+      { session: mongoSession },
     );
     const reconciliationReasons = [
       ...(!assignmentUpdated ? ['PAYMENT_ASSIGNMENT_NOT_FOUND'] : []),
@@ -913,9 +942,9 @@ async function refundSessionPayment(db, session, payload, mongoSession) {
     refundsSnapshot,
     ...(planRefundProgress
       ? {
-          'installmentPlan.refundsByPayment': planRefundProgress.refundsByPayment,
-          'installmentPlan.refundTotalDoneCentavos': planRefundProgress.totalDoneCentavos,
-        }
+        'installmentPlan.refundsByPayment': planRefundProgress.refundsByPayment,
+        'installmentPlan.refundTotalDoneCentavos': planRefundProgress.totalDoneCentavos,
+      }
       : {}),
     updatedAt: now,
   };
@@ -973,34 +1002,34 @@ async function refundSessionPayment(db, session, payload, mongoSession) {
 
   if (isPartialRefundEvent(event) && !planFullyRefunded) {
     const partialTransition = await db.collection('pagamentos.sessoes').updateOne(
-        {
-          _id: session._id,
-          status: {
-            $in: [
-              'OPEN',
-              'CREATING_PAYMENT',
-              'PAYMENT_PENDING',
-              'PAYMENT_REVIEW_REQUIRED',
-              'CONFIRMED',
-            ],
-          },
+      {
+        _id: session._id,
+        status: {
+          $in: [
+            'OPEN',
+            'CREATING_PAYMENT',
+            'PAYMENT_PENDING',
+            'PAYMENT_REVIEW_REQUIRED',
+            'CONFIRMED',
+          ],
         },
-        {
-          $set: {
-            ...refundFields,
-          },
+      },
+      {
+        $set: {
+          ...refundFields,
         },
-        { session: mongoSession },
+      },
+      { session: mongoSession },
     );
     if (partialTransition.modifiedCount !== 1) return false;
     const assignmentUpdate = await db.collection('pagamentos.atribuicoes').updateOne(
-        { compraId: session._id },
-        {
-          $set: {
-            ...refundFields,
-          },
+      { compraId: session._id },
+      {
+        $set: {
+          ...refundFields,
         },
-        { session: mongoSession },
+      },
+      { session: mongoSession },
     );
     if (assignmentUpdate.matchedCount !== 1) {
       await db.collection('pagamentos.sessoes').updateOne(
@@ -1020,27 +1049,27 @@ async function refundSessionPayment(db, session, payload, mongoSession) {
   }
 
   const transition = await db.collection('pagamentos.sessoes').updateOne(
-      {
-        _id: session._id,
-        status: {
-          $in: [
-            'OPEN',
-            'CREATING_PAYMENT',
-            'PAYMENT_PENDING',
-            'PAYMENT_REVIEW_REQUIRED',
-            'CONFIRMED',
-          ],
-        },
+    {
+      _id: session._id,
+      status: {
+        $in: [
+          'OPEN',
+          'CREATING_PAYMENT',
+          'PAYMENT_PENDING',
+          'PAYMENT_REVIEW_REQUIRED',
+          'CONFIRMED',
+        ],
       },
-      {
-        $set: {
-          status: 'REFUNDED',
-          ...refundFields,
-          terminalAt: now,
-        },
-        $unset: { activeKey: '' },
+    },
+    {
+      $set: {
+        status: 'REFUNDED',
+        ...refundFields,
+        terminalAt: now,
       },
-      { session: mongoSession },
+      $unset: { activeKey: '' },
+    },
+    { session: mongoSession },
   );
   if (transition.modifiedCount !== 1) return 'NOOP';
   const assignmentTransition = await db.collection('pagamentos.atribuicoes').updateOne(
@@ -1167,15 +1196,15 @@ async function handleRefundDenied(db, session, payload, mongoSession) {
   const refundStatus = session.status === 'REFUNDED' || session.refundStatus === 'FULL'
     ? 'FULL'
     : refundsSnapshot.totalDoneCentavos > 0 ||
-        Number(planRefundProgress?.totalDoneCentavos || 0) > 0 ||
-        session.refundStatus === 'PARTIAL'
+      Number(planRefundProgress?.totalDoneCentavos || 0) > 0 ||
+      session.refundStatus === 'PARTIAL'
       ? 'PARTIAL'
       : 'DENIED';
   const planFields = planRefundProgress
     ? {
-        'installmentPlan.refundsByPayment': planRefundProgress.refundsByPayment,
-        'installmentPlan.refundTotalDoneCentavos': planRefundProgress.totalDoneCentavos,
-      }
+      'installmentPlan.refundsByPayment': planRefundProgress.refundsByPayment,
+      'installmentPlan.refundTotalDoneCentavos': planRefundProgress.totalDoneCentavos,
+    }
     : {};
 
   await markFinancialEventForReview(
@@ -1561,9 +1590,9 @@ export async function processEvent(db, payload, mongoSession) {
   const assignmentFilter = assignmentCorrelationFilter(payload);
   const assignment = assignmentFilter
     ? await db.collection('pagamentos.atribuicoes').findOne(
-        assignmentFilter,
-        { projection: { compraId: 1, edicaoId: 1 }, session: mongoSession },
-      )
+      assignmentFilter,
+      { projection: { compraId: 1, edicaoId: 1 }, session: mongoSession },
+    )
     : null;
   if (assignment) {
     return {
@@ -1606,9 +1635,9 @@ async function resolveCheckoutPaidPayload(payload) {
   const body = await response.json();
   const payments = Array.isArray(body?.data)
     ? body.data.filter(
-        (payment) =>
-          !payment?.deleted && ['CONFIRMED', 'RECEIVED'].includes(String(payment?.status || '')),
-      )
+      (payment) =>
+        !payment?.deleted && ['CONFIRMED', 'RECEIVED'].includes(String(payment?.status || '')),
+    )
     : [];
   if (payments.length !== 1) {
     throw new WebhookReviewError(
@@ -1730,7 +1759,7 @@ export async function handleAsaasWebhookRequest(
 ) {
   const expectedToken = derivePaymentCredential('webhook');
   const receivedToken = request.headers.get('asaas-access-token');
-  
+
   if (!expectedToken) {
     return Response.json(
       { error: 'webhook_not_configured', message: 'Webhook não configurado.' },
