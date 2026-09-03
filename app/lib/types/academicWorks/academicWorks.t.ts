@@ -19,7 +19,7 @@ export interface IAcademicWorksProps {
         autores_por_trabalho: number,
         trabalhos_por_usuario: number,
         maximo_orientadores: number,
-        postagens_maximas: number,
+        // postagens_maximas: number, agora, a postagem máxima é condata a partir do length de requisitos_arquivos, então não precisa mais dessa propriedade
         chunk_limite: number,
         chunk_tamanho: number,
         limite_maximo_de_postagem: number,
