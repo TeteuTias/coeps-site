@@ -119,6 +119,7 @@ function SubmissionForm() {
   const [trabalhosProps, setTrabalhosProps] = useState<IAcademicWorksProps | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [topicos, setTopicos] = useState<TopicosTrabalho>({
     resumo: '', introducao: '', objetivo: '', metodo: '', discussaoResultados: '', conclusao: '', palavrasChave: '', referencias: ''
   });
@@ -507,6 +508,7 @@ function SubmissionForm() {
       const result = await readJsonResponse<any>(response);
       if (!result) throw new Error('A API retornou uma resposta vazia.');
       setFormSuccess(result.message || 'Trabalho submetido com sucesso!');
+      setSuccessModalOpen(true);
 
       // Reset do formulário
       setTitulo('');
@@ -623,7 +625,44 @@ function SubmissionForm() {
   }
 
   return (
-    <form onSubmit={handleDadosSubmit} className="formulario-principal">
+    <>
+      {successModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Submissão concluída</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setSuccessModalOpen(false);
+                  window.location.reload();
+                }}
+                className="text-gray-600 hover:text-gray-900"
+                aria-label="Fechar"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <p className="mt-3 text-sm text-gray-700">
+              {formSuccess ?? 'Trabalho submetido com sucesso!'}
+            </p>
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setSuccessModalOpen(false);
+                  window.location.reload();
+                }}
+                className="btn-primario"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={handleDadosSubmit} className="formulario-principal">
       <div className="form-header">
         <h1 className="form-title">Submissão de Trabalho</h1>
         <p className="form-subtitle">Preencha os dados abaixo e anexe os arquivos do seu trabalho.</p>
@@ -673,39 +712,48 @@ function SubmissionForm() {
 
         {/* NOVA SEÇÃO: Upload por quadrados (1 arquivo por requisito_arquivos) */}
         <div className="form-group">
-          <div className="form-label">
-            Arquivos do Trabalho * (um por requisito)
+          <div className="flex items-baseline justify-between gap-4">
+            <div>
+              <div className="form-label">Arquivos do Trabalho *</div>
+              <div className="text-xs text-gray-600 mt-1">Um arquivo por requisito (máx. {slotRequisitos.length}).</div>
+            </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             {slotRequisitos.map((req, slotIndex) => {
               const inputId = `slot-file-${slotIndex}`;
               const slotFile = slotFiles[slotIndex];
               const accept = (req.formatos ?? []).map(f => f.trim()).filter(Boolean).join(',');
 
+              const statusIcon =
+                slotFile?.status === 'uploading' ? (
+                  <Loader className="animate-spin text-blue-500" size={16} />
+                ) : slotFile?.status === 'completed' ? (
+                  <CheckCircle className="text-green-500" size={16} />
+                ) : slotFile?.status === 'error' ? (
+                  <AlertCircle className="text-red-500" size={16} />
+                ) : null;
+
               return (
-                <div key={slotIndex} className="upload-slot" onClick={() => console.log(req)}>
-                  <div className="flex items-center justify-between">
+                <div
+                  key={slotIndex}
+                  className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-3">
                     <div>
-                      <label htmlFor={inputId} className="form-label">
-                        Requisito {slotIndex + 1} - {req.titulo}
+                      <label htmlFor={inputId} className="block">
+                        <div className="text-sm font-semibold text-gray-900">
+                          Requisito {slotIndex + 1} - {req.titulo}
+                        </div>
                       </label>
                       <div className="text-xs text-gray-600 mt-1">
-                        Formatos: {(req.formatos ?? []).join(', ')}
+                        Formatos permitidos: {(req.formatos ?? []).join(', ')}
                       </div>
                     </div>
-                    {slotFile?.status === 'uploading' && (
-                      <Loader className="animate-spin text-blue-500" size={16} />
-                    )}
-                    {slotFile?.status === 'completed' && (
-                      <CheckCircle className="text-green-500" size={16} />
-                    )}
-                    {slotFile?.status === 'error' && (
-                      <AlertCircle className="text-red-500" size={16} />
-                    )}
+                    <div className="shrink-0">{statusIcon}</div>
                   </div>
 
-                  <div className="upload-slot-actions mt-2">
+                  <div className="mt-3">
                     <input
                       id={inputId}
                       type="file"
@@ -718,39 +766,43 @@ function SubmissionForm() {
                           handleSlotFileUpload(slotIndex, f);
                         }
                       }}
-                      className="block"
+                      className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-gray-800 hover:file:bg-gray-200"
                       accept={accept}
                     />
 
                     {slotFile && (
-                      <div className="mt-2">
-                        <div className="text-sm font-medium">{slotFile.originalName}</div>
+                      <div className="mt-3">
+                        <div className="text-sm font-medium text-gray-900">{slotFile.originalName}</div>
                         <div className="text-xs text-gray-600">{formatFileSize(slotFile.size)}</div>
 
                         {slotFile.status === 'uploading' && (
-                          <div className="progress-bar mt-2">
-                            <div
-                              className="progress-fill"
-                              style={{ width: `${slotFile.progress}%` }}
-                            ></div>
+                          <div className="mt-3">
+                            <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+                              <div
+                                className="h-2 rounded-full bg-blue-500 transition-[width]"
+                                style={{ width: `${slotFile.progress}%` }}
+                              />
+                            </div>
+                            <div className="text-xs text-gray-600 mt-2">Enviando... {slotFile.progress}%</div>
                           </div>
                         )}
 
                         {slotFile.status === 'error' && slotFile.error && (
-                          <p className="text-xs text-red-600 mt-1">{slotFile.error}</p>
+                          <p className="text-xs text-red-600 mt-2">{slotFile.error}</p>
                         )}
 
                         {slotFile.status === 'completed' && (
-                          <div className="text-xs text-green-600 mt-1">Upload concluído!</div>
+                          <div className="text-xs text-green-600 mt-2">Upload concluído!</div>
                         )}
 
                         <button
                           type="button"
                           onClick={() => removeSlotFile(slotIndex)}
-                          className="remover-arquivo mt-2"
+                          className="mt-3 inline-flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900"
                           aria-label={`Remover arquivo do slot ${slotIndex + 1}`}
                         >
                           <X size={16} />
+                          Remover
                         </button>
                       </div>
                     )}
@@ -864,6 +916,7 @@ function SubmissionForm() {
         </button>
       </div>
     </form>
+    </>
   );
 }
 
