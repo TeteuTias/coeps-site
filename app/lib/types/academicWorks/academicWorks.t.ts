@@ -23,6 +23,10 @@ export interface IAcademicWorksProps {
         chunk_limite: number,
         chunk_tamanho: number,
         limite_maximo_de_postagem: number,
+        requisitos_arquivos: { // Lista de exigências específicas por modalidade
+            titulo: string,
+            formatos: string[], // ex: ['.doc', '.docx', '.pdf']
+        }[],
         ficha_avalicao: {
             _id: ObjectId,
             nome: string,
