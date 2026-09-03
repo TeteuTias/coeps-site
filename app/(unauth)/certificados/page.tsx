@@ -1,3 +1,19 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Certificados',
+  description:
+    'Como funciona a emissão de certificados do I CIEPS e onde o congressista deve solicitá-los.',
+  alternates: { canonical: '/certificados' },
+  openGraph: {
+    title: 'Certificados | I CIEPS',
+    description:
+      'Como funciona a emissão de certificados do I CIEPS e onde o congressista deve solicitá-los.',
+    url: '/certificados',
+    images: ['/cieps/og-cieps.png'],
+  },
+};
+
 import Link from 'next/link';
 import { ArrowRight, FileCheck2 } from 'lucide-react';
 import './style.css';

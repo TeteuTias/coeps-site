@@ -1,3 +1,19 @@
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Organizadores',
+  description:
+    'Conheça a equipe que organiza o I CIEPS: comissão organizadora, comissão científica e apoio institucional.',
+  alternates: { canonical: '/organizadores' },
+  openGraph: {
+    title: 'Organizadores | I CIEPS',
+    description:
+      'Conheça a equipe que organiza o I CIEPS: comissão organizadora, comissão científica e apoio institucional.',
+    url: '/organizadores',
+    images: ['/cieps/og-cieps.png'],
+  },
+};
+
 import Image from 'next/image';
 import { BriefcaseBusiness, Compass, UsersRound } from 'lucide-react';
 import './style.css';

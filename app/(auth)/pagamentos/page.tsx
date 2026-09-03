@@ -302,6 +302,7 @@ const Pagamentos = () => {
                                                 key={index}
                                                 eventId={data.pagamento.lista_pagamentos[index]?._eventID || ""}
                                                 type={data.pagamento.lista_pagamentos[index]?._type || ""}
+                                                paymentId={value.id || value.invoiceNumber || ""}
                                                 invoiceUrl={value.invoiceUrl}
                                                 valor={value.value}
                                                 data_formatada={value.dateCreated}
@@ -2086,8 +2087,8 @@ const ResponseModal2 = ({ handleModalClose, message }: { handleModalClose, messa
     </Modal>;
 };
 
-const CardPagamentos = ({ eventId, type, data_formatada, invoiceNumber, status, description, valor, invoiceUrl }: {
-    eventId: string, type: string, data_formatada: string, invoiceNumber: string, status: string, description: string, valor: number, invoiceUrl: string
+const CardPagamentos = ({ eventId, type, paymentId, data_formatada, invoiceNumber, status, description, valor, invoiceUrl }: {
+    eventId: string, type: string, paymentId: string, data_formatada: string, invoiceNumber: string, status: string, description: string, valor: number, invoiceUrl: string
 }) => {
     const [typeText, setTypeText] = useState<string>("CARREGANDO ATIVIDADE")
 
@@ -2206,16 +2207,28 @@ const CardPagamentos = ({ eventId, type, data_formatada, invoiceNumber, status, 
 
                 {/* Ações (Link do Comprovante) */}
                 {status !== "CANCELADO" && (
-                    <div className="mt-2 border-t border-[var(--cieps-line)] pt-4">
-                        <Link
-                            target="_blank"
-                            prefetch={false}
-                            href={invoiceUrl}
-                            className="inline-flex items-center gap-2 rounded bg-transparent p-0 text-[0.9rem] font-bold text-[var(--cieps-blue)] underline transition-colors hover:text-[#134982]"
-                        >
-                            <span>Ver comprovante</span>
-                            <ArrowRight size={16} />
-                        </Link>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-[var(--cieps-line)] pt-4">
+                        {paymentId && (
+                            <Link
+                                prefetch={false}
+                                href={`/painel/comprovanteDePagamento/${encodeURIComponent(paymentId)}`}
+                                className="inline-flex items-center gap-2 rounded bg-transparent p-0 text-[0.9rem] font-bold text-[var(--cieps-blue)] underline transition-colors hover:text-[#134982]"
+                            >
+                                <span>Ver comprovante</span>
+                                <ArrowRight size={16} />
+                            </Link>
+                        )}
+                        {invoiceUrl && (
+                            <Link
+                                target="_blank"
+                                prefetch={false}
+                                href={invoiceUrl}
+                                className="inline-flex items-center gap-2 rounded bg-transparent p-0 text-[0.9rem] font-medium text-[var(--cieps-muted)] underline transition-colors hover:text-[var(--cieps-ink)]"
+                            >
+                                <span>Fatura na operadora</span>
+                                <ArrowRight size={16} />
+                            </Link>
+                        )}
                     </div>
                 )}
             </div>
