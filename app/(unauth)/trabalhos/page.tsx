@@ -6,6 +6,7 @@ import { Button, StatusBanner } from '@/components/cieps';
 import { IAcademicWorksProps } from '@/lib/types/academicWorks/academicWorks.t';
 import { fetchWithTimeout } from '@/lib/client/fetchWithTimeout';
 import { buildAuthEntryPath } from '@/lib/auth-migration-notice';
+import { getPublicAcademicWorks } from '@/lib/academic-works-publications';
 import { ArrowRight, CalendarDays, Compass, ExternalLink, FileText, Loader2, Send, Sparkles } from 'lucide-react';
 import './style.css';
 
@@ -26,6 +27,7 @@ export default function Trabalhos() {
   const [config, setConfig] = useState<IAcademicWorksProps | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { publications, editalLink } = getPublicAcademicWorks(config);
 
   const fetchConfig = useCallback(async () => {
     setLoading(true);
@@ -116,7 +118,7 @@ export default function Trabalhos() {
           </p>
           {config?.isOpen && (
             <div className="trabalhos-action-row">
-              {config.link_edital && <Link href={config.link_edital} target="_blank" rel="noopener noreferrer" className="cieps-button-outline"><FileText size={18} aria-hidden="true" />Ver edital</Link>}
+              {editalLink && <Link href={editalLink} target="_blank" rel="noopener noreferrer" className="cieps-button-outline"><FileText size={18} aria-hidden="true" />Ver edital</Link>}
               {config.link_guia && <Link href={config.link_guia} target="_blank" rel="noopener noreferrer" className="cieps-button-outline"><Compass size={18} aria-hidden="true" />Ver guia</Link>}
               <Link href={buildAuthEntryPath('/painel/trabalhos')} className="cieps-button"><Send size={18} aria-hidden="true" />Enviar trabalho</Link>
             </div>
@@ -127,9 +129,9 @@ export default function Trabalhos() {
           <div className="trabalhos-section-heading"><span className="cieps-kicker">Publicações</span><h2 className="cieps-display">Resultados e documentos liberados.</h2></div>
           {loading ? (
             <div className="trabalhos-inline-state" role="status"><Loader2 className="spin" size={18} aria-hidden="true" /><strong>Carregando publicações</strong></div>
-          ) : config?.resultados?.length ? (
+          ) : publications.length ? (
             <div className="trabalhos-publication-list">
-              {config.resultados.map((publication) => (
+              {publications.map((publication) => (
                 <Link key={publication.link} href={publication.link} target="_blank" rel="noopener noreferrer"><FileText size={18} aria-hidden="true" /><span>{publication.titulo}</span><ExternalLink size={16} aria-hidden="true" /></Link>
               ))}
             </div>
