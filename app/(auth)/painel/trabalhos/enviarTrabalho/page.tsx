@@ -3,11 +3,12 @@
 
 // Importações do React e Next.js
 import { useEffect, useState, useRef } from 'react';
+
 //
 
 import { isTodayBetweenDates } from '@/lib/isTodayBetweenDates';
 // --- Função Auxiliar para Retry com Tipagem Correta ---
-import { Upload, FileText, CheckCircle, AlertCircle, Loader, Info, UserPlus, Trash2, BookOpen, Target, Microscope, MessageSquare, Award, Hash, BookMarked, Save, ArrowLeft, X, Plus } from 'lucide-react';
+import { Clock, FileText, CheckCircle, AlertCircle, Loader, Info, UserPlus, Trash2, BookOpen, Target, Microscope, MessageSquare, Award, Hash, BookMarked, Save, ArrowLeft, X, Plus, Link } from 'lucide-react';
 import { IAcademicWorksProps } from '@/lib/types/academicWorks/academicWorks.t';
 import { AsyncStatePanel, StatusBanner } from '@/components/cieps';
 import { fetchWithTimeout, readJsonResponse } from '@/lib/client/fetchWithTimeout';
@@ -22,7 +23,7 @@ interface Autor {
   isOrientador: boolean;
 }
 
-// MODIFICAÇÃO: Interface para múltiplos arquivos
+// MODIFICAÇÃO: Interface para múltiplos arquivos por quadrado
 interface ArquivoUpload {
   id: string;
   fileName: string;
@@ -32,6 +33,11 @@ interface ArquivoUpload {
   progress: number;
   error?: string;
 }
+
+type FormatoRequisito = {
+  titulo: string;
+  formatos: string[];
+};
 
 // Interface para os tópicos do trabalho.
 interface TopicosTrabalho {
@@ -105,13 +111,16 @@ function SubmissionForm() {
   const [modalidade, setModalidade] = useState<IAcademicWorksProps["modalidades"][0]>();
   const [autores, setAutores] = useState<Autor[]>([{ id: 0, nome: '', email: '', cpf: '', isOrientador: false }]);
 
-  // MODIFICAÇÃO: Estado para múltiplos arquivos
+  // MODIFICAÇÃO: Estado para múltiplos arquivos por quadrado
   const [arquivos, setArquivos] = useState<ArquivoUpload[]>([]);
+  const [slotRequisitos, setSlotRequisitos] = useState<IAcademicWorksProps["modalidades"][0]["requisitos_arquivos"]>([]);
+  const [slotFiles, setSlotFiles] = useState<Array<ArquivoUpload | null>>([]);
 
   const [formError, setFormError] = useState<string | null>(null);
   const [trabalhosProps, setTrabalhosProps] = useState<IAcademicWorksProps | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [topicos, setTopicos] = useState<TopicosTrabalho>({
     resumo: '', introducao: '', objetivo: '', metodo: '', discussaoResultados: '', conclusao: '', palavrasChave: '', referencias: ''
   });
@@ -133,7 +142,13 @@ function SubmissionForm() {
         const responseTrabalhosJson = await readJsonResponse<IAcademicWorksProps>(responseTrabalhosProps)
         if (!responseTrabalhosJson) throw new Error('A API retornou uma resposta vazia.')
         setTrabalhosProps(responseTrabalhosJson)
-        setModalidade(responseTrabalhosJson.modalidades?.[0])
+        const modalidadeSelecionada = responseTrabalhosJson.modalidades?.[0];
+        setModalidade(modalidadeSelecionada);
+        setSlotRequisitos(modalidadeSelecionada?.requisitos_arquivos ?? []);
+        setSlotFiles((modalidadeSelecionada?.requisitos_arquivos?.length ?? 0) > 0
+          ? Array.from({ length: modalidadeSelecionada!.requisitos_arquivos.length }, () => null)
+          : []
+        );
 
         const response = await fetchWithTimeout('/api/get/verificacaoUsuario');
         const data = await readJsonResponse<any>(response);
@@ -236,60 +251,101 @@ function SubmissionForm() {
     }
   };
 
-  // MODIFICAÇÃO: Função para processar múltiplos arquivos
-  const handleMultipleFileUpload = async (files: FileList) => {
+  // MODIFICAÇÃO: Função para validar formato por slot
+  const fileExt = (name: string) => {
+    const parts = name.split('.');
+    if (parts.length < 2) return '';
+    return '.' + parts.pop()!.toLowerCase();
+  };
 
-    const newFiles: ArquivoUpload[] = [];
+  const validateFileFormatForSlot = (slotIndex: number, file: File): string | null => {
+    const req = slotRequisitos?.[slotIndex];
+    if (!req) return 'Requisito ausente para este slot.';
+    const ext = fileExt(file.name);
+    const allowed = req.formatos.map(f => f.toLowerCase());
+    if (!ext || !allowed.includes(ext)) {
+      return `Arquivo do slot ${slotIndex + 1} inválido. Formatos permitidos: ${req.formatos.join(', ')}.`;
+    }
+    return null;
+  };
 
-    // Verificar se não excede o limite máximo
-    if (arquivos.length + files.length > modalidade.postagens_maximas) {
-      setFormError(`Você pode anexar no máximo ${modalidade.postagens_maximas} arquivos por submissão.`);
+  const removeSlotFile = (slotIndex: number) => {
+    const slotFile = slotFiles[slotIndex];
+    if (slotFile) {
+      setArquivos(prev => prev.filter(a => a.id !== slotFile.id));
+    }
+    setSlotFiles(prev => {
+      const next = [...prev];
+      next[slotIndex] = null;
+      return next;
+    });
+  };
+
+  const handleSlotFileUpload = async (slotIndex: number, file: File) => {
+    const req = slotRequisitos?.[slotIndex];
+    if (!req) {
+      setFormError('Requisito ausente para este slot.');
       return;
     }
 
-    // Criar objetos de arquivo para cada arquivo selecionado
-    Array.from(files).forEach(file => {
-      if (file.size > modalidade.limite_maximo_de_postagem) {
-        setFormError(`O arquivo "${file.name}" excede o limite de ${modalidade.limite_maximo_de_postagem / 1024 / 1024}MB.`);
-        return;
-      }
+    if (!modalidade) {
+      setFormError('Selecione uma modalidade para prosseguir com o upload.');
+      return;
+    }
 
-      const fileId = `file_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-      newFiles.push({
-        id: fileId,
-        fileName: file.name,
-        originalName: file.name,
-        size: file.size,
-        status: 'uploading',
-        progress: 0
-      });
-    });
+    if (file.size > modalidade.limite_maximo_de_postagem) {
+      setFormError(`O arquivo "${file.name}" excede o limite de ${modalidade.limite_maximo_de_postagem / 1024 / 1024}MB.`);
+      return;
+    }
 
-    // Adicionar arquivos ao estado
-    setArquivos(prev => [...prev, ...newFiles]);
+    // Permite trocar o arquivo do slot, substituindo o anterior
+    if (slotFiles[slotIndex]) {
+      removeSlotFile(slotIndex);
+    }
+
     setFormError(null);
 
-    // Processar uploads em paralelo
-    const uploadPromises = Array.from(files).map(async (file, index) => {
-      const fileId = newFiles[index]?.id;
-      if (!fileId) return null;
+    const fileId = `file_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const newSlotFile: ArquivoUpload = {
+      id: fileId,
+      fileName: file.name,
+      originalName: file.name,
+      size: file.size,
+      status: 'uploading',
+      progress: 0
+    };
 
-      const uploadFunction = file.size > modalidade.chunk_limite ? uploadChunkedFile : uploadSingleFile;
-      const uploadedFileId = await uploadFunction(file, file.name, fileId);
-
-      if (uploadedFileId) {
-        // Atualizar o arquivo com o ID do servidor
-        setArquivos(prev => prev.map(arquivo =>
-          arquivo.id === fileId
-            ? { ...arquivo, id: uploadedFileId }
-            : arquivo
-        ));
-        return uploadedFileId;
-      }
-      return null;
+    setArquivos(prev => [...prev, newSlotFile]);
+    setSlotFiles(prev => {
+      const next = [...prev];
+      next[slotIndex] = newSlotFile;
+      return next;
     });
 
-    await Promise.all(uploadPromises);
+    const uploadFunction = file.size > modalidade.chunk_limite ? uploadChunkedFile : uploadSingleFile;
+    const uploadedFileId = await uploadFunction(file, file.name, fileId);
+
+    if (!uploadedFileId) {
+      setSlotFiles(prev => {
+        const next = [...prev];
+        next[slotIndex] = { ...(next[slotIndex] as ArquivoUpload), status: 'error' };
+        return next;
+      });
+      return;
+    }
+
+    setSlotFiles(prev => {
+      const next = [...prev];
+      next[slotIndex] = {
+        ...(next[slotIndex] as ArquivoUpload),
+        id: uploadedFileId,
+        status: 'completed',
+        progress: 100
+      };
+      return next;
+    });
+
+    setArquivos(prev => prev.map(a => a.id === fileId ? { ...a, id: uploadedFileId, status: 'completed', progress: 100 } : a));
   };
 
   // NOVA FUNÇÃO: Remover arquivo da lista
@@ -340,17 +396,44 @@ function SubmissionForm() {
       return;
     }
 
-    // MODIFICAÇÃO: Validar se há pelo menos um arquivo
-    if (arquivos.length === 0) {
+    // MODIFICAÇÃO: Validar uploads por slot (1 arquivo por requisito)
+    const arquivosCompletos = arquivos.filter(arquivo => arquivo.status === 'completed');
+
+    if (!slotRequisitos.length) {
+      setFormError('Configuração de requisitos não carregada.');
+      return;
+    }
+
+    // Permite apenas 1 arquivo por slot, então cobramos conclusão para cada slot que tenha arquivo selecionado.
+    if (arquivosCompletos.length === 0) {
       setFormError('É obrigatório anexar pelo menos um arquivo.');
       return;
     }
 
-    // MODIFICAÇÃO: Verificar se todos os uploads foram concluídos
-    const arquivosCompletos = arquivos.filter(arquivo => arquivo.status === 'completed');
-    if (arquivosCompletos.length !== arquivos.length) {
-      setFormError('Por favor, aguarde a conclusão do upload de todos os arquivos.');
+    const slotCount = slotRequisitos.length;
+    const slotFilesProvided = slotFiles.filter(Boolean).length;
+
+    if (slotFilesProvided === 0) {
+      setFormError('É obrigatório anexar pelo menos um arquivo.');
       return;
+    }
+
+    // Se o usuário selecionou um arquivo em algum slot, ele precisa estar completo.
+    const anyIncomplete = slotFiles.some(f => f && f.status !== 'completed');
+    if (anyIncomplete) {
+      setFormError('Por favor, aguarde a conclusão do upload dos arquivos selecionados.');
+      return;
+    }
+
+    // Validação pré-envio do formato (extensão) antes de avançar
+    for (let idx = 0; idx < slotFiles.length; idx++) {
+      const f = slotFiles[idx];
+      if (!f) continue;
+      const validationError = validateFileFormatForSlot(idx, { name: f.originalName } as File);
+      if (validationError) {
+        setFormError(validationError);
+        return;
+      }
     }
 
     if (!autores.some(a => a.isOrientador)) {
@@ -426,6 +509,7 @@ function SubmissionForm() {
       const result = await readJsonResponse<any>(response);
       if (!result) throw new Error('A API retornou uma resposta vazia.');
       setFormSuccess(result.message || 'Trabalho submetido com sucesso!');
+      setSuccessModalOpen(true);
 
       // Reset do formulário
       setTitulo('');
@@ -443,7 +527,46 @@ function SubmissionForm() {
     }
   };
 
+  //
+  const agora = new Date();
+  const inicio = new Date(trabalhosProps.data_inicio_submissao);
+  const limite = new Date(trabalhosProps.data_limite_submissao);
+  if (!(agora >= inicio && agora <= limite)) {
+    return (
+      <main className="min-h-screen bg-fixed bg-cover font-['Segoe_UI',Arial,sans-serif] overflow-x-hidden p-8 max-md:p-4 flex items-center justify-center">
+        <div className="max-w-[1000px] mx-auto w-full">
+          <div className="bg-white/95 rounded-[24px] shadow-[0_12px_40px_rgba(27,48,95,0.15)] backdrop-blur-[12px] [-webkit-backdrop-filter:blur(12px)] border-[1.5px] border-white/80 p-10 max-md:p-6 text-center animate-[fadeInUp_0.8s_ease-out]">
 
+            {/* Cabeçalho */}
+            <div className="mb-8">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[rgba(84,26,44,0.1)] border-2 border-[rgba(84,26,44,0.2)] text-[#541A2C] mb-6 shadow-inner">
+                <Clock className="w-10 h-10 animate-pulse" />
+              </div>
+
+              <h1 className="text-[2.5rem] max-md:text-[2rem] max-xs:text-[1.8rem] font-extrabold text-[#541A2C] drop-shadow-[0_2px_8px_rgba(0,0,0,0.1)] mb-2 tracking-[1px]">
+                PERÍODO ENCERRADO
+              </h1>
+
+              <p className="text-[1.1rem] text-[#1B305F] font-medium">
+                Submissão de Trabalhos Acadêmicos
+              </p>
+            </div>
+
+            {/* Caixa de Aviso de Período Fechado */}
+            <div className="bg-[rgba(220,38,38,0.1)] text-[#DC2626] text-center p-8 rounded-[16px] border-2 border-[rgba(220,38,38,0.2)] mb-8">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <AlertCircle className="w-6 h-6 text-[#DC2626]" />
+                <h2 className="text-[1.5rem] font-bold m-0">As postagens não estão mais disponíveis</h2>
+              </div>
+              <p className="text-[1rem] text-[#B91C1C] max-w-2xl mx-auto font-medium">
+                O prazo limite estabelecido para o envio de novos trabalhos chegou ao fim. Agradecemos a todos os participantes pelo interesse e envolvimento com o evento.
+              </p>
+            </div>
+          </div>
+        </div>
+      </main>
+    )
+  }
   //
   if (isLoadingStatus) {
     return <AsyncStatePanel status="loading" loadingTitle="Carregando configurações de trabalhos" />
@@ -542,264 +665,298 @@ function SubmissionForm() {
   }
 
   return (
-    <form onSubmit={handleDadosSubmit} className="formulario-principal">
-      <div className="form-header">
-        <h1 className="form-title">Submissão de Trabalho</h1>
-        <p className="form-subtitle">Preencha os dados abaixo e anexe os arquivos do seu trabalho.</p>
-      </div>
-      {formSuccess && <StatusBanner tone="success" title="Submissão concluída" className="mb-6">{formSuccess}</StatusBanner>}
-
-      <div className="space-y-6">
-        <div className="form-group">
-          <label htmlFor="titulo" className="form-label">
-            Título do Trabalho *
-          </label>
-          <input
-            type="text"
-            id="titulo"
-            value={titulo}
-            onChange={(e) => setTitulo(e.target.value)}
-            className="form-input"
-            placeholder="Digite o título do seu trabalho"
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="modalidade" className="form-label">
-            Modalidade *
-          </label>
-          <select
-            id="modalidade"
-            // CORREÇÃO 1: Converte o ObjectId para string para o 'value' do select.
-            value={modalidade?._id?.toString() || ''}
-            onChange={(e) => {
-              // A lógica de busca continua a mesma, pois e.target.value já é uma string.
-              const selectedModalidade = trabalhosProps?.modalidades.find(m => m._id.toString() === e.target.value);
-              setModalidade(selectedModalidade);
-            }}
-            className="form-select"
-          >
-            {trabalhosProps?.modalidades.map((mod) => (
-              // CORREÇÃO 2: Converte o ObjectId para string para as props 'key' e 'value' da option.
-              <option key={mod._id.toString()} value={mod._id.toString()} className="text-gray-900">
-                {mod.modalidade}
-              </option>
-            ))}
-          </select>
-        </div>
-
-
-        {/* NOVA SEÇÃO: Upload de múltiplos arquivos */}
-        <div className="form-group">
-          <div className="form-label">
-            Arquivos do Trabalho * (máximo {modalidade.postagens_maximas} arquivos)
-          </div>
-
-          {/* Área de upload */}
-          <div className="upload-area">
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              onChange={(e) => {
-                if (e.target.files && e.target.files.length > 0) {
-                  handleMultipleFileUpload(e.target.files);
-                }
-              }}
-              className="hidden"
-              accept=".pdf,.doc,.docx"
-            />
-
-            <div className="text-center">
-              <Upload className="upload-icon h-12 w-12 mb-4" />
+    <>
+      {successModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Submissão concluída</h3>
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="upload-button"
-                disabled={arquivos.length >= modalidade.postagens_maximas}
+                onClick={() => {
+                  setSuccessModalOpen(false);
+                  window.location.reload();
+                }}
+                className="text-gray-600 hover:text-gray-900"
+                aria-label="Fechar"
               >
-                <Plus size={16} className="mr-2" />
-                {arquivos.length === 0 ? 'Selecionar arquivos' : 'Adicionar mais arquivos'}
+                <X size={18} />
               </button>
-              <p className="upload-info">PDF, DOC ou DOCX de até {modalidade.limite_maximo_de_postagem / 1024 / 1024} MB cada</p>
-              <p className="upload-count">
-                {arquivos.length}/{modalidade.postagens_maximas} arquivos selecionados
-              </p>
+            </div>
+            <p className="mt-3 text-sm text-gray-700">
+              {formSuccess ?? 'Trabalho submetido com sucesso!'}
+            </p>
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setSuccessModalOpen(false);
+                  window.location.reload();
+                }}
+                className="btn-primario"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={handleDadosSubmit} className="formulario-principal">
+        <div className="form-header">
+          <h1 className="form-title">Submissão de Trabalho</h1>
+          <p className="form-subtitle">Preencha os dados abaixo e anexe os arquivos do seu trabalho.</p>
+        </div>
+        {formSuccess && <StatusBanner tone="success" title="Submissão concluída" className="mb-6">{formSuccess}</StatusBanner>}
+
+        <div className="space-y-6">
+          <div className="form-group">
+            <label htmlFor="titulo" className="form-label">
+              Título do Trabalho *
+            </label>
+            <input
+              type="text"
+              id="titulo"
+              value={titulo}
+              onChange={(e) => setTitulo(e.target.value)}
+              className="form-input"
+              placeholder="Digite o título do seu trabalho"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="modalidade" className="form-label">
+              Modalidade *
+            </label>
+            <select
+              id="modalidade"
+              // CORREÇÃO 1: Converte o ObjectId para string para o 'value' do select.
+              value={modalidade?._id?.toString() || ''}
+              onChange={(e) => {
+                // A lógica de busca continua a mesma, pois e.target.value já é uma string.
+                const selectedModalidade = trabalhosProps?.modalidades.find(m => m._id.toString() === e.target.value);
+                setModalidade(selectedModalidade);
+                setSlotRequisitos(selectedModalidade?.requisitos_arquivos ?? []);
+              }}
+              className="form-select"
+            >
+              {trabalhosProps?.modalidades.map((mod) => (
+                // CORREÇÃO 2: Converte o ObjectId para string para as props 'key' e 'value' da option.
+                <option key={mod._id.toString()} value={mod._id.toString()} className="text-gray-900">
+                  {mod.modalidade}
+                </option>
+              ))}
+            </select>
+          </div>
+
+
+          {/* NOVA SEÇÃO: Upload por quadrados (1 arquivo por requisito_arquivos) */}
+          <div className="form-group">
+            <div className="flex items-baseline justify-between gap-4">
+              <div>
+                <div className="form-label">Arquivos do Trabalho *</div>
+                <div className="text-xs text-gray-600 mt-1">Um arquivo por requisito (máx. {slotRequisitos.length}).</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              {slotRequisitos.map((req, slotIndex) => {
+                const inputId = `slot-file-${slotIndex}`;
+                const slotFile = slotFiles[slotIndex];
+                const accept = (req.formatos ?? []).map(f => f.trim()).filter(Boolean).join(',');
+
+                const statusIcon =
+                  slotFile?.status === 'uploading' ? (
+                    <Loader className="animate-spin text-blue-500" size={16} />
+                  ) : slotFile?.status === 'completed' ? (
+                    <CheckCircle className="text-green-500" size={16} />
+                  ) : slotFile?.status === 'error' ? (
+                    <AlertCircle className="text-red-500" size={16} />
+                  ) : null;
+
+                return (
+                  <div
+                    key={slotIndex}
+                    className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <label htmlFor={inputId} className="block">
+                          <div className="text-sm font-semibold text-gray-900">
+                            {slotIndex + 1} - {req.titulo}
+                          </div>
+                        </label>
+                        <div className="text-xs text-gray-600 mt-1">
+                          Formatos permitidos: {(req.formatos ?? []).join(', ')}
+                        </div>
+                      </div>
+                      <div className="shrink-0">{statusIcon}</div>
+                    </div>
+
+                    <div className="mt-3">
+                      <input
+                        id={inputId}
+                        type="file"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) {
+                            const validationError = validateFileFormatForSlot(slotIndex, f);
+                            setFormError(validationError);
+                            if (validationError) return;
+                            handleSlotFileUpload(slotIndex, f);
+                          }
+                        }}
+                        className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-gray-800 hover:file:bg-gray-200"
+                        accept={accept}
+                      />
+
+                      {slotFile && (
+                        <div className="mt-3">
+                          <div className="text-sm font-medium text-gray-900">{slotFile.originalName}</div>
+                          <div className="text-xs text-gray-600">{formatFileSize(slotFile.size)}</div>
+
+                          {slotFile.status === 'uploading' && (
+                            <div className="mt-3">
+                              <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+                                <div
+                                  className="h-2 rounded-full bg-blue-500 transition-[width]"
+                                  style={{ width: `${slotFile.progress}%` }}
+                                />
+                              </div>
+                              <div className="text-xs text-gray-600 mt-2">Enviando... {slotFile.progress}%</div>
+                            </div>
+                          )}
+
+                          {slotFile.status === 'error' && slotFile.error && (
+                            <p className="text-xs text-red-600 mt-2">{slotFile.error}</p>
+                          )}
+
+                          {slotFile.status === 'completed' && (
+                            <div className="text-xs text-green-600 mt-2">Upload concluído!</div>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => removeSlotFile(slotIndex)}
+                            className="mt-3 inline-flex items-center gap-2 text-sm text-gray-700 hover:text-gray-900"
+                            aria-label={`Remover arquivo do slot ${slotIndex + 1}`}
+                          >
+                            <X size={16} />
+                            Remover
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Lista de arquivos */}
-          {arquivos.length > 0 && (
-            <div className="arquivos-lista">
-              <h4 className="arquivos-titulo">Arquivos anexados:</h4>
-              {arquivos.map((arquivo, index) => (
-                <div key={arquivo.id} className="arquivo-item">
-                  <div className="arquivo-header">
-                    <div className="arquivo-info">
-                      <p className="arquivo-nome">
-                        {arquivo.originalName}
-                      </p>
-                      <p className="arquivo-tamanho">
-                        {formatFileSize(arquivo.size)}
-                      </p>
-                    </div>
+          {/* Seção de autores (mantida igual) */}
+          <div className="form-group">
+            <div className="flex items-center justify-between mb-4">
+              <span className="form-label">
+                Autores * (máximo {modalidade?.autores_por_trabalho})
+              </span>
+              <span className="form-label">
+                Orientadores * (máximo {modalidade?.maximo_orientadores})
+              </span>
+              <button
+                type="button"
+                onClick={handleAddAutor}
+                disabled={autores.length >= (modalidade?.autores_por_trabalho)}
+                className="adicionar-autor-btn"
+              >
+                <UserPlus size={16} className="mr-1" />
+                Adicionar autor
+              </button>
+            </div>
 
-                    <div className="arquivo-acoes">
-                      {arquivo.status === 'uploading' && (
-                        <Loader className="animate-spin text-blue-500" size={16} />
-                      )}
-                      {arquivo.status === 'completed' && (
-                        <CheckCircle className="text-green-500" size={16} />
-                      )}
-                      {arquivo.status === 'error' && (
-                        <AlertCircle className="text-red-500" size={16} />
-                      )}
-
+            <div className="autores-section">
+              {autores.map((autor, index) => (
+                <div key={autor.id} className="autor-item">
+                  <div className="autor-header">
+                    <h4 className="autor-titulo">Autor {index + 1}</h4>
+                    {autores.length > 1 && (
                       <button
                         type="button"
-                        onClick={() => removeFile(arquivo.id)}
-                        className="remover-arquivo"
-                        aria-label={`Remover arquivo ${arquivo.originalName}`}
+                        onClick={() => handleRemoveAutor(autor.id)}
+                        className="remover-autor"
+                        aria-label={`Remover autor ${index + 1}`}
                       >
-                        <X size={16} />
+                        <Trash2 size={16} />
                       </button>
-                    </div>
+                    )}
                   </div>
 
-                  {/* Barra de progresso */}
-                  {arquivo.status === 'uploading' && (
-                    <div className="progress-bar">
-                      <div
-                        className="progress-fill"
-                        style={{ width: `${arquivo.progress}%` }}
-                      ></div>
-                    </div>
-                  )}
+                  <div className="autor-grid">
+                    <input
+                      type="text"
+                      aria-label={`Nome completo do autor ${index + 1}`}
+                      placeholder="Nome completo"
+                      value={autor.nome}
+                      onChange={(e) => handleAutorChange(autor.id, 'nome', e.target.value)}
+                      className="form-input"
+                    />
+                    <input
+                      type="email"
+                      aria-label={`E-mail do autor ${index + 1}`}
+                      placeholder="E-mail"
+                      value={autor.email}
+                      onChange={(e) => handleAutorChange(autor.id, 'email', e.target.value)}
+                      className="form-input"
+                    />
+                    <input
+                      type="text"
+                      aria-label={`CPF do autor ${index + 1}`}
+                      placeholder="CPF"
+                      value={autor.cpf}
+                      onChange={(e) => handleAutorChange(autor.id, 'cpf', e.target.value)}
+                      className="form-input"
+                    />
+                  </div>
 
-                  {/* Mensagem de erro */}
-                  {arquivo.status === 'error' && arquivo.error && (
-                    <p className="text-xs text-red-600 mt-1">{arquivo.error}</p>
-                  )}
-
-                  {/* Status */}
-                  <div className="flex items-center mt-2">
-                    <span className={`text-xs ${arquivo.status === 'completed' ? 'status-completed' :
-                      arquivo.status === 'error' ? 'status-error' : 'status-uploading'
-                      }`}>
-                      {arquivo.status === 'uploading' && `Enviando... ${arquivo.progress}%`}
-                      {arquivo.status === 'completed' && 'Upload concluído!'}
-                      {arquivo.status === 'error' && 'Erro no upload'}
-                    </span>
+                  <div className="mt-3">
+                    <label className="autor-checkbox">
+                      <input
+                        type="checkbox"
+                        aria-label={`Marcar autor ${index + 1} como orientador`}
+                        checked={autor.isOrientador}
+                        onChange={() => handleOrientadorChange(autor.id)}
+                        className="mr-2 rounded focus:ring-2 focus:ring-blue-500"
+                      />
+                      <span>Este autor é orientador</span>
+                    </label>
                   </div>
                 </div>
               ))}
             </div>
+
+            <div className="info-ajuda">
+              <Info size={14} className="inline mr-1" />
+              É necessário indicar pelo menos um orientador (máximo {modalidade?.maximo_orientadores}).
+            </div>
+          </div>
+        </div>
+
+        <div className="botoes-acoes">
+          {formError && (
+            <div className="mensagem-erro">
+              {formError}
+            </div>
           )}
+          <button
+            type="submit"
+            disabled={isValidatingAuthors}
+            className="btn-principal"
+          >
+            {isValidatingAuthors ? <Loader className="animate-spin mr-2" /> : <FileText className="mr-2" />}
+            {isValidatingAuthors ? 'Validando...' : 'Prosseguir para Tópicos'}
+          </button>
         </div>
-
-        {/* Seção de autores (mantida igual) */}
-        <div className="form-group">
-          <div className="flex items-center justify-between mb-4">
-            <span className="form-label">
-              Autores * (máximo {modalidade?.autores_por_trabalho})
-            </span>
-            <span className="form-label">
-              Orientadores * (máximo {modalidade?.maximo_orientadores})
-            </span>
-            <button
-              type="button"
-              onClick={handleAddAutor}
-              disabled={autores.length >= (modalidade?.autores_por_trabalho)}
-              className="adicionar-autor-btn"
-            >
-              <UserPlus size={16} className="mr-1" />
-              Adicionar autor
-            </button>
-          </div>
-
-          <div className="autores-section">
-            {autores.map((autor, index) => (
-              <div key={autor.id} className="autor-item">
-                <div className="autor-header">
-                  <h4 className="autor-titulo">Autor {index + 1}</h4>
-                  {autores.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveAutor(autor.id)}
-                      className="remover-autor"
-                      aria-label={`Remover autor ${index + 1}`}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-                </div>
-
-                <div className="autor-grid">
-                  <input
-                    type="text"
-                    aria-label={`Nome completo do autor ${index + 1}`}
-                    placeholder="Nome completo"
-                    value={autor.nome}
-                    onChange={(e) => handleAutorChange(autor.id, 'nome', e.target.value)}
-                    className="form-input"
-                  />
-                  <input
-                    type="email"
-                    aria-label={`E-mail do autor ${index + 1}`}
-                    placeholder="E-mail"
-                    value={autor.email}
-                    onChange={(e) => handleAutorChange(autor.id, 'email', e.target.value)}
-                    className="form-input"
-                  />
-                  <input
-                    type="text"
-                    aria-label={`CPF do autor ${index + 1}`}
-                    placeholder="CPF"
-                    value={autor.cpf}
-                    onChange={(e) => handleAutorChange(autor.id, 'cpf', e.target.value)}
-                    className="form-input"
-                  />
-                </div>
-
-                <div className="mt-3">
-                  <label className="autor-checkbox">
-                    <input
-                      type="checkbox"
-                      aria-label={`Marcar autor ${index + 1} como orientador`}
-                      checked={autor.isOrientador}
-                      onChange={() => handleOrientadorChange(autor.id)}
-                      className="mr-2 rounded focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span>Este autor é orientador</span>
-                  </label>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="info-ajuda">
-            <Info size={14} className="inline mr-1" />
-            É necessário indicar pelo menos um orientador (máximo {modalidade?.maximo_orientadores}).
-          </div>
-        </div>
-      </div>
-
-      <div className="botoes-acoes">
-        {formError && (
-          <div className="mensagem-erro">
-            {formError}
-          </div>
-        )}
-        <button
-          type="submit"
-          disabled={isValidatingAuthors}
-          className="btn-principal"
-        >
-          {isValidatingAuthors ? <Loader className="animate-spin mr-2" /> : <FileText className="mr-2" />}
-          {isValidatingAuthors ? 'Validando...' : 'Prosseguir para Tópicos'}
-        </button>
-      </div>
-    </form>
+      </form>
+    </>
   );
 }
 
