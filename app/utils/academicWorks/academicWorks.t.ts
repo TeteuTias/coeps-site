@@ -16,7 +16,7 @@ export interface IAcademicWorksProps {
     "modalidades": { // Coloquei como opcional pois pode acontecer de apaguarem todas as modalidades
         _id: ObjectId,
         modalidade: string,
-        autores_por_trabalho: number,
+        autores_por_trabalho: number, // Máximo de autores, sem incluir os orientadores.
         trabalhos_por_usuario: number,
         maximo_orientadores: number,
         postagens_maximas: number,

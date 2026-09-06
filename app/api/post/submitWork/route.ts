@@ -5,6 +5,7 @@ import { getSession, withApiAuthRequired } from '@/lib/auth0-compat';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'bson';
 import { IAcademicWorks, IAcademicWorksProps } from '@/lib/types/academicWorks/academicWorks.t';
+import { validateAcademicWorkAuthors } from '@/lib/academic-works-authors';
 
 async function verificarSeExisteAutorPagante(db, autores) {
     if (!autores || autores.length === 0) {
@@ -109,7 +110,10 @@ export const POST: any = withApiAuthRequired(async function POST(request) {
         if (!modalidadeAtual) {
             return NextResponse.json({ message: 'A modalidade selecionada não foi encontrada. Caso o erro persista, entre em contato com o Suporte.' }, { status: 404 });
         }
-        //
+        const autoresError = validateAcademicWorkAuthors(autores, modalidadeAtual);
+        if (autoresError) {
+            return NextResponse.json({ error: autoresError }, { status: 400 });
+        }
 
         // MODIFICAÇÃO: Determinar quais IDs de arquivo usar
         let arquivosIds;

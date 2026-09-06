@@ -12,6 +12,7 @@ import { Clock, FileText, CheckCircle, AlertCircle, Loader, Info, UserPlus, Tras
 import { IAcademicWorksProps } from '@/lib/types/academicWorks/academicWorks.t';
 import { AsyncStatePanel, StatusBanner } from '@/components/cieps';
 import { fetchWithTimeout, readJsonResponse } from '@/lib/client/fetchWithTimeout';
+import { getAcademicWorkAuthorLimits, validateAcademicWorkAuthors } from '@/lib/academic-works-authors';
 import './style.css';
 
 // Interface do Autor simplificada: O front-end não precisa saber quem é pagante.
@@ -110,6 +111,7 @@ function SubmissionForm() {
   const [titulo, setTitulo] = useState('');
   const [modalidade, setModalidade] = useState<IAcademicWorksProps["modalidades"][0]>();
   const [autores, setAutores] = useState<Autor[]>([{ id: 0, nome: '', email: '', cpf: '', isOrientador: false }]);
+  const authorLimits = getAcademicWorkAuthorLimits(modalidade);
 
   // MODIFICAÇÃO: Estado para múltiplos arquivos por quadrado
   const [arquivos, setArquivos] = useState<ArquivoUpload[]>([]);
@@ -436,12 +438,9 @@ function SubmissionForm() {
       }
     }
 
-    if (!autores.some(a => a.isOrientador)) {
-      setFormError("É necessário indicar pelo menos um orientador.");
-      return;
-    }
-    if (autores.filter(a => a.isOrientador).length > modalidade.maximo_orientadores) {
-      setFormError(`O número máximo de orientadores permitido é ${modalidade.maximo_orientadores}.`);
+    const autoresError = validateAcademicWorkAuthors(autores, modalidade);
+    if (autoresError) {
+      setFormError(autoresError);
       return;
     }
 
@@ -453,12 +452,14 @@ function SubmissionForm() {
   };
 
   const handleAddAutor = () => {
-    if (autores.length < modalidade?.autores_por_trabalho) {
+    if (authorLimits && autores.length < authorLimits.total) {
+      setFormError(null);
       setAutores([...autores, { id: Date.now(), nome: '', email: '', cpf: '', isOrientador: false }]);
     }
   };
 
   const handleRemoveAutor = (id: number) => {
+    setFormError(null);
     setAutores(autores.filter(autor => autor.id !== id));
   };
 
@@ -467,7 +468,19 @@ function SubmissionForm() {
   };
 
   const handleOrientadorChange = (id: number) => {
-    setAutores(autores.map(autor => ({ ...autor, isOrientador: autor.id === id ? !autor.isOrientador : autor.isOrientador })));
+    if (!authorLimits) return;
+    const selecionado = autores.find(autor => autor.id === id);
+    if (!selecionado) return;
+    if (authorLimits.advisors > 1 && !selecionado.isOrientador &&
+        autores.filter(autor => autor.isOrientador).length >= authorLimits.advisors) {
+      setFormError(`O número máximo de orientadores permitido é ${authorLimits.advisors}.`);
+      return;
+    }
+    setFormError(null);
+    setAutores(autores.map(autor => ({
+      ...autor,
+      isOrientador: autor.id === id ? !autor.isOrientador : authorLimits.advisors === 1 ? false : autor.isOrientador,
+    })));
   };
 
   const handleTopicoChange = (field: keyof TopicosTrabalho, value: string) => {
@@ -485,6 +498,11 @@ function SubmissionForm() {
 
     try {
       // MODIFICAÇÃO: Enviar todos os arquivos para o backend
+      const autoresError = validateAcademicWorkAuthors(autores, modalidade);
+      if (autoresError) {
+        setFormError(autoresError);
+        return;
+      }
       const arquivosCompletos = arquivos.filter(arquivo => arquivo.status === 'completed');
       if (arquivosCompletos.length === 0) {
         setFormError('Nenhum arquivo foi enviado com sucesso.');
@@ -761,6 +779,7 @@ function SubmissionForm() {
                 // A lógica de busca continua a mesma, pois e.target.value já é uma string.
                 const selectedModalidade = trabalhosProps?.modalidades.find(m => m._id.toString() === e.target.value);
                 setModalidade(selectedModalidade);
+                setFormError(validateAcademicWorkAuthors(autores, selectedModalidade));
                 setSlotRequisitos(selectedModalidade?.requisitos_arquivos ?? []);
               }}
               className="form-select"
@@ -878,19 +897,18 @@ function SubmissionForm() {
             </div>
           </div>
 
-          {/* Seção de autores (mantida igual) */}
+          {/* O total de participantes soma os limites de autores e orientadores. */}
           <div className="form-group">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
               <span className="form-label">
-                Autores * (máximo {modalidade?.autores_por_trabalho})
-              </span>
-              <span className="form-label">
-                Orientadores * (máximo {modalidade?.maximo_orientadores})
+                {authorLimits
+                  ? `Até ${authorLimits.authors} ${authorLimits.authors === 1 ? 'autor' : 'autores'} + ${authorLimits.advisors} ${authorLimits.advisors === 1 ? 'orientador' : 'orientadores'} (total de ${authorLimits.total} participantes)`
+                  : 'Configuração de autores indisponível'}
               </span>
               <button
                 type="button"
                 onClick={handleAddAutor}
-                disabled={autores.length >= (modalidade?.autores_por_trabalho)}
+                disabled={!authorLimits || autores.length >= authorLimits.total}
                 className="adicionar-autor-btn"
               >
                 <UserPlus size={16} className="mr-1" />
@@ -902,7 +920,7 @@ function SubmissionForm() {
               {autores.map((autor, index) => (
                 <div key={autor.id} className="autor-item">
                   <div className="autor-header">
-                    <h4 className="autor-titulo">Autor {index + 1}</h4>
+                    <h4 className="autor-titulo">{autor.isOrientador ? 'Orientador' : `Autor ${index + 1}`}</h4>
                     {autores.length > 1 && (
                       <button
                         type="button"
@@ -960,7 +978,11 @@ function SubmissionForm() {
 
             <div className="info-ajuda">
               <Info size={14} className="inline mr-1" />
-              É necessário indicar pelo menos um orientador (máximo {modalidade?.maximo_orientadores}).
+              {authorLimits?.advisors === 1
+                ? 'É necessário indicar exatamente 1 orientador. Ao marcar outra pessoa, ela passa a ser o orientador.'
+                : authorLimits
+                  ? `É necessário indicar pelo menos 1 orientador (máximo ${authorLimits.advisors}).`
+                  : 'A configuração de autores e orientadores está indisponível.'}
             </div>
           </div>
         </div>
