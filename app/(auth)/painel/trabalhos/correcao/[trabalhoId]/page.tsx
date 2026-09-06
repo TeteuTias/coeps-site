@@ -202,8 +202,8 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
     const handleMultipleFileUpload = async (files: FileList) => {
         const newFiles: ArquivoUpload[] = [];
 
-        if (arquivos.length + files.length > trabalho.configuracaoModalidade.postagens_maximas) {
-            setFormError(`Você pode anexar no máximo ${trabalho.configuracaoModalidade.postagens_maximas} arquivos por submissão.`);
+        if (arquivos.length + files.length > trabalho.configuracaoModalidade.limite_maximo_de_postagem) {
+            setFormError(`Você pode anexar no máximo ${trabalho.configuracaoModalidade.limite_maximo_de_postagem} arquivos por submissão.`);
             return;
         }
 
@@ -407,11 +407,11 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
                                 <button
                                     type="button"
                                     onClick={() => fileInputRef.current?.click()}
-                                    className={`flex items-center justify-center px-5 py-2.5 rounded-lg font-semibold text-white transition-all duration-200 shadow-sm ${arquivos.length >= trabalho.configuracaoModalidade.postagens_maximas
+                                    className={`flex items-center justify-center px-5 py-2.5 rounded-lg font-semibold text-white transition-all duration-200 shadow-sm ${arquivos.length >= trabalho.configuracaoModalidade.limite_maximo_de_postagem
                                         ? 'bg-muted cursor-not-allowed'
                                         : 'bg-goles hover:bg-[#8f2323] active:bg-[#7f1f1f]'
                                         }`}
-                                    disabled={arquivos.length >= trabalho.configuracaoModalidade.postagens_maximas}
+                                    disabled={arquivos.length >= trabalho.configuracaoModalidade.limite_maximo_de_postagem}
                                 >
                                     <Plus size={18} className="mr-2" />
                                     {arquivos.length === 0 ? 'Selecionar Arquivos' : 'Adicionar Mais'}
@@ -420,7 +420,7 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
                                     Arquivos de até <span className="font-semibold text-tinta">{trabalho.configuracaoModalidade.limite_maximo_de_postagem / 1024 / 1024}MB</span> cada
                                 </p>
                                 <p className="text-sm text-muted mt-1 font-medium">
-                                    {arquivos.length}/{trabalho.configuracaoModalidade.postagens_maximas} arquivos selecionados
+                                    {arquivos.length}/{trabalho.configuracaoModalidade.limite_maximo_de_postagem} arquivos selecionados
                                 </p>
                             </div>
                         </div>

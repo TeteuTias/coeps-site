@@ -8,7 +8,7 @@ import { useEffect, useState, useRef } from 'react';
 
 import { isTodayBetweenDates } from '@/lib/isTodayBetweenDates';
 // --- Função Auxiliar para Retry com Tipagem Correta ---
-import { Clock, FileText, CheckCircle, AlertCircle, Loader, Info, UserPlus, Trash2, BookOpen, Target, Microscope, MessageSquare, Award, Hash, BookMarked, Save, ArrowLeft, X, Plus, Link } from 'lucide-react';
+import { Clock, FileText, CheckCircle, AlertCircle, Loader, Info, UserPlus, Trash2, BookOpen, Target, Microscope, MessageSquare, Award, Hash, BookMarked, Save, ArrowLeft, X, Plus, Link, Loader2 } from 'lucide-react';
 import { IAcademicWorksProps } from '@/lib/types/academicWorks/academicWorks.t';
 import { AsyncStatePanel, StatusBanner } from '@/components/cieps';
 import { fetchWithTimeout, readJsonResponse } from '@/lib/client/fetchWithTimeout';
@@ -528,6 +528,31 @@ function SubmissionForm() {
   };
 
   //
+  if (!trabalhosProps) {
+    return (
+      <main className="min-h-screen bg-fixed bg-cover font-['Segoe_UI',Arial,sans-serif] overflow-x-hidden p-8 max-md:p-4 flex items-center justify-center">
+        <div className="max-w-[1000px] mx-auto w-full">
+          <div className="bg-white/95 rounded-[24px] shadow-[0_12px_40px_rgba(27,48,95,0.15)] backdrop-blur-[12px] [-webkit-backdrop-filter:blur(12px)] border-[1.5px] border-white/80 p-10 max-md:p-6 text-center animate-[fadeInUp_0.8s_ease-out] flex flex-col justify-center items-center min-h-[400px]">
+
+            {/* Ícone de Loading Giratório */}
+            <div className="text-[#541A2C] mb-4">
+              <Loader2 className="w-16 h-16 animate-spin" />
+            </div>
+
+            {/* Texto de Carregando */}
+            <h2 className="text-[1.5rem] font-bold text-[#1B305F] mt-2 tracking-[0.5px]">
+              Carregando informações...
+            </h2>
+
+            <p className="text-[0.95rem] text-[#6B7280] mt-1 font-medium">
+              Por favor, aguarde um momento.
+            </p>
+
+          </div>
+        </div>
+      </main>
+    )
+  }
   const agora = new Date();
   const inicio = new Date(trabalhosProps.data_inicio_submissao);
   const limite = new Date(trabalhosProps.data_limite_submissao);
