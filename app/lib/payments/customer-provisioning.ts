@@ -40,15 +40,15 @@ type AsaasErrorPayload = {
     }>;
 };
 
-export type AsaasCustomerCityRepairResult =
-    | { ok: true; city: string | number }
+export type AsaasCustomerAddressRepairResult =
+    | { ok: true; city: string | number; province: string }
     | {
         ok: false;
         code: 'CUSTOMER_ADDRESS_INVALID' | 'CUSTOMER_ADDRESS_UPDATE_FAILED';
         status: 422 | 503;
     };
 
-export type AsaasCheckoutWithCityRepairResult =
+export type AsaasCheckoutWithAddressRepairResult =
     | {
         kind: 'response';
         response: Response;
@@ -61,7 +61,7 @@ export type AsaasCheckoutWithCityRepairResult =
     }
     | {
         kind: 'repair_failed';
-        repair: Exclude<AsaasCustomerCityRepairResult, { ok: true }>;
+        repair: Exclude<AsaasCustomerAddressRepairResult, { ok: true }>;
     };
 
 type EnsureCustomerOptions = {
@@ -74,7 +74,7 @@ type EnsureCustomerOptions = {
     now?: () => Date;
 };
 
-type RepairCustomerCityOptions = {
+type RepairCustomerAddressOptions = {
     customerId: string;
     address: Record<string, unknown>;
     apiUrl: string;
@@ -82,7 +82,7 @@ type RepairCustomerCityOptions = {
     fetchImpl?: typeof fetch;
 };
 
-type CheckoutWithCityRepairOptions = RepairCustomerCityOptions & {
+type CheckoutWithAddressRepairOptions = RepairCustomerAddressOptions & {
     checkout: Record<string, unknown>;
 };
 
@@ -123,6 +123,18 @@ function asaasCity(value: unknown): string | number | null {
     return null;
 }
 
+/**
+ * O customer só serve para cobrança quando city E province estão gravados na Asaas.
+ * Confirmar apenas `city` deixava passar o customer sem bairro, que quebrava no checkout.
+ */
+function confirmedAsaasAddress(
+    body: Record<string, unknown> | null,
+): { city: string | number; province: string } | null {
+    const city = asaasCity(body?.city);
+    const province = optionalString(body?.province);
+    return city !== null && province ? { city, province } : null;
+}
+
 export function normalizeAsaasCustomerAddress(
     address: Record<string, unknown>,
 ): AsaasCustomerAddress {
@@ -142,31 +154,47 @@ export function normalizeAsaasCustomerAddress(
     return normalized;
 }
 
-export function isAsaasMissingCustomerCityError(payload: unknown): boolean {
+/**
+ * Campos de endereço que a Asaas exige no customer para emitir a cobrança.
+ * O gateway reclama de um campo por vez, sempre com a mesma mensagem:
+ * "O campo <campo> deve existir para o customer informado."
+ */
+const ASAAS_REQUIRED_CUSTOMER_ADDRESS_FIELDS = [
+    'city',
+    'province',
+    'postalcode',
+    'addressnumber',
+    'address',
+] as const;
+
+export function isAsaasMissingCustomerAddressError(payload: unknown): boolean {
     const errors = (payload as AsaasErrorPayload | null)?.errors;
     if (!Array.isArray(errors)) return false;
 
     return errors.some((error) => {
         if (String(error?.code || '').toLowerCase() !== 'invalid_object') return false;
         const description = String(error?.description || '').toLowerCase();
-        return (
-            description.includes('campo city') &&
-            description.includes('deve existir') &&
-            description.includes('customer')
+        if (!description.includes('deve existir') || !description.includes('customer')) {
+            return false;
+        }
+        return ASAAS_REQUIRED_CUSTOMER_ADDRESS_FIELDS.some((field) =>
+            new RegExp(`campo\\s+${field}\\b`).test(description),
         );
     });
 }
 
-export async function repairAsaasCustomerCity({
+export async function repairAsaasCustomerAddress({
     customerId: rawCustomerId,
     address,
     apiUrl,
     apiKey,
     fetchImpl = fetch,
-}: RepairCustomerCityOptions): Promise<AsaasCustomerCityRepairResult> {
+}: RepairCustomerAddressOptions): Promise<AsaasCustomerAddressRepairResult> {
     const normalizedCustomerId = customerId(rawCustomerId);
     const normalizedAddress = normalizeAsaasCustomerAddress(address);
-    if (!normalizedCustomerId || !normalizedAddress.postalCode) {
+    // A Asaas deriva `city` a partir do CEP, mas nunca deriva `province` (bairro):
+    // sem os dois no payload o PUT "passa" e a cobrança falha de novo no mesmo ponto.
+    if (!normalizedCustomerId || !normalizedAddress.postalCode || !normalizedAddress.province) {
         return { ok: false, code: 'CUSTOMER_ADDRESS_INVALID', status: 422 };
     }
 
@@ -195,8 +223,8 @@ export async function repairAsaasCustomerCity({
         };
     }
 
-    const updatedCity = asaasCity(updateBody?.city);
-    if (updatedCity !== null) return { ok: true, city: updatedCity };
+    const updatedAddress = confirmedAsaasAddress(updateBody);
+    if (updatedAddress) return { ok: true, ...updatedAddress };
 
     let lookupResponse: Response;
     try {
@@ -220,9 +248,9 @@ export async function repairAsaasCustomerCity({
         };
     }
 
-    const confirmedCity = asaasCity(lookupBody?.city);
-    return confirmedCity !== null
-        ? { ok: true, city: confirmedCity }
+    const confirmedAddress = confirmedAsaasAddress(lookupBody);
+    return confirmedAddress
+        ? { ok: true, ...confirmedAddress }
         : { ok: false, code: 'CUSTOMER_ADDRESS_INVALID', status: 422 };
 }
 
@@ -246,19 +274,19 @@ async function createAsaasCheckout(
     }
 }
 
-export async function createAsaasCheckoutWithCustomerCityRepair({
+export async function createAsaasCheckoutWithCustomerAddressRepair({
     customerId: rawCustomerId,
     address,
     apiUrl,
     apiKey,
     checkout,
     fetchImpl = fetch,
-}: CheckoutWithCityRepairOptions): Promise<AsaasCheckoutWithCityRepairResult> {
+}: CheckoutWithAddressRepairOptions): Promise<AsaasCheckoutWithAddressRepairResult> {
     const firstAttempt = await createAsaasCheckout(apiUrl, apiKey, checkout, fetchImpl);
     if (!firstAttempt.ok) {
         return { kind: 'checkout_unknown', repairAttempted: false };
     }
-    if (firstAttempt.response.ok || !isAsaasMissingCustomerCityError(firstAttempt.body)) {
+    if (firstAttempt.response.ok || !isAsaasMissingCustomerAddressError(firstAttempt.body)) {
         return {
             kind: 'response',
             response: firstAttempt.response,
@@ -267,7 +295,7 @@ export async function createAsaasCheckoutWithCustomerCityRepair({
         };
     }
 
-    const repair = await repairAsaasCustomerCity({
+    const repair = await repairAsaasCustomerAddress({
         customerId: rawCustomerId,
         address,
         apiUrl,

@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    createAsaasCheckoutWithCustomerCityRepair,
-    isAsaasMissingCustomerCityError,
+    createAsaasCheckoutWithCustomerAddressRepair,
+    isAsaasMissingCustomerAddressError,
     normalizeAsaasCustomerAddress,
-    repairAsaasCustomerCity,
+    repairAsaasCustomerAddress,
 } from '../customer-provisioning.ts';
 
 const apiUrl = 'https://api-sandbox.asaas.com/v3';
@@ -18,21 +18,33 @@ const address = {
     province: 'Centro',
     complement: 'Não informado',
 };
-const missingCityBody = {
-    errors: [
-        {
-            code: 'invalid_object',
-            description: 'O campo city deve existir para o customer informado.',
-        },
-    ],
-};
+function missingFieldBody(field: string) {
+    return {
+        errors: [
+            {
+                code: 'invalid_object',
+                description: `O campo ${field} deve existir para o customer informado.`,
+            },
+        ],
+    };
+}
+const missingCityBody = missingFieldBody('city');
 
-test('detecta somente o invalid_object de city ausente no customer', () => {
-    assert.equal(isAsaasMissingCustomerCityError(missingCityBody), true);
-    assert.equal(isAsaasMissingCustomerCityError({
+test('detecta o invalid_object de qualquer campo de endereço ausente no customer', () => {
+    for (const field of ['city', 'province', 'postalCode', 'addressNumber', 'address']) {
+        assert.equal(
+            isAsaasMissingCustomerAddressError(missingFieldBody(field)),
+            true,
+            `deveria detectar o campo ${field} ausente`,
+        );
+    }
+    assert.equal(isAsaasMissingCustomerAddressError({
         errors: [{ code: 'invalid_object', description: 'O campo email deve existir.' }],
     }), false);
-    assert.equal(isAsaasMissingCustomerCityError({
+    assert.equal(isAsaasMissingCustomerAddressError({
+        errors: [{ code: 'invalid_object', description: 'O campo cpfCnpj deve existir para o customer informado.' }],
+    }), false);
+    assert.equal(isAsaasMissingCustomerAddressError({
         errors: [{ code: 'invalid_city', description: missingCityBody.errors[0].description }],
     }), false);
 });
@@ -55,7 +67,7 @@ test('cliente válido cria um único checkout sem atualizar customer', async () 
         return Response.json({ id: 'checkout_ok', link: 'https://example.invalid/checkout' });
     }) as typeof fetch;
 
-    const result = await createAsaasCheckoutWithCustomerCityRepair({
+    const result = await createAsaasCheckoutWithCustomerAddressRepair({
         customerId,
         address,
         apiUrl,
@@ -79,7 +91,7 @@ test('city ausente atualiza o mesmo customer e repete o checkout uma vez', async
             const payload = JSON.parse(String(init?.body));
             assert.equal(payload.postalCode, '38440000');
             assert.equal('city' in payload, false);
-            return Response.json({ id: customerId, city: 12345 });
+            return Response.json({ id: customerId, city: 12345, province: 'Centro' });
         }
         checkoutCalls += 1;
         return checkoutCalls === 1
@@ -87,7 +99,7 @@ test('city ausente atualiza o mesmo customer e repete o checkout uma vez', async
             : Response.json({ id: 'checkout_recovered', link: 'https://example.invalid/checkout' });
     }) as typeof fetch;
 
-    const result = await createAsaasCheckoutWithCustomerCityRepair({
+    const result = await createAsaasCheckoutWithCustomerAddressRepair({
         customerId,
         address,
         apiUrl,
@@ -111,14 +123,14 @@ test('confirma city por GET quando o PUT não a devolve', async () => {
         const method = init?.method || 'GET';
         methods.push(method);
         if (method === 'PUT') return Response.json({ id: customerId });
-        if (method === 'GET') return Response.json({ id: customerId, city: 54321 });
+        if (method === 'GET') return Response.json({ id: customerId, city: 54321, province: 'Centro' });
         checkoutCalls += 1;
         return checkoutCalls === 1
             ? Response.json(missingCityBody, { status: 400 })
             : Response.json({ id: 'checkout_confirmed', link: 'https://example.invalid/checkout' });
     }) as typeof fetch;
 
-    const result = await createAsaasCheckoutWithCustomerCityRepair({
+    const result = await createAsaasCheckoutWithCustomerAddressRepair({
         customerId,
         address,
         apiUrl,
@@ -138,7 +150,7 @@ test('CEP inválido falha antes de atualizar customer', async () => {
         return Response.json({ city: 12345 });
     }) as typeof fetch;
 
-    const result = await repairAsaasCustomerCity({
+    const result = await repairAsaasCustomerAddress({
         customerId,
         address: { ...address, postalCode: '123' },
         apiUrl,
@@ -154,6 +166,52 @@ test('CEP inválido falha antes de atualizar customer', async () => {
     assert.equal(calls, 0);
 });
 
+test('bairro ausente falha antes de atualizar customer', async () => {
+    let calls = 0;
+    const fetchMock = (async () => {
+        calls += 1;
+        return Response.json({ city: 12345 });
+    }) as typeof fetch;
+
+    const result = await repairAsaasCustomerAddress({
+        customerId,
+        address: { ...address, province: '' },
+        apiUrl,
+        apiKey,
+        fetchImpl: fetchMock,
+    });
+
+    assert.deepEqual(result, {
+        ok: false,
+        code: 'CUSTOMER_ADDRESS_INVALID',
+        status: 422,
+    });
+    assert.equal(calls, 0, 'a Asaas não deriva province do CEP, então nem tenta o PUT');
+});
+
+test('customer sem province na resposta não é dado como reparado', async () => {
+    const methods: string[] = [];
+    const fetchMock = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+        methods.push(init?.method || 'GET');
+        return Response.json({ id: customerId, city: 12345 });
+    }) as typeof fetch;
+
+    const result = await repairAsaasCustomerAddress({
+        customerId,
+        address,
+        apiUrl,
+        apiKey,
+        fetchImpl: fetchMock,
+    });
+
+    assert.deepEqual(result, {
+        ok: false,
+        code: 'CUSTOMER_ADDRESS_INVALID',
+        status: 422,
+    });
+    assert.deepEqual(methods, ['PUT', 'GET']);
+});
+
 test('erro diferente não atualiza customer nem repete checkout', async () => {
     const methods: string[] = [];
     const fetchMock = (async (_input: RequestInfo | URL, init?: RequestInit) => {
@@ -163,7 +221,7 @@ test('erro diferente não atualiza customer nem repete checkout', async () => {
         }, { status: 400 });
     }) as typeof fetch;
 
-    const result = await createAsaasCheckoutWithCustomerCityRepair({
+    const result = await createAsaasCheckoutWithCustomerAddressRepair({
         customerId,
         address,
         apiUrl,
@@ -185,7 +243,7 @@ test('timeout ao reparar não inicia a segunda criação de checkout', async () 
         return Response.json(missingCityBody, { status: 400 });
     }) as typeof fetch;
 
-    const result = await createAsaasCheckoutWithCustomerCityRepair({
+    const result = await createAsaasCheckoutWithCustomerAddressRepair({
         customerId,
         address,
         apiUrl,
@@ -205,11 +263,11 @@ test('uma segunda resposta de city ausente não provoca terceira tentativa', asy
         const method = init?.method || 'GET';
         methods.push(method);
         return method === 'PUT'
-            ? Response.json({ id: customerId, city: 12345 })
+            ? Response.json({ id: customerId, city: 12345, province: 'Centro' })
             : Response.json(missingCityBody, { status: 400 });
     }) as typeof fetch;
 
-    const result = await createAsaasCheckoutWithCustomerCityRepair({
+    const result = await createAsaasCheckoutWithCustomerAddressRepair({
         customerId,
         address,
         apiUrl,
