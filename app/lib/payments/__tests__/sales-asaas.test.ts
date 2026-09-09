@@ -84,7 +84,7 @@ test('PIX confirma telefone no Customer antes de criar o checkout', async () => 
     const pixRoute = await readFile('app/api/v1/payment/session/pix/route.ts', 'utf8');
     const holderValidation = pixRoute.indexOf('normalizeCardHolderInput(body.personalInfo)');
     const customerUpdate = pixRoute.indexOf('await updateExistingAsaasCustomer');
-    const checkoutCreation = pixRoute.indexOf('await createAsaasCheckoutWithCustomerCityRepair');
+    const checkoutCreation = pixRoute.indexOf('await createAsaasCheckoutWithCustomerAddressRepair');
 
     assert.ok(holderValidation >= 0, 'o PIX deve validar os dados do titular');
     assert.ok(customerUpdate > holderValidation, 'o PIX deve atualizar o Customer após validar o titular');

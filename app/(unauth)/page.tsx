@@ -165,8 +165,10 @@ export default function Home() {
         <div className="landing-science-media">
           <Image
             src="/cieps/cieps-book.png"
-            width={1280}
-            height={720}
+            width={2731}
+            height={1536}
+            sizes="(max-width: 900px) 100vw, 720px"
+            quality={100}
             alt="Livro com identidade visual do CIEPS"
           />
         </div>

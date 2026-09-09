@@ -14,8 +14,8 @@ import { isPaymentMethodAllowedForSession } from '@/lib/payments/config';
 import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
 import { isAsaasRetryableStatus } from '@/lib/payments/asaas';
 import {
-    createAsaasCheckoutWithCustomerCityRepair,
-    isAsaasMissingCustomerCityError,
+    createAsaasCheckoutWithCustomerAddressRepair,
+    isAsaasMissingCustomerAddressError,
 } from '@/lib/payments/customer-provisioning';
 import {
     buildAsaasCustomerPayload,
@@ -257,7 +257,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                 { status: 409 },
             );
         }
-        const checkoutResult = await createAsaasCheckoutWithCustomerCityRepair({
+        const checkoutResult = await createAsaasCheckoutWithCustomerAddressRepair({
             customerId: String(user.id_api),
             address: {
                 postalCode: payer.value.postalCode,
@@ -283,7 +283,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             );
             console.error(
                 'Resultado desconhecido ao criar checkout PIX.',
-                { customerCityRepairAttempted: checkoutResult.repairAttempted },
+                { customerAddressRepairAttempted: checkoutResult.repairAttempted },
             );
             return NextResponse.json(
                 {
@@ -308,7 +308,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                 {
                     error: checkoutResult.repair.code.toLowerCase(),
                     message: checkoutResult.repair.code === 'CUSTOMER_ADDRESS_INVALID'
-                        ? 'Não foi possível identificar a cidade pelo CEP informado. Revise o endereço.'
+                        ? 'Não foi possível validar seu endereço. Revise CEP, número e bairro em "Meus dados".'
                         : checkoutResult.repair.status === 503
                           ? 'Não foi possível confirmar o endereço no gateway. Tente novamente.'
                           : 'O gateway recusou a atualização do endereço. Revise seus dados.',
@@ -319,7 +319,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
 
         const { response: gatewayResponse, body: gatewayBody } = checkoutResult;
         if (!gatewayResponse.ok) {
-            const missingCustomerCity = isAsaasMissingCustomerCityError(gatewayBody);
+            const missingCustomerAddress = isAsaasMissingCustomerAddressError(gatewayBody);
             if (isAsaasRetryableStatus(gatewayResponse.status)) {
                 await db.collection('pagamentos.sessoes').updateOne(
                     { _id: sessionId, status: 'CREATING_PAYMENT' },
@@ -344,11 +344,11 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
 
             return NextResponse.json(
                 {
-                    error: missingCustomerCity
+                    error: missingCustomerAddress
                         ? 'payment_customer_address_invalid'
                         : 'pix_checkout_failed',
-                    message: missingCustomerCity
-                        ? 'Não foi possível identificar a cidade pelo CEP informado. Revise o endereço.'
+                    message: missingCustomerAddress
+                        ? 'Não foi possível validar seu endereço. Revise CEP, número e bairro em "Meus dados".'
                         : gatewayBody?.errors?.[0]?.description ||
                           'Não foi possível criar o checkout PIX.',
                 },

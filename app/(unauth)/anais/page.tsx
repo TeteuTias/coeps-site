@@ -13,6 +13,7 @@ const publicationMedia = [
   '/cieps/anais-blue-book.png',
   '/cieps/anais-open-spread.png',
   '/cieps/anais-paper-stack.png',
+  '/cieps/anais-hardcover-navy.png',
 ];
 
 function publicationYear(value?: string) {
@@ -79,7 +80,15 @@ export default function Anais() {
             produção científica das edições anteriores e preparando o caminho para o I CIEPS.
           </p>
         </div>
-        <Image src="/cieps/anais-blue-book.png" width={560} height={420} alt="Livro de anais do CIEPS" loading="eager" />
+        <Image
+          src="/cieps/anais-blue-book.png"
+          width={2456}
+          height={1536}
+          sizes="(max-width: 900px) 100vw, 640px"
+          quality={100}
+          alt="Livro de anais do CIEPS"
+          loading="eager"
+        />
       </section>
 
       <section className="anais-status cieps-surface" role="status">
@@ -109,7 +118,14 @@ export default function Anais() {
               className="anais-card cieps-surface"
             >
               <div className="anais-card-cover">
-                <Image src={publicationMedia[index % publicationMedia.length]} width={320} height={220} alt={`Imagem editorial relacionada a ${item.name}`} />
+                <Image
+                  src={publicationMedia[index % publicationMedia.length]}
+                  width={2456}
+                  height={1536}
+                  sizes="(max-width: 600px) 100vw, (max-width: 1100px) 50vw, 420px"
+                  quality={100}
+                  alt={`Imagem editorial relacionada a ${item.name}`}
+                />
               </div>
               <div className="anais-card-copy">
                 <strong>{item.name}</strong>
