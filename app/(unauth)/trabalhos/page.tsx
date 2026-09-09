@@ -9,6 +9,13 @@ import { buildAuthEntryPath } from '@/lib/auth-migration-notice';
 import { ArrowRight, CalendarDays, Compass, ExternalLink, FileText, Loader2, Send, Sparkles } from 'lucide-react';
 import './style.css';
 
+/**
+ * Edital servido pelo próprio domínio, a partir de public/editais.
+ * Fica no código, e não em trabalhos_config, para que a URL pública seja
+ * estável e não dependa de um link do Drive editado direto no Mongo.
+ */
+const EDITAL_TRABALHOS_URL = '/editais/edital-trabalhos-cientificos-i-cieps.pdf';
+
 function formatShortDate(value?: string) {
   if (!value) return '--/--';
   const date = new Date(value);
@@ -116,8 +123,8 @@ export default function Trabalhos() {
           </p>
           {config?.isOpen && (
             <div className="trabalhos-action-row">
-              {config.link_edital && <Link href={config.link_edital} target="_blank" rel="noopener noreferrer" className="cieps-button-outline"><FileText size={18} aria-hidden="true" />Ver edital</Link>}
-              {config.link_guia && <Link href={config.link_guia} target="_blank" rel="noopener noreferrer" className="cieps-button-outline"><Compass size={18} aria-hidden="true" />Ver guia</Link>}
+              <a href={EDITAL_TRABALHOS_URL} target="_blank" rel="noopener noreferrer" className="cieps-button-outline"><FileText size={18} aria-hidden="true" />Ver edital</a>
+              {config.link_guia && <a href={config.link_guia} target="_blank" rel="noopener noreferrer" className="cieps-button-outline"><Compass size={18} aria-hidden="true" />Ver guia</a>}
               <Link href={buildAuthEntryPath('/painel/trabalhos')} className="cieps-button"><Send size={18} aria-hidden="true" />Enviar trabalho</Link>
             </div>
           )}
