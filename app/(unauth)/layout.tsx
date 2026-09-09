@@ -20,9 +20,9 @@ function Footer() {
       <div className="cieps-footer-grid">
         <div className="cieps-footer-brand">
           <Image
-            src="/cieps/cieps-lockup-horizontal.png"
-            width={420}
-            height={136}
+            src="/cieps/cieps-lockup-horizontal-white.png"
+            width={1400}
+            height={367}
             alt="Marca do I CIEPS"
           />
           <p>

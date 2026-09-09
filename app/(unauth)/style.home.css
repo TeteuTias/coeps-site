@@ -532,8 +532,9 @@
   max-width: 1380px;
 }
 
+/* A marca do rodapé já vem branca no arquivo; não precisa do filtro que
+   achatava a versão colorida do cabeçalho. */
 .cieps-footer-brand img {
-  filter: brightness(0) invert(1);
   height: auto;
   max-width: 360px;
   width: 100%;
