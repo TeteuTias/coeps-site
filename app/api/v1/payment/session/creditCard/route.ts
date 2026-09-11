@@ -15,6 +15,8 @@ import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payment
 import { asaasRequestHeaders, isAsaasRetryableStatus } from '@/lib/payments/asaas';
 import { normalizeCardHolderInput } from '@/lib/payments/customer-sync';
 import { getPaymentRemoteIp } from '@/lib/payments/remote-ip';
+import { isRemoteWorkSession } from '@/lib/remote-work-access';
+import { markProductPaymentPending } from '@/lib/payments/product-effects';
 
 function formatDate(date: Date): string {
     const year = date.getFullYear();
@@ -23,7 +25,12 @@ function formatDate(date: Date): string {
     return `${year}-${month}-${day}`;
 }
 
-function paymentHistoryEntry(payment: Record<string, unknown>, userId: string, description: string) {
+function paymentHistoryEntry(
+    payment: Record<string, unknown>,
+    userId: string,
+    description: string,
+    type: string,
+) {
     return {
         _id: new ObjectId(),
         object: payment.object,
@@ -39,7 +46,7 @@ function paymentHistoryEntry(payment: Record<string, unknown>, userId: string, d
         invoiceUrl: payment.invoiceUrl,
         invoiceNumber: payment.invoiceNumber,
         externalReference: payment.externalReference,
-        _type: 'ticket',
+        _type: type,
         _userId: userId,
     };
 }
@@ -124,7 +131,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
         const existingSession = await db.collection('pagamentos.sessoes').findOne({
             _id: sessionId,
             owner,
-            type: 'ticket',
+            type: { $in: ['ticket', 'remote-work-access', null] },
         });
 
         if (!existingSession) {
@@ -476,22 +483,27 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                     throw new Error('A sessão de cartão mudou durante a criação da cobrança.');
                 }
 
-                const userUpdate = await db.collection('usuarios').updateOne(
-                { _id: owner },
-                {
-                    $push: {
-                        'pagamento.lista_pagamentos': paymentHistoryEntry(
-                            responseBody,
-                            userId,
-                            lockedSession.paymentConfig.nome,
-                        ),
-                    },
-                    $set: { 'pagamento.situacao': 2 },
-                },
-                { session: mongoSession },
-                );
-                if (userUpdate.matchedCount !== 1) {
-                    throw new Error('PAYMENT_SESSION_OWNER_UPDATE_FAILED');
+                if (isRemoteWorkSession(lockedSession)) {
+                    await markProductPaymentPending(db, lockedSession, mongoSession);
+                } else {
+                    const userUpdate = await db.collection('usuarios').updateOne(
+                        { _id: owner },
+                        {
+                            $push: {
+                                'pagamento.lista_pagamentos': paymentHistoryEntry(
+                                    responseBody,
+                                    userId,
+                                    lockedSession.paymentConfig.nome,
+                                    String(lockedSession.type || 'ticket'),
+                                ),
+                            },
+                            $set: { 'pagamento.situacao': 2 },
+                        },
+                        { session: mongoSession },
+                    );
+                    if (userUpdate.matchedCount !== 1) {
+                        throw new Error('PAYMENT_SESSION_OWNER_UPDATE_FAILED');
+                    }
                 }
                 const assignmentUpdated = await updatePaymentAssignment(
                     db,

@@ -22,6 +22,7 @@ import {
     normalizeCardHolderInput,
     updateExistingAsaasCustomer,
 } from '@/lib/payments/customer-sync';
+import { markProductPaymentPending } from '@/lib/payments/product-effects';
 
 export const POST = withApiAuthRequired(async function POST(request: Request) {
     if (!isPaymentSalesEnabled()) return paymentSalesPausedResponse();
@@ -47,7 +48,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
         const existingSession = await db.collection('pagamentos.sessoes').findOne({
             _id: sessionId,
             owner,
-            type: 'ticket',
+            type: { $in: ['ticket', 'remote-work-access', null] },
         });
 
         if (!existingSession) {
@@ -226,9 +227,9 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             chargeTypes: ['DETACHED'],
             externalReference: sessionId.toHexString(),
             callback: {
-                successUrl: process.env.ASAAS_URL_CALLBACK,
-                cancelUrl: process.env.ASAAS_URL_REDIRECT,
-                expiredUrl: process.env.ASAAS_URL_CALLBACK,
+                successUrl: lockedSession.callbackUrls?.successUrl || process.env.ASAAS_URL_CALLBACK,
+                cancelUrl: lockedSession.callbackUrls?.cancelUrl || process.env.ASAAS_URL_REDIRECT,
+                expiredUrl: lockedSession.callbackUrls?.expiredUrl || process.env.ASAAS_URL_CALLBACK,
             },
             items: [
                 {
@@ -397,14 +398,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                     throw new Error('A sessão PIX mudou durante a criação da cobrança.');
                 }
 
-                const userUpdate = await db.collection('usuarios').updateOne(
-                { _id: owner, 'pagamento.situacao': { $ne: 1 } },
-                { $set: { 'pagamento.situacao': 2 } },
-                { session: mongoSession },
-                );
-                if (userUpdate.matchedCount !== 1) {
-                    throw new Error('PAYMENT_SESSION_OWNER_UPDATE_FAILED');
-                }
+                await markProductPaymentPending(db, lockedSession, mongoSession);
                 const assignmentUpdated = await updatePaymentAssignment(
                     db,
                     sessionId,

@@ -14,9 +14,14 @@ export default function Inscricoes({ heroImage }: { heroImage?: string }) {
             A 1ª Edição Internacional recebe estudantes, profissionais e pesquisadores para quatro
             dias de programação, encontros e produção científica em Araguari.
           </p>
-          <ButtonLink href={buildSignupEntryPath('/painel')} className="self-start">
-            Cadastrar agora
-          </ButtonLink>
+          <div className="flex flex-wrap gap-3">
+            <ButtonLink href={buildSignupEntryPath('/painel')} className="self-start">
+              Inscrição completa
+            </ButtonLink>
+            <ButtonLink href={buildSignupEntryPath('/pagamentos/apresentacao-remota')} variant="outline" className="self-start">
+              Apresentação remota
+            </ButtonLink>
+          </div>
         </div>
 
         <ImageBox
@@ -34,6 +39,18 @@ export default function Inscricoes({ heroImage }: { heroImage?: string }) {
         </Card>
         <Card kicker="Pagamento" title="Formas disponíveis">
           Trabalhamos com PIX, boleto bancário e cartão de crédito para concluir com praticidade.
+        </Card>
+        <Card
+          kicker="Trabalhos científicos"
+          title="Apresentação remota"
+          action={
+            <ButtonLink href={buildSignupEntryPath('/pagamentos/apresentacao-remota')} variant="outline" className="mt-2 self-start">
+              Ver elegibilidade
+            </ButtonLink>
+          }
+        >
+          Participantes de municípios elegíveis podem pagar uma taxa única de R$ 60 para enviar
+          Trabalhos Completos dentro dos limites gerais e da modalidade. Essa opção não inclui acesso presencial.
         </Card>
         <Card
           kicker="Fluxo"

@@ -96,6 +96,8 @@ export interface PaymentAssignmentDocument {
     compraId: ObjectId;
     edicaoId: string;
     usuarioId: ObjectId;
+    type?: 'ticket' | 'course' | 'remote-work-access';
+    remoteAccessId?: ObjectId;
     codigoDesconto?: PaymentCodeSnapshot;
     codigoRastreio?: PaymentCodeSnapshot;
     valoresCentavos: PaymentAmountsSnapshot;

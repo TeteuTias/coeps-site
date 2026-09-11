@@ -77,6 +77,7 @@ export function mergePaymentHistory(
         const checkoutId = normalized(assignment?.pagamento?.checkoutId ?? session?.orderId);
         const keys = paymentKeys({ id: paymentId, invoiceNumber, checkoutId });
         const method = normalized(assignment?.pagamento?.metodo ?? session?.metodoPagamento);
+        const type = normalized(assignment?.type ?? session?.type) ?? 'ticket';
         const createdAt = assignment?.createdAt ?? session?.createdAt ?? null;
         const modernRecord = {
             _id: String(assignment?.compraId ?? ''),
@@ -87,9 +88,11 @@ export function mergePaymentHistory(
             dateCreated: createdAt instanceof Date ? createdAt.toISOString() : String(createdAt ?? ''),
             status: publicStatus(assignment, session),
             value: selectedValueInCents(assignment, method) / 100,
-            description: `Inscrição ${normalized(assignment?.edicaoId) ?? ''}`.trim(),
+            description: type === 'remote-work-access'
+                ? `Apresentação remota de trabalhos ${normalized(assignment?.edicaoId) ?? ''}`.trim()
+                : `Inscrição ${normalized(assignment?.edicaoId) ?? ''}`.trim(),
             billingType: method ?? '',
-            _type: 'ticket',
+            _type: type,
             _eventID: '',
             refundStatus: assignment?.refundStatus ?? null,
             refundsSnapshot: assignment?.refundsSnapshot ?? null,

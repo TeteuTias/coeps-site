@@ -18,6 +18,7 @@ export interface IAcademicWorksProps {
         modalidade: string,
         autores_por_trabalho: number,
         trabalhos_por_usuario: number,
+        permite_participacao_remota?: boolean,
         maximo_orientadores: number,
         postagens_maximas: number,
         chunk_limite: number,
@@ -46,6 +47,7 @@ export interface IAcademicWorks {
         cpf: string;
         isOrientador: boolean;
         isPagante: boolean;
+        userId?: ObjectId;
     }[];
     arquivos: {
         fileId: ObjectId,
@@ -77,6 +79,13 @@ export interface IAcademicWorks {
     tamanhoTotalBytes: number,
     dataAvaliacao?: string;
     avaliadorId?: ObjectId;
+    editionId?: string;
+    modalidadeId?: ObjectId;
+    participationMode?: 'REGULAR' | 'REMOTE';
+    remoteAccessId?: ObjectId;
+    remotePurchaseId?: ObjectId;
+    financialReviewStatus?: 'CLEAR' | 'REVIEW_REQUIRED';
+    financialReviewReason?: string;
     configuracaoModalidade: IAcademicWorksProps["modalidades"][0];
 }
 

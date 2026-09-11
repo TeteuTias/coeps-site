@@ -93,3 +93,19 @@ test('prioriza estados de estorno e chargeback sobre CONFIRMADA', () => {
         new Set(['PAYMENT_PARTIALLY_REFUNDED', 'PAYMENT_CHARGEBACK_DISPUTE']),
     );
 });
+
+test('identifica a participação remota sem misturá-la à inscrição regular', () => {
+    const compraId = new ObjectId();
+    const history = mergePaymentHistory([], [{
+        compraId,
+        edicaoId: 'CIEPS-2026',
+        type: 'remote-work-access',
+        status: 'CONFIRMADA',
+        pagamento: { metodo: 'PIX', paymentId: 'pay_remote_1' },
+        valorSelecionadoCentavos: { final: 6000 },
+    }], [{ _id: compraId, status: 'CONFIRMED', type: 'remote-work-access' }]);
+
+    assert.equal(history[0]?._type, 'remote-work-access');
+    assert.equal(history[0]?.description, 'Apresentação remota de trabalhos CIEPS-2026');
+    assert.equal(history[0]?.value, 60);
+});

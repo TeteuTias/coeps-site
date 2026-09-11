@@ -17,6 +17,11 @@ import {
     getPaymentOverdueGraceDays,
     isCancellationEligible,
 } from '../../../lib/payments/overdue.ts';
+import { isRemoteWorkSession } from '../../../lib/remote-work-access.ts';
+import {
+    markProductPaymentPending,
+    releaseRemoteWorkAccessPayment,
+} from '../../../lib/payments/product-effects.ts';
 
 export const maxDuration = 110;
 
@@ -274,11 +279,15 @@ async function cancelUnpaidSession(
             undefined,
             mongoSession,
         );
-        await db.collection('usuarios').updateOne(
-            { _id: paymentSession.owner, 'pagamento.situacao': { $ne: 1 } },
-            { $set: { 'pagamento.situacao': 0 } },
-            { session: mongoSession },
-        );
+        if (isRemoteWorkSession(paymentSession)) {
+            await releaseRemoteWorkAccessPayment(db, paymentSession, now, mongoSession);
+        } else {
+            await db.collection('usuarios').updateOne(
+                { _id: paymentSession.owner, 'pagamento.situacao': { $ne: 1 } },
+                { $set: { 'pagamento.situacao': 0 } },
+                { session: mongoSession },
+            );
+        }
         return true;
     });
 }
@@ -953,11 +962,7 @@ export async function POST(request: Request) {
                         { session: mongoSession },
                     );
                 }
-                await db.collection('usuarios').updateOne(
-                    { _id: lease.owner, 'pagamento.situacao': { $ne: 1 } },
-                    { $set: { 'pagamento.situacao': 2 } },
-                    { session: mongoSession },
-                );
+                await markProductPaymentPending(db, lease, mongoSession);
             });
             counters.recovered += 1;
             continue;

@@ -12,7 +12,12 @@ import { Clock, FileText, CheckCircle, AlertCircle, Loader, Info, UserPlus, Tras
 import { IAcademicWorksProps } from '@/lib/types/academicWorks/academicWorks.t';
 import { AsyncStatePanel, StatusBanner } from '@/components/cieps';
 import { fetchWithTimeout, readJsonResponse } from '@/lib/client/fetchWithTimeout';
+import { validateAcademicWorkAuthors } from '@/lib/academic-work-submission';
 import './style.css';
+
+function createLocalUploadId(): string {
+  return `file_${crypto.randomUUID()}`;
+}
 
 // Interface do Autor simplificada: O front-end não precisa saber quem é pagante.
 interface Autor {
@@ -21,6 +26,7 @@ interface Autor {
   email: string;
   cpf: string;
   isOrientador: boolean;
+  isCurrentUser?: boolean;
 }
 
 // MODIFICAÇÃO: Interface para múltiplos arquivos por quadrado
@@ -126,6 +132,9 @@ function SubmissionForm() {
   });
 
   const [isUserLogadoPagante, setIsUserLogadoPagante] = useState<boolean | null>(null);
+  const [hasRemoteAccess, setHasRemoteAccess] = useState(false);
+  const [participationMode, setParticipationMode] = useState<'REGULAR' | 'REMOTE'>('REGULAR');
+  const [currentUserProfile, setCurrentUserProfile] = useState({ nome: '', email: '', cpf: '' });
   const [isLoadingStatus, setIsLoadingStatus] = useState(true);
   const [isValidatingAuthors, setIsValidatingAuthors] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -142,7 +151,19 @@ function SubmissionForm() {
         const responseTrabalhosJson = await readJsonResponse<IAcademicWorksProps>(responseTrabalhosProps)
         if (!responseTrabalhosJson) throw new Error('A API retornou uma resposta vazia.')
         setTrabalhosProps(responseTrabalhosJson)
-        const modalidadeSelecionada = responseTrabalhosJson.modalidades?.[0];
+        const response = await fetchWithTimeout('/api/get/verificacaoUsuario');
+        const data = await readJsonResponse<any>(response);
+        if (!data) throw new Error('A API retornou uma resposta vazia.');
+        const temPagamento = data.pagamento?.situacao === 1 || data.pagamento?.situacao_animacao === 1;
+        const remoteActive = data.participacaoRemota?.status === 'ACTIVE' && data.participacaoRemota?.proofReviewStatus !== 'INCONSISTENT';
+        const initialMode = remoteActive && !temPagamento ? 'REMOTE' : 'REGULAR';
+        setIsUserLogadoPagante(temPagamento);
+        setHasRemoteAccess(remoteActive);
+        setParticipationMode(initialMode);
+        const availableModalities = initialMode === 'REMOTE'
+          ? responseTrabalhosJson.modalidades?.filter((item) => item.permite_participacao_remota === true)
+          : responseTrabalhosJson.modalidades;
+        const modalidadeSelecionada = availableModalities?.[0];
         setModalidade(modalidadeSelecionada);
         setSlotRequisitos(modalidadeSelecionada?.requisitos_arquivos ?? []);
         setSlotFiles((modalidadeSelecionada?.requisitos_arquivos?.length ?? 0) > 0
@@ -150,18 +171,20 @@ function SubmissionForm() {
           : []
         );
 
-        const response = await fetchWithTimeout('/api/get/verificacaoUsuario');
-        const data = await readJsonResponse<any>(response);
-        if (!data) throw new Error('A API retornou uma resposta vazia.');
-        const temPagamento = data.pagamento?.situacao === 1 || data.pagamento?.situacao_animacao === 1;
-        setIsUserLogadoPagante(temPagamento);
+        const authenticatedProfile = {
+          nome: data.informacoes_usuario?.nome || data.participacaoRemota?.purchaser?.name || data.authUser?.name || '',
+          email: data.informacoes_usuario?.email || data.participacaoRemota?.purchaser?.email || data.authUser?.email || '',
+          cpf: data.informacoes_usuario?.cpf || data.participacaoRemota?.purchaser?.cpf || '',
+        };
+        setCurrentUserProfile(authenticatedProfile);
 
         // Preenche os dados do primeiro autor com as informações do usuário logado
         setAutores(prev => {
           const primeiroAutor = { ...prev[0] };
-          primeiroAutor.nome = data.informacoes_usuario?.nome || '';
-          primeiroAutor.email = data.informacoes_usuario?.email || '';
-          primeiroAutor.cpf = data.informacoes_usuario?.cpf || '';
+          primeiroAutor.nome = authenticatedProfile.nome;
+          primeiroAutor.email = authenticatedProfile.email;
+          primeiroAutor.cpf = authenticatedProfile.cpf;
+          primeiroAutor.isCurrentUser = initialMode === 'REMOTE';
           return [primeiroAutor, ...prev.slice(1)];
         });
 
@@ -305,7 +328,7 @@ function SubmissionForm() {
 
     setFormError(null);
 
-    const fileId = `file_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const fileId = createLocalUploadId();
     const newSlotFile: ArquivoUpload = {
       id: fileId,
       fileName: file.name,
@@ -364,6 +387,7 @@ function SubmissionForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'validate',
+          participationMode,
           autores: autores.map(({ id, ...rest }) => rest) // Remove o ID do frontend
         }),
       });
@@ -372,7 +396,9 @@ function SubmissionForm() {
       if (!result) throw new Error('A API retornou uma resposta vazia.');
 
       if (!result.temPagante) {
-        setFormError('Para prosseguir, pelo menos um dos autores deve estar cadastrado no sistema com pagamento confirmado.');
+        setFormError(participationMode === 'REMOTE'
+          ? 'Seu acesso remoto precisa estar confirmado e você deve constar como autor.'
+          : 'Para prosseguir, pelo menos um dos autores deve estar cadastrado no sistema com pagamento confirmado.');
         return false;
       }
 
@@ -436,12 +462,13 @@ function SubmissionForm() {
       }
     }
 
-    if (!autores.some(a => a.isOrientador)) {
-      setFormError("É necessário indicar pelo menos um orientador.");
+    const authorValidation = validateAcademicWorkAuthors(autores, modalidade);
+    if (authorValidation.ok === false) {
+      setFormError(authorValidation.message);
       return;
     }
-    if (autores.filter(a => a.isOrientador).length > modalidade.maximo_orientadores) {
-      setFormError(`O número máximo de orientadores permitido é ${modalidade.maximo_orientadores}.`);
+    if (participationMode === 'REMOTE' && !autores.some((autor) => autor.isCurrentUser && !autor.isOrientador)) {
+      setFormError('Indique qual autor corresponde ao comprador do acesso remoto.');
       return;
     }
 
@@ -453,12 +480,17 @@ function SubmissionForm() {
   };
 
   const handleAddAutor = () => {
-    if (autores.length < modalidade?.autores_por_trabalho) {
+    const totalLimit = Number(modalidade?.autores_por_trabalho || 0) + Number(modalidade?.maximo_orientadores || 0);
+    if (autores.length < totalLimit) {
       setAutores([...autores, { id: Date.now(), nome: '', email: '', cpf: '', isOrientador: false }]);
     }
   };
 
   const handleRemoveAutor = (id: number) => {
+    if (autores.some((autor) => autor.id === id && autor.isCurrentUser)) {
+      setFormError('Escolha outro autor como comprador antes de remover este registro.');
+      return;
+    }
     setAutores(autores.filter(autor => autor.id !== id));
   };
 
@@ -467,7 +499,42 @@ function SubmissionForm() {
   };
 
   const handleOrientadorChange = (id: number) => {
+    if (autores.some((autor) => autor.id === id && autor.isCurrentUser)) {
+      setFormError('O comprador do acesso remoto deve permanecer como autor, não orientador.');
+      return;
+    }
     setAutores(autores.map(autor => ({ ...autor, isOrientador: autor.id === id ? !autor.isOrientador : autor.isOrientador })));
+  };
+
+  const selectModality = (selectedMode: 'REGULAR' | 'REMOTE') => {
+    const available = selectedMode === 'REMOTE'
+      ? trabalhosProps?.modalidades?.filter((item) => item.permite_participacao_remota === true)
+      : trabalhosProps?.modalidades;
+    const selected = available?.[0];
+    setModalidade(selected);
+    setSlotRequisitos(selected?.requisitos_arquivos ?? []);
+    setSlotFiles((selected?.requisitos_arquivos?.length ?? 0) > 0
+      ? Array.from({ length: selected!.requisitos_arquivos.length }, () => null)
+      : []);
+    setArquivos([]);
+  };
+
+  const handleParticipationModeChange = (mode: 'REGULAR' | 'REMOTE') => {
+    setParticipationMode(mode);
+    selectModality(mode);
+    setAutores((current) => current.map((author, index) => ({
+      ...author,
+      isCurrentUser: mode === 'REMOTE' ? author.isCurrentUser || index === 0 : false,
+      ...(mode === 'REMOTE' && (author.isCurrentUser || index === 0)
+        ? { nome: currentUserProfile.nome || author.nome, email: currentUserProfile.email, cpf: currentUserProfile.cpf || author.cpf, isOrientador: false }
+        : {}),
+    })));
+  };
+
+  const handleCurrentUserAuthorChange = (authorId: number) => {
+    setAutores((current) => current.map((author) => author.id === authorId
+      ? { ...author, ...currentUserProfile, isOrientador: false, isCurrentUser: true }
+      : { ...author, isCurrentUser: false }));
   };
 
   const handleTopicoChange = (field: keyof TopicosTrabalho, value: string) => {
@@ -502,7 +569,8 @@ function SubmissionForm() {
           modalidadeId: modalidade?._id,
           autores: autores.map(({ id, ...rest }) => rest),
           fileIds: fileIds, // MODIFICAÇÃO: Enviar array de IDs
-          topicos
+          topicos,
+          participationMode,
         }),
       });
 
@@ -735,6 +803,21 @@ function SubmissionForm() {
         {formSuccess && <StatusBanner tone="success" title="Submissão concluída" className="mb-6">{formSuccess}</StatusBanner>}
 
         <div className="space-y-6">
+          {hasRemoteAccess && isUserLogadoPagante && (
+            <div className="form-group">
+              <label htmlFor="participationMode" className="form-label">Modo de participação *</label>
+              <select id="participationMode" className="form-select" value={participationMode} onChange={(event) => handleParticipationModeChange(event.target.value as 'REGULAR' | 'REMOTE')}>
+                <option value="REGULAR">Inscrição regular</option>
+                <option value="REMOTE">Apresentação remota</option>
+              </select>
+              <p className="mt-2 text-xs text-gray-600">O modo fica registrado neste trabalho e determina qual pagamento o autor utiliza.</p>
+            </div>
+          )}
+          {participationMode === 'REMOTE' && (
+            <StatusBanner tone="info" title="Apresentação remota">
+              Disponível somente para Trabalho Completo. A taxa remota não dá acesso presencial ao congresso.
+            </StatusBanner>
+          )}
           <div className="form-group">
             <label htmlFor="titulo" className="form-label">
               Título do Trabalho *
@@ -759,13 +842,15 @@ function SubmissionForm() {
               value={modalidade?._id?.toString() || ''}
               onChange={(e) => {
                 // A lógica de busca continua a mesma, pois e.target.value já é uma string.
-                const selectedModalidade = trabalhosProps?.modalidades.find(m => m._id.toString() === e.target.value);
+                const selectedModalidade = trabalhosProps?.modalidades?.find(m => m._id.toString() === e.target.value);
                 setModalidade(selectedModalidade);
                 setSlotRequisitos(selectedModalidade?.requisitos_arquivos ?? []);
               }}
               className="form-select"
             >
-              {trabalhosProps?.modalidades.map((mod) => (
+              {trabalhosProps?.modalidades
+                ?.filter((mod) => participationMode !== 'REMOTE' || mod.permite_participacao_remota === true)
+                .map((mod) => (
                 // CORREÇÃO 2: Converte o ObjectId para string para as props 'key' e 'value' da option.
                 <option key={mod._id.toString()} value={mod._id.toString()} className="text-gray-900">
                   {mod.modalidade}
@@ -890,7 +975,7 @@ function SubmissionForm() {
               <button
                 type="button"
                 onClick={handleAddAutor}
-                disabled={autores.length >= (modalidade?.autores_por_trabalho)}
+                disabled={autores.length >= Number(modalidade?.autores_por_trabalho || 0) + Number(modalidade?.maximo_orientadores || 0)}
                 className="adicionar-autor-btn"
               >
                 <UserPlus size={16} className="mr-1" />
@@ -899,11 +984,25 @@ function SubmissionForm() {
             </div>
 
             <div className="autores-section">
+              {participationMode === 'REMOTE' && (
+                <label className="mb-4 block text-sm font-semibold text-gray-800">
+                  Qual autor é o comprador do acesso remoto?
+                  <select
+                    className="form-select mt-2"
+                    value={autores.find((autor) => autor.isCurrentUser)?.id ?? ''}
+                    onChange={(event) => handleCurrentUserAuthorChange(Number(event.target.value))}
+                  >
+                    {autores.filter((autor) => !autor.isOrientador).map((autor, index) => (
+                      <option key={autor.id} value={autor.id}>Autor {index + 1}{autor.nome ? ` - ${autor.nome}` : ''}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
               {autores.map((autor, index) => (
                 <div key={autor.id} className="autor-item">
                   <div className="autor-header">
                     <h4 className="autor-titulo">Autor {index + 1}</h4>
-                    {autores.length > 1 && (
+                    {autores.length > 1 && !autor.isCurrentUser && (
                       <button
                         type="button"
                         onClick={() => handleRemoveAutor(autor.id)}
@@ -922,6 +1021,7 @@ function SubmissionForm() {
                       placeholder="Nome completo"
                       value={autor.nome}
                       onChange={(e) => handleAutorChange(autor.id, 'nome', e.target.value)}
+                      readOnly={autor.isCurrentUser}
                       className="form-input"
                     />
                     <input
@@ -930,6 +1030,7 @@ function SubmissionForm() {
                       placeholder="E-mail"
                       value={autor.email}
                       onChange={(e) => handleAutorChange(autor.id, 'email', e.target.value)}
+                      readOnly={autor.isCurrentUser}
                       className="form-input"
                     />
                     <input
@@ -938,6 +1039,7 @@ function SubmissionForm() {
                       placeholder="CPF"
                       value={autor.cpf}
                       onChange={(e) => handleAutorChange(autor.id, 'cpf', e.target.value)}
+                      readOnly={autor.isCurrentUser}
                       className="form-input"
                     />
                   </div>
@@ -949,10 +1051,12 @@ function SubmissionForm() {
                         aria-label={`Marcar autor ${index + 1} como orientador`}
                         checked={autor.isOrientador}
                         onChange={() => handleOrientadorChange(autor.id)}
+                        disabled={autor.isCurrentUser}
                         className="mr-2 rounded focus:ring-2 focus:ring-blue-500"
                       />
                       <span>Este autor é orientador</span>
                     </label>
+                    {autor.isCurrentUser && <p className="mt-2 text-xs font-semibold text-emerald-700">Comprador autenticado vinculado a este autor.</p>}
                   </div>
                 </div>
               ))}

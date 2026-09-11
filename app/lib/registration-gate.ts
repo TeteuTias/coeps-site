@@ -3,6 +3,9 @@ export type RegistrationGateInput = {
     profileComplete: boolean;
     paymentConfirmed: boolean;
     confirmationSeen: boolean;
+    remoteWorkAccessActive?: boolean;
+    remoteWorkAreaAccess?: boolean;
+    remoteWorkSubmissionAllowed?: boolean;
 };
 
 type RegistrationUser = {
@@ -30,11 +33,28 @@ export function getRegistrationRedirect({
     profileComplete,
     paymentConfirmed,
     confirmationSeen,
+    remoteWorkAccessActive = false,
+    remoteWorkAreaAccess = remoteWorkAccessActive,
+    remoteWorkSubmissionAllowed = remoteWorkAccessActive,
 }: RegistrationGateInput): string | null {
     const isPayments = path.startsWith('/pagamentos');
     const isProfile = path === '/painel/dadosIniciais';
     const isCertificates = path.startsWith('/painel/certificados');
     const isConfirmation = path.startsWith('/painel/suaInscricaoFoiConfirmada');
+    const isRemoteWorkArea = path.startsWith('/painel/trabalhos');
+    const isNewWorkSubmission = path.startsWith('/painel/trabalhos/enviarTrabalho');
+
+    if (remoteWorkAreaAccess && isRemoteWorkArea) {
+        if (isNewWorkSubmission && !remoteWorkSubmissionAllowed && !paymentConfirmed) {
+            return '/painel/trabalhos';
+        }
+        return null;
+    }
+
+    if (remoteWorkAreaAccess && !paymentConfirmed) {
+        if (isPayments) return null;
+        return '/painel/trabalhos';
+    }
 
     if (!profileComplete) {
         if (!paymentConfirmed) return isPayments ? null : '/pagamentos';

@@ -19,6 +19,7 @@ export interface IAcademicWorksProps {
         autores_por_trabalho: number,
         trabalhos_por_usuario: number,
         maximo_orientadores: number,
+        permite_participacao_remota?: boolean,
         // postagens_maximas: number, agora, a postagem máxima é condata a partir do length de requisitos_arquivos, então não precisa mais dessa propriedade
         chunk_limite: number,
         chunk_tamanho: number,
@@ -50,6 +51,7 @@ export interface IAcademicWorks {
         cpf: string;
         isOrientador: boolean;
         isPagante: boolean;
+        userId?: ObjectId;
     }[];
     arquivos: {
         fileId: ObjectId,
@@ -82,6 +84,13 @@ export interface IAcademicWorks {
     dataAvaliacao?: string;
     avaliadorId?: ObjectId;
     configuracaoModalidade: IAcademicWorksProps["modalidades"][0];
+    editionId?: string;
+    modalidadeId?: ObjectId;
+    participationMode?: 'REGULAR' | 'REMOTE';
+    remoteAccessId?: ObjectId;
+    remotePurchaseId?: ObjectId;
+    financialReviewStatus?: 'CLEAR' | 'REVIEW_REQUIRED';
+    financialReviewReason?: string;
 }
 export interface ArquivoUpload {
     fileId: string;

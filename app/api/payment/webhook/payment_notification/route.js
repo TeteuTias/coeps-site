@@ -30,6 +30,15 @@ import {
   ingestWebhookEvent,
   releaseWebhookWorkerLease,
 } from '../../../../lib/payments/webhook-ledger.ts';
+import {
+  isRemoteWorkSession,
+  normalizePaymentProductType,
+} from '../../../../lib/remote-work-access.ts';
+import {
+  activateRemoteWorkAccess,
+  flagRemoteWorksForFinancialReview,
+  releaseRemoteWorkAccessPayment,
+} from '../../../../lib/payments/product-effects.ts';
 
 export const maxDuration = 60;
 
@@ -612,18 +621,31 @@ async function validateSessionPayment(db, session, payload, mongoSession) {
           valoresCentavos: 1,
           pagamento: 1,
           installmentPlan: 1,
+          type: 1,
+          remoteAccessId: 1,
         },
         session: mongoSession,
       },
     ),
   ]);
   const reasons = [];
+  const sessionType = normalizePaymentProductType(session.type);
+  const assignmentType = normalizePaymentProductType(assignment?.type);
 
-  if (session.type !== 'ticket') reasons.push('SESSION_TYPE_MISMATCH');
+  if (!['ticket', 'remote-work-access'].includes(sessionType)) reasons.push('SESSION_TYPE_MISMATCH');
   if (!user) reasons.push('SESSION_OWNER_NOT_FOUND');
   if (!assignment) reasons.push('PAYMENT_ASSIGNMENT_NOT_FOUND');
   if (assignment && String(assignment.usuarioId) !== String(session.owner)) {
     reasons.push('PAYMENT_ASSIGNMENT_OWNER_MISMATCH');
+  }
+  if (assignment && assignmentType !== sessionType) {
+    reasons.push('PAYMENT_ASSIGNMENT_TYPE_MISMATCH');
+  }
+  if (
+    isRemoteWorkSession(session) &&
+    String(assignment?.remoteAccessId || '') !== String(session.remoteAccessId || '')
+  ) {
+    reasons.push('REMOTE_ACCESS_ASSIGNMENT_MISMATCH');
   }
   if (!payment.customer || !user?.id_api || String(payment.customer) !== String(user.id_api)) {
     reasons.push('PAYMENT_CUSTOMER_MISMATCH');
@@ -764,6 +786,32 @@ async function confirmSessionPayment(db, session, payload, mongoSession) {
     { session: mongoSession }
   );
 
+  if (isRemoteWorkSession(session)) {
+    await activateRemoteWorkAccess(db, session, now, mongoSession);
+    const assignmentUpdated = await updatePaymentAssignment(db, session._id, 'CONFIRMADA', {
+      metodo: payment.billingType || session.metodoPagamento,
+      checkoutId: payment.checkoutSession || session.orderId,
+      paymentId: payment.id || session.paymentId,
+      invoiceNumber: payment.invoiceNumber || session.invoiceNumber,
+    }, mongoSession);
+    if (!assignmentUpdated) throw new Error('PAYMENT_ASSIGNMENT_UPDATE_FAILED');
+    await db.collection('pagamentos.comprovantes').updateOne(
+      { compraId: session._id },
+      {
+        $setOnInsert: {
+          compraId: session._id,
+          owner: session.owner,
+          type: 'remote-work-access',
+          title: 'Participação remota de trabalhos',
+          createdAt: now,
+        },
+        $set: { status: 'PAID', updatedAt: now },
+      },
+      { upsert: true, session: mongoSession },
+    );
+    return 'CONFIRMED';
+  }
+
   // Verifica se a sessão realmente possui um código de desconto antes de ir ao banco
   if (updatedSession?.codigoDesconto?.codigoNormalizado) {
 
@@ -888,11 +936,15 @@ async function cancelSessionPayment(db, session, payload, mongoSession) {
       releaseDiscountReservation(db, session._id, mongoSession),
       updatePaymentAssignment(db, session._id, assignmentStatus, undefined, mongoSession),
     ]);
-    await db.collection('usuarios').updateOne(
-      { _id: session.owner, 'pagamento.situacao': { $ne: 1 } },
-      { $set: { 'pagamento.situacao': 0 } },
-      { session: mongoSession },
-    );
+    if (isRemoteWorkSession(session)) {
+      await releaseRemoteWorkAccessPayment(db, session, new Date(), mongoSession);
+    } else {
+      await db.collection('usuarios').updateOne(
+        { _id: session.owner, 'pagamento.situacao': { $ne: 1 } },
+        { $set: { 'pagamento.situacao': 0 } },
+        { session: mongoSession },
+      );
+    }
     const reconciliationReasons = [
       ...(!assignmentUpdated ? ['PAYMENT_ASSIGNMENT_NOT_FOUND'] : []),
       ...(session.codigoDesconto && !discountReleased
@@ -961,6 +1013,13 @@ async function refundSessionPayment(db, session, payload, mongoSession) {
       { ...refundFields, refundStatus: 'PARTIAL_PLAN' },
       { ...refundFields, refundStatus: 'PARTIAL_PLAN' },
     );
+    await flagRemoteWorksForFinancialReview(
+      db,
+      session,
+      `PAYMENT_REFUND_PLAN_INCOMPLETE:${event}`,
+      now,
+      mongoSession,
+    );
     return 'REVIEW_REQUIRED';
   }
 
@@ -996,6 +1055,13 @@ async function refundSessionPayment(db, session, payload, mongoSession) {
         },
       },
       { session: mongoSession },
+    );
+    await flagRemoteWorksForFinancialReview(
+      db,
+      session,
+      `PAYMENT_REFUND_AFTER_${session.status}`,
+      now,
+      mongoSession,
     );
     return 'REVIEW_REQUIRED';
   }
@@ -1045,6 +1111,13 @@ async function refundSessionPayment(db, session, payload, mongoSession) {
       );
       return 'REVIEW_REQUIRED';
     }
+    await flagRemoteWorksForFinancialReview(
+      db,
+      session,
+      `PAYMENT_PARTIAL_REFUND:${event}`,
+      now,
+      mongoSession,
+    );
     return 'PARTIAL_REFUND_RECORDED';
   }
 
@@ -1110,13 +1183,17 @@ async function refundSessionPayment(db, session, payload, mongoSession) {
       { session: mongoSession },
     );
   }
-  await updateUserRegistrationAfterRefund(
-    db,
-    session.owner,
-    session.edicaoId,
-    session._id,
-    mongoSession,
-  );
+  if (isRemoteWorkSession(session)) {
+    await flagRemoteWorksForFinancialReview(db, session, `PAYMENT_REFUND:${event}`, now, mongoSession);
+  } else {
+    await updateUserRegistrationAfterRefund(
+      db,
+      session.owner,
+      session.edicaoId,
+      session._id,
+      mongoSession,
+    );
+  }
   await db.collection('pagamentos.comprovantes').updateOne(
     { compraId: session._id },
     {
@@ -1138,7 +1215,7 @@ async function recordCreatedCheckout(db, session, payload, mongoSession) {
     return 'REVIEW_REQUIRED';
   }
   if (
-    session.type !== 'ticket' ||
+    (session.type && !['ticket', 'remote-work-access'].includes(session.type)) ||
     (session.metodoPagamento && session.metodoPagamento !== 'PIX') ||
     (checkout.externalReference && String(checkout.externalReference) !== String(session._id))
   ) {
@@ -1263,6 +1340,13 @@ async function markChargebackPending(db, session, payload, mongoSession) {
     await markSessionForReview(db, session, 'PAYMENT_ASSIGNMENT_NOT_FOUND', mongoSession);
     return 'REVIEW_REQUIRED';
   }
+  await flagRemoteWorksForFinancialReview(
+    db,
+    session,
+    `PAYMENT_CHARGEBACK:${payload.event}`,
+    now,
+    mongoSession,
+  );
   return 'RECORDED';
 }
 
@@ -1281,6 +1365,13 @@ async function markChargebackAwaitingReversal(db, session, payload, mongoSession
       chargebackStatus: 'AWAITING_REVERSAL',
       chargebackResolution: 'WON_PENDING_SETTLEMENT',
     },
+  );
+  await flagRemoteWorksForFinancialReview(
+    db,
+    session,
+    'CHARGEBACK_DISPUTE_WON_AWAITING_REVERSAL',
+    new Date(),
+    mongoSession,
   );
   return 'REVIEW_REQUIRED';
 }
