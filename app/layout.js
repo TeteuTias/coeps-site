@@ -88,7 +88,19 @@ export default function RootLayout({ children }) {
         />
         {/* End Meta Pixel Code */}
       </head>
-      <body>{children}</body>
+      <body>
+        <noscript>
+          {/* eslint-disable-next-line @next/next/no-img-element -- Meta Pixel fallback requires its tracking URL. */}
+          <img
+            height="1"
+            width="1"
+            style={{ display: 'none' }}
+            src="https://www.facebook.com/tr?id=2392093421199963&ev=PageView&noscript=1"
+            alt=""
+          />
+        </noscript>
+        {children}
+      </body>
     </html>
   );
 }
