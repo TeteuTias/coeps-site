@@ -2,10 +2,13 @@
 
 import { useEffect } from 'react';
 import { useUser } from '@/lib/auth0-client';
+import { fetchJsonWithTimeout } from '@/lib/client/fetchWithTimeout';
+import { getConfirmedPurchaseValue } from '@/lib/meta-pixel';
 
 const META_PIXEL_ID = '2392093421199963';
 const META_PIXEL_RETRY_DELAY_MS = 250;
 const META_PIXEL_MAX_ATTEMPTS = 20;
+const PAYMENT_HISTORY_TIMEOUT_MS = 5_000;
 const sentInThisDocument = new Set();
 
 function getSessionKey(editionId, userId) {
@@ -45,6 +48,7 @@ export default function MetaPurchaseTracker({ editionId }) {
     let cancelled = false;
     let attempts = 0;
     let retryTimer;
+    let purchaseValue = null;
 
     const trackPurchase = () => {
       if (cancelled || wasSentInThisSession(sessionKey)) return;
@@ -58,14 +62,37 @@ export default function MetaPurchaseTracker({ editionId }) {
       }
 
       try {
-        window.fbq('track', 'Purchase');
+        if (purchaseValue === null) {
+          window.fbq('track', 'Purchase');
+        } else {
+          window.fbq('track', 'Purchase', {
+            value: purchaseValue,
+            currency: 'BRL',
+          });
+        }
         markAsSent(sessionKey);
       } catch {
         // Tracking failures must never interrupt the confirmation page.
       }
     };
 
-    trackPurchase();
+    const loadPurchaseAndTrack = async () => {
+      try {
+        const history = await fetchJsonWithTimeout(
+          '/api/get/usuariosPagamentos',
+          { method: 'GET', credentials: 'same-origin', cache: 'no-store' },
+          PAYMENT_HISTORY_TIMEOUT_MS,
+        );
+        if (history?.data?.pagamento?.situacao !== 1) return;
+        purchaseValue = getConfirmedPurchaseValue(history, editionId);
+      } catch {
+        // Preserve the basic conversion count when enrichment is unavailable.
+      }
+
+      if (!cancelled) trackPurchase();
+    };
+
+    void loadPurchaseAndTrack();
 
     return () => {
       cancelled = true;
