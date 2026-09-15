@@ -10,7 +10,8 @@ const decide = (
     profileComplete: boolean,
     paymentConfirmed: boolean,
     confirmationSeen = false,
-) => getRegistrationRedirect({ path, profileComplete, paymentConfirmed, confirmationSeen });
+    remoteWorkAccessActive = false,
+) => getRegistrationRedirect({ path, profileComplete, paymentConfirmed, confirmationSeen, remoteWorkAccessActive });
 
 test('usuário incompleto paga antes de acessar o formulário completo', () => {
     assert.equal(decide('/painel', false, false), '/pagamentos');
@@ -43,4 +44,32 @@ test('flag de cadastro sem perfil real não permite pular o formulário', () => 
             numero_telefone: '(34) 99999-9999',
         },
     }), true);
+});
+
+test('participante exclusivamente remoto acessa apenas pagamentos e trabalhos', () => {
+    assert.equal(decide('/painel', false, false, false, true), '/painel/trabalhos');
+    assert.equal(decide('/painel/trabalhos', false, false, false, true), null);
+    assert.equal(decide('/painel/trabalhos/enviarTrabalho', false, false, false, true), null);
+    assert.equal(decide('/pagamentos', false, false, false, true), null);
+    assert.equal(decide('/painel/certificados', false, false, false, true), '/painel/trabalhos');
+});
+
+test('acesso remoto continua disponível durante a conclusão posterior do cadastro regular', () => {
+    assert.equal(decide('/painel/trabalhos', false, true, false, true), null);
+    assert.equal(decide('/painel', false, true, false, true), '/painel/dadosIniciais');
+});
+
+test('acesso remoto em revisão preserva consulta de trabalhos mas não libera outras áreas', () => {
+    const base = {
+        profileComplete: true,
+        paymentConfirmed: false,
+        confirmationSeen: false,
+        remoteWorkAccessActive: false,
+        remoteWorkAreaAccess: true,
+        remoteWorkSubmissionAllowed: false,
+    };
+    assert.equal(getRegistrationRedirect({ ...base, path: '/painel/trabalhos' }), null);
+    assert.equal(getRegistrationRedirect({ ...base, path: '/painel/trabalhos/correcao/abc' }), null);
+    assert.equal(getRegistrationRedirect({ ...base, path: '/painel/trabalhos/enviarTrabalho' }), '/painel/trabalhos');
+    assert.equal(getRegistrationRedirect({ ...base, path: '/painel/certificados' }), '/painel/trabalhos');
 });

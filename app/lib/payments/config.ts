@@ -114,21 +114,25 @@ export async function countReservedTicketPlaces(
         // Filtro original do countDocuments para buscar as sessões válidas/ativas
         {
             $match: {
-                type: 'ticket',
                 edicaoId,
-                $or: [
+                $and: [
+                    { $or: [{ type: 'ticket' }, { type: { $exists: false } }] },
                     {
-                        status: 'OPEN',
-                        expiresAt: { $gt: now },
-                    },
-                    {
-                        status: {
-                            $in: [
-                                'CREATING_PAYMENT',
-                                'PAYMENT_PENDING',
-                                'PAYMENT_REVIEW_REQUIRED',
-                            ],
-                        },
+                        $or: [
+                            {
+                                status: 'OPEN',
+                                expiresAt: { $gt: now },
+                            },
+                            {
+                                status: {
+                                    $in: [
+                                        'CREATING_PAYMENT',
+                                        'PAYMENT_PENDING',
+                                        'PAYMENT_REVIEW_REQUIRED',
+                                    ],
+                                },
+                            },
+                        ],
                     },
                 ],
             },
@@ -181,6 +185,7 @@ export async function getCurrentAutomaticLot(
                 $match: {
                     edicaoId,
                     status: 'CONFIRMADA',
+                    $or: [{ type: 'ticket' }, { type: { $exists: false } }],
                 },
             },
             // Busca o código na coleção de códigos

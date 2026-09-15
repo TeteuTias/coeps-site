@@ -32,7 +32,8 @@ export default interface PaymentTicketProps {
     valoresCentavos?: PaymentAmountsSnapshot;
     metodosPagamentoPermitidos?: string[];
     metodoPagamento?: PaymentSessionMethod | null;
-    type: "ticket" | "course";
+    type: "ticket" | "course" | "remote-work-access";
+    remoteAccessId?: ObjectId | string;
     status: PaymentSessionStatus;
     paymentUrl?: string | null;
     expiresAt: Date | string;

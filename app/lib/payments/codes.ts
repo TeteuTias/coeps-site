@@ -461,7 +461,12 @@ export async function hasConfirmedRegistrationForEdition(
 ): Promise<boolean> {
     const [assignment, user] = await Promise.all([
         db.collection(PAYMENT_ASSIGNMENTS_COLLECTION).findOne(
-            { usuarioId, edicaoId, status: 'CONFIRMADA' },
+            {
+                usuarioId,
+                edicaoId,
+                status: 'CONFIRMADA',
+                $or: [{ type: 'ticket' }, { type: { $exists: false } }],
+            },
             { projection: { _id: 1 }, session: mongoSession },
         ),
         db.collection('usuarios').findOne(
@@ -490,6 +495,7 @@ export async function updateUserRegistrationAfterRefund(
             edicaoId,
             compraId: { $ne: refundedPurchaseId },
             status: 'CONFIRMADA',
+            $or: [{ type: 'ticket' }, { type: { $exists: false } }],
         },
         { projection: { compraId: 1 }, session: mongoSession },
     );
@@ -595,7 +601,7 @@ export async function expireOpenSessionsForOwner(
         .collection('pagamentos.sessoes')
         .find({
             owner,
-            type: 'ticket',
+            $or: [{ type: 'ticket' }, { type: { $exists: false } }],
             ...(edicaoId ? { edicaoId } : {}),
             status: { $in: ['OPEN', 'PAYMENT_PENDING'] },
             expiresAt: { $lte: now },

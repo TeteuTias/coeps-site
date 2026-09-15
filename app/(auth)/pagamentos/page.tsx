@@ -18,6 +18,7 @@ import {
     Copy,
     QrCode,
     CircleX,
+    Laptop,
 } from 'lucide-react';
 import './style.css';
 import PaymentTicketProps from '@/lib/types/payments/paymentTicket.t';
@@ -324,6 +325,18 @@ const Pagamentos = () => {
 
     return (
         <div>
+            <section className="mx-auto mt-6 w-[calc(100%-2rem)] max-w-[1320px] rounded-lg border border-[var(--cieps-line)] bg-white p-5 shadow-sm">
+                <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
+                    <div className="flex items-start gap-3">
+                        <Laptop className="mt-1 h-6 w-6 shrink-0 text-[var(--cieps-red)]" />
+                        <div>
+                            <h2 className="font-[family-name:var(--cieps-display)] text-xl font-bold text-[var(--cieps-ink)]">Vai apenas apresentar um trabalho remotamente?</h2>
+                            <p className="mt-1 text-sm text-[var(--cieps-muted)]">A modalidade custa R$ 60 uma única vez, vale somente para Trabalho Completo e não dá acesso presencial ao congresso.</p>
+                        </div>
+                    </div>
+                    <Link href="/pagamentos/apresentacao-remota" className="inline-flex shrink-0 justify-center rounded-md border border-[var(--cieps-red)] px-4 py-2.5 text-sm font-bold text-[var(--cieps-red)] hover:bg-red-50">Ver participação remota</Link>
+                </div>
+            </section>
             {/* ---> ESSA TELA É EXCLUSIVAMENTE PARA OS PAGAMENTOS AUTOMATICOS <--- */}
             {
                 dataPaymentConfig.modo == "automatico" &&

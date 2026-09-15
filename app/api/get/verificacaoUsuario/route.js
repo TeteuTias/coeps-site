@@ -4,6 +4,8 @@ import { getAccessToken } from '@/lib/auth0-compat';
 import { ObjectId } from 'mongodb';
 import { getSession } from '@/lib/auth0-compat';
 import { withApiAuthRequired } from '@/lib/auth0-compat';
+import { getActivePaymentConfig, getEditionId } from '@/lib/payments/config';
+import { findRemoteWorkAccess, toPublicRemoteWorkAccess } from '@/lib/remote-work-access';
 //
 //
 // Exemplo de return:
@@ -31,15 +33,25 @@ export const GET = withApiAuthRequired(async function GET(request, response) {
         const { db } = await connectToDatabase();
         const colecao = 'usuarios'
 
-        const response = await db.collection(colecao).find(
-            {
-                "_id": new ObjectId(userId)
-            },
-            { projection: { 'informacoes_usuario': 1, 'pagamento.situacao_animacao':1,'pagamento.situacao': 1, 'isPos_registration': 1, '_id': 0 } }
-        ).toArray()
+        const owner = new ObjectId(userId);
+        const [response, paymentConfig] = await Promise.all([
+            db.collection(colecao).findOne(
+                { "_id": owner },
+                { projection: { 'informacoes_usuario': 1, 'pagamento.situacao_animacao':1,'pagamento.situacao': 1, 'isPos_registration': 1, '_id': 0 } },
+            ),
+            getActivePaymentConfig(db),
+        ]);
+        const remoteAccess = paymentConfig
+            ? await findRemoteWorkAccess(db, owner, getEditionId(paymentConfig))
+            : null;
 
         return NextResponse.json({
-            ...response[0]
+            ...response,
+            authUser: {
+                name: String(user.name || ''),
+                email: String(user.email || ''),
+            },
+            participacaoRemota: toPublicRemoteWorkAccess(remoteAccess),
         }, { status: 200 });
 
     }

@@ -64,6 +64,8 @@ export const GET = withApiAuthRequired(async function GET() {
                     projection: {
                         compraId: 1,
                         edicaoId: 1,
+                        type: 1,
+                        remoteAccessId: 1,
                         status: 1,
                         pagamento: 1,
                         valorSelecionadoCentavos: 1,
@@ -92,6 +94,8 @@ export const GET = withApiAuthRequired(async function GET() {
                     {
                         projection: {
                             status: 1,
+                            type: 1,
+                            remoteAccessId: 1,
                             metodoPagamento: 1,
                             paymentId: 1,
                             invoiceNumber: 1,

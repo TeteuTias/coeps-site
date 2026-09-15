@@ -12,6 +12,8 @@ import {
   getRegistrationRedirect,
   isRegistrationProfileComplete,
 } from '@/lib/registration-gate';
+import { getActivePaymentConfig, getEditionId } from '@/lib/payments/config';
+import { findRemoteWorkAccess } from '@/lib/remote-work-access';
 
 const protectedRoutes = [
   '/painel',
@@ -87,7 +89,14 @@ export async function proxy(req) {
     }
     return auth0.startInteractiveLogin({ returnTo });
   }
-  const user: IUser | null = await db.collection("usuarios").findOne({ _id: new ObjectId(userId) });
+  const owner = new ObjectId(userId);
+  const [user, paymentConfig]: [IUser | null, Awaited<ReturnType<typeof getActivePaymentConfig>>] = await Promise.all([
+    db.collection("usuarios").findOne({ _id: owner }) as Promise<IUser | null>,
+    getActivePaymentConfig(db),
+  ]);
+  const remoteAccess = paymentConfig
+    ? await findRemoteWorkAccess(db, owner, getEditionId(paymentConfig))
+    : null;
 
   // 6. Pagamento vem antes do cadastro completo. A confirmação financeira
   // é a única condição que libera o formulário congressista e a LGPD.
@@ -96,6 +105,9 @@ export async function proxy(req) {
     profileComplete: isRegistrationProfileComplete(user),
     paymentConfirmed: user?.pagamento?.situacao === 1,
     confirmationSeen: Boolean(user?.pagamento?.situacao_animacao),
+    remoteWorkAccessActive: remoteAccess?.status === 'ACTIVE' && remoteAccess.proofReviewStatus !== 'INCONSISTENT',
+    remoteWorkAreaAccess: ['ACTIVE', 'REVIEW_REQUIRED', 'REVOKED'].includes(String(remoteAccess?.status || '')),
+    remoteWorkSubmissionAllowed: remoteAccess?.status === 'ACTIVE' && remoteAccess.proofReviewStatus !== 'INCONSISTENT',
   });
   if (redirect) {
     return NextResponse.redirect(new URL(redirect, req.nextUrl.origin));
