@@ -7,7 +7,7 @@ import {
     releaseDiscountReservation,
     reserveDiscountCode,
 } from '@/lib/payments/codes';
-import { applyDiscountToLot } from '@/lib/payments/prices';
+import { buildManualPaymentLot, resolvePaymentOffer } from '@/lib/payments/offer';
 
 export async function prepareManualTicketPurchase(
     db: Db,
@@ -23,18 +23,7 @@ export async function prepareManualTicketPurchase(
     const compraId = new ObjectId();
     const edicaoId = getEditionId(input.config);
     const expiresAt = new Date(now.getTime() + 15 * 60 * 1000);
-    const originalLot = {
-        codigo: 0,
-        nome: input.config.nome,
-        limiteVagas: Number.MAX_SAFE_INTEGER,
-        precos: {
-            valorAVista: input.config.valorAVista,
-            valorPix: input.config.valorPix,
-            valorBoleto: input.config.valorBoleto,
-            valorDebito: input.config.valorDebito,
-            parcelamentos: input.config.parcelamentos ?? [],
-        },
-    };
+    const originalLot = buildManualPaymentLot(input.config);
     let discountSnapshot;
     let trackingSnapshot;
 
@@ -57,10 +46,11 @@ export async function prepareManualTicketPurchase(
             );
         }
 
-        const discounted = applyDiscountToLot(
-            originalLot,
-            discountSnapshot?.percentualDesconto ?? 0,
-        );
+        const offer = resolvePaymentOffer({
+            config: input.config,
+            currentLot: originalLot,
+            discount: discountSnapshot,
+        });
         const session = {
             _id: compraId,
             activeKey: `${edicaoId}:${input.owner.toHexString()}:ticket`,
@@ -72,9 +62,11 @@ export async function prepareManualTicketPurchase(
             expiresAt,
             createdAt: now,
             updatedAt: now,
-            paymentConfigOriginal: originalLot,
-            paymentConfig: discounted.lot,
-            valoresCentavos: discounted.amounts,
+            paymentConfigOriginal: offer.originalLot,
+            paymentConfig: offer.finalLot,
+            valoresCentavos: offer.amounts,
+            perfilUtilizador: offer.perfilUtilizador,
+            origemPreco: offer.origemPreco,
             codigoDesconto: discountSnapshot,
             codigoRastreio: trackingSnapshot,
             orderId: null,
@@ -90,7 +82,9 @@ export async function prepareManualTicketPurchase(
             usuarioId: input.owner,
             codigoDesconto: discountSnapshot,
             codigoRastreio: trackingSnapshot,
-            valoresCentavos: discounted.amounts,
+            valoresCentavos: offer.amounts,
+            perfilUtilizador: offer.perfilUtilizador,
+            origemPreco: offer.origemPreco,
             status: 'ABERTA',
             createdAt: now,
             updatedAt: now,

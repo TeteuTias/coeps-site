@@ -812,24 +812,22 @@ async function confirmSessionPayment(db, session, payload, mongoSession) {
     return 'CONFIRMED';
   }
 
-  // Verifica se a sessão realmente possui um código de desconto antes de ir ao banco
-  if (updatedSession?.codigoDesconto?.codigoNormalizado) {
-
-    // Substituído count() por countDocuments() e adicionado { session: mongoSession }
-    const codigoPagamento = await db.collection('pagamentos.codigos').countDocuments(
+  let perfilUtilizador =
+    updatedSession?.perfilUtilizador ||
+    updatedSession?.codigoDesconto?.perfilUtilizador;
+  if (!perfilUtilizador && updatedSession?.codigoDesconto?.codigoNormalizado) {
+    const codigoPagamento = await db.collection('pagamentos.codigos').findOne(
       {
+        edicaoId: updatedSession.edicaoId,
         codigoNormalizado: updatedSession.codigoDesconto.codigoNormalizado,
-        perfilUtilizador: "ORGANIZADOR"
+        tipo: 'DESCONTO',
       },
-      { session: mongoSession } // <- Muito importante manter a transação!
+      { projection: { perfilUtilizador: 1 }, session: mongoSession },
     );
-
-    // CADA CUPOM POSSUI APENAS UM CODIGO NORMALIZADO, SEGUNDO INDEX EM MONGODB. 
-    if (codigoPagamento === 1) {
-      // SE UM CUPOM FOR ENCONTRADO, SIGNIFICA QUE ESTE CUPOM FOI UTILIZADO POR UM ORGANIZADOR
-      // PORTANTO, pagamento.tipo_pagamento SERÁ ORGANIZADOR.
-      tipo_pagamento = "organizador";
-    }
+    perfilUtilizador = codigoPagamento?.perfilUtilizador;
+  }
+  if (perfilUtilizador === 'ORGANIZADOR') {
+    tipo_pagamento = 'organizador';
   }
   //
   //

@@ -9,6 +9,7 @@ import {
     getTrackingCodeForPurchase,
     hasConfirmedRegistrationForEdition,
     normalizePaymentCode,
+    previewPaymentCodes,
     releaseDiscountReservation,
     reserveDiscountCode,
 } from '@/lib/payments/codes';
@@ -19,7 +20,7 @@ import {
     isPaymentSalesOpen,
     lockPaymentCapacityCalculation,
 } from '@/lib/payments/config';
-import { applyDiscountToLot } from '@/lib/payments/prices';
+import { PaymentOfferError, resolvePaymentOffer } from '@/lib/payments/offer';
 import { toPublicPaymentSession } from '@/lib/payments/public-session';
 import { runPaymentTransaction } from '@/lib/payments/transactions';
 import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
@@ -43,13 +44,6 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
         const { codigoDesconto, codigoRastreio } = body;
         const payerInput = body.payer ?? body;
         const loteCodigo = body.loteCodigo ?? body.loteAtualFrontEnd?.codigo;
-
-        if (loteCodigo === undefined) {
-            return NextResponse.json(
-                { error: 'invalid_payment_data', message: 'Preencha todos os campos obrigatórios.' },
-                { status: 400 },
-            );
-        }
 
         const { db, client } = await connectToDatabase();
         const owner = new ObjectId(userId);
@@ -146,8 +140,22 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             );
         }
 
+        const previewCodes = await previewPaymentCodes(db, {
+            edicaoId,
+            codigoDesconto,
+            codigoRastreio,
+        });
         const currentLot = await getCurrentAutomaticLot(db, config, now);
-        if (!currentLot || Number(currentLot.codigo) !== Number(loteCodigo)) {
+        const preliminaryOffer = resolvePaymentOffer({
+            config,
+            currentLot,
+            discount: previewCodes.desconto,
+        });
+        if (
+            preliminaryOffer.perfilUtilizador !== 'ORGANIZADOR' &&
+            (loteCodigo === undefined ||
+                Number(preliminaryOffer.originalLot.codigo) !== Number(loteCodigo))
+        ) {
             return NextResponse.json(
                 {
                     error: 'payment_lot_changed',
@@ -190,20 +198,6 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
         try {
             session = await runPaymentTransaction(client, async (mongoSession) => {
                 await lockPaymentCapacityCalculation(db, config, mongoSession);
-                const lockedLot = await getCurrentAutomaticLot(
-                    db,
-                    config,
-                    now,
-                    mongoSession,
-                );
-                if (!lockedLot || Number(lockedLot.codigo) !== Number(loteCodigo)) {
-                    throw new PaymentCodeError(
-                        'O lote vigente foi atualizado. Recarregue os valores.',
-                        409,
-                        'PAYMENT_LOT_CHANGED',
-                    );
-                }
-
                 const discountSnapshot = codigoDesconto
                     ? await reserveDiscountCode(db, {
                           edicaoId,
@@ -215,6 +209,28 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                       })
                     : undefined;
                 if (discountSnapshot) reservedPurchaseId = compraId;
+                const lockedLot = await getCurrentAutomaticLot(
+                    db,
+                    config,
+                    now,
+                    mongoSession,
+                );
+                const offer = resolvePaymentOffer({
+                    config,
+                    currentLot: lockedLot,
+                    discount: discountSnapshot,
+                });
+                if (
+                    offer.perfilUtilizador !== 'ORGANIZADOR' &&
+                    (loteCodigo === undefined ||
+                        Number(offer.originalLot.codigo) !== Number(loteCodigo))
+                ) {
+                    throw new PaymentCodeError(
+                        'O lote vigente foi atualizado. Recarregue os valores.',
+                        409,
+                        'PAYMENT_LOT_CHANGED',
+                    );
+                }
 
                 const trackingSnapshot = codigoRastreio
                     ? await getTrackingCodeForPurchase(
@@ -224,10 +240,6 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                           mongoSession,
                       )
                     : undefined;
-                const discounted = applyDiscountToLot(
-                    lockedLot,
-                    discountSnapshot?.percentualDesconto ?? 0,
-                );
                 const createdSession = {
                     _id: compraId,
                     activeKey: `${edicaoId}:${userId}:ticket`,
@@ -238,9 +250,11 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                     expiresAt,
                     createdAt: now,
                     updatedAt: now,
-                    paymentConfigOriginal: lockedLot,
-                    paymentConfig: discounted.lot,
-                    valoresCentavos: discounted.amounts,
+                    paymentConfigOriginal: offer.originalLot,
+                    paymentConfig: offer.finalLot,
+                    valoresCentavos: offer.amounts,
+                    perfilUtilizador: offer.perfilUtilizador,
+                    origemPreco: offer.origemPreco,
                     metodosPagamentoPermitidos: config.pagamentosAceitos ?? [],
                     codigoDesconto: discountSnapshot,
                     codigoRastreio: trackingSnapshot,
@@ -270,7 +284,9 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                     usuarioId: owner,
                     codigoDesconto: discountSnapshot,
                     codigoRastreio: trackingSnapshot,
-                    valoresCentavos: discounted.amounts,
+                    valoresCentavos: offer.amounts,
+                    perfilUtilizador: offer.perfilUtilizador,
+                    origemPreco: offer.origemPreco,
                     status: 'ABERTA',
                     createdAt: now,
                     updatedAt: now,
@@ -348,7 +364,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             }
         }
 
-        if (error instanceof PaymentCodeError) {
+        if (error instanceof PaymentCodeError || error instanceof PaymentOfferError) {
             return NextResponse.json(
                 { error: error.code, message: error.message },
                 { status: error.status },

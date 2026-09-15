@@ -14,7 +14,11 @@ import {
     getEditionId,
     isPaymentSalesOpen,
 } from '@/lib/payments/config';
-import { applyDiscountToLot } from '@/lib/payments/prices';
+import {
+    buildManualPaymentLot,
+    PaymentOfferError,
+    resolvePaymentOffer,
+} from '@/lib/payments/offer';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,42 +50,6 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             );
         }
 
-        const currentLot =
-            config.modo === 'manual'
-                ? {
-                      codigo: 0,
-                      nome: config.nome,
-                      limiteVagas: Number.MAX_SAFE_INTEGER,
-                      precos: {
-                          valorAVista: config.valorAVista,
-                          valorPix: config.valorPix,
-                          valorBoleto: config.valorBoleto,
-                          valorDebito: config.valorDebito,
-                          parcelamentos: config.parcelamentos ?? [],
-                      },
-                  }
-                : await getCurrentAutomaticLot(db, config);
-        if (!currentLot) {
-            return NextResponse.json(
-                { error: 'payment_lot_not_found', message: 'Nenhum lote está disponível.' },
-                { status: 409 },
-            );
-        }
-
-        if (
-            body.loteCodigo !== undefined &&
-            Number(body.loteCodigo) !== Number(currentLot.codigo)
-        ) {
-            return NextResponse.json(
-                {
-                    error: 'payment_lot_changed',
-                    message: 'O lote vigente foi atualizado. Recarregue os valores.',
-                    loteVigente: currentLot,
-                },
-                { status: 409 },
-            );
-        }
-
         const edicaoId = getEditionId(config);
         await enforcePaymentCodePreviewRateLimit(db, new ObjectId(userId));
         const codes = await previewPaymentCodes(db, {
@@ -89,8 +57,30 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             codigoDesconto: body.codigoDesconto,
             codigoRastreio: body.codigoRastreio,
         });
-        const discountPercent = codes.desconto?.percentualDesconto ?? 0;
-        const discounted = applyDiscountToLot(currentLot, discountPercent);
+        const currentLot =
+            config.modo === 'manual'
+                ? buildManualPaymentLot(config)
+                : await getCurrentAutomaticLot(db, config);
+        const offer = resolvePaymentOffer({
+            config,
+            currentLot,
+            discount: codes.desconto,
+        });
+
+        if (
+            offer.perfilUtilizador !== 'ORGANIZADOR' &&
+            body.loteCodigo !== undefined &&
+            Number(body.loteCodigo) !== Number(offer.originalLot.codigo)
+        ) {
+            return NextResponse.json(
+                {
+                    error: 'payment_lot_changed',
+                    message: 'O lote vigente foi atualizado. Recarregue os valores.',
+                    loteVigente: offer.originalLot,
+                },
+                { status: 409 },
+            );
+        }
 
         return NextResponse.json(
             {
@@ -100,6 +90,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                         ? {
                               codigo: codes.desconto.codigo,
                               percentualDesconto: codes.desconto.percentualDesconto,
+                              perfilUtilizador: codes.desconto.perfilUtilizador,
                           }
                         : undefined,
                     rastreio: codes.rastreio
@@ -107,15 +98,17 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                         : undefined,
                 },
                 lote: {
-                    original: currentLot,
-                    final: discounted.lot,
+                    original: offer.originalLot,
+                    final: offer.finalLot,
                 },
-                valoresCentavos: discounted.amounts,
+                valoresCentavos: offer.amounts,
+                perfilUtilizador: offer.perfilUtilizador,
+                origemPreco: offer.origemPreco,
             },
             { status: 200 },
         );
     } catch (error) {
-        if (error instanceof PaymentCodeError) {
+        if (error instanceof PaymentCodeError || error instanceof PaymentOfferError) {
             return NextResponse.json(
                 { error: error.code, message: error.message },
                 { status: error.status },

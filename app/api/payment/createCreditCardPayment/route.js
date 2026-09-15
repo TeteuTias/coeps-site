@@ -208,15 +208,20 @@ export const POST = withApiAuthRequired(async function POST(request) {
     const [expiryMonth, shortExpiryYear] = String(data.cardInfo.expiry).split('/');
     const expiryYear = shortExpiryYear?.length === 2 ? `20${shortExpiryYear}` : shortExpiryYear;
     const installmentCount = Number(installment.totalParcelas);
-    const totalValue = Number((Number(installment.valorCadaParcela) * installmentCount).toFixed(2));
-    const originalCents =
-      Math.round(Number(configuredInstallment.valorCadaParcela) * 100) *
-      Number(configuredInstallment.totalParcelas);
-    const finalCents = Math.round(totalValue * 100);
-    const installmentValueCentavos = Math.round(Number(installment.valorCadaParcela) * 100);
+    const snapshotFinalCents = Number(purchase.valoresCentavos?.final?.CREDIT_CARD);
+    const finalCents = Number.isInteger(snapshotFinalCents) && snapshotFinalCents >= 0
+      ? snapshotFinalCents
+      : Math.round(Number(installment.valorCadaParcela) * 100) * installmentCount;
+    const totalValue = finalCents / 100;
+    const snapshotOriginalCents = Number(purchase.valoresCentavos?.original?.CREDIT_CARD);
+    const originalCents = Number.isInteger(snapshotOriginalCents) && snapshotOriginalCents >= 0
+      ? snapshotOriginalCents
+      : Math.round(Number(configuredInstallment.valorCadaParcela) * 100) *
+        Number(configuredInstallment.totalParcelas);
+    const installmentValueCentavos = Math.round(finalCents / installmentCount);
     const selectedValueSnapshot = {
       original: originalCents,
-      desconto: originalCents - finalCents,
+      desconto: Math.max(0, originalCents - finalCents),
       final: finalCents,
     };
     const provisionalInstallmentPlan = installmentCount > 1

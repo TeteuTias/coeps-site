@@ -43,6 +43,9 @@ export interface IPaymentConfig {
     configuracaoLotesAutomaticos?: {
         lotes: ILoteAutomatico[];
     };
+    configuracaoOrganizador?: {
+        valorFinalCentavos: number;
+    };
 }
 
 

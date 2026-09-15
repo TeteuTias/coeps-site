@@ -12,6 +12,10 @@ function publicCodeSnapshot(value: unknown) {
         ...(typeof snapshot.percentualDesconto === 'number'
             ? { percentualDesconto: snapshot.percentualDesconto }
             : {}),
+        ...(snapshot.perfilUtilizador === 'ORGANIZADOR' ||
+        snapshot.perfilUtilizador === 'CONGRESSISTA'
+            ? { perfilUtilizador: snapshot.perfilUtilizador }
+            : {}),
     };
 }
 
