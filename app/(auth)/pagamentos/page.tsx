@@ -27,14 +27,15 @@ import { fetchWithTimeout } from '@/lib/client/fetchWithTimeout';
 
 type PaymentConfigView = IPaymentConfig & {
     sessaoPagamentoAutomáticoAtiva: PaymentTicketProps | false;
-    loteAutomaticoAtual?: ILoteAutomatico;
+    loteAutomaticoAtual?: ILoteAutomatico | null;
 };
 
 type PaymentCodesPreview = {
     codigos: {
         desconto?: {
             codigo: string;
-            percentualDesconto: number;
+            percentualDesconto?: number;
+            perfilUtilizador?: 'ORGANIZADOR' | 'CONGRESSISTA';
         };
         rastreio?: {
             codigo: string;
@@ -48,6 +49,8 @@ type PaymentCodesPreview = {
         final: ILoteAutomatico;
     };
     valoresCentavos: PaymentAmountsSnapshot;
+    perfilUtilizador: 'ORGANIZADOR' | 'CONGRESSISTA';
+    origemPreco: 'LOTE' | 'DESCONTO_PERCENTUAL' | 'ORGANIZADOR_CONFIGURADO';
 };
 
 type PaymentHolderInfo = {
@@ -1059,6 +1062,8 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
     const [isPreviewingCodes, setIsPreviewingCodes] = useState(false);
 
     const hasInformedCodes = Boolean(normalizePaymentCode(codigoDesconto) || normalizePaymentCode(codigoRastreio));
+    const hasOrganizerOffer = codesPreview?.perfilUtilizador === 'ORGANIZADOR';
+    const canStartCheckout = Boolean(loteAtual || hasOrganizerOffer);
 
     const resetCodesPreview = () => {
         setCodesPreview(null);
@@ -1080,11 +1085,6 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
             setCodesMessage({ tone: 'error', text: 'Informe um código de desconto ou de rastreio.' });
             return;
         }
-        if (!loteAtual) {
-            setCodesMessage({ tone: 'error', text: 'Não foi possível identificar o lote atual.' });
-            return;
-        }
-
         setIsPreviewingCodes(true);
         setCodesMessage(null);
         try {
@@ -1094,7 +1094,7 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                 body: JSON.stringify({
                     codigoDesconto: normalizedDiscountCode,
                     codigoRastreio: normalizedTrackingCode,
-                    loteCodigo: loteAtual.codigo,
+                    ...(loteAtual ? { loteCodigo: loteAtual.codigo } : {}),
                 }),
             }, 15_000);
             const result = (await response.json().catch(() => ({}))) as Partial<PaymentCodesPreview> & {
@@ -1111,7 +1111,9 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
             if (preview.codigos.rastreio) setCodigoRastreio(preview.codigos.rastreio.codigo);
             setCodesMessage({
                 tone: 'success',
-                text: preview.codigos.desconto
+                text: preview.perfilUtilizador === 'ORGANIZADOR'
+                    ? 'Código de organizador reconhecido. O preço especial foi aplicado.'
+                    : preview.codigos.desconto
                     ? `Desconto de ${preview.codigos.desconto.percentualDesconto}% aplicado ao resumo.`
                     : 'Código de rastreio reconhecido. O valor da inscrição não foi alterado.',
             });
@@ -1210,7 +1212,7 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                         addressNumber: formData.numero,
                         complement: formData.complemento,
                     },
-                    loteAtualFrontEnd: loteAtual,
+                    ...(loteAtual ? { loteAtualFrontEnd: loteAtual } : {}),
                     codigoDesconto: normalizePaymentCode(codigoDesconto) || null,
                     codigoRastreio: normalizePaymentCode(codigoRastreio) || null,
                 }),
@@ -1262,14 +1264,20 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                         </div>
                         <div className='flex flex-col gap-4'>
                             <h1 className='w-full text-2xl font-bold text-tinta text-center'>
-                                {loteAtual?.nome ? `${loteAtual.nome}` : "Não foi possível identificar o lote atual."}
+                                {loteAtual?.nome ? `${loteAtual.nome}` : "Vagas regulares esgotadas"}
                             </h1>
-                            <div className='text-tinta text-lg'>
-                                <h1 className='inline font-bold text-goles'>Atenção! Para os primeiros {loteAtual?.limiteVagas} participantes</h1> os valores são:
-                            </div>
+                            {loteAtual ? (
+                                <div className='text-tinta text-lg'>
+                                    <h1 className='inline font-bold text-goles'>Atenção! Para os primeiros {loteAtual.limiteVagas} participantes</h1> os valores são:
+                                </div>
+                            ) : (
+                                <div className='bg-amber-50 text-amber-900 p-4 rounded-lg border border-amber-300'>
+                                    As inscrições regulares estão esgotadas. Se você recebeu um código de organizador, informe-o abaixo para acessar a oferta reservada.
+                                </div>
+                            )}
                             <div className='bg-papel p-5 rounded-lg border border-linha flex flex-col gap-3'>
                                 {
-                                    dataPaymentConfig.pagamentosAceitos.map((tipoPagamento: string, index: number) => {
+                                    loteAtual && dataPaymentConfig.pagamentosAceitos.map((tipoPagamento: string, index: number) => {
                                         return (
                                             <div key={index} className='text-tinta'>
                                                 {tipoPagamento === "PIX" && <p className='font-semibold text-[#2f7651]'>- PIX: R$ {loteAtual?.precos.valorPix}</p>}
@@ -1361,7 +1369,9 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                                             <div className='flex flex-wrap gap-2 text-xs font-semibold'>
                                                 {codesPreview.codigos.desconto && (
                                                     <span className='rounded-full bg-[#2f7651]/10 px-3 py-1 text-[#245f41]'>
-                                                        {codesPreview.codigos.desconto.codigo} · {codesPreview.codigos.desconto.percentualDesconto}% de desconto
+                                                        {codesPreview.codigos.desconto.codigo} · {hasOrganizerOffer
+                                                            ? 'oferta de organizador'
+                                                            : `${codesPreview.codigos.desconto.percentualDesconto}% de desconto`}
                                                     </span>
                                                 )}
                                                 {codesPreview.codigos.rastreio && (
@@ -1385,9 +1395,12 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
 
                                 <button
                                     onClick={() => setStep(1)}
-                                    className='w-full mt-2 bg-goles hover:bg-[#8f2323] text-white font-bold py-3 px-4 rounded-lg transition-colors'
+                                    disabled={!canStartCheckout}
+                                    className='w-full mt-2 bg-goles hover:bg-[#8f2323] text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50'
                                 >
-                                    Preencher Informações de Pagamento
+                                    {canStartCheckout
+                                        ? 'Preencher Informações de Pagamento'
+                                        : 'Informe e valide um código de organizador'}
                                 </button>
                             </div>
                         </div>
@@ -1404,9 +1417,9 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                         <h2 className='text-xl font-bold text-tinta mb-4'>Finalizar Pagamento</h2>
 
                         <div className='bg-papel p-4 rounded-lg border border-linha flex flex-col gap-2 mb-4 text-sm'>
-                            <p className='font-bold text-tinta mb-1'>Valores do Lote Atual:</p>
+                            <p className='font-bold text-tinta mb-1'>Valores da oferta:</p>
                             {
-                                dataPaymentConfig.pagamentosAceitos.map((tipoPagamento: string, index: number) => {
+                                loteAtual && dataPaymentConfig.pagamentosAceitos.map((tipoPagamento: string, index: number) => {
                                     return (
                                         <div key={index} className='text-tinta'>
                                             {tipoPagamento === "PIX" && <p className='font-semibold text-[#2f7651]'>- PIX: R$ {loteAtual?.precos.valorPix}</p>}
@@ -1422,7 +1435,9 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                                     <div className='flex flex-wrap gap-2 text-xs font-semibold'>
                                         {codesPreview.codigos.desconto && (
                                             <span className='rounded-full bg-white px-2.5 py-1 text-[#245f41]'>
-                                                {codesPreview.codigos.desconto.percentualDesconto}% de desconto
+                                                {hasOrganizerOffer
+                                                    ? 'Oferta de organizador'
+                                                    : `${codesPreview.codigos.desconto.percentualDesconto}% de desconto`}
                                             </span>
                                         )}
                                         {codesPreview.codigos.rastreio && (

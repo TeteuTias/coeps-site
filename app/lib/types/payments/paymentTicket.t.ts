@@ -3,7 +3,9 @@ import { ILoteAutomatico } from './payment.t';
 import type {
     PaymentAmountsSnapshot,
     PaymentCodeSnapshot,
+    PaymentPriceOrigin,
     PaymentSessionStatus,
+    PaymentUserProfile,
 } from './paymentCode.t';
 
 export type PaymentSessionMethod = "PIX" | "CREDIT_CARD" | "BOLETO" | "DEBIT_CARD";
@@ -30,6 +32,8 @@ export default interface PaymentTicketProps {
     codigoDesconto?: PaymentCodeSnapshot;
     codigoRastreio?: PaymentCodeSnapshot;
     valoresCentavos?: PaymentAmountsSnapshot;
+    perfilUtilizador?: PaymentUserProfile;
+    origemPreco?: PaymentPriceOrigin;
     metodosPagamentoPermitidos?: string[];
     metodoPagamento?: PaymentSessionMethod | null;
     type: "ticket" | "course" | "remote-work-access";

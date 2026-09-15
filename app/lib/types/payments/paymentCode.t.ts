@@ -3,6 +3,11 @@ import type { ILoteAutomatico } from './payment.t';
 
 export type PaymentCodeType = 'DESCONTO' | 'RASTREIO';
 export type PaymentCodeStatus = 'ATIVO' | 'RESERVADO' | 'INATIVO' | 'USADO';
+export type PaymentUserProfile = 'ORGANIZADOR' | 'CONGRESSISTA';
+export type PaymentPriceOrigin =
+    | 'LOTE'
+    | 'DESCONTO_PERCENTUAL'
+    | 'ORGANIZADOR_CONFIGURADO';
 
 export type PaymentAssignmentStatus =
     | 'ABERTA'
@@ -45,6 +50,7 @@ export interface PaymentCodeDocument {
     tipo: PaymentCodeType;
     percentualDesconto?: number;
     responsavel?: PaymentCodeOwner;
+    perfilUtilizador?: PaymentUserProfile;
     status: PaymentCodeStatus;
     reserva?: PaymentCodeReservation;
     validoDe?: Date;
@@ -63,6 +69,7 @@ export interface PaymentCodeSnapshot {
     tipo: PaymentCodeType;
     percentualDesconto?: number;
     responsavel?: PaymentCodeOwner;
+    perfilUtilizador?: PaymentUserProfile;
 }
 
 export interface PaymentAmountsByMethod {
@@ -89,6 +96,8 @@ export interface PaymentCodePreview {
         final: ILoteAutomatico;
     };
     valoresCentavos: PaymentAmountsSnapshot;
+    perfilUtilizador: PaymentUserProfile;
+    origemPreco: PaymentPriceOrigin;
 }
 
 export interface PaymentAssignmentDocument {
@@ -100,6 +109,8 @@ export interface PaymentAssignmentDocument {
     remoteAccessId?: ObjectId;
     codigoDesconto?: PaymentCodeSnapshot;
     codigoRastreio?: PaymentCodeSnapshot;
+    perfilUtilizador?: PaymentUserProfile;
+    origemPreco?: PaymentPriceOrigin;
     valoresCentavos: PaymentAmountsSnapshot;
     valorSelecionadoCentavos?: {
         original: number;

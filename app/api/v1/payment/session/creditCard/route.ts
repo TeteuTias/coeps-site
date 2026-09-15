@@ -234,23 +234,29 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
         const expiryYear =
             shortExpiryYear?.length === 2 ? `20${shortExpiryYear}` : shortExpiryYear;
         const installmentCount = Number(selectedInstallment.totalParcelas);
-        const totalValue = Number(
-            (Number(selectedInstallment.valorCadaParcela) * installmentCount).toFixed(2),
-        );
         const originalInstallment = existingSession.paymentConfigOriginal?.precos?.parcelamentos?.find(
             (installment) => Number(installment.codigo) === Number(data.idPagamento),
         );
-        const finalCents = Math.round(totalValue * 100);
-        const installmentValueCentavos = Math.round(
-            Number(selectedInstallment.valorCadaParcela) * 100,
+        const snapshotFinalCents = Number(existingSession.valoresCentavos?.final?.CREDIT_CARD);
+        const calculatedFinalCents =
+            Math.round(Number(selectedInstallment.valorCadaParcela) * 100) * installmentCount;
+        const finalCents = Number.isInteger(snapshotFinalCents) && snapshotFinalCents >= 0
+            ? snapshotFinalCents
+            : calculatedFinalCents;
+        const totalValue = finalCents / 100;
+        const installmentValueCentavos = Math.round(finalCents / installmentCount);
+        const snapshotOriginalCents = Number(
+            existingSession.valoresCentavos?.original?.CREDIT_CARD,
         );
-        const originalCents = originalInstallment
-            ? Math.round(Number(originalInstallment.valorCadaParcela) * 100) *
-              Number(originalInstallment.totalParcelas)
-            : finalCents;
+        const originalCents = Number.isInteger(snapshotOriginalCents) && snapshotOriginalCents >= 0
+            ? snapshotOriginalCents
+            : originalInstallment
+                ? Math.round(Number(originalInstallment.valorCadaParcela) * 100) *
+                    Number(originalInstallment.totalParcelas)
+                : finalCents;
         const selectedValueSnapshot = {
             original: originalCents,
-            desconto: originalCents - finalCents,
+            desconto: Math.max(0, originalCents - finalCents),
             final: finalCents,
         };
         const provisionalInstallmentPlan = installmentCount > 1

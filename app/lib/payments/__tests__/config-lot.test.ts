@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb';
 import { getActivePaymentConfig, getCurrentAutomaticLot } from '../config.ts';
 
 test('conta comprador moderno uma unica vez e exige compraId ausente no legado', async () => {
-    const calls: Array<{ collection: string; filter: Record<string, unknown> }> = [];
+    const calls: Array<{ collection: string; filter?: Record<string, unknown>; pipeline?: unknown[] }> = [];
     const counts: Record<string, number[]> = {
         usuarios: [1],
         'pagamentos.atribuicoes': [1],
@@ -17,15 +17,11 @@ test('conta comprador moderno uma unica vez e exige compraId ausente no legado',
                     calls.push({ collection: name, filter });
                     return counts[name].shift() ?? 0;
                 },
-                aggregate(pipeline: Array<Record<string, unknown>>) {
-                    const filter = (pipeline[0]?.$match ?? {}) as Record<string, unknown>;
-                    calls.push({ collection: name, filter });
-                    const total = counts[name].shift() ?? 0;
+                aggregate(pipeline: unknown[]) {
+                    calls.push({ collection: name, pipeline });
                     return {
                         async toArray() {
-                            return total > 0
-                                ? [{ [name === 'pagamentos.atribuicoes' ? 'totalVagas' : 'totalSessoes']: total }]
-                                : [];
+                            return [{ total: counts[name].shift() ?? 0 }];
                         },
                     };
                 },
@@ -47,14 +43,22 @@ test('conta comprador moderno uma unica vez e exige compraId ausente no legado',
 
     assert.equal(lot?.codigo, 2);
     const legacyCall = calls.find((call) => call.collection === 'usuarios');
-    assert.deepEqual(legacyCall?.filter['pagamento.compraId'], { $exists: false });
-    const assignmentCall = calls.find((call) => call.collection === 'pagamentos.atribuicoes');
-    assert.deepEqual(assignmentCall?.filter.$or, [
+    assert.deepEqual(legacyCall?.filter?.['pagamento.compraId'], { $exists: false });
+    const assignmentPipeline = calls.find(
+        (call) => call.collection === 'pagamentos.atribuicoes',
+    )?.pipeline as Array<Record<string, unknown>> | undefined;
+    assert.deepEqual((assignmentPipeline?.[0]?.$match as Record<string, unknown>)?.$or, [
         { type: 'ticket' },
         { type: { $exists: false } },
     ]);
-    const sessionCall = calls.find((call) => call.collection === 'pagamentos.sessoes');
-    assert.deepEqual(sessionCall?.filter.$and?.[0], {
+    assert.deepEqual(assignmentPipeline?.at(-2), {
+        $match: { perfilUtilizadorResolvido: { $ne: 'ORGANIZADOR' } },
+    });
+    const sessionPipeline = calls.find(
+        (call) => call.collection === 'pagamentos.sessoes',
+    )?.pipeline as Array<Record<string, unknown>> | undefined;
+    const sessionMatch = sessionPipeline?.[0]?.$match as Record<string, unknown>;
+    assert.deepEqual((sessionMatch.$and as Array<Record<string, unknown>>)?.[0], {
         $or: [{ type: 'ticket' }, { type: { $exists: false } }],
     });
 });
