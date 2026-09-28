@@ -16,6 +16,14 @@ import './style.css';
  */
 const EDITAL_TRABALHOS_URL = '/editais/edital-trabalhos-cientificos-i-cieps.pdf';
 
+/**
+ * Documentos servidos pelo próprio domínio (public/editais), listados em
+ * "Resultados e documentos liberados" junto com os que vêm do banco.
+ */
+const DOCUMENTOS_DO_SITE = [
+  { titulo: 'Comunicado aos participantes - Relato de Caso (22/09/2026)', link: '/editais/comunicado-relato-de-caso-22-09-2026.pdf' },
+];
+
 function formatShortDate(value?: string) {
   if (!value) return '--/--';
   const date = new Date(value);
@@ -66,6 +74,8 @@ export default function Trabalhos() {
       active = false;
     };
   }, []);
+
+  const publicacoes = [...(config?.resultados ?? []), ...DOCUMENTOS_DO_SITE];
 
   return (
     <main className="trabalhos-page">
@@ -134,10 +144,10 @@ export default function Trabalhos() {
           <div className="trabalhos-section-heading"><span className="cieps-kicker">Publicações</span><h2 className="cieps-display">Resultados e documentos liberados.</h2></div>
           {loading ? (
             <div className="trabalhos-inline-state" role="status"><Loader2 className="spin" size={18} aria-hidden="true" /><strong>Carregando publicações</strong></div>
-          ) : config?.resultados?.length ? (
+          ) : publicacoes.length ? (
             <div className="trabalhos-publication-list">
-              {config.resultados.map((publication) => (
-                <Link key={publication.link} href={publication.link} target="_blank" rel="noopener noreferrer"><FileText size={18} aria-hidden="true" /><span>{publication.titulo}</span><ExternalLink size={16} aria-hidden="true" /></Link>
+              {publicacoes.map((publication) => (
+                <Link key={publication.link} href={publication.link} prefetch={false} target="_blank" rel="noopener noreferrer"><FileText size={18} aria-hidden="true" /><span>{publication.titulo}</span><ExternalLink size={16} aria-hidden="true" /></Link>
               ))}
             </div>
           ) : (
