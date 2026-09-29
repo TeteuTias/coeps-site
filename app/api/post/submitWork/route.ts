@@ -15,6 +15,7 @@ import {
 import { getActivePaymentConfig, getEditionId } from '@/lib/payments/config';
 import { runPaymentTransaction } from '@/lib/payments/transactions';
 import { findRemoteWorkAccess, REMOTE_WORK_SUBMISSION_LOCKS_COLLECTION } from '@/lib/remote-work-access';
+import { validateWorkFile, validateWorkFileSlots, workSubmissionIsOpen } from '@/lib/academic-work-files';
 
 class SubmissionError extends Error {
     constructor(public readonly code: string, message: string, public readonly status: number) {
@@ -149,8 +150,7 @@ export const POST: any = withApiAuthRequired(async function POST(request) {
             return NextResponse.json({ temPagante, authorized: temPagante });
         }
 
-        // MODIFICAÇÃO: Aceitar tanto fileId (compatibilidade) quanto fileIds (novo)
-        const { titulo, modalidadeId, autores, fileId, fileIds, topicos } = body;
+        const { titulo, modalidadeId, autores, topicos } = body;
 
         //return Response.json({ message: "" }, { status: 500 })
 
@@ -162,6 +162,9 @@ export const POST: any = withApiAuthRequired(async function POST(request) {
         if (!trabalhoProps) {
             return NextResponse.json({ message: 'As configurações dos trabalhos não foram encontradas.' }, { status: 404 });
         }
+        if (!workSubmissionIsOpen(trabalhoProps)) {
+            throw new SubmissionError('submission_closed', 'O período de submissão está fechado. Atualize a página para consultar o prazo.', 403);
+        }
         const modalidadeAtual = trabalhoProps.modalidades?.find(m => `${m._id}` === `${modalidadeId}`);
         if (!modalidadeAtual) {
             return NextResponse.json({ message: 'A modalidade selecionada não foi encontrada. Caso o erro persista, entre em contato com o Suporte.' }, { status: 404 });
@@ -172,17 +175,15 @@ export const POST: any = withApiAuthRequired(async function POST(request) {
         }
         //
 
-        // MODIFICAÇÃO: Determinar quais IDs de arquivo usar
-        let arquivosIds;
-        if (fileIds && Array.isArray(fileIds) && fileIds.length > 0) {
-            // Novo formato: múltiplos arquivos
-            arquivosIds = fileIds;
-        } else if (fileId) {
-            // Formato antigo: um único arquivo (compatibilidade)
-            arquivosIds = [fileId];
-        } else {
-            return NextResponse.json({ error: 'Nenhum arquivo foi fornecido.' }, { status: 400 });
+        if (body.clientVersion !== 2) {
+            throw new SubmissionError('refresh_required', 'Atualize a página e envie novamente os arquivos exigidos pela modalidade.', 409);
         }
+        const requirements = modalidadeAtual.requisitos_arquivos ?? [];
+        const attachments = body.attachments as Array<{ slotIndex: number; fileId: string }>;
+        const slotsError = validateWorkFileSlots(attachments, requirements);
+        if (slotsError) throw new SubmissionError('invalid_attachments', slotsError, 422);
+        const orderedAttachments = [...attachments].sort((a, b) => a.slotIndex - b.slotIndex);
+        const arquivosIds = orderedAttachments.map(attachment => attachment.fileId);
 
         if (participationMode === 'REMOTE') {
             if (modalidadeAtual.permite_participacao_remota !== true) {
@@ -240,14 +241,24 @@ export const POST: any = withApiAuthRequired(async function POST(request) {
             }
 
             const arquivosInfo = await validarArquivos(db, arquivosIds, userId, mongoSession);
-            const arquivosData = arquivosInfo.map(arquivo => ({
-                fileId: arquivo._id,
-                fileName: arquivo.filename,
-                url: arquivo.url,
-                originalName: arquivo.originalName || arquivo.filename,
-                size: arquivo.size || 0,
-                uploadDate: arquivo.uploadDate || now,
-            }));
+            const arquivosById = new Map(arquivosInfo.map(arquivo => [arquivo._id.toString(), arquivo]));
+            const arquivosData = orderedAttachments.map(({ slotIndex, fileId }) => {
+                const arquivo = arquivosById.get(fileId);
+                if (!arquivo || arquivo.purpose !== 'submission' || !arquivo.contentType) {
+                    throw new SubmissionError('invalid_file_metadata', 'Um arquivo não foi confirmado pelo servidor. Atualize a página e envie-o novamente.', 422);
+                }
+                const fileError = validateWorkFile({
+                    name: arquivo.originalName || arquivo.filename,
+                    size: arquivo.size,
+                    contentType: arquivo.contentType,
+                }, requirements[slotIndex], modalidadeAtual.limite_maximo_de_postagem);
+                if (fileError) throw new SubmissionError('invalid_file_for_slot', fileError, 422);
+                return {
+                    slotIndex, fileId: arquivo._id, fileName: arquivo.originalName, url: arquivo.url,
+                    originalName: arquivo.originalName, size: arquivo.size,
+                    uploadDate: arquivo.uploadDate || now,
+                };
+            });
             let purchaserLinked = false;
             const storedAuthors = autores.map((author) => {
                 const isPurchaser = participationMode === 'REMOTE' &&
