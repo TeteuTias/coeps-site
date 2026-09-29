@@ -239,7 +239,7 @@ function SubmissionForm() {
     }
     const totalChunks = Math.ceil(file.size / chunkSize);
     const chunkIds: string[] = [];
-    const uniqueFileName = `${crypto.randomUUID()}_${file.name}`;
+    const uniqueFileName = crypto.randomUUID();
 
     try {
       for (let i = 0; i < totalChunks; i++) {
