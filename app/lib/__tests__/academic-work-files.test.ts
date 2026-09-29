@@ -38,11 +38,12 @@ test('abertura e fechamento usam horário completo do prazo', () => {
     const config = {
         isOpen: true,
         data_inicio_submissao: '2026-09-05T09:00:00-03:00',
-        data_limite_submissao: '2026-10-05T23:59:59-03:00',
+        data_limite_submissao: '2026-10-12T23:59:59-03:00',
     };
     assert.equal(workSubmissionIsOpen(config, new Date('2026-09-05T08:59:59-03:00')), false);
     assert.equal(workSubmissionIsOpen(config, new Date('2026-09-05T09:00:00-03:00')), true);
-    assert.equal(workSubmissionIsOpen(config, new Date('2026-10-05T23:59:59-03:00')), true);
-    assert.equal(workSubmissionIsOpen(config, new Date('2026-10-06T00:00:00-03:00')), false);
+    assert.equal(workSubmissionIsOpen(config, new Date('2026-10-06T00:00:00-03:00')), true);
+    assert.equal(workSubmissionIsOpen(config, new Date('2026-10-12T23:59:59-03:00')), true);
+    assert.equal(workSubmissionIsOpen(config, new Date('2026-10-13T00:00:00-03:00')), false);
     assert.equal(workSubmissionIsOpen({ ...config, isOpen: false }, new Date('2026-09-29T12:00:00-03:00')), false);
 });

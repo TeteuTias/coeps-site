@@ -6,6 +6,7 @@ import { Button, StatusBanner } from '@/components/cieps';
 import { IAcademicWorksProps } from '@/lib/types/academicWorks/academicWorks.t';
 import { fetchWithTimeout } from '@/lib/client/fetchWithTimeout';
 import { buildAuthEntryPath } from '@/lib/auth-migration-notice';
+import { workSubmissionIsOpen } from '@/lib/academic-work-files';
 import { ArrowRight, CalendarDays, Compass, ExternalLink, FileText, Loader2, Send, Sparkles } from 'lucide-react';
 import './style.css';
 
@@ -29,7 +30,7 @@ function formatShortDate(value?: string) {
   if (!value) return '--/--';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '--/--';
-  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' });
 }
 
 async function requestWorksConfig() {
@@ -77,6 +78,7 @@ export default function Trabalhos() {
   }, []);
 
   const publicacoes = [...(config?.resultados ?? []), ...DOCUMENTOS_DO_SITE];
+  const submissionOpen = config ? workSubmissionIsOpen(config) : false;
 
   return (
     <main className="trabalhos-page">
@@ -91,8 +93,8 @@ export default function Trabalhos() {
         </div>
         <aside className="trabalhos-hero-card cieps-surface">
           <Sparkles size={22} aria-hidden="true" />
-          <strong>{config?.isOpen ? 'Submissões abertas' : 'Edital em acompanhamento'}</strong>
-          <span>{loading ? 'Verificando o status atual.' : config?.isOpen ? 'Envie seu trabalho e acompanhe os prazos.' : 'A página permanece pronta para novas atualizações.'}</span>
+          <strong>{submissionOpen ? 'Submissões abertas' : 'Edital em acompanhamento'}</strong>
+          <span>{loading ? 'Verificando o status atual.' : submissionOpen ? 'Envie seu trabalho e acompanhe os prazos.' : 'A página permanece pronta para novas atualizações.'}</span>
         </aside>
       </section>
 
@@ -112,9 +114,9 @@ export default function Trabalhos() {
           {loading ? (
             <div className="trabalhos-inline-state" role="status"><Loader2 className="spin" size={18} aria-hidden="true" /><strong>Carregando informações</strong></div>
           ) : (
-            <strong>{config?.isOpen ? 'Submissões abertas' : 'Submissões encerradas'}</strong>
+            <strong>{submissionOpen ? 'Submissões abertas' : 'Submissões encerradas'}</strong>
           )}
-          <p>{error ? 'Tente novamente para consultar os detalhes oficiais.' : config?.isOpen ? 'Consulte edital, guia e painel do participante para enviar.' : 'Os resultados e as próximas chamadas seguem publicados nesta página.'}</p>
+          <p>{error ? 'Tente novamente para consultar os detalhes oficiais.' : submissionOpen ? 'Consulte edital, guia e painel do participante para enviar.' : 'Os resultados e as próximas chamadas seguem publicados nesta página.'}</p>
         </article>
         <article className="cieps-surface trabalhos-date-card"><CalendarDays size={20} aria-hidden="true" /><strong>{formatShortDate(config?.data_limite_submissao)}</strong><span>Prazo de submissão</span></article>
         <article className="cieps-surface trabalhos-date-card"><CalendarDays size={20} aria-hidden="true" /><strong>{formatShortDate(config?.data_publicacao_resultados)}</strong><span>Publicação de resultados</span></article>
@@ -132,7 +134,7 @@ export default function Trabalhos() {
             A submissão permanece centralizada no painel do congressista, com materiais de apoio publicados
             nesta página sempre que estiverem disponíveis.
           </p>
-          {config?.isOpen && (
+          {submissionOpen && (
             <div className="trabalhos-action-row">
               <a href={EDITAL_TRABALHOS_URL} target="_blank" rel="noopener noreferrer" className="cieps-button-outline"><FileText size={18} aria-hidden="true" />Ver edital</a>
               {config.link_guia && <a href={config.link_guia} target="_blank" rel="noopener noreferrer" className="cieps-button-outline"><Compass size={18} aria-hidden="true" />Ver guia</a>}
