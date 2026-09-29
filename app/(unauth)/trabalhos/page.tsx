@@ -21,6 +21,7 @@ const EDITAL_TRABALHOS_URL = '/editais/edital-trabalhos-cientificos-i-cieps.pdf'
  * "Resultados e documentos liberados" junto com os que vêm do banco.
  */
 const DOCUMENTOS_DO_SITE = [
+  { titulo: 'Comunicado aos participantes - Prorrogação do prazo de submissão (28/09/2026)', link: '/editais/comunicado-prorrogacao-submissao-28-09-2026.pdf' },
   { titulo: 'Comunicado aos participantes - Relato de Caso (22/09/2026)', link: '/editais/comunicado-relato-de-caso-22-09-2026.pdf' },
 ];
 
