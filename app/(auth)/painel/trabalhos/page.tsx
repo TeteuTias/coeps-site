@@ -4,7 +4,7 @@ import { upload } from '@vercel/blob/client';
 // pages/index.js
 import { useEffect, useState } from 'react';
 import WarningModal from '@/app/components/WarningModal';
-import { isTodayBetweenDates } from '@/lib/isTodayBetweenDates';
+import { workSubmissionIsOpen } from '@/lib/academic-work-files';
 import { IAcademicWorksProps, IAcademicWorks } from '@/lib/types/academicWorks/academicWorks.t';
 import { useRouter } from 'next/navigation';
 import {
@@ -30,7 +30,7 @@ import { fetchWithTimeout, readJsonResponse } from '@/lib/client/fetchWithTimeou
 function formatSubmissionDate(value: string) {
     const date = new Date(value)
     if (Number.isNaN(date.getTime())) return 'Data a confirmar'
-    return date.toLocaleDateString('pt-BR')
+    return date.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
 }
 
 //
@@ -117,7 +117,7 @@ export default function Home() {
                                     <p>Acompanhe nossas redes sociais para receber novidades.</p>
                                 </div>
                                 :
-                                isTodayBetweenDates(trabalhosConfigs.data_inicio_submissao, trabalhosConfigs.data_limite_submissao) ?
+                                workSubmissionIsOpen(trabalhosConfigs) ?
                                     <div>
                                         <h1>O período de submissão de trabalhos está aberto!</h1>
                                         <div className='datas-container'>

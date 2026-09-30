@@ -2,11 +2,11 @@
 'use client';
 
 // Importações do React e Next.js
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 
 //
 
-import { isTodayBetweenDates } from '@/lib/isTodayBetweenDates';
+import { normalizedWorkFileFormats, validateWorkFile, workSubmissionIsOpen } from '@/lib/academic-work-files';
 // --- Função Auxiliar para Retry com Tipagem Correta ---
 import { Clock, FileText, CheckCircle, AlertCircle, Loader, Info, UserPlus, Trash2, BookOpen, Target, Microscope, MessageSquare, Award, Hash, BookMarked, Save, ArrowLeft, X, Plus, Link, Loader2 } from 'lucide-react';
 import { IAcademicWorksProps } from '@/lib/types/academicWorks/academicWorks.t';
@@ -32,6 +32,7 @@ interface Autor {
 // MODIFICAÇÃO: Interface para múltiplos arquivos por quadrado
 interface ArquivoUpload {
   id: string;
+  storedId?: string;
   fileName: string;
   originalName: string;
   size: number;
@@ -58,16 +59,6 @@ interface TopicosTrabalho {
 }
 
 
-// Função para gerar um nome de arquivo único, evitando conflitos no armazenamento.
-const generateUniqueFileName = (originalName: string): string => {
-  const timestamp = Date.now();
-  const randomString = Math.random().toString(36).substring(2, 8);
-  const extension = originalName.split('.').pop();
-  const nameWithoutExtension = originalName.replace(/\.[^/.]+$/, '');
-
-  return `${nameWithoutExtension}_${timestamp}_${randomString}.${extension}`;
-};
-
 // Função para formatar tamanho do arquivo
 const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 Bytes';
@@ -76,26 +67,6 @@ const formatFileSize = (bytes: number): string => {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
-
-// Função de fetch com retentativas para maior resiliência da rede.
-async function fetchWithRetry(url: string, options: RequestInit, retries = 3): Promise<Response> {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const response = await fetchWithTimeout(url, options, 60_000);
-      if (response.status >= 500) {
-        throw new Error(`Server error: ${response.status}`);
-      }
-      return response;
-    } catch (error) {
-      if (i === retries - 1) {
-        throw error;
-      }
-      const delay = Math.pow(2, i) * 1000;
-      await new Promise(res => setTimeout(res, delay));
-    }
-  }
-  throw new Error("A operação falhou após múltiplas tentativas.");
-}
 
 // ===================================================================
 // COMPONENTE PRINCIPAL DA PÁGINA (Apenas Autenticação e Layout)
@@ -118,9 +89,10 @@ function SubmissionForm() {
   const [autores, setAutores] = useState<Autor[]>([{ id: 0, nome: '', email: '', cpf: '', isOrientador: false }]);
 
   // MODIFICAÇÃO: Estado para múltiplos arquivos por quadrado
-  const [arquivos, setArquivos] = useState<ArquivoUpload[]>([]);
   const [slotRequisitos, setSlotRequisitos] = useState<IAcademicWorksProps["modalidades"][0]["requisitos_arquivos"]>([]);
   const [slotFiles, setSlotFiles] = useState<Array<ArquivoUpload | null>>([]);
+  const slotFilesRef = useRef<Array<ArquivoUpload | null>>([]);
+  const submittingRef = useRef(false);
 
   const [formError, setFormError] = useState<string | null>(null);
   const [trabalhosProps, setTrabalhosProps] = useState<IAcademicWorksProps | null>(null)
@@ -140,7 +112,42 @@ function SubmissionForm() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [requestVersion, setRequestVersion] = useState(0);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const setSlots = useCallback((next: Array<ArquivoUpload | null>) => {
+    slotFilesRef.current = next;
+    setSlotFiles(next);
+  }, []);
+
+  const deletePendingFile = useCallback(async (storedId: string) => {
+    try {
+      const response = await fetchWithTimeout('/api/delete/pendingWorkFile', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileId: storedId }),
+      });
+      await readJsonResponse(response);
+    } catch {
+      setFormError('O arquivo saiu do formulário, mas não foi possível removê-lo do servidor. Você pode escolher outro arquivo.');
+    }
+  }, []);
+
+  const deletePendingChunks = async (chunkIds: string[]) => {
+    if (!chunkIds.length) return;
+    try {
+      const response = await fetchWithTimeout('/api/delete/pendingWorkFile', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chunkIds }),
+      }, 60_000);
+      await readJsonResponse(response);
+    } catch (error) {
+      console.error('Não foi possível limpar partes de um upload interrompido:', error);
+    }
+  };
+
+  const clearSlots = useCallback((count: number) => {
+    for (const file of slotFilesRef.current) {
+      if (file?.storedId) void deletePendingFile(file.storedId);
+    }
+    setSlots(Array.from({ length: count }, () => null));
+  }, [deletePendingFile, setSlots]);
 
   // Efeito para verificar o status do usuário logado e preencher seus dados.
   useEffect(() => {
@@ -166,10 +173,7 @@ function SubmissionForm() {
         const modalidadeSelecionada = availableModalities?.[0];
         setModalidade(modalidadeSelecionada);
         setSlotRequisitos(modalidadeSelecionada?.requisitos_arquivos ?? []);
-        setSlotFiles((modalidadeSelecionada?.requisitos_arquivos?.length ?? 0) > 0
-          ? Array.from({ length: modalidadeSelecionada!.requisitos_arquivos.length }, () => null)
-          : []
-        );
+        clearSlots(modalidadeSelecionada?.requisitos_arquivos?.length ?? 0);
 
         const authenticatedProfile = {
           nome: data.informacoes_usuario?.nome || data.participacaoRemota?.purchaser?.name || data.authUser?.name || '',
@@ -196,33 +200,30 @@ function SubmissionForm() {
     };
     verificarStatusUsuario()
     //checkAuthStatus();
-  }, [requestVersion]);
+  }, [requestVersion, clearSlots]);
 
   // Função para atualizar progresso de um arquivo específico
   const updateFileProgress = (fileId: string, progress: number, status: ArquivoUpload['status'], error?: string) => {
-    setArquivos(prev => prev.map(arquivo =>
-      arquivo.id === fileId
-        ? { ...arquivo, progress, status, error }
-        : arquivo
-    ));
+    const next = slotFilesRef.current.map(arquivo => arquivo?.id === fileId
+      ? { ...arquivo, progress, status, error } : arquivo);
+    setSlots(next);
   };
 
-  const uploadSingleFile = async (file: File, fileName: string, fileId: string): Promise<string | null> => {
+  const uploadSingleFile = async (file: File, fileId: string): Promise<string | null> => {
     const formData = new FormData();
     formData.append('file', file);
-    const uniqueFileName = generateUniqueFileName(fileName);
-    formData.append('originalFileName', uniqueFileName);
+    formData.append('originalFileName', file.name);
+    formData.append('purpose', 'submission');
 
     try {
       updateFileProgress(fileId, 30, 'uploading');
-      const response = await fetchWithRetry('/api/post/uploadBlobSingle', { method: 'POST', body: formData });
+      const response = await fetchWithTimeout('/api/post/uploadBlobSingle', { method: 'POST', body: formData }, 120_000);
       updateFileProgress(fileId, 70, 'uploading');
 
       const result = await readJsonResponse<any>(response);
       if (!result) throw new Error('A API de upload retornou uma resposta vazia.');
       if (!result.data || !result.data._id) throw new Error('A API de upload não retornou um ID de arquivo válido.');
 
-      updateFileProgress(fileId, 100, 'completed');
       return result.data._id;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido.';
@@ -231,15 +232,20 @@ function SubmissionForm() {
     }
   };
 
-  const uploadChunkedFile = async (file: File, fileName: string, fileId: string): Promise<string | null> => {
-    const totalChunks = Math.ceil(file.size / modalidade.chunk_tamanho);
+  const uploadChunkedFile = async (file: File, fileId: string, chunkSize: number): Promise<string | null> => {
+    if (!Number.isInteger(chunkSize) || chunkSize <= 0 || chunkSize > 10 * 1024 * 1024) {
+      updateFileProgress(fileId, 0, 'error', 'Configuração de partes inválida. Atualize a página.');
+      return null;
+    }
+    const totalChunks = Math.ceil(file.size / chunkSize);
     const chunkIds: string[] = [];
-    const uniqueFileName = generateUniqueFileName(fileName);
+    const uniqueFileName = crypto.randomUUID();
 
     try {
       for (let i = 0; i < totalChunks; i++) {
-        const start = i * modalidade.chunk_tamanho;
-        const end = Math.min(start + modalidade.chunk_tamanho, file.size);
+        if (!slotFilesRef.current.some(slot => slot?.id === fileId)) throw new Error('Upload cancelado.');
+        const start = i * chunkSize;
+        const end = Math.min(start + chunkSize, file.size);
         const chunk = file.slice(start, end);
 
         const formData = new FormData();
@@ -248,60 +254,46 @@ function SubmissionForm() {
         formData.append('totalChunks', totalChunks.toString());
         formData.append('fileName', uniqueFileName);
 
-        const response = await fetchWithRetry('/api/post/uploadBlobChunk', { method: 'POST', body: formData });
+        const response = await fetchWithTimeout('/api/post/uploadBlobChunk', { method: 'POST', body: formData }, 120_000);
         const result = await readJsonResponse<any>(response);
         if (!result) throw new Error(`A API não confirmou o chunk ${i + 1}.`);
         chunkIds.push(result.chunkId);
         updateFileProgress(fileId, ((i + 1) / totalChunks) * 90, 'uploading');
       }
 
-      const reconstructResponse = await fetchWithRetry('/api/post/reconstructBlobFile', {
+      if (!slotFilesRef.current.some(slot => slot?.id === fileId)) throw new Error('Upload cancelado.');
+
+      const reconstructResponse = await fetchWithTimeout('/api/post/reconstructBlobFile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chunkFileName: uniqueFileName, finalFileName: uniqueFileName, chunkIds, totalSize: file.size }),
-      });
+        body: JSON.stringify({ chunkFileName: uniqueFileName, finalFileName: uniqueFileName, originalName: file.name, purpose: 'submission', chunkIds, totalSize: file.size }),
+      }, 300_000);
 
       const result = await readJsonResponse<any>(reconstructResponse);
       if (!result) throw new Error('A API de reconstrução retornou uma resposta vazia.');
       if (!result.data || !result.data._id) throw new Error('A API de reconstrução não retornou um ID válido.');
 
-      updateFileProgress(fileId, 100, 'completed');
       return result.data._id;
     } catch (error) {
+      void deletePendingChunks(chunkIds);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido.';
       updateFileProgress(fileId, 0, 'error', errorMessage);
       return null;
     }
   };
 
-  // MODIFICAÇÃO: Função para validar formato por slot
-  const fileExt = (name: string) => {
-    const parts = name.split('.');
-    if (parts.length < 2) return '';
-    return '.' + parts.pop()!.toLowerCase();
-  };
-
   const validateFileFormatForSlot = (slotIndex: number, file: File): string | null => {
     const req = slotRequisitos?.[slotIndex];
     if (!req) return 'Requisito ausente para este slot.';
-    const ext = fileExt(file.name);
-    const allowed = req.formatos.map(f => f.toLowerCase());
-    if (!ext || !allowed.includes(ext)) {
-      return `Arquivo do slot ${slotIndex + 1} inválido. Formatos permitidos: ${req.formatos.join(', ')}.`;
-    }
-    return null;
+    return validateWorkFile(file, req, modalidade?.limite_maximo_de_postagem ?? 0);
   };
 
   const removeSlotFile = (slotIndex: number) => {
-    const slotFile = slotFiles[slotIndex];
-    if (slotFile) {
-      setArquivos(prev => prev.filter(a => a.id !== slotFile.id));
-    }
-    setSlotFiles(prev => {
-      const next = [...prev];
-      next[slotIndex] = null;
-      return next;
-    });
+    const slotFile = slotFilesRef.current[slotIndex];
+    const next = [...slotFilesRef.current];
+    next[slotIndex] = null;
+    setSlots(next);
+    if (slotFile?.storedId) void deletePendingFile(slotFile.storedId);
   };
 
   const handleSlotFileUpload = async (slotIndex: number, file: File) => {
@@ -316,13 +308,9 @@ function SubmissionForm() {
       return;
     }
 
-    if (file.size > modalidade.limite_maximo_de_postagem) {
-      setFormError(`O arquivo "${file.name}" excede o limite de ${modalidade.limite_maximo_de_postagem / 1024 / 1024}MB.`);
-      return;
-    }
-
-    // Permite trocar o arquivo do slot, substituindo o anterior
-    if (slotFiles[slotIndex]) {
+    const validationError = validateFileFormatForSlot(slotIndex, file);
+    if (validationError) { setFormError(validationError); return; }
+    if (slotFilesRef.current[slotIndex]) {
       removeSlotFile(slotIndex);
     }
 
@@ -338,42 +326,25 @@ function SubmissionForm() {
       progress: 0
     };
 
-    setArquivos(prev => [...prev, newSlotFile]);
-    setSlotFiles(prev => {
-      const next = [...prev];
-      next[slotIndex] = newSlotFile;
-      return next;
-    });
+    const next = [...slotFilesRef.current];
+    next[slotIndex] = newSlotFile;
+    setSlots(next);
 
-    const uploadFunction = file.size > modalidade.chunk_limite ? uploadChunkedFile : uploadSingleFile;
-    const uploadedFileId = await uploadFunction(file, file.name, fileId);
+    const uploadedFileId = file.size > modalidade.chunk_limite
+      ? await uploadChunkedFile(file, fileId, modalidade.chunk_tamanho)
+      : await uploadSingleFile(file, fileId);
 
     if (!uploadedFileId) {
-      setSlotFiles(prev => {
-        const next = [...prev];
-        next[slotIndex] = { ...(next[slotIndex] as ArquivoUpload), status: 'error' };
-        return next;
-      });
       return;
     }
 
-    setSlotFiles(prev => {
-      const next = [...prev];
-      next[slotIndex] = {
-        ...(next[slotIndex] as ArquivoUpload),
-        id: uploadedFileId,
-        status: 'completed',
-        progress: 100
-      };
-      return next;
-    });
-
-    setArquivos(prev => prev.map(a => a.id === fileId ? { ...a, id: uploadedFileId, status: 'completed', progress: 100 } : a));
-  };
-
-  // NOVA FUNÇÃO: Remover arquivo da lista
-  const removeFile = (fileId: string) => {
-    setArquivos(prev => prev.filter(arquivo => arquivo.id !== fileId));
+    if (slotFilesRef.current[slotIndex]?.id !== fileId) {
+      void deletePendingFile(uploadedFileId);
+      return;
+    }
+    const completed = [...slotFilesRef.current];
+    completed[slotIndex] = { ...completed[slotIndex]!, storedId: uploadedFileId, status: 'completed', progress: 100 };
+    setSlots(completed);
   };
 
   // Função para validar autores pagantes antes de prosseguir
@@ -422,32 +393,13 @@ function SubmissionForm() {
       return;
     }
 
-    // MODIFICAÇÃO: Validar uploads por slot (1 arquivo por requisito)
-    const arquivosCompletos = arquivos.filter(arquivo => arquivo.status === 'completed');
-
     if (!slotRequisitos.length) {
       setFormError('Configuração de requisitos não carregada.');
       return;
     }
 
-    // Permite apenas 1 arquivo por slot, então cobramos conclusão para cada slot que tenha arquivo selecionado.
-    if (arquivosCompletos.length === 0) {
-      setFormError('É obrigatório anexar pelo menos um arquivo.');
-      return;
-    }
-
-    const slotCount = slotRequisitos.length;
-    const slotFilesProvided = slotFiles.filter(Boolean).length;
-
-    if (slotFilesProvided === 0) {
-      setFormError('É obrigatório anexar pelo menos um arquivo.');
-      return;
-    }
-
-    // Se o usuário selecionou um arquivo em algum slot, ele precisa estar completo.
-    const anyIncomplete = slotFiles.some(f => f && f.status !== 'completed');
-    if (anyIncomplete) {
-      setFormError('Por favor, aguarde a conclusão do upload dos arquivos selecionados.');
+    if (slotFiles.length !== slotRequisitos.length || slotFiles.some(f => !f || f.status !== 'completed' || !f.storedId)) {
+      setFormError('Envie e aguarde a conclusão de um arquivo para cada requisito.');
       return;
     }
 
@@ -455,7 +407,7 @@ function SubmissionForm() {
     for (let idx = 0; idx < slotFiles.length; idx++) {
       const f = slotFiles[idx];
       if (!f) continue;
-      const validationError = validateFileFormatForSlot(idx, { name: f.originalName } as File);
+      const validationError = validateWorkFile({ name: f.originalName, size: f.size }, slotRequisitos[idx], modalidade.limite_maximo_de_postagem);
       if (validationError) {
         setFormError(validationError);
         return;
@@ -513,10 +465,7 @@ function SubmissionForm() {
     const selected = available?.[0];
     setModalidade(selected);
     setSlotRequisitos(selected?.requisitos_arquivos ?? []);
-    setSlotFiles((selected?.requisitos_arquivos?.length ?? 0) > 0
-      ? Array.from({ length: selected!.requisitos_arquivos.length }, () => null)
-      : []);
-    setArquivos([]);
+    clearSlots(selected?.requisitos_arquivos?.length ?? 0);
   };
 
   const handleParticipationModeChange = (mode: 'REGULAR' | 'REMOTE') => {
@@ -547,19 +496,17 @@ function SubmissionForm() {
 
   const handleTopicosSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setFormError(null);
     setIsSubmitting(true);
 
     try {
-      // MODIFICAÇÃO: Enviar todos os arquivos para o backend
-      const arquivosCompletos = arquivos.filter(arquivo => arquivo.status === 'completed');
-      if (arquivosCompletos.length === 0) {
-        setFormError('Nenhum arquivo foi enviado com sucesso.');
-        return;
+      const currentFiles = slotFilesRef.current;
+      if (currentFiles.length !== slotRequisitos.length || currentFiles.some(file => !file?.storedId || file.status !== 'completed')) {
+        throw new Error('Envie todos os arquivos exigidos antes de submeter.');
       }
-
-      // MODIFICAÇÃO: Enviar array de fileIds em vez de um único fileId
-      const fileIds = arquivosCompletos.map(arquivo => arquivo.id);
+      const attachments = currentFiles.map((file, slotIndex) => ({ slotIndex, fileId: file!.storedId! }));
 
       const response = await fetchWithTimeout('/api/post/submitWork', {
         method: 'POST',
@@ -568,11 +515,12 @@ function SubmissionForm() {
           titulo,
           modalidadeId: modalidade?._id,
           autores: autores.map(({ id, ...rest }) => rest),
-          fileIds: fileIds, // MODIFICAÇÃO: Enviar array de IDs
+          clientVersion: 2,
+          attachments,
           topicos,
           participationMode,
         }),
-      });
+      }, 120_000);
 
       const result = await readJsonResponse<any>(response);
       if (!result) throw new Error('A API retornou uma resposta vazia.');
@@ -581,7 +529,7 @@ function SubmissionForm() {
 
       // Reset do formulário
       setTitulo('');
-      setArquivos([]);
+      setSlots(Array.from({ length: slotRequisitos.length }, () => null));
       setTopicos({
         resumo: '', introducao: '', objetivo: '', metodo: '',
         discussaoResultados: '', conclusao: '', palavrasChave: '', referencias: ''
@@ -592,75 +540,10 @@ function SubmissionForm() {
       setFormError(error instanceof Error ? error.message : 'Erro desconhecido na submissão.');
     } finally {
       setIsSubmitting(false);
+      submittingRef.current = false;
     }
   };
 
-  //
-  if (!trabalhosProps) {
-    return (
-      <main className="min-h-screen bg-fixed bg-cover font-['Segoe_UI',Arial,sans-serif] overflow-x-hidden p-8 max-md:p-4 flex items-center justify-center">
-        <div className="max-w-[1000px] mx-auto w-full">
-          <div className="bg-white/95 rounded-[24px] shadow-[0_12px_40px_rgba(27,48,95,0.15)] backdrop-blur-[12px] [-webkit-backdrop-filter:blur(12px)] border-[1.5px] border-white/80 p-10 max-md:p-6 text-center animate-[fadeInUp_0.8s_ease-out] flex flex-col justify-center items-center min-h-[400px]">
-
-            {/* Ícone de Loading Giratório */}
-            <div className="text-[#541A2C] mb-4">
-              <Loader2 className="w-16 h-16 animate-spin" />
-            </div>
-
-            {/* Texto de Carregando */}
-            <h2 className="text-[1.5rem] font-bold text-[#1B305F] mt-2 tracking-[0.5px]">
-              Carregando informações...
-            </h2>
-
-            <p className="text-[0.95rem] text-[#6B7280] mt-1 font-medium">
-              Por favor, aguarde um momento.
-            </p>
-
-          </div>
-        </div>
-      </main>
-    )
-  }
-  const agora = new Date();
-  const inicio = new Date(trabalhosProps.data_inicio_submissao);
-  const limite = new Date(trabalhosProps.data_limite_submissao);
-  if (!(agora >= inicio && agora <= limite)) {
-    return (
-      <main className="min-h-screen bg-fixed bg-cover font-['Segoe_UI',Arial,sans-serif] overflow-x-hidden p-8 max-md:p-4 flex items-center justify-center">
-        <div className="max-w-[1000px] mx-auto w-full">
-          <div className="bg-white/95 rounded-[24px] shadow-[0_12px_40px_rgba(27,48,95,0.15)] backdrop-blur-[12px] [-webkit-backdrop-filter:blur(12px)] border-[1.5px] border-white/80 p-10 max-md:p-6 text-center animate-[fadeInUp_0.8s_ease-out]">
-
-            {/* Cabeçalho */}
-            <div className="mb-8">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-[rgba(84,26,44,0.1)] border-2 border-[rgba(84,26,44,0.2)] text-[#541A2C] mb-6 shadow-inner">
-                <Clock className="w-10 h-10 animate-pulse" />
-              </div>
-
-              <h1 className="text-[2.5rem] max-md:text-[2rem] max-xs:text-[1.8rem] font-extrabold text-[#541A2C] drop-shadow-[0_2px_8px_rgba(0,0,0,0.1)] mb-2 tracking-[1px]">
-                PERÍODO ENCERRADO
-              </h1>
-
-              <p className="text-[1.1rem] text-[#1B305F] font-medium">
-                Submissão de Trabalhos Acadêmicos
-              </p>
-            </div>
-
-            {/* Caixa de Aviso de Período Fechado */}
-            <div className="bg-[rgba(220,38,38,0.1)] text-[#DC2626] text-center p-8 rounded-[16px] border-2 border-[rgba(220,38,38,0.2)] mb-8">
-              <div className="flex items-center justify-center gap-2 mb-3">
-                <AlertCircle className="w-6 h-6 text-[#DC2626]" />
-                <h2 className="text-[1.5rem] font-bold m-0">As postagens não estão mais disponíveis</h2>
-              </div>
-              <p className="text-[1rem] text-[#B91C1C] max-w-2xl mx-auto font-medium">
-                O prazo limite estabelecido para o envio de novos trabalhos chegou ao fim. Agradecemos a todos os participantes pelo interesse e envolvimento com o evento.
-              </p>
-            </div>
-          </div>
-        </div>
-      </main>
-    )
-  }
-  //
   if (isLoadingStatus) {
     return <AsyncStatePanel status="loading" loadingTitle="Carregando configurações de trabalhos" />
   }
@@ -678,7 +561,7 @@ function SubmissionForm() {
       />
     )
   }
-  if (!trabalhosProps.isOpen || !isTodayBetweenDates(trabalhosProps.data_inicio_submissao, trabalhosProps.data_limite_submissao)) {
+  if (!workSubmissionIsOpen(trabalhosProps)) {
     return (
       <div className='periodo-fechado'>
         <h1>O período de submissão já foi encerrado.</h1>
@@ -845,6 +728,7 @@ function SubmissionForm() {
                 const selectedModalidade = trabalhosProps?.modalidades?.find(m => m._id.toString() === e.target.value);
                 setModalidade(selectedModalidade);
                 setSlotRequisitos(selectedModalidade?.requisitos_arquivos ?? []);
+                clearSlots(selectedModalidade?.requisitos_arquivos?.length ?? 0);
               }}
               className="form-select"
             >
@@ -865,7 +749,7 @@ function SubmissionForm() {
             <div className="flex items-baseline justify-between gap-4">
               <div>
                 <div className="form-label">Arquivos do Trabalho *</div>
-                <div className="text-xs text-gray-600 mt-1">Um arquivo por requisito (máx. {slotRequisitos.length}).</div>
+                <div className="text-xs text-gray-600 mt-1">Envie um arquivo em cada um dos {slotRequisitos.length} requisitos.</div>
               </div>
             </div>
 
@@ -873,7 +757,7 @@ function SubmissionForm() {
               {slotRequisitos.map((req, slotIndex) => {
                 const inputId = `slot-file-${slotIndex}`;
                 const slotFile = slotFiles[slotIndex];
-                const accept = (req.formatos ?? []).map(f => f.trim()).filter(Boolean).join(',');
+                const accept = normalizedWorkFileFormats(req.formatos).join(',');
 
                 const statusIcon =
                   slotFile?.status === 'uploading' ? (
@@ -909,11 +793,9 @@ function SubmissionForm() {
                         type="file"
                         onChange={(e) => {
                           const f = e.target.files?.[0];
+                          e.target.value = '';
                           if (f) {
-                            const validationError = validateFileFormatForSlot(slotIndex, f);
-                            setFormError(validationError);
-                            if (validationError) return;
-                            handleSlotFileUpload(slotIndex, f);
+                            void handleSlotFileUpload(slotIndex, f);
                           }
                         }}
                         className="block w-full text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-gray-100 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-gray-800 hover:file:bg-gray-200"

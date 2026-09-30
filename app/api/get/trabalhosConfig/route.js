@@ -1,46 +1,23 @@
-import { connectToDatabase } from '../../../lib/mongodb'
+import { connectToDatabase } from '@/lib/mongodb';
 import { NextResponse } from 'next/server';
-import { getAccessToken } from '@/lib/auth0-compat';
-import { execOnce } from 'next/dist/shared/lib/utils';
-import { ObjectId } from 'mongodb';
-import { getSession, withApiAuthRequired } from '@/lib/auth0-compat';
-//
-//
-// Exemplo de return:
-// {"data":{"isPos_registration":0,"informacoes_usuario":{"nome:":"","email":"mateus2.0@icloud.com","data_criacao":"2024-07-08T22:48:41.110Z"}}}
-// Exemplo de return erro:
-// 
+import { withApiAuthRequired } from '@/lib/auth0-compat';
 
-export const dynamic = 'force-dynamic'
-
+export const dynamic = 'force-dynamic';
 
 /** @type {any} */
-export const GET = withApiAuthRequired(async function GET(request, { params }) {
+export const GET = withApiAuthRequired(async function GET() {
     try {
-        // Verificando se está logado
-        // Puxando configs
         const { db } = await connectToDatabase();
-        const colecao = "trabalhos_config"
-        const result = await db.collection(colecao).find(
-            {},
-
-        ).toArray()
-        return NextResponse.json({ ...result[0] }, { status: 200 });
-
+        const config = await db.collection('trabalhos_config').findOne({});
+        if (!config) {
+            return NextResponse.json({ error: 'Configuração de trabalhos indisponível.' }, { status: 404 });
+        }
+        return NextResponse.json(config);
+    } catch (error) {
+        console.error('Não foi possível consultar a configuração de trabalhos:', error);
+        return NextResponse.json({
+            error: 'internal_server_error',
+            message: 'Não foi possível consultar as configurações de trabalhos.',
+        }, { status: 500 });
     }
-    catch {
-        return NextResponse.json(
-            { error: "internal_server_error", message: "Não foi possível consultar as configurações de trabalhos." },
-            { status: 500 }
-        )
-    }
-})
-/*             { projection: { _id: 0 } }
-    {
-    "data_inicio_submissao": "2024-07-14T00:00:00-03:00",
-    "data_limite_submissao": "2024-10-14T18:30:00-03:00",
-    "data_publicacao_resultados": "2024-10-20T18:30:00-03:00",
-    "autores_por_trabalho": "",
-    "trabalhos_por_usuario": 2
-    }
-*/
+});

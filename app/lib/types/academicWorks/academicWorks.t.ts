@@ -54,6 +54,7 @@ export interface IAcademicWorks {
         userId?: ObjectId;
     }[];
     arquivos: {
+        slotIndex?: number,
         fileId: ObjectId,
         fileName: string,
         originalName: string,
