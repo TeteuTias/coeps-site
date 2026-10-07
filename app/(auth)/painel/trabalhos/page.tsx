@@ -2,7 +2,7 @@
 import { upload } from '@vercel/blob/client';
 
 // pages/index.js
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import WarningModal from '@/app/components/WarningModal';
 import { workSubmissionIsOpen } from '@/lib/academic-work-files';
 import { IAcademicWorksProps, IAcademicWorks } from '@/lib/types/academicWorks/academicWorks.t';
@@ -33,6 +33,19 @@ function formatSubmissionDate(value: string) {
     return date.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
 }
 
+type DeletionResult = { message: string; cleanupPending: boolean };
+type PendingDeletion = { _id: string; titulo: string };
+
+async function deleteWork(workId: string): Promise<DeletionResult> {
+    const response = await fetchWithTimeout('/api/delete/trabalho', {
+        method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trabalhoId: workId }),
+    });
+    const result = await readJsonResponse<DeletionResult>(response);
+    if (!result) throw new Error('Não foi possível confirmar a exclusão. Atualize a lista.');
+    return result;
+}
+
 //
 //
 export default function Home() {
@@ -42,6 +55,8 @@ export default function Home() {
     const [loadError, setLoadError] = useState<string | null>(null)
     const [requestVersion, setRequestVersion] = useState(0)
     const [operationMessage, setOperationMessage] = useState<string | null>(null)
+    const [operationPending, setOperationPending] = useState(false)
+    const [pendingDeletions, setPendingDeletions] = useState<PendingDeletion[]>([])
     const router = useRouter()
 
     // carregando data
@@ -58,12 +73,14 @@ export default function Home() {
                 }
                 const [config, works] = await Promise.all([
                     readJsonResponse<IAcademicWorksProps>(configResponse),
-                    readJsonResponse<{ data?: IAcademicWorks[] }>(worksResponse)
+                    readJsonResponse<{ data?: IAcademicWorks[]; pendingDeletions?: PendingDeletion[] }>(worksResponse)
                 ])
                 if (!config || !works) throw new Error('A API retornou uma resposta vazia')
                 if (!active) return
+                setLoadError(null)
                 setTrabalhosConfigs(config)
                 setUsuarioTrabalhos(works.data ?? [])
+                setPendingDeletions(works.pendingDeletions ?? [])
             } catch {
                 if (active) setLoadError('Não foi possível consultar suas submissões agora.')
             } finally {
@@ -84,7 +101,7 @@ export default function Home() {
         )
     }
 
-    if (loadError || !trabalhosConfigs || !usuarioTrabalhos) {
+    if (!trabalhosConfigs || !usuarioTrabalhos) {
         return (
             <PageShell className="flex items-center justify-center">
                 <AsyncStatePanel
@@ -160,16 +177,28 @@ export default function Home() {
                     <h1>
                         Suas Publicações
                     </h1>
+                    {loadError && <StatusBanner tone="error" title="Não foi possível atualizar a lista" className="mb-5">
+                        <p>{loadError}</p>
+                        <Button type="button" variant="outline" className="mt-3" onClick={() => setRequestVersion(version => version + 1)}>Tentar atualizar novamente</Button>
+                    </StatusBanner>}
                     {operationMessage && (
-                        <StatusBanner tone="success" title="Submissão atualizada" className="mb-5">
+                        <StatusBanner tone={operationPending ? 'warning' : 'success'} title="Submissão atualizada" className="mb-5">
                             {operationMessage}
                         </StatusBanner>
                     )}
+                    {pendingDeletions.map((pending) => (
+                        <PendingDeletionCard key={pending._id} pending={pending} onResult={(result) => {
+                            setRequestVersion(version => version + 1)
+                            setOperationMessage(result.message)
+                            setOperationPending(result.cleanupPending)
+                            if (!result.cleanupPending) setPendingDeletions(current => current.filter(item => item._id !== pending._id))
+                        }} />
+                    ))}
                     <div className='flex items-center justify-center content-center'>
                         {
                             !usuarioTrabalhos.length ?
                                 <div className='sem-trabalhos'>
-                                    <h1>Você ainda não realizou nenhuma submissão</h1>
+                                    <h1>Você não possui submissões ativas</h1>
                                 </div>
                                 :
                                 <div className='w-full space-y-5'>
@@ -178,9 +207,16 @@ export default function Home() {
                                             <TrabalhoPostado
                                                 key={`${trabalho._id}`}
                                                 propsTrabalho={trabalho}
-                                                onDeleted={(workId) => {
+                                                onRefresh={() => setRequestVersion(version => version + 1)}
+                                                onDeleted={(workId, result) => {
+                                                    setRequestVersion(version => version + 1)
                                                     setUsuarioTrabalhos((current) => current?.filter((item) => item._id !== workId) ?? [])
-                                                    setOperationMessage('O trabalho e seus arquivos foram excluídos com sucesso.')
+                                                    setOperationMessage(result.message)
+                                                    setOperationPending(result.cleanupPending)
+                                                    if (result.cleanupPending) setPendingDeletions(current => [
+                                                        ...current.filter(item => item._id !== String(workId)),
+                                                        { _id: String(workId), titulo: trabalho.titulo },
+                                                    ])
                                                 }}
                                             />
                                         ))
@@ -194,14 +230,36 @@ export default function Home() {
 
     );
 }
+
+function PendingDeletionCard({ pending, onResult }: { pending: PendingDeletion; onResult: (result: DeletionResult) => void }) {
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const inFlight = useRef(false)
+    return <StatusBanner tone="warning" title={`Trabalho excluído: ${pending.titulo}`} className="mb-5">
+        <p>A exclusão foi confirmada. Ainda há arquivos aguardando remoção do armazenamento.</p>
+        {error && <p role="alert" className="mt-2">{error}</p>}
+        <Button type="button" variant="outline" className="mt-3" loading={loading} onClick={async () => {
+            if (inFlight.current) return
+            inFlight.current = true
+            setLoading(true)
+            setError(null)
+            try { onResult(await deleteWork(pending._id)) }
+            catch (error) { setError(error instanceof Error ? error.message : 'Não foi possível concluir a limpeza.') }
+            finally { inFlight.current = false; setLoading(false) }
+        }}>Tentar remover arquivos pendentes</Button>
+    </StatusBanner>
+}
+
 const TrabalhoPostado: React.FC<{
     propsTrabalho: IAcademicWorks;
-    onDeleted: (workId: IAcademicWorks['_id']) => void;
-}> = ({ propsTrabalho, onDeleted }) => {
+    onDeleted: (workId: IAcademicWorks['_id'], result: DeletionResult) => void;
+    onRefresh: () => void;
+}> = ({ propsTrabalho, onDeleted, onRefresh }) => {
     const router = useRouter()
     const [isDeleting, setIsDeleting] = useState(false)
     const [confirmDelete, setConfirmDelete] = useState(false)
     const [deleteError, setDeleteError] = useState<string | null>(null)
+    const deleteInFlight = useRef(false)
     const {
         _id,
         titulo,
@@ -230,24 +288,20 @@ const TrabalhoPostado: React.FC<{
 
     // Função para excluir trabalho
     const handleDeleteWork = async () => {
+        if (deleteInFlight.current) return;
+        deleteInFlight.current = true;
         setIsDeleting(true);
         setDeleteError(null)
         
         try {
-            const response = await fetchWithTimeout('/api/delete/trabalho', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ trabalhoId: _id })
-            });
-            const result = (await readJsonResponse<{ error?: string; message?: string }>(response)) ?? {};
-            if (!response.ok) {
-                throw new Error(result.error || result.message || 'Não foi possível excluir o trabalho.');
-            }
+            const result = await deleteWork(String(_id));
             setConfirmDelete(false)
-            onDeleted(_id)
+            onDeleted(_id, result)
         } catch (error) {
             setDeleteError(error instanceof Error ? error.message : 'Não foi possível excluir o trabalho.');
+            onRefresh()
         } finally {
+            deleteInFlight.current = false;
             setIsDeleting(false);
         }
     };
@@ -267,7 +321,10 @@ const TrabalhoPostado: React.FC<{
                     </div>
                     <button
                         type="button"
-                        onClick={() => setConfirmDelete(true)}
+                        onClick={() => {
+                            setDeleteError(null)
+                            setConfirmDelete(true)
+                        }}
                         disabled={isDeleting}
                         className="btn-delete-work"
                         aria-label={`Excluir trabalho ${titulo}`}
@@ -469,11 +526,6 @@ const TrabalhoPostado: React.FC<{
                     }
                 </div>
             </div>
-            {deleteError && (
-                <StatusBanner tone="error" title="O trabalho não foi excluído" className="mt-5">
-                    {deleteError}
-                </StatusBanner>
-            )}
             <Modal
                 open={confirmDelete}
                 onClose={() => !isDeleting && setConfirmDelete(false)}
@@ -481,8 +533,13 @@ const TrabalhoPostado: React.FC<{
                 description={`Confirme a exclusão de “${titulo}”.`}
             >
                 <StatusBanner tone="warning" title="Esta ação não pode ser desfeita">
-                    Todos os arquivos e dados relacionados a esta submissão serão removidos permanentemente.
+                    O trabalho será excluído e seus arquivos serão removidos permanentemente. Se a limpeza dos arquivos falhar, você poderá retomá-la pelo painel.
                 </StatusBanner>
+                {deleteError && (
+                    <StatusBanner tone="error" title="Não foi possível confirmar a exclusão" className="mt-5">
+                        {deleteError}
+                    </StatusBanner>
+                )}
                 <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                     <Button type="button" variant="ghost" onClick={() => setConfirmDelete(false)} disabled={isDeleting}>Cancelar</Button>
                     <Button type="button" variant="danger" onClick={handleDeleteWork} loading={isDeleting}>Excluir definitivamente</Button>
