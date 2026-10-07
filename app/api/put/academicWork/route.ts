@@ -41,10 +41,11 @@ export const PUT: any = withApiAuthRequired(async function (req) {
 
         //
         // Realizando Alteração
-        await db.collection(collection).updateOne(
+        const updateResult = await db.collection(collection).updateOne(
             {
                 userId: new ObjectId(userId),
-                _id: new ObjectId(academicWork._id)
+                _id: new ObjectId(academicWork._id),
+                status: 'Necessita de Alteração',
             },
             {
                 $set: {
@@ -59,6 +60,10 @@ export const PUT: any = withApiAuthRequired(async function (req) {
                 }
             }
         )
+
+        if (updateResult.matchedCount !== 1) {
+            return Response.json({ error: 'work_changed', message: 'O trabalho foi excluído ou alterado durante a correção. Atualize a lista.' }, { status: 409 });
+        }
 
         //
         //

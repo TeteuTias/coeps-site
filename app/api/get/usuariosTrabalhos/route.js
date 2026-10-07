@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { getAccessToken, withApiAuthRequired } from '@/lib/auth0-compat';
 import { ObjectId } from 'bson';
 import { getSession } from '@/lib/auth0-compat';
+import { runPaymentTransaction } from '@/lib/payments/transactions';
 //
 //
 // Exemplo de return:
@@ -19,15 +20,22 @@ export const GET = withApiAuthRequired(async function GET(request, response) {
         const userId = user.sub.replace("auth0|", ""); // Retirando o auth0|  
         //
         // Já vem apenas com o replace.
-        const { db } = await connectToDatabase();
-        const response = await db.collection("Dados_do_trabalho").find(
-            {
-                userId: new ObjectId(userId)
-            },
-        ).toArray() // 'buffer': 0, 'user_id': 0, 'size': 0
+        const { db, client } = await connectToDatabase();
+        // Uma única visão evita mostrar o trabalho ativo junto de sua limpeza
+        // pendente quando a exclusão é confirmada entre as duas consultas.
+        const result = await runPaymentTransaction(client, async (session) => {
+            const data = await db.collection('Dados_do_trabalho').find(
+                { userId: new ObjectId(userId) }, { session },
+            ).toArray();
+            const pendingDeletions = await db.collection('trabalhos_exclusoes').find(
+                { userId: new ObjectId(userId), status: 'PENDING' },
+                { session, projection: { _id: 1, titulo: 1 } },
+            ).toArray();
+            return { data, pendingDeletions };
+        });
 
         return NextResponse.json({
-            data: response
+            ...result,
         });
         /*
         const colecao = 'trabalhos_blob'
