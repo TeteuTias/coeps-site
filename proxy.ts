@@ -14,6 +14,7 @@ import {
 } from '@/lib/registration-gate';
 import { getActivePaymentConfig, getEditionId } from '@/lib/payments/config';
 import { findRemoteWorkAccess } from '@/lib/remote-work-access';
+import { ensureAuthenticatedUser } from '@/lib/authenticated-user';
 
 const protectedRoutes = [
   '/painel',
@@ -81,19 +82,31 @@ export async function proxy(req) {
 
   // 5. Usuário está logado. Vamos buscar os dados.
   // ATENÇÃO: Lembre-se do aviso sobre o MongoDB no Edge Runtime!
-  const { db } = await connectToDatabase();
-  const userId = session.user.sub.replace(/^auth0\|/, '');
-  if (!ObjectId.isValid(userId)) {
+  const subject = typeof session.user.sub === 'string'
+    ? /^auth0\|([a-f\d]{24})$/i.exec(session.user.sub)
+    : null;
+  if (!subject) {
     if (!gateSatisfied) {
       return NextResponse.redirect(new URL(buildAuthEntryPath(returnTo), req.nextUrl.origin));
     }
     return auth0.startInteractiveLogin({ returnTo });
   }
-  const owner = new ObjectId(userId);
-  const [user, paymentConfig]: [IUser | null, Awaited<ReturnType<typeof getActivePaymentConfig>>] = await Promise.all([
-    db.collection("usuarios").findOne({ _id: owner }) as Promise<IUser | null>,
-    getActivePaymentConfig(db),
-  ]);
+  const owner = new ObjectId(subject[1]);
+  let db: Awaited<ReturnType<typeof connectToDatabase>>['db'];
+  let user: IUser;
+  try {
+    ({ db } = await connectToDatabase());
+    user = await ensureAuthenticatedUser(db, session.user) as unknown as IUser;
+  } catch {
+    return NextResponse.json(
+      {
+        error: 'user_provisioning_unavailable',
+        message: 'Não foi possível preparar sua conta. Tente novamente em instantes.',
+      },
+      { status: 503 },
+    );
+  }
+  const paymentConfig = await getActivePaymentConfig(db);
   const remoteAccess = paymentConfig
     ? await findRemoteWorkAccess(db, owner, getEditionId(paymentConfig))
     : null;
