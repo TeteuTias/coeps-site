@@ -2,7 +2,7 @@
 import { upload } from '@vercel/blob/client';
 
 // pages/index.js
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import WarningModal from '@/app/components/WarningModal';
 import { workSubmissionIsOpen } from '@/lib/academic-work-files';
 import { IAcademicWorksProps, IAcademicWorks } from '@/lib/types/academicWorks/academicWorks.t';
@@ -202,6 +202,7 @@ const TrabalhoPostado: React.FC<{
     const [isDeleting, setIsDeleting] = useState(false)
     const [confirmDelete, setConfirmDelete] = useState(false)
     const [deleteError, setDeleteError] = useState<string | null>(null)
+    const deleteInFlight = useRef(false)
     const {
         _id,
         titulo,
@@ -230,6 +231,8 @@ const TrabalhoPostado: React.FC<{
 
     // Função para excluir trabalho
     const handleDeleteWork = async () => {
+        if (deleteInFlight.current) return;
+        deleteInFlight.current = true;
         setIsDeleting(true);
         setDeleteError(null)
         
@@ -248,6 +251,7 @@ const TrabalhoPostado: React.FC<{
         } catch (error) {
             setDeleteError(error instanceof Error ? error.message : 'Não foi possível excluir o trabalho.');
         } finally {
+            deleteInFlight.current = false;
             setIsDeleting(false);
         }
     };
@@ -267,7 +271,10 @@ const TrabalhoPostado: React.FC<{
                     </div>
                     <button
                         type="button"
-                        onClick={() => setConfirmDelete(true)}
+                        onClick={() => {
+                            setDeleteError(null)
+                            setConfirmDelete(true)
+                        }}
                         disabled={isDeleting}
                         className="btn-delete-work"
                         aria-label={`Excluir trabalho ${titulo}`}
@@ -469,11 +476,6 @@ const TrabalhoPostado: React.FC<{
                     }
                 </div>
             </div>
-            {deleteError && (
-                <StatusBanner tone="error" title="O trabalho não foi excluído" className="mt-5">
-                    {deleteError}
-                </StatusBanner>
-            )}
             <Modal
                 open={confirmDelete}
                 onClose={() => !isDeleting && setConfirmDelete(false)}
@@ -483,6 +485,11 @@ const TrabalhoPostado: React.FC<{
                 <StatusBanner tone="warning" title="Esta ação não pode ser desfeita">
                     Todos os arquivos e dados relacionados a esta submissão serão removidos permanentemente.
                 </StatusBanner>
+                {deleteError && (
+                    <StatusBanner tone="error" title="O trabalho não foi excluído" className="mt-5">
+                        {deleteError}
+                    </StatusBanner>
+                )}
                 <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                     <Button type="button" variant="ghost" onClick={() => setConfirmDelete(false)} disabled={isDeleting}>Cancelar</Button>
                     <Button type="button" variant="danger" onClick={handleDeleteWork} loading={isDeleting}>Excluir definitivamente</Button>

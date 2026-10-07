@@ -2,29 +2,32 @@ import { ObjectId } from 'mongodb';
 import { getSession, withApiAuthRequired } from '@/lib/auth0-compat';
 import { connectToDatabase } from '@/lib/mongodb';
 import { del } from '@vercel/blob';
+import { workSubmissionIsOpen } from '@/lib/academic-work-files';
 
 /** @type {any} */
 export const DELETE = withApiAuthRequired(async function DELETE(request) {
     try {
-        const { user } = await getSession();
-        const data = await request.json();
-        
-        // Pegando IDs
-        const userId = user.sub.replace("auth0|", ""); // Retirando o auth0|
-        const trabalhoId = data.trabalhoId;
-        
-        if (!trabalhoId) {
-            return Response.json({ error: "ID do trabalho é obrigatório" }, { status: 400 });
+        const session = await getSession(request);
+        const subject = typeof session?.user?.sub === 'string'
+            ? /^auth0\|([a-f\d]{24})$/i.exec(session.user.sub)
+            : null;
+        if (!subject) {
+            return Response.json({ error: 'Sessão de usuário inválida.' }, { status: 401 });
         }
+        const data = await request.json().catch(() => null);
+        if (typeof data?.trabalhoId !== 'string' || !ObjectId.isValid(data.trabalhoId)) {
+            return Response.json({ error: 'ID do trabalho inválido.' }, { status: 400 });
+        }
+
+        const userId = subject[1];
+        const trabalhoId = new ObjectId(data.trabalhoId);
+        const ownerQuery = { _id: trabalhoId, userId: new ObjectId(userId) };
 
         // Conectando ao banco de dados
         const { db } = await connectToDatabase();
         
         // Verificando se o trabalho existe e pertence ao usuário
-        const trabalho = await db.collection('trabalhos').findOne({ 
-            _id: new ObjectId(trabalhoId),
-            'autores.userId': userId 
-        });
+        const trabalho = await db.collection('Dados_do_trabalho').findOne(ownerQuery);
 
         if (!trabalho) {
             return Response.json({ 
@@ -33,44 +36,37 @@ export const DELETE = withApiAuthRequired(async function DELETE(request) {
         }
 
         // Verificar se o período de submissão ainda está aberto
-        const { data_inicio_submissao, data_limite_submissao } = await getDatesFromDataBase();
-        const isWithinSubmissionPeriod = await verifySubmissionPeriod(data_inicio_submissao, data_limite_submissao);
-        
-        if (!isWithinSubmissionPeriod) {
+        const config = await db.collection('trabalhos_config').findOne({});
+        if (!config) {
+            return Response.json({ error: 'Configurações de trabalhos não encontradas.' }, { status: 500 });
+        }
+        if (!workSubmissionIsOpen(config)) {
             return Response.json({ 
-                error: "O período de submissão já foi encerrado. Não é possível excluir trabalhos após o prazo." 
+                error: 'A exclusão de trabalhos só está disponível durante o período de submissão.'
             }, { status: 409 });
         }
 
-        // Excluir arquivos do Vercel Blob
-        if (trabalho.arquivos && trabalho.arquivos.length > 0) {
-            for (const arquivo of trabalho.arquivos) {
-                try {
-                    if (arquivo.url) {
-                        await del(arquivo.url);
-                    }
-                } catch {
-                    // Continue mesmo se um arquivo falhar
-                }
+        // Os IDs chegam como ObjectId ou string em submissões e correções antigas.
+        const fileIds = (Array.isArray(trabalho.arquivos) ? trabalho.arquivos : [])
+            .map(arquivo => String(arquivo?.fileId ?? ''))
+            .filter(id => ObjectId.isValid(id))
+            .map(id => new ObjectId(id));
+        if (fileIds.length > 0) {
+            const fileQuery = {
+                _id: { $in: fileIds },
+                userId,
+                $or: [{ submissionId: trabalhoId }, { submissionId: { $exists: false } }],
+            };
+            // Use os URLs dos registros pertencentes ao dono, não URLs enviados pelo cliente.
+            const files = await db.collection('trabalhos_blob').find(fileQuery).toArray();
+            for (const file of files) {
+                if (file.url) await del(file.url);
             }
-        }
-
-        // Excluir registros de arquivos do banco
-        if (trabalho.arquivos && trabalho.arquivos.length > 0) {
-            const fileIds = trabalho.arquivos.map(arquivo => arquivo.fileId).filter(Boolean);
-            if (fileIds.length > 0) {
-                await db.collection('trabalhos_blob').deleteMany({ 
-                    _id: { $in: fileIds },
-                    userId: userId 
-                });
-            }
+            await db.collection('trabalhos_blob').deleteMany(fileQuery);
         }
 
         // Excluir o trabalho do banco de dados
-        const deleteResult = await db.collection('trabalhos').deleteOne({ 
-            _id: new ObjectId(trabalhoId),
-            'autores.userId': userId 
-        });
+        const deleteResult = await db.collection('Dados_do_trabalho').deleteOne(ownerQuery);
 
         if (deleteResult.deletedCount === 0) {
             return Response.json({ 
@@ -89,29 +85,3 @@ export const DELETE = withApiAuthRequired(async function DELETE(request) {
         }, { status: 500 });
     }
 });
-
-// Função para verificar se está dentro do período de submissão
-const verifySubmissionPeriod = async (data_inicio_submissao, data_limite_submissao) => {
-    const dataAtual = new Date();
-    dataAtual.setHours(new Date().getHours() - 3); // Ajuste de fuso horário
-
-    const inicio = new Date(data_inicio_submissao);
-    const limite = new Date(data_limite_submissao);
-
-    return dataAtual >= inicio && dataAtual <= limite;
-};
-
-// Função para buscar as datas de submissão no banco de dados
-const getDatesFromDataBase = async () => {
-    const { db } = await connectToDatabase();
-    const config = await db.collection('trabalhos_config').findOne({});
-    
-    if (!config) {
-        throw new Error("Configurações de trabalhos não encontradas");
-    }
-    
-    return {
-        data_inicio_submissao: config.data_inicio_submissao,
-        data_limite_submissao: config.data_limite_submissao
-    };
-};
