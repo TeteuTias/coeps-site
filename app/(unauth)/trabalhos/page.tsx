@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
-import { Button, StatusBanner } from '@/components/cieps';
+import { Button, Modal, StatusBanner } from '@/components/cieps';
 import { IAcademicWorksProps } from '@/lib/types/academicWorks/academicWorks.t';
 import { fetchWithTimeout } from '@/lib/client/fetchWithTimeout';
 import { buildAuthEntryPath } from '@/lib/auth-migration-notice';
 import { workSubmissionIsOpen } from '@/lib/academic-work-files';
-import { ArrowRight, CalendarDays, Compass, ExternalLink, FileText, Loader2, Send, Sparkles } from 'lucide-react';
+import { ArrowRight, CalendarDays, Compass, Download, ExternalLink, Files, FileText, Loader2, Send, Sparkles } from 'lucide-react';
 import './style.css';
 
 /**
@@ -24,6 +24,25 @@ const EDITAL_TRABALHOS_URL = '/editais/edital-trabalhos-cientificos-i-cieps.pdf'
 const DOCUMENTOS_DO_SITE = [
   { titulo: 'Comunicado aos participantes - Prorrogação do prazo de submissão (28/09/2026)', link: '/editais/comunicado-prorrogacao-submissao-28-09-2026.pdf' },
   { titulo: 'Comunicado aos participantes - Relato de Caso (22/09/2026)', link: '/editais/comunicado-relato-de-caso-22-09-2026.pdf' },
+];
+
+/**
+ * Modelos de formatação servidos a partir de public/modelos, cada um
+ * disponível em DOCX (para editar) e PDF (para consulta).
+ */
+const MODELOS_TRABALHO = [
+  {
+    titulo: 'Artigo Original',
+    descricao: 'Exemplo ilustrativo com a formatação exigida e orientações ao autor em cada parte do artigo.',
+    docx: '/modelos/modelo-artigo-original-i-cieps.docx',
+    pdf: '/modelos/modelo-artigo-original-i-cieps.pdf',
+  },
+  {
+    titulo: 'Resumo Simples',
+    descricao: 'Exemplo ilustrativo com a formatação exigida e orientações ao autor em cada parte do resumo.',
+    docx: '/modelos/modelo-resumo-simples-i-cieps.docx',
+    pdf: '/modelos/modelo-resumo-simples-i-cieps.pdf',
+  },
 ];
 
 function formatShortDate(value?: string) {
@@ -43,6 +62,7 @@ export default function Trabalhos() {
   const [config, setConfig] = useState<IAcademicWorksProps | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [modelosOpen, setModelosOpen] = useState(false);
 
   const fetchConfig = useCallback(async () => {
     setLoading(true);
@@ -139,6 +159,7 @@ export default function Trabalhos() {
               <a href={EDITAL_TRABALHOS_URL} target="_blank" rel="noopener noreferrer" className="cieps-button-outline"><FileText size={18} aria-hidden="true" />Ver edital</a>
               {config.link_guia && <a href={config.link_guia} target="_blank" rel="noopener noreferrer" className="cieps-button-outline"><Compass size={18} aria-hidden="true" />Ver guia</a>}
               <Link href={buildAuthEntryPath('/painel/trabalhos')} className="cieps-button"><Send size={18} aria-hidden="true" />Enviar trabalho</Link>
+              <button type="button" className="cieps-button-outline" onClick={() => setModelosOpen(true)}><Files size={18} aria-hidden="true" />Modelo</button>
             </div>
           )}
         </article>
@@ -159,6 +180,28 @@ export default function Trabalhos() {
           <Link href="/anais" className="trabalhos-more-link">Consultar anais <ArrowRight size={16} aria-hidden="true" /></Link>
         </article>
       </section>
+
+      <Modal
+        open={modelosOpen}
+        onClose={() => setModelosOpen(false)}
+        title="Modelos de trabalho"
+        description="Baixe o modelo do tipo de trabalho que vai submeter: DOCX para editar ou PDF para consulta."
+      >
+        <div className="trabalhos-modelos-list">
+          {MODELOS_TRABALHO.map((modelo) => (
+            <article key={modelo.titulo} className="trabalhos-modelo-item">
+              <div>
+                <strong>{modelo.titulo}</strong>
+                <p>{modelo.descricao}</p>
+              </div>
+              <div className="trabalhos-modelo-actions">
+                <a href={modelo.docx} download className="cieps-button"><Download size={18} aria-hidden="true" />DOCX</a>
+                <a href={modelo.pdf} download className="cieps-button-outline"><Download size={18} aria-hidden="true" />PDF</a>
+              </div>
+            </article>
+          ))}
+        </div>
+      </Modal>
     </main>
   );
 }
