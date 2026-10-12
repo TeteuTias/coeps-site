@@ -1,6 +1,6 @@
 
 // submit work
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 import { getSession, withApiAuthRequired } from '@/lib/auth0-compat';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId, type ClientSession, type Db } from 'mongodb';
@@ -16,6 +16,7 @@ import { getActivePaymentConfig, getEditionId } from '@/lib/payments/config';
 import { runPaymentTransaction } from '@/lib/payments/transactions';
 import { findRemoteWorkAccess, REMOTE_WORK_SUBMISSION_LOCKS_COLLECTION } from '@/lib/remote-work-access';
 import { validateWorkFile, validateWorkFileSlots, workSubmissionIsOpen } from '@/lib/academic-work-files';
+import { notifyWorkReceipt } from '@/lib/work-receipt-email';
 
 class SubmissionError extends Error {
     constructor(public readonly code: string, message: string, public readonly status: number) {
@@ -319,8 +320,15 @@ export const POST: any = withApiAuthRequired(async function POST(request) {
             if (fileUpdate.modifiedCount !== arquivosInfo.length) {
                 throw new SubmissionError('file_state_changed', 'Um arquivo mudou durante a submissão. Tente novamente.', 409);
             }
-            return { insertedId: submissionId, arquivosData };
+            return { insertedId: submissionId, arquivosData, titulo: dadosDoTrabalho.titulo, autores: storedAuthors };
         });
+
+        // Depois da resposta, para não atrasar nem derrubar a submissão já gravada.
+        after(() => notifyWorkReceipt({
+            titulo: result.titulo,
+            autores: result.autores,
+            remetenteEmail: authenticatedEmail,
+        }));
 
         return NextResponse.json({
             success: true,
