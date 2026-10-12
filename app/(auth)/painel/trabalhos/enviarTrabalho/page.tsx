@@ -388,7 +388,7 @@ function SubmissionForm() {
     setFormSuccess(null);
 
     // Validações básicas
-    if (!titulo || !modalidade || autores.some(a => !a.nome || !a.email || !a.cpf)) {
+    if (!titulo || !modalidade || autores.some(a => !a.nome || !a.email || (!a.isOrientador && !a.cpf))) {
       setFormError('Todos os campos de informações do trabalho e dos autores devem ser preenchidos.');
       return;
     }
@@ -918,7 +918,7 @@ function SubmissionForm() {
                     <input
                       type="text"
                       aria-label={`CPF do autor ${index + 1}`}
-                      placeholder="CPF"
+                      placeholder={autor.isOrientador ? 'CPF (opcional)' : 'CPF'}
                       value={autor.cpf}
                       onChange={(e) => handleAutorChange(autor.id, 'cpf', e.target.value)}
                       readOnly={autor.isCurrentUser}
