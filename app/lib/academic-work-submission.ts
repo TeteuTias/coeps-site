@@ -17,8 +17,9 @@ export function validateAcademicWorkAuthors(
     modality: Pick<Modality, 'autores_por_trabalho' | 'maximo_orientadores'>,
 ): { ok: true } | { ok: false; message: string } {
     if (!Array.isArray(authors) || authors.length === 0) return { ok: false, message: 'Informe ao menos um autor.' };
-    if (authors.some((author) => !String(author.nome || '').trim() || !normalizeAuthorEmail(author.email) || !String(author.cpf || '').replace(/\D/g, ''))) {
-        return { ok: false, message: 'Preencha nome, e-mail e CPF de todos os autores e orientadores.' };
+    // CPF do orientador é opcional
+    if (authors.some((author) => !String(author.nome || '').trim() || !normalizeAuthorEmail(author.email) || (author.isOrientador !== true && !String(author.cpf || '').replace(/\D/g, '')))) {
+        return { ok: false, message: 'Preencha nome e e-mail de todos os autores e orientadores, e o CPF dos autores.' };
     }
     const advisors = authors.filter((author) => author.isOrientador === true).length;
     const regularAuthors = authors.length - advisors;

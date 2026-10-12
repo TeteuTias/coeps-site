@@ -17,6 +17,11 @@ test('separates author and advisor limits', () => {
     assert.equal(validateAcademicWorkAuthors([author('a@x.com'), author('b@x.com'), author('c@x.com'), author('d@x.com'), author('o@x.com', true)], modality).ok, false);
 });
 
+test('requires CPF from authors but not from advisors', () => {
+    assert.equal(validateAcademicWorkAuthors([author('a@example.com'), { ...author('o@example.com', true), cpf: '' }], modality).ok, true);
+    assert.equal(validateAcademicWorkAuthors([{ ...author('a@example.com'), cpf: '' }, author('o@example.com', true)], modality).ok, false);
+});
+
 test('requires the authenticated purchaser as a non-advisor for remote work', () => {
     assert.equal(purchaserIsRemoteAuthor([author('OTHER@example.com'), author(' Buyer@example.com ')], 'buyer@example.com'), true);
     assert.equal(purchaserIsRemoteAuthor([author('buyer@example.com', true)], 'buyer@example.com'), false);
