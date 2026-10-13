@@ -1,7 +1,6 @@
 import { put, del } from '@vercel/blob';
 import { randomUUID } from 'node:crypto';
-import { Readable } from 'node:stream';
-import { fileTypeStream } from 'file-type';
+import { fileTypeFromBuffer } from 'file-type';
 import { NextResponse } from 'next/server';
 import { getSession, withApiAuthRequired } from '@/lib/auth0-compat';
 import { connectToDatabase } from '@/lib/mongodb';
@@ -50,32 +49,31 @@ export const POST = withApiAuthRequired(async function POST(request) {
             return NextResponse.json({ error: 'Tamanho ou sequência das partes não confere.' }, { status: 400 });
         }
 
-        async function* source() {
-            let totalRead = 0;
-            for (const chunk of ordered) {
-                const response = await fetch(chunk.url);
-                if (!response.ok || !response.body) throw new Error('Falha ao ler uma parte.');
-                let partRead = 0;
-                for await (const piece of response.body) {
-                    partRead += piece.length;
-                    totalRead += piece.length;
-                    if (partRead > chunk.size || totalRead > totalSize) throw new Error('Tamanho inesperado durante a leitura.');
-                    yield piece;
-                }
-                if (partRead !== chunk.size) throw new Error('Parte incompleta.');
+        // DOCX pode ter seus metadados depois dos primeiros 64 KiB. Reconstrua
+        // em um único buffer limitado antes de identificar o conteúdo, como no upload simples.
+        const fileBuffer = Buffer.alloc(totalSize);
+        let totalRead = 0;
+        for (const chunk of ordered) {
+            const response = await fetch(chunk.url);
+            if (!response.ok || !response.body) throw new Error('Falha ao ler uma parte.');
+            let partRead = 0;
+            for await (const piece of response.body) {
+                partRead += piece.length;
+                if (partRead > chunk.size || totalRead + piece.length > totalSize) throw new Error('Tamanho inesperado durante a leitura.');
+                fileBuffer.set(piece, totalRead);
+                totalRead += piece.length;
             }
-            if (totalRead !== totalSize) throw new Error('Arquivo incompleto.');
+            if (partRead !== chunk.size) throw new Error('Parte incompleta.');
         }
-        const typedStream = await fileTypeStream(Readable.from(source()), { sampleSize: 65536 });
-        const type = typedStream.fileType;
+        if (totalRead !== totalSize) throw new Error('Arquivo incompleto.');
+        const type = await fileTypeFromBuffer(fileBuffer);
         const validationError = validateWorkFile({ name: originalName, size: totalSize, contentType: type?.mime },
             { titulo: 'arquivo', formatos: ['.pdf', '.doc', '.docx'] }, MAX_FILE_SIZE);
         if (!type || validationError) {
-            typedStream.destroy();
             return NextResponse.json({ error: validationError || 'Tipo de arquivo não suportado.' }, { status: 415 });
         }
         const pathname = `${userId}/trabalhos/${randomUUID()}${workFileExtension(originalName)}`;
-        finalBlob = await put(pathname, typedStream, {
+        finalBlob = await put(pathname, fileBuffer, {
             access: 'public', contentType: type.mime, multipart: true,
         });
         const uploadDate = new Date();

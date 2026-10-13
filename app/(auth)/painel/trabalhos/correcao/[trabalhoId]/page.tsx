@@ -8,6 +8,7 @@ import DOMPurify from "dompurify";
 import { useRouter } from "next/navigation";
 import { AsyncStatePanel, Button, Modal, PageShell, StatusBanner } from '@/components/cieps';
 import { fetchWithTimeout, readJsonResponse } from '@/lib/client/fetchWithTimeout';
+import { workUploadLimits } from '@/lib/academic-work-files';
 //
 //
 // Função para gerar um nome de arquivo único, evitando conflitos no armazenamento.
@@ -157,14 +158,15 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
     };
 
     const uploadChunkedFile = async (file: File, fileName: string, fileId: string): Promise<{ id: string, url: string } | null> => {
-        const totalChunks = Math.ceil(file.size / trabalho.configuracaoModalidade.chunk_tamanho);
+        const { chunkSize } = workUploadLimits(trabalho.configuracaoModalidade);
+        const totalChunks = Math.ceil(file.size / chunkSize);
         const chunkIds: string[] = [];
         const uniqueFileName = generateUniqueFileName(fileName);
 
         try {
             for (let i = 0; i < totalChunks; i++) {
-                const start = i * trabalho.configuracaoModalidade.chunk_tamanho;
-                const end = Math.min(start + trabalho.configuracaoModalidade.chunk_tamanho, file.size);
+                const start = i * chunkSize;
+                const end = Math.min(start + chunkSize, file.size);
                 const chunk = file.slice(start, end);
 
                 const formData = new FormData();
@@ -231,7 +233,8 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
             const fileId = newFiles[index]?.fileId;
             if (!fileId) return null;
 
-            const uploadFunction = file.size > trabalho.configuracaoModalidade.chunk_limite ? uploadChunkedFile : uploadSingleFile;
+            const { chunkThreshold } = workUploadLimits(trabalho.configuracaoModalidade);
+            const uploadFunction = file.size > chunkThreshold ? uploadChunkedFile : uploadSingleFile;
             const uploadedFile = await uploadFunction(file, file.name, fileId);
 
             if (uploadedFile) {
