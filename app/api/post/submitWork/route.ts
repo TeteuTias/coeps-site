@@ -17,6 +17,7 @@ import { runPaymentTransaction } from '@/lib/payments/transactions';
 import { findRemoteWorkAccess, REMOTE_WORK_SUBMISSION_LOCKS_COLLECTION } from '@/lib/remote-work-access';
 import { validateWorkFile, validateWorkFileSlots, workSubmissionIsOpen } from '@/lib/academic-work-files';
 import { notifyWorkReceipt } from '@/lib/work-receipt-email';
+import { getWorkSubmissionException } from '@/lib/work-submission-exception';
 
 class SubmissionError extends Error {
     constructor(public readonly code: string, message: string, public readonly status: number) {
@@ -163,7 +164,8 @@ export const POST: any = withApiAuthRequired(async function POST(request) {
         if (!trabalhoProps) {
             return NextResponse.json({ message: 'As configurações dos trabalhos não foram encontradas.' }, { status: 404 });
         }
-        if (!workSubmissionIsOpen(trabalhoProps)) {
+        if (!workSubmissionIsOpen(trabalhoProps)
+            && !getWorkSubmissionException(userId, editionId, trabalhoProps)) {
             throw new SubmissionError('submission_closed', 'O período de submissão está fechado. Atualize a página para consultar o prazo.', 403);
         }
         const modalidadeAtual = trabalhoProps.modalidades?.find(m => `${m._id}` === `${modalidadeId}`);
@@ -204,6 +206,13 @@ export const POST: any = withApiAuthRequired(async function POST(request) {
         const modalityObjectId = new ObjectId(String(modalidadeId));
         const now = new Date();
         const result = await runPaymentTransaction(client, async (mongoSession) => {
+            // Recheck on every transaction attempt, including retries after contention.
+            const checkedAt = new Date();
+            const submissionException = workSubmissionIsOpen(trabalhoProps, checkedAt)
+                ? null : getWorkSubmissionException(userId, editionId, trabalhoProps, checkedAt);
+            if (!workSubmissionIsOpen(trabalhoProps, checkedAt) && !submissionException) {
+                throw new SubmissionError('submission_closed', 'O período autorizado para submissão encerrou. Atualize a página.', 403);
+            }
             const remoteAccess = participationMode === 'REMOTE'
                 ? await findRemoteWorkAccess(db, owner, editionId, { activeOnly: true })
                 : null;
@@ -239,6 +248,22 @@ export const POST: any = withApiAuthRequired(async function POST(request) {
             });
             if (limitValidation.ok === false) {
                 throw new SubmissionError(limitValidation.code, limitValidation.message, 409);
+            }
+
+            if (submissionException) {
+                if (totalCount !== 0) {
+                    throw new SubmissionError('submission_exception_used', 'A liberação excepcional permite somente a primeira submissão desta edição.', 409);
+                }
+                // The existing per-user/edition lock serializes competing submissions.
+                // Its marker survives work deletion; a failed transaction rolls it back.
+                const claim = await db.collection(REMOTE_WORK_SUBMISSION_LOCKS_COLLECTION).updateOne(
+                    { userId: owner, editionId, submissionException: { $exists: false } },
+                    { $set: { submissionException: { ...submissionException, submissionId, usedAt: checkedAt } } },
+                    { session: mongoSession },
+                );
+                if (claim.matchedCount !== 1) {
+                    throw new SubmissionError('submission_exception_used', 'A liberação excepcional já foi utilizada.', 409);
+                }
             }
 
             const arquivosInfo = await validarArquivos(db, arquivosIds, userId, mongoSession);
@@ -305,6 +330,7 @@ export const POST: any = withApiAuthRequired(async function POST(request) {
                 tamanhoTotalBytes: arquivosData.reduce((total, arquivo) => total + Number(arquivo.size || 0), 0),
                 configuracaoModalidade: modalidadeAtual,
                 participationMode,
+                ...(submissionException ? { submissionException } : {}),
                 ...(remoteAccess ? {
                     remoteAccessId: remoteAccess._id,
                     remotePurchaseId: remoteAccess.purchaseId,

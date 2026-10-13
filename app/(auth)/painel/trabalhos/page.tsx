@@ -128,7 +128,13 @@ export default function Home() {
                     </h1>
                     <div>
                         {
-                            !trabalhosConfigs.isOpen ?
+                            trabalhosConfigs.submissionExceptionExpiresAt ?
+                                <div>
+                                    <h1>Você tem uma liberação excepcional para enviar um trabalho.</h1>
+                                    <p>Conclua o envio até {new Date(trabalhosConfigs.submissionExceptionExpiresAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })} (horário de Brasília).</p>
+                                    <button className='btn-submeter' onClick={() => router.push('/painel/trabalhos/enviarTrabalho')}>Submeter trabalho</button>
+                                </div>
+                                : !trabalhosConfigs.isOpen ?
                                 <div>
                                     <h1>A publicação de trabalhos está fechada, e ainda não temos uma data definida para a abertura.</h1>
                                     <p>Acompanhe nossas redes sociais para receber novidades.</p>
