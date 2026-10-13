@@ -1,5 +1,21 @@
 export type WorkFileRequirement = { titulo: string; formatos: string[] };
 
+// Reserva margem para o multipart abaixo do limite de 4,5 MB da Vercel.
+export const MAX_WORK_UPLOAD_PART_BYTES = 4 * 1024 * 1024;
+const DEFAULT_WORK_UPLOAD_CHUNK_BYTES = 2.5 * 1024 * 1024;
+
+export function workUploadLimits(config?: { chunk_limite?: unknown; chunk_tamanho?: unknown }) {
+    const safeBytes = (value: unknown, fallback: number): number =>
+        typeof value === 'number' && Number.isSafeInteger(value) && value > 0
+            ? Math.min(value, MAX_WORK_UPLOAD_PART_BYTES)
+            : fallback;
+
+    return {
+        chunkThreshold: safeBytes(config?.chunk_limite, MAX_WORK_UPLOAD_PART_BYTES),
+        chunkSize: safeBytes(config?.chunk_tamanho, DEFAULT_WORK_UPLOAD_CHUNK_BYTES),
+    };
+}
+
 export type WorkFileConfig = {
     isOpen?: boolean;
     data_inicio_submissao?: string;
