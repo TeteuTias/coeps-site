@@ -2,6 +2,7 @@ import { ObjectId } from "bson"
 
 
 export interface IAcademicWorksProps {
+    submissionExceptionExpiresAt?: string | null;
     "data_inicio_submissao": string, // essa data está em string, já com o fuso -03:00
     "data_limite_submissao": string, // essa data está em string, já com o fuso -03:00
     "data_publicacao_resultados": string,
@@ -92,6 +93,7 @@ export interface IAcademicWorks {
     remotePurchaseId?: ObjectId;
     financialReviewStatus?: 'CLEAR' | 'REVIEW_REQUIRED';
     financialReviewReason?: string;
+    submissionException?: { activatedAt: Date; expiresAt: Date };
 }
 export interface ArquivoUpload {
     fileId: string;

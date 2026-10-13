@@ -562,7 +562,7 @@ function SubmissionForm() {
       />
     )
   }
-  if (!workSubmissionIsOpen(trabalhosProps)) {
+  if (!workSubmissionIsOpen(trabalhosProps) && !trabalhosProps.submissionExceptionExpiresAt) {
     return (
       <div className='periodo-fechado'>
         <h1>O período de submissão já foi encerrado.</h1>
@@ -573,9 +573,16 @@ function SubmissionForm() {
   //
 
 
+  const exceptionNotice = trabalhosProps.submissionExceptionExpiresAt ? (
+    <StatusBanner tone="warning" title="Liberação excepcional" className="mb-6">
+      Você pode enviar um trabalho até {new Date(trabalhosProps.submissionExceptionExpiresAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })} (horário de Brasília).
+    </StatusBanner>
+  ) : null;
+
   if (currentStep === 'topicos') {
     return (
       <div className="formulario-principal">
+        {exceptionNotice}
         <div className="flex items-center justify-between mb-6">
           <button onClick={voltarParaDados} className="btn-voltar">
             <ArrowLeft className="mr-2" size={16} />
@@ -680,6 +687,7 @@ function SubmissionForm() {
       )}
 
       <form onSubmit={handleDadosSubmit} className="formulario-principal">
+        {exceptionNotice}
         <div className="form-header">
           <h1 className="form-title">Submissão de Trabalho</h1>
           <p className="form-subtitle">Preencha os dados abaixo e anexe os arquivos do seu trabalho.</p>
