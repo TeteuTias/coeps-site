@@ -6,7 +6,9 @@ import {
     validateRemoteProofEnvelope,
 } from '../remote-work-proof-validation.ts';
 
-test('aceita somente extensões suportadas até 10 MiB', () => {
+test('aceita somente extensões suportadas até o limite de tamanho', () => {
+    // Acima disso a Vercel devolve 413 antes de a rota rodar.
+    assert.ok(REMOTE_WORK_MAX_PROOF_BYTES <= 4 * 1024 * 1024);
     for (const name of ['conta.pdf', 'foto.jpg', 'foto.JPEG', 'arquivo.png']) {
         assert.equal(validateRemoteProofEnvelope({ name, size: REMOTE_WORK_MAX_PROOF_BYTES }).ok, true, name);
     }

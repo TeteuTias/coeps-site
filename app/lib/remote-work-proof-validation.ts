@@ -14,7 +14,7 @@ export function validateRemoteProofEnvelope(input: { name: unknown; size: unknow
     | { ok: false; status: number; code: string; message: string } {
     const size = Number(input.size);
     if (!Number.isFinite(size) || size <= 0 || size > REMOTE_WORK_MAX_PROOF_BYTES) {
-        return { ok: false, status: 413, code: 'invalid_proof_size', message: 'O comprovante deve ter no máximo 10 MiB.' };
+        return { ok: false, status: 413, code: 'invalid_proof_size', message: `O comprovante deve ter no máximo ${REMOTE_WORK_MAX_PROOF_BYTES / 1024 / 1024} MB.` };
     }
     const extension = String(input.name || '').split('.').pop()?.toLowerCase() || '';
     const expectedMime = MIME_BY_EXTENSION[extension];
