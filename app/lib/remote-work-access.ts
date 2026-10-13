@@ -9,7 +9,8 @@ export const REMOTE_WORK_SUBMISSION_LOCKS_COLLECTION = 'trabalhos_submission_loc
 export const REMOTE_WORK_PRODUCT_TYPE = 'remote-work-access' as const;
 export const REMOTE_WORK_PRICE_CENTS = 6_000;
 export const REMOTE_WORK_ELIGIBILITY_RULE_VERSION = 'cieps-2026-city-denylist-v1';
-export const REMOTE_WORK_MAX_PROOF_BYTES = 10 * 1024 * 1024;
+// A Vercel recusa corpos acima de 4,5 MB antes de a requisição chegar à rota.
+export const REMOTE_WORK_MAX_PROOF_BYTES = 4 * 1024 * 1024;
 
 export function remoteWorkActiveKey(editionId: string, userId: string): string {
     return `${editionId}:${userId}:${REMOTE_WORK_PRODUCT_TYPE}`;

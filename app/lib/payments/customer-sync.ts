@@ -115,10 +115,10 @@ export function normalizeCardHolderInput(
     const email = optionalString(input.email) || '';
     const phone = String(input.phone ?? input.mobilePhone ?? '').replace(/\D/g, '');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        return { ok: false, message: 'Informe um e-mail válido para o titular do cartão.' };
+        return { ok: false, message: 'Informe um e-mail válido do pagador.' };
     }
     if (phone.length < 10 || phone.length > 11) {
-        return { ok: false, message: 'Informe um telefone válido para o titular do cartão.' };
+        return { ok: false, message: 'Informe um telefone do pagador com DDD (10 ou 11 dígitos).' };
     }
 
     return { ok: true, value: { ...payer.value, email, phone } };

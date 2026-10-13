@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle2, CreditCard, FileUp, Laptop, Loader2, MapPin, QrCode } from 'lucide-react';
 import { AsyncStatePanel, Button, PageShell, StatusBanner } from '@/components/cieps';
 import { fetchWithTimeout, readJsonResponse } from '@/lib/client/fetchWithTimeout';
+import { REMOTE_WORK_MAX_PROOF_BYTES } from '@/lib/remote-work-access';
 import type PaymentTicketProps from '@/lib/types/payments/paymentTicket.t';
 import type { PublicRemoteWorkAccess } from '@/lib/types/remote-work-access';
 
@@ -23,6 +24,8 @@ type Payer = {
     cpfCnpj: string;
     postalCode: string;
     addressNumber: string;
+    street: string;
+    neighborhood: string;
     complement: string;
     phone: string;
 };
@@ -41,7 +44,7 @@ export default function RemoteWorkPaymentPage() {
     const [municipalityCode, setMunicipalityCode] = useState('');
     const [proof, setProof] = useState<File | null>(null);
     const [consentAccepted, setConsentAccepted] = useState(false);
-    const [payer, setPayer] = useState<Payer>({ name: '', email: '', cpfCnpj: '', postalCode: '', addressNumber: '', complement: '', phone: '' });
+    const [payer, setPayer] = useState<Payer>({ name: '', email: '', cpfCnpj: '', postalCode: '', addressNumber: '', street: '', neighborhood: '', complement: '', phone: '' });
     const [session, setSession] = useState<PaymentTicketProps | null>(null);
     const [method, setMethod] = useState<'PIX' | 'CREDIT_CARD'>('PIX');
     const [card, setCard] = useState({ name: '', number: '', expiry: '', cvc: '' });
@@ -96,6 +99,10 @@ export default function RemoteWorkPaymentPage() {
     const uploadProof = async () => {
         if (!proof || !municipalityCode || !consentAccepted) {
             setError('Selecione município, comprovante e aceite os termos.');
+            return;
+        }
+        if (proof.size > REMOTE_WORK_MAX_PROOF_BYTES) {
+            setError(`O comprovante deve ter no máximo ${REMOTE_WORK_MAX_PROOF_BYTES / 1024 / 1024} MB.`);
             return;
         }
         setBusy(true);
@@ -164,6 +171,8 @@ export default function RemoteWorkPaymentPage() {
             await loadStatus();
         } catch (cause) {
             setError(cause instanceof Error ? cause.message : 'Não foi possível criar a cobrança.');
+            // A sessão pode ter vencido no servidor: recarrega para a tela voltar a oferecer "Continuar".
+            await loadStatus().catch(() => undefined);
         } finally {
             setBusy(false);
         }
@@ -217,7 +226,7 @@ export default function RemoteWorkPaymentPage() {
                         {accessReady && <p className="mt-3 rounded-md bg-emerald-50 p-3 text-sm text-emerald-800">Comprovante atual: {status.access?.proof.originalName} · {status.access?.municipalityName}/{status.access?.uf}</p>}
                         <div className="mt-5 grid gap-4 sm:grid-cols-2"><label className="text-sm font-semibold">UF<select className={`${inputClass} mt-1`} value={uf} onChange={(event) => { setUf(event.target.value); setMunicipalityCode(''); }}><option value="">Selecione</option>{UFS.map((item) => <option key={item}>{item}</option>)}</select></label><label className="text-sm font-semibold">Município<select className={`${inputClass} mt-1`} value={municipalityCode} onChange={(event) => setMunicipalityCode(event.target.value)} disabled={!uf}><option value="">Selecione</option>{municipalities.map((item) => <option key={item.code} value={item.code} disabled={!item.remoteEligible}>{item.name}{item.remoteEligible ? '' : ' - indisponível'}</option>)}</select></label></div>
                         {selectedMunicipality && !selectedMunicipality.remoteEligible && <p className="mt-3 text-sm font-semibold text-red-700">A participação remota não está disponível nessa cidade.</p>}
-                        <label className="mt-5 block text-sm font-semibold"><span className="flex items-center gap-2"><FileUp className="h-4 w-4" /> Comprovante de endereço</span><input className={`${inputClass} mt-2`} type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" onChange={(event) => setProof(event.target.files?.[0] || null)} /></label>
+                        <label className="mt-5 block text-sm font-semibold"><span className="flex items-center gap-2"><FileUp className="h-4 w-4" /> Comprovante de endereço (PDF, JPG ou PNG, até {REMOTE_WORK_MAX_PROOF_BYTES / 1024 / 1024} MB)</span><input className={`${inputClass} mt-2`} type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" onChange={(event) => setProof(event.target.files?.[0] || null)} /></label>
                         <label className="mt-4 flex items-start gap-3 text-sm text-[var(--cieps-muted)]"><input className="mt-1" type="checkbox" checked={consentAccepted} onChange={(event) => setConsentAccepted(event.target.checked)} /><span>Autorizo o tratamento deste comprovante exclusivamente para validar a participação remota e para auditoria administrativa.</span></label>
                         <Button className="mt-5 w-full" onClick={uploadProof} disabled={busy || Boolean(session) || !proof || !municipalityCode || !consentAccepted}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : session ? 'Comprovante vinculado à cobrança' : 'Salvar comprovante'}</Button>
                     </section>
@@ -230,8 +239,10 @@ export default function RemoteWorkPaymentPage() {
                             <input className={inputClass} aria-label="CPF do pagador" placeholder="CPF" value={payer.cpfCnpj} onChange={(e) => setPayer({ ...payer, cpfCnpj: e.target.value })} />
                             <input className={inputClass} aria-label="CEP do pagador" placeholder="CEP" value={payer.postalCode} onChange={(e) => setPayer({ ...payer, postalCode: e.target.value })} />
                             <input className={inputClass} aria-label="Número do endereço" placeholder="Número" value={payer.addressNumber} onChange={(e) => setPayer({ ...payer, addressNumber: e.target.value })} />
+                            <input className={`${inputClass} sm:col-span-2`} aria-label="Rua do pagador" placeholder="Rua / logradouro" value={payer.street} onChange={(e) => setPayer({ ...payer, street: e.target.value })} />
+                            <input className={inputClass} aria-label="Bairro do pagador" placeholder="Bairro" value={payer.neighborhood} onChange={(e) => setPayer({ ...payer, neighborhood: e.target.value })} />
                             <input className={inputClass} aria-label="Complemento" placeholder="Complemento (opcional)" value={payer.complement} onChange={(e) => setPayer({ ...payer, complement: e.target.value })} />
-                            <input className={inputClass} aria-label="Telefone" placeholder="Telefone" value={payer.phone} onChange={(e) => setPayer({ ...payer, phone: e.target.value })} />
+                            <input className={`${inputClass} sm:col-span-2`} aria-label="Telefone" placeholder="Telefone com DDD" value={payer.phone} onChange={(e) => setPayer({ ...payer, phone: e.target.value })} />
                         </div>
                         {!session && <Button className="mt-5 w-full" onClick={createSession} disabled={busy || !accessReady}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Continuar para o pagamento'}</Button>}
                         {paymentPending && <StatusBanner tone="warning" title="Pagamento em processamento">A cobrança já foi criada. A página será atualizada quando a confirmação chegar.</StatusBanner>}

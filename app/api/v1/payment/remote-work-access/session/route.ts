@@ -4,7 +4,7 @@ import { getSession, withApiAuthRequired } from '@/lib/auth0-compat';
 import { connectToDatabase } from '@/lib/mongodb';
 import { createPaymentAssignment, hasConfirmedRegistrationForEdition, updatePaymentAssignment } from '@/lib/payments/codes';
 import { getActivePaymentConfig, getEditionId, isPaymentSalesOpen } from '@/lib/payments/config';
-import { preparePaymentCustomer } from '@/lib/payments/customer-sync';
+import { normalizeCardHolderInput, preparePaymentCustomer } from '@/lib/payments/customer-sync';
 import { toPublicPaymentSession } from '@/lib/payments/public-session';
 import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
 import { runPaymentTransaction } from '@/lib/payments/transactions';
@@ -50,6 +50,20 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
     try {
         const body = await request.json();
         const payerInput = body.payer ?? body;
+        // PIX e cartão exigem e-mail e telefone, e o PIX exige rua e bairro quando a Asaas não os deriva do CEP.
+        // Validar aqui evita gastar os 15 minutos da sessão com um dado que só falharia na cobrança.
+        const payerContact = normalizeCardHolderInput(payerInput);
+        const street = String(payerInput?.street ?? '').trim().slice(0, 255);
+        const neighborhood = String(payerInput?.neighborhood ?? '').trim().slice(0, 255);
+        if (payerContact.ok === false || !street || !neighborhood) {
+            return NextResponse.json(
+                {
+                    error: 'invalid_payment_data',
+                    message: payerContact.ok === false ? payerContact.message : 'Informe a rua e o bairro do pagador.',
+                },
+                { status: 400 },
+            );
+        }
         const { db, client } = await connectToDatabase();
         const config = await getActivePaymentConfig(db);
         if (!config) {
@@ -155,8 +169,8 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                 complement: preparedCustomer.payer.complement || '',
                 email: String(authSession?.user?.email || ''),
                 phone: String(body?.payer?.phone || ''),
-                street: '',
-                neighborhood: '',
+                street,
+                neighborhood,
             },
         };
 

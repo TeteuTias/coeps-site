@@ -35,7 +35,11 @@ export const GET = withApiAuthRequired(async function GET(request: Request) {
                 owner,
                 edicaoId: editionId,
                 type: REMOTE_WORK_PRODUCT_TYPE,
-                status: { $in: ['OPEN', 'CREATING_PAYMENT', 'PAYMENT_PENDING', 'PAYMENT_REVIEW_REQUIRED'] },
+                // Sessão OPEN vencida não conta: a tela precisa oferecer "Continuar" para a rota de sessão expirá-la e abrir outra.
+                $or: [
+                    { status: 'OPEN', expiresAt: { $gt: new Date() } },
+                    { status: { $in: ['CREATING_PAYMENT', 'PAYMENT_PENDING', 'PAYMENT_REVIEW_REQUIRED'] } },
+                ],
             }),
             db.collection('usuarios').findOne(
                 { _id: owner },

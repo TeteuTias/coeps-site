@@ -234,7 +234,8 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             items: [
                 {
                     description: lockedSession.paymentConfig.nome,
-                    name: lockedSession.paymentConfig.nome,
+                    // A Asaas recusa items[].name acima de 30 caracteres; o nome completo segue em description.
+                    name: String(lockedSession.paymentConfig.nome).slice(0, 30),
                     quantity: 1,
                     value: lockedSession.paymentConfig.precos.valorPix,
                 },
@@ -309,7 +310,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                 {
                     error: checkoutResult.repair.code.toLowerCase(),
                     message: checkoutResult.repair.code === 'CUSTOMER_ADDRESS_INVALID'
-                        ? 'Não foi possível validar seu endereço. Revise CEP, número e bairro em "Meus dados".'
+                        ? 'Não foi possível validar seu endereço. Revise CEP, número e bairro nos dados do pagador.'
                         : checkoutResult.repair.status === 503
                           ? 'Não foi possível confirmar o endereço no gateway. Tente novamente.'
                           : 'O gateway recusou a atualização do endereço. Revise seus dados.',
@@ -349,7 +350,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                         ? 'payment_customer_address_invalid'
                         : 'pix_checkout_failed',
                     message: missingCustomerAddress
-                        ? 'Não foi possível validar seu endereço. Revise CEP, número e bairro em "Meus dados".'
+                        ? 'Não foi possível validar seu endereço. Revise CEP, número e bairro nos dados do pagador.'
                         : gatewayBody?.errors?.[0]?.description ||
                           'Não foi possível criar o checkout PIX.',
                 },
