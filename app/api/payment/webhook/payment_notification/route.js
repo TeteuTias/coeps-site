@@ -489,6 +489,7 @@ export async function updateLegacyPayment(
   mongoSession,
   allowConfirmedTransition = true,
   manageLegacyTicketRefund = true,
+  manageLegacyPaymentType = true,
 ) {
   const event = String(payload?.event || '');
   const payment = payload?.payment || {};
@@ -577,7 +578,9 @@ export async function updateLegacyPayment(
     storedPayment?._type === 'ticket'
   ) {
     set['pagamento.situacao'] = 1;
-    set['pagamento.tipo_pagamento'] = 'asaas';
+    if (manageLegacyPaymentType) {
+      set['pagamento.tipo_pagamento'] = 'asaas';
+    }
   } else if (
     isCancelledEvent(event) &&
     storedPayment?._type === 'ticket' &&
@@ -1710,6 +1713,7 @@ export async function processEvent(db, payload, mongoSession) {
       mongoSession,
       allowLegacyConfirmation,
       false,
+      false, // Modern confirmation owns the payment type; legacy must not overwrite it.
     );
     return {
       sessionId: session._id,
