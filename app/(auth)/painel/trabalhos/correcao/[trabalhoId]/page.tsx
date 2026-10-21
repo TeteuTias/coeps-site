@@ -311,7 +311,7 @@ const TrabalhoComponent: React.FC<{ trabalho: IAcademicWorks, setTrabalhoData: R
                                             timeStyle: 'medium',
                                         })}
                                     </p>
-                                    <div className="prose prose-slate max-w-none mt-1" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(comentario.comentario) }} />
+                                    <div className="avaliacao-texto prose prose-slate max-w-none mt-1" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(comentario.comentario) }} />
                                 </div>
                             ))
                         }
