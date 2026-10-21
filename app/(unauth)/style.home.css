@@ -791,3 +791,34 @@
     flex-direction: column;
   }
 }
+
+.cieps-modal-card.aviso-autores-card {
+  max-width: 460px;
+  padding: 1rem;
+}
+
+.aviso-autores-card > header {
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  width: 1px;
+}
+
+.aviso-autores-card .cieps-modal-content {
+  margin-top: 0;
+}
+
+.aviso-autores-imagem {
+  border-radius: 6px;
+  display: block;
+  height: auto;
+  margin: 0 auto;
+  max-height: calc(min(90vh, 760px) - 2rem);
+  object-fit: contain;
+  width: auto;
+  max-width: 100%;
+}

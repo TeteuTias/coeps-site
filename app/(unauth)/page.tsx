@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { BookOpen, Globe2, Presentation, Star, UsersRound } from 'lucide-react';
+import AvisoAutoresPopup from '@/components/AvisoAutoresPopup';
 import './style.home.css';
 
 const metrics = [
@@ -38,6 +39,7 @@ const programacao = [
 export default function Home() {
   return (
     <main className="cieps-home">
+      <AvisoAutoresPopup />
       <section className="landing-hero">
         <div className="landing-hero-copy">
           <span className="cieps-kicker">A virada de 2026</span>
