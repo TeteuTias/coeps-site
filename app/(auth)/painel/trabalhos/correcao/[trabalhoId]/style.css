@@ -662,3 +662,27 @@
     font-size: 1rem;
   }
 }
+
+/* Texto das avaliações: quebra automática mesmo quando o HTML colado traz
+   white-space: nowrap, largura fixa ou palavras longas (links, DOI). */
+.avaliacao-texto {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.avaliacao-texto * {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal !important;
+  word-break: break-word;
+}
+
+.avaliacao-texto pre,
+.avaliacao-texto table {
+  white-space: pre-wrap !important;
+}
+
+.avaliacao-texto img {
+  height: auto;
+}

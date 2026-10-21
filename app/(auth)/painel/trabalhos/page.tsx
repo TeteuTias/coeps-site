@@ -513,7 +513,7 @@ const TrabalhoPostado: React.FC<{
                                                     {comentario.status}
                                                 </span>
                                             </div>
-                                            <div className="mb-3 text-black" dangerouslySetInnerHTML={{ __html: HtmlSanitizer(comentario.comentario) }}>
+                                            <div className="avaliacao-texto mb-3 text-black" dangerouslySetInnerHTML={{ __html: HtmlSanitizer(comentario.comentario) }}>
                                             </div>
                                         </div>
                                     ))
