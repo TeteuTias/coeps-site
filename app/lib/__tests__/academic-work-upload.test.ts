@@ -7,7 +7,7 @@ import { runInNewContext } from 'node:vm';
 import { fileTypeFromBuffer } from 'file-type';
 import ts from 'typescript';
 import {
-    MAX_WORK_UPLOAD_PART_BYTES, workUploadLimits, validateWorkFile, workFileExtension,
+    MAX_WORK_UPLOAD_PART_BYTES, workUploadLimits, validateWorkFile, workFileExtension, workFileMime,
 } from '../academic-work-files.ts';
 
 const MiB = 1024 * 1024;
@@ -64,7 +64,9 @@ test('4 MiB usa upload simples; acima disso usa partes com multipart abaixo de 4
 
 // ZIP armazenado com CRC e diretório central válidos, sem dependência extra.
 // Permite colocar os metadados DOCX depois de uma entrada maior que 4,5 MB.
-function zip(entries: Array<[string, Buffer]>): Buffer {
+// Com dataDescriptor, CRC e tamanhos ficam zerados no cabeçalho local e vêm depois dos dados,
+// como em DOCX gerados por Google Docs, Word online e conversores.
+function zip(entries: Array<[string, Buffer]>, { dataDescriptor = false } = {}): Buffer {
     const files: Buffer[] = [];
     const directory: Buffer[] = [];
     let offset = 0;
@@ -73,6 +75,7 @@ function zip(entries: Array<[string, Buffer]>): Buffer {
         const local = Buffer.alloc(30);
         local.writeUInt32LE(0x04034b50, 0);
         local.writeUInt16LE(20, 4);
+        local.writeUInt16LE(dataDescriptor ? 0x0008 : 0, 6);
         local.writeUInt32LE(crc32(bytes), 14);
         local.writeUInt32LE(bytes.length, 18);
         local.writeUInt32LE(bytes.length, 22);
@@ -83,9 +86,15 @@ function zip(entries: Array<[string, Buffer]>): Buffer {
         central.writeUInt16LE(20, 6);
         local.copy(central, 8, 6, 28);
         central.writeUInt32LE(offset, 42);
-        files.push(local, name, bytes);
+        const descriptor = Buffer.alloc(dataDescriptor ? 16 : 0);
+        if (dataDescriptor) {
+            descriptor.writeUInt32LE(0x08074b50, 0);
+            local.copy(descriptor, 4, 14, 26);
+            local.fill(0, 14, 26);
+        }
+        files.push(local, name, bytes, descriptor);
         directory.push(central, name);
-        offset += local.length + name.length + bytes.length;
+        offset += local.length + name.length + bytes.length + descriptor.length;
     }
     const end = Buffer.alloc(22);
     end.writeUInt32LE(0x06054b50, 0);
@@ -96,13 +105,13 @@ function zip(entries: Array<[string, Buffer]>): Buffer {
     return Buffer.concat([...files, ...directory, end]);
 }
 
-function largeDocx(): Buffer {
+function largeDocx({ paddingBytes = 6 * MiB, dataDescriptor = false } = {}): Buffer {
     return zip([
-        ['padding.bin', Buffer.alloc(6 * MiB, 42)],
+        ['padding.bin', Buffer.alloc(paddingBytes, 42)],
         ['_rels/.rels', Buffer.from('<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>')],
         ['word/document.xml', Buffer.from('<?xml version="1.0"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>Teste</w:t></w:r></w:p></w:body></w:document>')],
         ['[Content_Types].xml', Buffer.from('<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="bin" ContentType="application/octet-stream"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>')],
-    ]);
+    ], { dataDescriptor });
 }
 
 type Chunk = { chunkId: string; chunkIndex: number; totalChunks: number; size: number;
@@ -164,7 +173,7 @@ function reconstructionHarness(bytes: Buffer, name: string, options: HarnessOpti
             return fileTypeFromBuffer(buffer);
         } },
         'next/server': { NextResponse: Response },
-        '@/lib/academic-work-files': { validateWorkFile, workFileExtension },
+        '@/lib/academic-work-files': { validateWorkFile, workFileExtension, workFileMime },
         '@/lib/auth0-compat': {
             getSession: async () => ({ user: { sub: 'auth0|owner' } }),
             withApiAuthRequired: (handler: (request: Request) => Promise<Response>) => (request: Request) =>
@@ -247,6 +256,28 @@ test('DOCX de mais de 6 MiB com metadados no fim mantém hash e MIME após recon
     assert.equal(createHash('sha256').update(harness.puts[0].bytes).digest('hex'),
         createHash('sha256').update(bytes).digest('hex'));
     assert.equal(harness.inserted[0].contentType, docxMime);
+});
+
+test('DOCX com data descriptor acima de 1 MiB é aceito mesmo quando a file-type responde ZIP', async () => {
+    const bytes = largeDocx({ paddingBytes: 1.2 * MiB, dataDescriptor: true });
+    // Reproduz o limite da file-type que recusava esses DOCX em produção.
+    assert.equal((await fileTypeFromBuffer(bytes))?.mime, 'application/zip');
+    assert.equal(workFileMime('trabalho.docx', bytes, 'application/zip'), docxMime);
+    const harness = reconstructionHarness(bytes, 'trabalho.docx', { chunkSize: 512 * 1024 });
+    assert.equal((await harness.request()).status, 200);
+    assert.equal(harness.inserted[0].contentType, docxMime);
+    assert.equal(harness.puts[0].options.contentType, docxMime);
+});
+
+test('reserva de DOCX não aceita ZIP sem pacote Word, outra extensão nem arquivo truncado', () => {
+    const docx = largeDocx({ paddingBytes: 1024, dataDescriptor: true });
+    const plainZip = zip([['texto.txt', Buffer.from('arquivo comum')], ['[Content_Types].xml', Buffer.from('<Types/>')]]);
+    assert.equal(workFileMime('falso.docx', plainZip, 'application/zip'), 'application/zip');
+    assert.equal(workFileMime('trabalho.pdf', docx, 'application/zip'), 'application/zip');
+    assert.equal(workFileMime('trabalho.docx', docx.subarray(0, docx.length - 30), 'application/zip'), 'application/zip');
+    assert.equal(workFileMime('trabalho.docx', Buffer.alloc(10), 'application/zip'), 'application/zip');
+    assert.equal(workFileMime('trabalho.docx', docx, 'application/pdf'), 'application/pdf');
+    assert.equal(workFileMime('trabalho.docx', docx, undefined), undefined);
 });
 
 const pdf = readFileSync(new URL('../../../public/modelos/modelo-resumo-simples-i-cieps.pdf', import.meta.url));
