@@ -4,7 +4,7 @@ import { fileTypeFromBuffer } from 'file-type';
 import { NextResponse } from 'next/server';
 import { getSession, withApiAuthRequired } from '@/lib/auth0-compat';
 import { connectToDatabase } from '@/lib/mongodb';
-import { validateWorkFile, workFileExtension } from '@/lib/academic-work-files';
+import { validateWorkFile, workFileExtension, workFileMime } from '@/lib/academic-work-files';
 
 export const maxDuration = 300;
 const MAX_FILE_SIZE = 100 * 1024 * 1024;
@@ -66,21 +66,21 @@ export const POST = withApiAuthRequired(async function POST(request) {
             if (partRead !== chunk.size) throw new Error('Parte incompleta.');
         }
         if (totalRead !== totalSize) throw new Error('Arquivo incompleto.');
-        const type = await fileTypeFromBuffer(fileBuffer);
-        const validationError = validateWorkFile({ name: originalName, size: totalSize, contentType: type?.mime },
+        const mime = workFileMime(originalName, fileBuffer, (await fileTypeFromBuffer(fileBuffer))?.mime);
+        const validationError = validateWorkFile({ name: originalName, size: totalSize, contentType: mime },
             { titulo: 'arquivo', formatos: ['.pdf', '.doc', '.docx'] }, MAX_FILE_SIZE);
-        if (!type || validationError) {
+        if (!mime || validationError) {
             return NextResponse.json({ error: validationError || 'Tipo de arquivo não suportado.' }, { status: 415 });
         }
         const pathname = `${userId}/trabalhos/${randomUUID()}${workFileExtension(originalName)}`;
         finalBlob = await put(pathname, fileBuffer, {
-            access: 'public', contentType: type.mime, multipart: true,
+            access: 'public', contentType: mime, multipart: true,
         });
         const uploadDate = new Date();
         const purpose = body.purpose === 'submission' ? 'submission' : 'correction';
         const fileInfo = {
             pathname: finalBlob.pathname, filename: pathname, originalName, url: finalBlob.url, userId,
-            uploadDate, size: totalSize, contentType: type.mime, purpose,
+            uploadDate, size: totalSize, contentType: mime, purpose,
             chunked: true, chunkIds,
         };
         const result = await db.collection('trabalhos_blob').insertOne(fileInfo);

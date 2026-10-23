@@ -33,6 +33,37 @@ export function workFileExtension(name: string): string {
     return match?.[0].toLowerCase() ?? '';
 }
 
+// Lê os nomes no diretório central do ZIP (fim do arquivo), onde os tamanhos são sempre reais.
+// shortcut: não suporta ZIP64; um DOCX ZIP64 continua recusado até alguém precisar disso.
+function zipEntryNames(bytes: Uint8Array): Set<string> {
+    const names = new Set<string>();
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const lowest = Math.max(0, bytes.length - 22 - 0xffff);
+    for (let end = bytes.length - 22; end >= lowest; end--) {
+        if (view.getUint32(end, true) !== 0x06054b50) continue;
+        let remaining = view.getUint16(end + 10, true);
+        let position = view.getUint32(end + 16, true);
+        while (remaining-- > 0 && position + 46 <= bytes.length && view.getUint32(position, true) === 0x02014b50) {
+            const nameEnd = position + 46 + view.getUint16(position + 28, true);
+            if (nameEnd > bytes.length) break;
+            names.add(new TextDecoder().decode(bytes.subarray(position + 46, nameEnd)));
+            position = nameEnd + view.getUint16(position + 30, true) + view.getUint16(position + 32, true);
+        }
+        break;
+    }
+    return names;
+}
+
+// A file-type desiste de DOCX com data descriptor e mais de 1 MiB antes do [Content_Types].xml
+// e responde application/zip. Nesse caso confirma o pacote Word pelo diretório central.
+export function workFileMime(name: string, bytes: Uint8Array, detectedMime?: string): string | undefined {
+    if (detectedMime !== 'application/zip' || workFileExtension(name) !== '.docx') return detectedMime;
+    const names = zipEntryNames(bytes);
+    return names.has('[Content_Types].xml') && names.has('word/document.xml')
+        ? WORK_FILE_MIME['.docx'][0]
+        : detectedMime;
+}
+
 export function normalizedWorkFileFormats(formats: unknown): string[] {
     if (!Array.isArray(formats)) return [];
     return Array.from(new Set(formats.map((value) => String(value ?? '').trim().toLowerCase())
