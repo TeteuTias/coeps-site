@@ -409,6 +409,25 @@ test('retry de transação após correção concorrente captura também os novos
     assert.deepEqual(harness.removedUrls, ['https://blob.test/0', 'https://blob.test/1', 'https://blob.test/correction']);
 });
 
+test('correção grava os novos anexos marcados como revisados e com a rodada do pedido', async () => {
+    const pedidos = [
+        { status: 'Necessita de Alteração', comentario: 'a', date: new Date() },
+        { status: 'Em Avaliação', comentario: 'b', date: new Date() },
+        { status: 'Necessita de Alteração', comentario: 'c', date: new Date() },
+    ];
+    const harness = deletionHarness({ works: [{ _id: new ObjectId(workId), userId: new ObjectId(ownerId), titulo: 'Trabalho teste',
+        status: 'Necessita de Alteração', arquivos: [{ fileId: 'original', url: 'https://blob.test/0' }], avaliadorComentarios: pedidos }] });
+    assert.equal((await harness.correct()).status, 200);
+    const [original, revisado] = harness.works[0].arquivos;
+    assert.equal(original.enviadoNaCorrecao, undefined);
+    assert.equal(revisado.enviadoNaCorrecao, true);
+    assert.equal(revisado.correcaoNumero, 2);
+    // A rota roda em outro contexto do vm, então instanceof Date não vale aqui
+    assert.ok(Number.isFinite(revisado.uploadDate.getTime()));
+    assert.equal(revisado.url, 'https://blob.test/correction');
+    assert.equal('progress' in revisado, false);
+});
+
 test('correção que leu o trabalho antes da exclusão retorna 409 quando a gravação perde a disputa', async () => {
     const harness = deletionHarness({ ...twoFiles(), deleteBeforeCorrectionWrite: true });
     const response = await harness.correct();

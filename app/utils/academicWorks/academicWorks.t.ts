@@ -55,7 +55,9 @@ export interface IAcademicWorks {
         originalName: string,
         size: number,
         uploadDate: Date,
-        url: string
+        url: string,
+        enviadoNaCorrecao?: boolean,
+        correcaoNumero?: number
     }[];
     topicos: {
         resu: string,

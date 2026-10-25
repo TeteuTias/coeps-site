@@ -40,6 +40,22 @@ export const PUT: any = withApiAuthRequired(async function (req) {
         }
 
         //
+        // Marca os arquivos como revisados para os corretores distinguirem da versão anterior
+        const uploadDate = new Date();
+        // Cada pedido de alteração gera uma rodada; outras avaliações também gravam comentário
+        const correcaoNumero = (workData.avaliadorComentarios || [])
+            .filter((comentario) => comentario.status === 'Necessita de Alteração').length || 1;
+        const revisedFiles = newFiles.map((arquivo) => ({
+            fileId: arquivo.fileId,
+            fileName: arquivo.fileName,
+            originalName: arquivo.originalName,
+            url: arquivo.url,
+            size: arquivo.size,
+            uploadDate,
+            enviadoNaCorrecao: true,
+            correcaoNumero,
+        }));
+        //
         // Realizando Alteração
         const updateResult = await db.collection(collection).updateOne(
             {
@@ -55,7 +71,7 @@ export const PUT: any = withApiAuthRequired(async function (req) {
                 },
                 $push: {
                     arquivos: {
-                        $each: newFiles
+                        $each: revisedFiles
                     }
                 }
             }
