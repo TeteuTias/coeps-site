@@ -107,8 +107,9 @@ function toSnapshot(code: PaymentCodeDocument): PaymentCodeSnapshot {
         ...(code.tipo === 'DESCONTO'
             ? {
                 perfilUtilizador:
-                    code.perfilUtilizador === 'ORGANIZADOR'
-                        ? 'ORGANIZADOR'
+                    code.perfilUtilizador === 'ORGANIZADOR' ||
+                    code.perfilUtilizador === 'PROFISSIONAL_SAUDE'
+                        ? code.perfilUtilizador
                         : 'CONGRESSISTA',
             }
             : {}),
@@ -149,6 +150,7 @@ async function findAvailableCode(
     if (
         tipo === 'DESCONTO' &&
         code.perfilUtilizador !== 'ORGANIZADOR' &&
+        code.perfilUtilizador !== 'PROFISSIONAL_SAUDE' &&
         (!Number.isInteger(code.percentualDesconto) ||
             Number(code.percentualDesconto) < 1 ||
             Number(code.percentualDesconto) > 99)

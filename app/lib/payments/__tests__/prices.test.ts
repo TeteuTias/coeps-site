@@ -64,8 +64,26 @@ test('desconta cada opção e mantém o total parcelado igual ao enviado ao gate
     assert.equal(result.amounts.desconto.CREDIT_CARD, 2835);
 });
 
-test('recusa percentuais fora da primeira versão', () => {
+test('recusa percentuais fora de 1 a 100', () => {
     assert.throws(() => validateDiscountPercent(0));
-    assert.throws(() => validateDiscountPercent(100));
+    assert.throws(() => validateDiscountPercent(101));
     assert.throws(() => validateDiscountPercent(10.5));
+});
+
+test('desconto de 100% zera todos os meios e parcelas', () => {
+    const result = applyDiscountToLot({
+        codigo: 1,
+        nome: 'Lote',
+        limiteVagas: 100,
+        precos: {
+            valorAVista: 400,
+            valorPix: 390,
+            valorBoleto: 400,
+            valorDebito: 400,
+            parcelamentos: [{ codigo: 31, totalParcelas: 3, valorCadaParcela: 150 }],
+        },
+    } as never, 100);
+    assert.deepEqual(result.amounts.final, { PIX: 0, BOLETO: 0, DEBIT_CARD: 0, CREDIT_CARD: 0 });
+    assert.equal(result.amounts.desconto.PIX, 39_000);
+    assert.equal(result.lot.precos.parcelamentos[0].valorCadaParcela, 0);
 });

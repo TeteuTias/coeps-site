@@ -319,6 +319,8 @@ export async function POST(request: Request) {
         .collection('pagamentos.sessoes')
         .find({
             $and: [
+                // Cortesia (100%) é confirmada sem cobrança no Asaas; não há o que conciliar.
+                { metodoPagamento: { $ne: 'CORTESIA' } },
                 {
                     $or: [
                         {

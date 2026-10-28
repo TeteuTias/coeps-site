@@ -13,7 +13,8 @@ function publicCodeSnapshot(value: unknown) {
             ? { percentualDesconto: snapshot.percentualDesconto }
             : {}),
         ...(snapshot.perfilUtilizador === 'ORGANIZADOR' ||
-        snapshot.perfilUtilizador === 'CONGRESSISTA'
+        snapshot.perfilUtilizador === 'CONGRESSISTA' ||
+        snapshot.perfilUtilizador === 'PROFISSIONAL_SAUDE'
             ? { perfilUtilizador: snapshot.perfilUtilizador }
             : {}),
     };

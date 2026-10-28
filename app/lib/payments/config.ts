@@ -188,7 +188,8 @@ async function countCapacityRelevantDocuments(
                 },
             },
         },
-        { $match: { perfilUtilizadorResolvido: { $ne: 'ORGANIZADOR' } } },
+        // Organizadores e profissionais da saúde não ocupam vagas dos lotes.
+        { $match: { perfilUtilizadorResolvido: { $nin: ['ORGANIZADOR', 'PROFISSIONAL_SAUDE'] } } },
         {
             $count: 'total',
         },
