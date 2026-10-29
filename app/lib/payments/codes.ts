@@ -162,6 +162,17 @@ async function findAvailableCode(
         );
     }
 
+    if (
+        code.limiteUsos !== undefined &&
+        Number(code.usosRealizados ?? 0) >= Number(code.limiteUsos)
+    ) {
+        throw new PaymentCodeError(
+            'Este código atingiu o limite de usos.',
+            422,
+            'PAYMENT_CODE_EXHAUSTED',
+        );
+    }
+
     return code;
 }
 
@@ -265,6 +276,65 @@ export async function reserveDiscountCode(
             'Código inválido ou indisponível.',
             409,
             'PAYMENT_CODE_ALREADY_USED',
+        );
+    }
+
+    return toSnapshot(result);
+}
+
+/**
+ * Código de profissional da saúde tem vários usos e a inscrição é confirmada na mesma transação:
+ * conta o uso com incremento atômico limitado por `limiteUsos` (sem `RESERVADO`); o rollback desfaz a contagem.
+ */
+export async function claimHealthCodeUse(
+    db: Db,
+    input: { edicaoId: string; codigo: unknown; mongoSession?: ClientSession },
+): Promise<PaymentCodeSnapshot> {
+    if (!paymentCodesEnabled()) {
+        throw new PaymentCodeError(
+            'O uso de códigos está temporariamente indisponível.',
+            503,
+            'PAYMENT_CODES_DISABLED',
+        );
+    }
+
+    const codigoNormalizado = requireNormalizedCode(input.codigo);
+    const now = new Date();
+    const usos = { $ifNull: ['$usosRealizados', 0] };
+    const limite = { $ifNull: ['$limiteUsos', 1] };
+    const result = await db
+        .collection<PaymentCodeDocument>(PAYMENT_CODES_COLLECTION)
+        .findOneAndUpdate(
+            {
+                edicaoId: input.edicaoId,
+                codigoNormalizado,
+                tipo: 'DESCONTO',
+                perfilUtilizador: 'PROFISSIONAL_SAUDE',
+                status: 'ATIVO',
+                $and: [
+                    { $or: [{ validoDe: { $exists: false } }, { validoDe: null }, { validoDe: { $lte: now } }] },
+                    { $or: [{ validoAte: { $exists: false } }, { validoAte: null }, { validoAte: { $gt: now } }] },
+                ],
+                $expr: { $lt: [usos, limite] },
+            },
+            [
+                {
+                    $set: {
+                        usosRealizados: { $add: [usos, 1] },
+                        ultimoUsoEm: now,
+                        updatedAt: now,
+                        status: { $cond: [{ $gte: [{ $add: [usos, 1] }, limite] }, 'USADO', 'ATIVO'] },
+                    },
+                },
+            ],
+            { returnDocument: 'after', session: input.mongoSession },
+        );
+
+    if (!result) {
+        throw new PaymentCodeError(
+            'Este código atingiu o limite de usos ou está indisponível.',
+            409,
+            'PAYMENT_CODE_EXHAUSTED',
         );
     }
 

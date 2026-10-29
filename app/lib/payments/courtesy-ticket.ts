@@ -1,11 +1,11 @@
 import type { ClientSession, Db, Document } from 'mongodb';
-import { consumeDiscountCode, createPaymentAssignment, PaymentCodeError } from './codes.ts';
+import { createPaymentAssignment, PaymentCodeError } from './codes.ts';
 
 export const COURTESY_PAYMENT_METHOD = 'CORTESIA';
 
 /**
  * Confirma na hora a inscrição de um profissional da saúde (código gratuito): não existe cobrança no Asaas.
- * Deve rodar na mesma transação que reservou o código e inseriu a sessão CONFIRMED.
+ * Deve rodar na mesma transação que contou o uso do código (`claimHealthCodeUse`) e inseriu a sessão CONFIRMED.
  */
 export async function confirmCourtesyTicket(
     db: Db,
@@ -69,7 +69,4 @@ export async function confirmCourtesyTicket(
         { upsert: true, session: mongoSession },
     );
 
-    if (!(await consumeDiscountCode(db, session._id, mongoSession))) {
-        throw new Error('COURTESY_CODE_CONSUMPTION_FAILED');
-    }
 }
