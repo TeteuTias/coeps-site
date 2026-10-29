@@ -17,6 +17,7 @@ import {
 import {
     buildManualPaymentLot,
     PaymentOfferError,
+    offerIgnoresCurrentLot,
     resolvePaymentOffer,
 } from '@/lib/payments/offer';
 
@@ -68,7 +69,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
         });
 
         if (
-            offer.perfilUtilizador !== 'ORGANIZADOR' &&
+            !offerIgnoresCurrentLot(offer) &&
             body.loteCodigo !== undefined &&
             Number(body.loteCodigo) !== Number(offer.originalLot.codigo)
         ) {

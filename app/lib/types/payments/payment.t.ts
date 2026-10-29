@@ -51,7 +51,7 @@ export interface IPaymentConfig {
 
 export interface IPayment {
     "_id": string & { readonly __brand: 'ObjectId' },
-    "situacao": number, // mostra se está pago ou não => 0, 1 ou 2 onde 0 não há pagamento criado, 1 pago, 2 pagamento criado e esperando confirmação
+    "situacao": number, // mostra se está pago ou não => 0, 1, 2 ou 3 onde 0 não há pagamento criado, 1 pago, 2 pagamento criado e esperando confirmação, 3 inscrição suspensa (profissional da saúde aguardando repasse)
     "lista_pagamentos": {
         "object": string,
         "id": string, // exemplo => "pay_e4qzehxllm4ep78p" NAO É OBJECT ID

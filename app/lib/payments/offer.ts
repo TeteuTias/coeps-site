@@ -110,8 +110,9 @@ export function resolvePaymentOffer(input: {
     discount?: PaymentCodeSnapshot;
 }): ResolvedPaymentOffer {
     const profile: PaymentUserProfile =
-        input.discount?.perfilUtilizador === 'ORGANIZADOR'
-            ? 'ORGANIZADOR'
+        input.discount?.perfilUtilizador === 'ORGANIZADOR' ||
+        input.discount?.perfilUtilizador === 'PROFISSIONAL_SAUDE'
+            ? input.discount.perfilUtilizador
             : 'CONGRESSISTA';
 
     if (profile === 'ORGANIZADOR') {
@@ -139,7 +140,13 @@ export function resolvePaymentOffer(input: {
         };
     }
 
-    if (!input.currentLot) {
+    // Profissional da saúde: inscrição gratuita que não ocupa vaga; com lotes esgotados usa o lote-modelo do organizador.
+    const isHealth = profile === 'PROFISSIONAL_SAUDE';
+    const percent = isHealth ? 100 : input.discount?.percentualDesconto ?? 0;
+    const lot = isHealth
+        ? input.currentLot ?? organizerTemplateLot(input.config, null)
+        : input.currentLot;
+    if (!lot) {
         throw new PaymentOfferError(
             'Nenhum lote está disponível.',
             409,
@@ -147,13 +154,19 @@ export function resolvePaymentOffer(input: {
         );
     }
 
-    const percent = input.discount?.percentualDesconto ?? 0;
-    const discounted = applyDiscountToLot(input.currentLot, percent);
+    const discounted = applyDiscountToLot(lot, percent);
     return {
-        originalLot: input.currentLot,
+        originalLot: lot,
         finalLot: discounted.lot,
         amounts: discounted.amounts,
         perfilUtilizador: profile,
-        origemPreco: percent > 0 ? 'DESCONTO_PERCENTUAL' : 'LOTE',
+        origemPreco: isHealth ? 'CORTESIA' : percent > 0 ? 'DESCONTO_PERCENTUAL' : 'LOTE',
     };
+}
+
+/** Organizador e profissional da saúde têm preço próprio e não dependem do lote vigente mostrado na tela. */
+export function offerIgnoresCurrentLot(
+    offer: Pick<ResolvedPaymentOffer, 'perfilUtilizador' | 'origemPreco'>,
+): boolean {
+    return offer.perfilUtilizador === 'ORGANIZADOR' || offer.perfilUtilizador === 'PROFISSIONAL_SAUDE';
 }

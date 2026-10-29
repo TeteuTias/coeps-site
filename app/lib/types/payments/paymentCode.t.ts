@@ -3,11 +3,12 @@ import type { ILoteAutomatico } from './payment.t';
 
 export type PaymentCodeType = 'DESCONTO' | 'RASTREIO';
 export type PaymentCodeStatus = 'ATIVO' | 'RESERVADO' | 'INATIVO' | 'USADO';
-export type PaymentUserProfile = 'ORGANIZADOR' | 'CONGRESSISTA';
+export type PaymentUserProfile = 'ORGANIZADOR' | 'CONGRESSISTA' | 'PROFISSIONAL_SAUDE';
 export type PaymentPriceOrigin =
     | 'LOTE'
     | 'DESCONTO_PERCENTUAL'
-    | 'ORGANIZADOR_CONFIGURADO';
+    | 'ORGANIZADOR_CONFIGURADO'
+    | 'CORTESIA';
 
 export type PaymentAssignmentStatus =
     | 'ABERTA'

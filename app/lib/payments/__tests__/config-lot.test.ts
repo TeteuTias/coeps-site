@@ -52,7 +52,7 @@ test('conta comprador moderno uma unica vez e exige compraId ausente no legado',
         { type: { $exists: false } },
     ]);
     assert.deepEqual(assignmentPipeline?.at(-2), {
-        $match: { perfilUtilizadorResolvido: { $ne: 'ORGANIZADOR' } },
+        $match: { perfilUtilizadorResolvido: { $nin: ['ORGANIZADOR', 'PROFISSIONAL_SAUDE'] } },
     });
     const sessionPipeline = calls.find(
         (call) => call.collection === 'pagamentos.sessoes',

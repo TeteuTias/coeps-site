@@ -20,11 +20,16 @@ import {
     isPaymentSalesOpen,
     lockPaymentCapacityCalculation,
 } from '@/lib/payments/config';
-import { PaymentOfferError, resolvePaymentOffer } from '@/lib/payments/offer';
+import { offerIgnoresCurrentLot, PaymentOfferError, resolvePaymentOffer } from '@/lib/payments/offer';
 import { toPublicPaymentSession } from '@/lib/payments/public-session';
 import { runPaymentTransaction } from '@/lib/payments/transactions';
 import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
-import { preparePaymentCustomer } from '@/lib/payments/customer-sync';
+import {
+    normalizePaymentCustomerInput,
+    preparePaymentCustomer,
+    type NormalizedPaymentCustomer,
+} from '@/lib/payments/customer-sync';
+import { confirmCourtesyTicket, COURTESY_PAYMENT_METHOD } from '@/lib/payments/courtesy-ticket';
 
 export const POST = withApiAuthRequired(async function POST(request: Request) {
     if (!isPaymentSalesEnabled()) return paymentSalesPausedResponse();
@@ -152,7 +157,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             discount: previewCodes.desconto,
         });
         if (
-            preliminaryOffer.perfilUtilizador !== 'ORGANIZADOR' &&
+            !offerIgnoresCurrentLot(preliminaryOffer) &&
             (loteCodigo === undefined ||
                 Number(preliminaryOffer.originalLot.codigo) !== Number(loteCodigo))
         ) {
@@ -166,29 +171,44 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             );
         }
 
-        const apiUrl = process.env.ASAAS_API_URL;
-        const apiKey = process.env.ASAAS_API_KEY;
-        if (!apiUrl || !apiKey) {
-            return NextResponse.json(
-                { error: 'payment_gateway_not_configured', message: 'Gateway não configurado.' },
-                { status: 503 },
-            );
-        }
-        const preparedCustomer = await preparePaymentCustomer({
-            db,
-            owner,
-            userId,
-            existingCustomerId: user?.id_api,
-            payer: payerInput,
-            email: authSession?.user?.email,
-            apiUrl,
-            apiKey,
-        });
-        if (preparedCustomer.ok === false) {
-            return NextResponse.json(
-                { error: preparedCustomer.code.toLowerCase(), message: preparedCustomer.message },
-                { status: preparedCustomer.status },
-            );
+        // Cortesia (100%) não gera cobrança: valida os dados sem criar cliente no Asaas.
+        const isCourtesy = preliminaryOffer.origemPreco === 'CORTESIA';
+        let payer: NormalizedPaymentCustomer;
+        if (isCourtesy) {
+            const normalizedPayer = normalizePaymentCustomerInput(payerInput);
+            if (normalizedPayer.ok === false) {
+                return NextResponse.json(
+                    { error: 'invalid_payment_data', message: normalizedPayer.message },
+                    { status: 400 },
+                );
+            }
+            payer = normalizedPayer.value;
+        } else {
+            const apiUrl = process.env.ASAAS_API_URL;
+            const apiKey = process.env.ASAAS_API_KEY;
+            if (!apiUrl || !apiKey) {
+                return NextResponse.json(
+                    { error: 'payment_gateway_not_configured', message: 'Gateway não configurado.' },
+                    { status: 503 },
+                );
+            }
+            const preparedCustomer = await preparePaymentCustomer({
+                db,
+                owner,
+                userId,
+                existingCustomerId: user?.id_api,
+                payer: payerInput,
+                email: authSession?.user?.email,
+                apiUrl,
+                apiKey,
+            });
+            if (preparedCustomer.ok === false) {
+                return NextResponse.json(
+                    { error: preparedCustomer.code.toLowerCase(), message: preparedCustomer.message },
+                    { status: preparedCustomer.status },
+                );
+            }
+            payer = preparedCustomer.payer;
         }
 
         const compraId = new ObjectId();
@@ -221,7 +241,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                     discount: discountSnapshot,
                 });
                 if (
-                    offer.perfilUtilizador !== 'ORGANIZADOR' &&
+                    !offerIgnoresCurrentLot(offer) &&
                     (loteCodigo === undefined ||
                         Number(offer.originalLot.codigo) !== Number(loteCodigo))
                 ) {
@@ -229,6 +249,13 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                         'O lote vigente foi atualizado. Recarregue os valores.',
                         409,
                         'PAYMENT_LOT_CHANGED',
+                    );
+                }
+                if ((offer.origemPreco === 'CORTESIA') !== isCourtesy) {
+                    throw new PaymentCodeError(
+                        'O código informado foi alterado. Valide o código novamente.',
+                        409,
+                        'PAYMENT_CODE_CHANGED',
                     );
                 }
 
@@ -242,11 +269,12 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                     : undefined;
                 const createdSession = {
                     _id: compraId,
-                    activeKey: `${edicaoId}:${userId}:ticket`,
+                    ...(isCourtesy ? {} : { activeKey: `${edicaoId}:${userId}:ticket` }),
                     owner,
                     edicaoId,
                     type: 'ticket',
-                    status: 'OPEN',
+                    status: isCourtesy ? 'CONFIRMED' : 'OPEN',
+                    ...(isCourtesy ? { gatewayState: 'COURTESY', confirmedAt: now } : {}),
                     expiresAt,
                     createdAt: now,
                     updatedAt: now,
@@ -261,13 +289,13 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                     orderId: null,
                     paymentUrl: null,
                     pixCode: null,
-                    metodoPagamento: null,
+                    metodoPagamento: isCourtesy ? COURTESY_PAYMENT_METHOD : null,
                     userProps: {
-                        name: preparedCustomer.payer.name,
-                        cpf: preparedCustomer.payer.cpfCnpj,
-                        zipCode: preparedCustomer.payer.postalCode,
-                        number: preparedCustomer.payer.addressNumber,
-                        complement: preparedCustomer.payer.complement || '',
+                        name: payer.name,
+                        cpf: payer.cpfCnpj,
+                        zipCode: payer.postalCode,
+                        number: payer.addressNumber,
+                        complement: payer.complement || '',
                         email: String(authSession?.user?.email || ''),
                         phone: '',
                         street: '',
@@ -278,6 +306,10 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                 await db
                     .collection('pagamentos.sessoes')
                     .insertOne(createdSession, { session: mongoSession });
+                if (isCourtesy) {
+                    await confirmCourtesyTicket(db, createdSession, mongoSession, now);
+                    return createdSession;
+                }
                 await createPaymentAssignment(db, {
                     compraId,
                     edicaoId,
@@ -350,7 +382,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             {
                 success: true,
                 sessao: toPublicPaymentSession(session),
-                message: 'Nova sessão criada com sucesso.',
+                message: isCourtesy ? 'Inscrição de cortesia confirmada.' : 'Nova sessão criada com sucesso.',
             },
             { status: 201 },
         );

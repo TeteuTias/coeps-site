@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PaymentOfferError, resolvePaymentOffer } from '../offer.ts';
+import { offerIgnoresCurrentLot, PaymentOfferError, resolvePaymentOffer } from '../offer.ts';
 
 const firstLot = {
     codigo: 1,
@@ -120,4 +120,46 @@ test('desconto de congressista mantém cálculo percentual e ocupa lote', () => 
         DEBIT_CARD: 30_000,
         CREDIT_CARD: 33_750,
     });
+});
+
+test('profissional da saúde tem inscrição gratuita e ignora o lote da tela', () => {
+    const offer = resolvePaymentOffer({
+        config: automaticConfig(),
+        currentLot: firstLot as never,
+        discount: { perfilUtilizador: 'PROFISSIONAL_SAUDE' } as never,
+    });
+
+    assert.equal(offer.origemPreco, 'CORTESIA');
+    assert.equal(offer.perfilUtilizador, 'PROFISSIONAL_SAUDE');
+    assert.deepEqual(offer.amounts.final, { PIX: 0, BOLETO: 0, DEBIT_CARD: 0, CREDIT_CARD: 0 });
+    assert.equal(offerIgnoresCurrentLot(offer), true);
+});
+
+test('profissional da saúde funciona com lotes esgotados usando o último lote como modelo', () => {
+    const offer = resolvePaymentOffer({
+        config: automaticConfig(),
+        currentLot: null,
+        discount: { perfilUtilizador: 'PROFISSIONAL_SAUDE' } as never,
+    });
+
+    assert.equal(offer.originalLot.codigo, lastLot.codigo);
+    assert.equal(offer.origemPreco, 'CORTESIA');
+    assert.equal(offer.amounts.final.CREDIT_CARD, 0);
+});
+
+test('desconto comum continua dependendo do lote vigente', () => {
+    const offer = resolvePaymentOffer({
+        config: automaticConfig(),
+        currentLot: firstLot as never,
+        discount: { perfilUtilizador: 'CONGRESSISTA', percentualDesconto: 99 } as never,
+    });
+    assert.equal(offerIgnoresCurrentLot(offer), false);
+    assert.throws(
+        () => resolvePaymentOffer({
+            config: automaticConfig(),
+            currentLot: null,
+            discount: { perfilUtilizador: 'CONGRESSISTA', percentualDesconto: 99 } as never,
+        }),
+        (error) => error instanceof PaymentOfferError && error.code === 'PAYMENT_LOT_NOT_FOUND',
+    );
 });

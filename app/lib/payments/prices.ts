@@ -21,8 +21,8 @@ export function centsToMoney(value: number): number {
 }
 
 export function validateDiscountPercent(percent: number): number {
-    if (!Number.isInteger(percent) || percent < 1 || percent > 99) {
-        throw new Error('O percentual de desconto deve ser um inteiro entre 1 e 99.');
+    if (!Number.isInteger(percent) || percent < 1 || percent > 100) {
+        throw new Error('O percentual de desconto deve ser um inteiro entre 1 e 100.');
     }
 
     return percent;

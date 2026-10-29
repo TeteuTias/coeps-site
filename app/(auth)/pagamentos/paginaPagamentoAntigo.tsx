@@ -40,8 +40,8 @@ type PaymentCodesPreview = {
     final: ILoteAutomatico;
   };
   valoresCentavos: PaymentAmountsSnapshot;
-  perfilUtilizador: 'ORGANIZADOR' | 'CONGRESSISTA';
-  origemPreco: 'LOTE' | 'DESCONTO_PERCENTUAL' | 'ORGANIZADOR_CONFIGURADO';
+  perfilUtilizador: 'ORGANIZADOR' | 'CONGRESSISTA' | 'PROFISSIONAL_SAUDE';
+  origemPreco: 'LOTE' | 'DESCONTO_PERCENTUAL' | 'ORGANIZADOR_CONFIGURADO' | 'CORTESIA';
 };
 
 type PersonalInfo = {

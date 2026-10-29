@@ -36,7 +36,7 @@ type PaymentCodesPreview = {
         desconto?: {
             codigo: string;
             percentualDesconto?: number;
-            perfilUtilizador?: 'ORGANIZADOR' | 'CONGRESSISTA';
+            perfilUtilizador?: 'ORGANIZADOR' | 'CONGRESSISTA' | 'PROFISSIONAL_SAUDE';
         };
         rastreio?: {
             codigo: string;
@@ -50,8 +50,8 @@ type PaymentCodesPreview = {
         final: ILoteAutomatico;
     };
     valoresCentavos: PaymentAmountsSnapshot;
-    perfilUtilizador: 'ORGANIZADOR' | 'CONGRESSISTA';
-    origemPreco: 'LOTE' | 'DESCONTO_PERCENTUAL' | 'ORGANIZADOR_CONFIGURADO';
+    perfilUtilizador: 'ORGANIZADOR' | 'CONGRESSISTA' | 'PROFISSIONAL_SAUDE';
+    origemPreco: 'LOTE' | 'DESCONTO_PERCENTUAL' | 'ORGANIZADOR_CONFIGURADO' | 'CORTESIA';
 };
 
 type PaymentHolderInfo = {
@@ -256,6 +256,19 @@ const Pagamentos = () => {
     }
 
     // return <PagamentosManual />
+
+    if (data.pagamento.situacao === 3) { // Profissional da saúde suspenso aguardando repasse
+        return (
+            <PageShell className="flex items-center justify-center">
+                <div className="w-full max-w-2xl">
+                    <StatusBanner tone="warning" title="Inscrição suspensa">
+                        Sua inscrição como profissional da saúde está suspensa enquanto aguardamos o repasse da prefeitura.
+                        Assim que o repasse for confirmado, seu acesso será reativado automaticamente.
+                    </StatusBanner>
+                </div>
+            </PageShell>
+        );
+    }
 
     if (data.pagamento.situacao === 1) { // Está pago
         return (
@@ -1079,7 +1092,8 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
 
     const hasInformedCodes = Boolean(normalizePaymentCode(codigoDesconto) || normalizePaymentCode(codigoRastreio));
     const hasOrganizerOffer = codesPreview?.perfilUtilizador === 'ORGANIZADOR';
-    const canStartCheckout = Boolean(loteAtual || hasOrganizerOffer);
+    const hasCourtesyOffer = codesPreview?.perfilUtilizador === 'PROFISSIONAL_SAUDE';
+    const canStartCheckout = Boolean(loteAtual || hasOrganizerOffer || hasCourtesyOffer);
 
     const resetCodesPreview = () => {
         setCodesPreview(null);
@@ -1129,6 +1143,8 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                 tone: 'success',
                 text: preview.perfilUtilizador === 'ORGANIZADOR'
                     ? 'Código de organizador reconhecido. O preço especial foi aplicado.'
+                    : preview.perfilUtilizador === 'PROFISSIONAL_SAUDE'
+                    ? 'Código de profissional da saúde reconhecido. Sua inscrição é gratuita.'
                     : preview.codigos.desconto
                     ? `Desconto de ${preview.codigos.desconto.percentualDesconto}% aplicado ao resumo.`
                     : 'Código de rastreio reconhecido. O valor da inscrição não foi alterado.',
@@ -1387,6 +1403,8 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                                                     <span className='rounded-full bg-[#2f7651]/10 px-3 py-1 text-[#245f41]'>
                                                         {codesPreview.codigos.desconto.codigo} · {hasOrganizerOffer
                                                             ? 'oferta de organizador'
+                                                            : hasCourtesyOffer
+                                                            ? 'profissional da saúde'
                                                             : `${codesPreview.codigos.desconto.percentualDesconto}% de desconto`}
                                                     </span>
                                                 )}
@@ -1430,7 +1448,7 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
 
                     {/* CABEÇALHO FIXO */}
                     <div className='mb-6 border-b border-linha pb-6'>
-                        <h2 className='text-xl font-bold text-tinta mb-4'>Finalizar Pagamento</h2>
+                        <h2 className='text-xl font-bold text-tinta mb-4'>{hasCourtesyOffer ? 'Finalizar Inscrição' : 'Finalizar Pagamento'}</h2>
 
                         <div className='bg-papel p-4 rounded-lg border border-linha flex flex-col gap-2 mb-4 text-sm'>
                             <p className='font-bold text-tinta mb-1'>Valores da oferta:</p>
@@ -1453,6 +1471,8 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                                             <span className='rounded-full bg-white px-2.5 py-1 text-[#245f41]'>
                                                 {hasOrganizerOffer
                                                     ? 'Oferta de organizador'
+                                                    : hasCourtesyOffer
+                                                    ? 'Profissional da saúde'
                                                     : `${codesPreview.codigos.desconto.percentualDesconto}% de desconto`}
                                             </span>
                                         )}
@@ -1470,9 +1490,15 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                             )}
                         </div>
 
-                        <div className='bg-red-50 text-red-600 p-3 rounded-lg border border-red-100 font-medium text-sm text-center'>
-                            Após concluir este formulário, você terá 15 minutos para pagar e garantir sua vaga no valor acima.
-                        </div>
+                        {hasCourtesyOffer ? (
+                            <div className='bg-[#2f7651]/10 text-[#245f41] p-3 rounded-lg border border-[#2f7651]/25 font-medium text-sm text-center'>
+                                Inscrição gratuita para profissionais da saúde: nenhum pagamento será cobrado. Ao concluir este formulário, sua inscrição é confirmada.
+                            </div>
+                        ) : (
+                            <div className='bg-red-50 text-red-600 p-3 rounded-lg border border-red-100 font-medium text-sm text-center'>
+                                Após concluir este formulário, você terá 15 minutos para pagar e garantir sua vaga no valor acima.
+                            </div>
+                        )}
                     </div>
 
                     {/* ETAPA 1: DADOS PESSOAIS */}
@@ -1569,7 +1595,9 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                                     Voltar
                                 </button>
                                 <button type="button" onClick={handleGerarTicket} disabled={loadingModal} className='bg-[#2f7651] hover:bg-[#245f41] text-white font-bold py-3 px-6 rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-60'>
-                                    {loadingModal ? 'Gerando sessão…' : 'Gerar ticket de pagamento'}
+                                    {loadingModal
+                                        ? (hasCourtesyOffer ? 'Confirmando inscrição…' : 'Gerando sessão…')
+                                        : (hasCourtesyOffer ? 'Confirmar inscrição gratuita' : 'Gerar ticket de pagamento')}
                                 </button>
                             </div>
                         </div>
