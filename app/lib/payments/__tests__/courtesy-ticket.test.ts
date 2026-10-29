@@ -6,16 +6,12 @@ import { PaymentCodeError } from '../codes.ts';
 
 type Call = { name: string; op: string; filter: Record<string, unknown>; update?: Record<string, any> };
 
-function fakeDb({ userMatched = 1, codeConsumed = true } = {}) {
+function fakeDb({ userMatched = 1 } = {}) {
     const calls: Call[] = [];
     const collection = (name: string) => ({
         updateOne: async (filter: Record<string, unknown>, update: Record<string, any>) => {
             calls.push({ name, op: 'updateOne', filter, update });
             return { matchedCount: name === 'usuarios' ? userMatched : 1, modifiedCount: 1 };
-        },
-        findOneAndUpdate: async (filter: Record<string, unknown>, update: Record<string, any>) => {
-            calls.push({ name, op: 'findOneAndUpdate', filter, update });
-            return codeConsumed ? { _id: new ObjectId() } : null;
         },
         findOne: async () => null,
     });
@@ -56,24 +52,16 @@ test('profissional da saúde: confirma inscrição, registra valor zero, marca o
     assert.equal(assignment.pagamento.metodo, 'CORTESIA');
     assert.deepEqual(assignment.valorSelecionadoCentavos, { original: 39_000, desconto: 39_000, final: 0 });
 
-    const code = calls.find((call) => call.name === 'pagamentos.codigos');
-    assert.equal(code?.update?.$set.status, 'USADO');
+    // O uso do código é contado antes, em claimHealthCodeUse; aqui não há mais consumo.
+    assert.equal(calls.some((call) => call.name === 'pagamentos.codigos'), false);
     assert.ok(calls.some((call) => call.name === 'pagamentos.comprovantes'));
 });
 
-test('cortesia recusa usuário já inscrito para não gastar o código', async () => {
+test('cortesia recusa usuário já inscrito', async () => {
     const { db, calls } = fakeDb({ userMatched: 0 });
     await assert.rejects(
         confirmCourtesyTicket(db, courtesySession(), {} as never),
         (error) => error instanceof PaymentCodeError && error.code === 'REGISTRATION_ALREADY_CONFIRMED',
     );
-    assert.equal(calls.some((call) => call.name === 'pagamentos.codigos'), false);
-});
-
-test('cortesia falha se o código reservado não puder ser consumido', async () => {
-    const { db } = fakeDb({ codeConsumed: false });
-    await assert.rejects(
-        confirmCourtesyTicket(db, courtesySession(), {} as never),
-        /COURTESY_CODE_CONSUMPTION_FAILED/,
-    );
+    assert.equal(calls.some((call) => call.name === 'pagamentos.atribuicoes'), false);
 });

@@ -4,6 +4,7 @@ import { getSession, withApiAuthRequired } from '@/lib/auth0-compat';
 import { connectToDatabase } from '@/lib/mongodb';
 import {
     PaymentCodeError,
+    claimHealthCodeUse,
     createPaymentAssignment,
     expireOpenSessionsForOwner,
     getTrackingCodeForPurchase,
@@ -218,17 +219,20 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
         try {
             session = await runPaymentTransaction(client, async (mongoSession) => {
                 await lockPaymentCapacityCalculation(db, config, mongoSession);
-                const discountSnapshot = codigoDesconto
-                    ? await reserveDiscountCode(db, {
-                          edicaoId,
-                          codigo: codigoDesconto,
-                          compraId,
-                          usuarioId: owner,
-                          reservadoAte: expiresAt,
-                          mongoSession,
-                      })
-                    : undefined;
-                if (discountSnapshot) reservedPurchaseId = compraId;
+                // Cortesia conta o uso do código aqui mesmo; o rollback da transação desfaz a contagem.
+                const discountSnapshot = !codigoDesconto
+                    ? undefined
+                    : isCourtesy
+                        ? await claimHealthCodeUse(db, { edicaoId, codigo: codigoDesconto, mongoSession })
+                        : await reserveDiscountCode(db, {
+                              edicaoId,
+                              codigo: codigoDesconto,
+                              compraId,
+                              usuarioId: owner,
+                              reservadoAte: expiresAt,
+                              mongoSession,
+                          });
+                if (discountSnapshot && !isCourtesy) reservedPurchaseId = compraId;
                 const lockedLot = await getCurrentAutomaticLot(
                     db,
                     config,

@@ -58,6 +58,10 @@ export interface PaymentCodeDocument {
     validoAte?: Date;
     usedAt?: Date;
     usedPurchaseId?: ObjectId;
+    /** Só código de profissional da saúde: vários usos; sem o campo vale uso único. */
+    limiteUsos?: number;
+    usosRealizados?: number;
+    ultimoUsoEm?: Date;
     createdAt: Date;
     updatedAt: Date;
     createdBy?: ObjectId | string;
