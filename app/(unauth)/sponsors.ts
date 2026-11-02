@@ -16,8 +16,6 @@ export const sponsorTiers: SponsorTier[] = [
     id: 'diamante',
     label: 'Patrocínio Diamante',
     sponsors: [
-      { name: 'IMEPAC Centro Universitário', src: '/cieps/patrocinadores/diamante/imepac.png', width: 949, height: 237 },
-      { name: 'Hospital Universitário Sagrada Família', src: '/cieps/patrocinadores/diamante/husf.png', width: 938, height: 600 },
       { name: 'Eliza Cardoso Serviço de Buffet', src: '/cieps/patrocinadores/diamante/eliza-cardoso.png', width: 632, height: 329 },
     ],
   },
@@ -62,6 +60,7 @@ export const sponsorTiers: SponsorTier[] = [
       { name: 'Prefeitura de Araguari', src: '/cieps/patrocinadores/apoio/prefeitura-araguari.png', width: 585, height: 217 },
       { name: 'ABMLPM', src: '/cieps/patrocinadores/apoio/abmlpm.png', width: 1887, height: 600 },
       { name: 'Academia Brasileira de Neurologia - MG', src: '/cieps/patrocinadores/apoio/abn-mg.png', width: 1183, height: 288 },
+      { name: 'Hospital Universitário Sagrada Família', src: '/cieps/patrocinadores/apoio/husf.png', width: 938, height: 600 },
     ],
   },
 ];

@@ -1,5 +1,6 @@
 'use client';
 
+import type { CSSProperties } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { BookOpen, Globe2, Presentation, Star, UsersRound } from 'lucide-react';
@@ -234,6 +235,7 @@ export default function Home() {
                   alt={sponsor.name}
                   width={sponsor.width}
                   height={sponsor.height}
+                  style={{ '--ar': sponsor.width / sponsor.height } as CSSProperties}
                   sizes="(max-width: 640px) 45vw, 260px"
                 />
               </li>
@@ -255,6 +257,7 @@ export default function Home() {
                   alt={sponsor.name}
                   width={sponsor.width}
                   height={sponsor.height}
+                  style={{ '--ar': sponsor.width / sponsor.height } as CSSProperties}
                   sizes="(max-width: 640px) 45vw, 380px"
                 />
               </li>

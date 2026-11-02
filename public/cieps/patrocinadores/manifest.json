@@ -7,14 +7,7 @@
     "h": 221
   },
   {
-    "tier": "diamante",
-    "slug": "imepac",
-    "name": "IMEPAC Centro Universitário",
-    "w": 949,
-    "h": 237
-  },
-  {
-    "tier": "diamante",
+    "tier": "apoio",
     "slug": "husf",
     "name": "Hospital Universitário Sagrada Família",
     "w": 938,

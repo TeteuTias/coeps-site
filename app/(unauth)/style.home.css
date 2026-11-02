@@ -519,11 +519,11 @@
 }
 
 .support-logos img {
+  --logo-h: 54px;
+  --logo-w: 230px;
   display: block;
-  height: 54px;
-  max-width: 230px;
-  object-fit: contain;
-  width: auto;
+  height: auto;
+  width: min(var(--logo-w), calc(var(--logo-h) * var(--ar)));
 }
 
 .sponsor-cloud {
@@ -544,10 +544,8 @@
 
 .sponsor-item img {
   display: block;
-  height: var(--logo-h);
-  max-width: var(--logo-w);
-  object-fit: contain;
-  width: auto;
+  height: auto;
+  width: min(var(--logo-w), calc(var(--logo-h) * var(--ar)));
 }
 
 /* Hierarquia: quanto mais alta a cota, maior o logo. */
@@ -863,8 +861,8 @@
   }
 
   .support-logos img {
-    height: 40px;
-    max-width: 40vw;
+    --logo-h: 40px;
+    --logo-w: 40vw;
   }
 
   .sponsor-item--diamante {

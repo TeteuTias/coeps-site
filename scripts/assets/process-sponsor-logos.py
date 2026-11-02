@@ -24,8 +24,7 @@ PAD = 0.04
 # (cota, pasta, arquivo, slug, nome, modo)
 LOGOS = [
     ("master", "6 - MASTER", "2022_BRD_MRC_medgrupo-horizontal 1.png", "medgrupo", "Medgrupo", "dark"),
-    ("diamante", "5 - DIAMANTE - LOGO EM DESTAQUE", "IMG_1093 1.png", "imepac", "IMEPAC Centro Universitário", "dark"),
-    ("diamante", "5 - DIAMANTE - LOGO EM DESTAQUE", "Logo HUSF_page-0001 1.png", "husf", "Hospital Universitário Sagrada Família", "dark"),
+    ("apoio", "5 - DIAMANTE - LOGO EM DESTAQUE", "Logo HUSF_page-0001 1.png", "husf", "Hospital Universitário Sagrada Família", "dark"),
     ("diamante", "5 - DIAMANTE - LOGO EM DESTAQUE", "Logo Eliza Cardoso Buffet_page-0003 1.png", "eliza-cardoso", "Eliza Cardoso Serviço de Buffet", "dark"),
     ("ouro", "4 - OURO - LOGO GRANDE", "Ativo 20 1.png", "proformat", "Proformat Fotografias", "light"),
     ("ouro", "4 - OURO - LOGO GRANDE", "Café Vasconcelos - Logos_page-0001 1.png", "cafe-vasconcelos", "Café Vasconcelos", "dark"),
