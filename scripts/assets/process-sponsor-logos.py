@@ -22,8 +22,8 @@ PAD = 0.04
 # modos: split = painel escuro + fundo claro lado a lado; dark = conteúdo escuro; light = conteúdo claro sobre transparente;
 # darkbg = conteúdo claro sobre fundo escuro opaco; solid = usa só a silhueta (alpha)
 # (cota, pasta, arquivo, slug, nome, modo)
+# Medgrupo (master) é vetorizado à parte: scripts/assets/vectorize-logo.py -> master/medgrupo.svg
 LOGOS = [
-    ("master", "6 - MASTER", "2022_BRD_MRC_medgrupo-horizontal 1.png", "medgrupo", "Medgrupo", "dark"),
     ("apoio", "5 - DIAMANTE - LOGO EM DESTAQUE", "Logo HUSF_page-0001 1.png", "husf", "Hospital Universitário Sagrada Família", "dark"),
     ("diamante", "5 - DIAMANTE - LOGO EM DESTAQUE", "Logo Eliza Cardoso Buffet_page-0003 1.png", "eliza-cardoso", "Eliza Cardoso Serviço de Buffet", "dark"),
     ("ouro", "4 - OURO - LOGO GRANDE", "Ativo 20 1.png", "proformat", "Proformat Fotografias", "light"),

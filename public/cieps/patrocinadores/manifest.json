@@ -1,12 +1,5 @@
 [
   {
-    "tier": "master",
-    "slug": "medgrupo",
-    "name": "Medgrupo",
-    "w": 869,
-    "h": 221
-  },
-  {
     "tier": "apoio",
     "slug": "husf",
     "name": "Hospital Universitário Sagrada Família",

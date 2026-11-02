@@ -9,7 +9,7 @@ export const sponsorTiers: SponsorTier[] = [
     id: 'master',
     label: 'Patrocínio Master',
     sponsors: [
-      { name: 'Medgrupo', src: '/cieps/patrocinadores/master/medgrupo.png', width: 869, height: 221 },
+      { name: 'Medgrupo', src: '/cieps/patrocinadores/master/medgrupo.svg', width: 3265, height: 865 },
     ],
   },
   {
