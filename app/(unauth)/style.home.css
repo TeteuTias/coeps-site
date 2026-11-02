@@ -502,41 +502,28 @@
 
 .landing-sponsors {
   border-bottom: 1px solid var(--cieps-line);
-  display: flex;
-  flex-direction: column;
   margin: 0 auto;
   max-width: 1380px;
-  padding: 0.5rem 1.5rem clamp(1.5rem, 3vw, 2.5rem);
+  padding: clamp(1.75rem, 3vw, 2.75rem) 1.5rem;
 }
 
-.sponsor-tier {
-  --logo-h: 48px;
-  --logo-w: 170px;
-  --logo-gap: 2.25rem;
-  align-items: center;
-  border-top: 1px solid var(--cieps-line);
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 1.4rem 0;
-}
-
-.sponsor-tier:first-child {
-  border-top: 0;
-}
-
-.sponsor-logos {
+.sponsor-cloud {
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 1.1rem var(--logo-gap);
+  gap: 1.75rem 3rem;
   justify-content: center;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.sponsor-logos img {
+.sponsor-item {
+  --logo-h: 48px;
+  --logo-w: 170px;
+}
+
+.sponsor-item img {
   display: block;
   height: var(--logo-h);
   max-width: var(--logo-w);
@@ -544,42 +531,35 @@
   width: auto;
 }
 
-/* Hierarquia: quanto mais alta a cota, maior o logo e o respiro. */
-.sponsor-tier--master {
+/* Hierarquia: quanto mais alta a cota, maior o logo. */
+.sponsor-item--master {
   --logo-h: 96px;
   --logo-w: 380px;
-  --logo-gap: 4rem;
-  padding: 2rem 0 2.2rem;
 }
 
-.sponsor-tier--diamante {
+.sponsor-item--diamante {
   --logo-h: 76px;
   --logo-w: 260px;
-  --logo-gap: 3.5rem;
 }
 
-.sponsor-tier--ouro {
+.sponsor-item--ouro {
   --logo-h: 60px;
   --logo-w: 210px;
-  --logo-gap: 3rem;
 }
 
-.sponsor-tier--prata {
+.sponsor-item--prata {
   --logo-h: 48px;
   --logo-w: 170px;
-  --logo-gap: 2.5rem;
 }
 
-.sponsor-tier--bronze {
+.sponsor-item--bronze {
   --logo-h: 38px;
   --logo-w: 140px;
-  --logo-gap: 2rem;
 }
 
-.sponsor-tier--apoio {
+.sponsor-item--apoio {
   --logo-h: 34px;
   --logo-w: 150px;
-  --logo-gap: 1.75rem;
 }
 
 .cieps-footer {
@@ -845,32 +825,35 @@
     padding-right: 1rem;
   }
 
-  .sponsor-tier {
+  .sponsor-item {
     --logo-h: 38px;
     --logo-w: 42vw;
-    --logo-gap: 1.4rem;
   }
 
-  .sponsor-tier--master {
+  .sponsor-cloud {
+    gap: 1.25rem 1.6rem;
+  }
+
+  .sponsor-item--master {
     --logo-h: 64px;
     --logo-w: 78vw;
   }
 
-  .sponsor-tier--diamante {
+  .sponsor-item--diamante {
     --logo-h: 54px;
     --logo-w: 60vw;
   }
 
-  .sponsor-tier--ouro {
+  .sponsor-item--ouro {
     --logo-h: 44px;
     --logo-w: 46vw;
   }
 
-  .sponsor-tier--bronze {
+  .sponsor-item--bronze {
     --logo-h: 32px;
   }
 
-  .sponsor-tier--apoio {
+  .sponsor-item--apoio {
     --logo-h: 30px;
   }
 

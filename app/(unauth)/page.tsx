@@ -224,24 +224,22 @@ export default function Home() {
       </section>
 
       <section className="landing-sponsors" aria-label="Patrocinadores e apoiadores">
-        {sponsorTiers.map((tier) => (
-          <article key={tier.id} className={`sponsor-tier sponsor-tier--${tier.id}`}>
-            <h3 className="landing-institution-label">{tier.label}</h3>
-            <ul className="sponsor-logos">
-              {tier.sponsors.map((sponsor) => (
-                <li key={sponsor.src}>
-                  <Image
-                    src={sponsor.src}
-                    alt={sponsor.name}
-                    width={sponsor.width}
-                    height={sponsor.height}
-                    sizes="(max-width: 640px) 45vw, 380px"
-                  />
-                </li>
-              ))}
-            </ul>
-          </article>
-        ))}
+        {/* TEMPORÁRIO: todos juntos, hierarquia só pelo tamanho. Versão por cota: commit anterior. */}
+        <ul className="sponsor-cloud">
+          {sponsorTiers.flatMap((tier) =>
+            tier.sponsors.map((sponsor) => (
+              <li key={sponsor.src} className={`sponsor-item sponsor-item--${tier.id}`}>
+                <Image
+                  src={sponsor.src}
+                  alt={sponsor.name}
+                  width={sponsor.width}
+                  height={sponsor.height}
+                  sizes="(max-width: 640px) 45vw, 380px"
+                />
+              </li>
+            )),
+          )}
+        </ul>
       </section>
     </main>
   );
