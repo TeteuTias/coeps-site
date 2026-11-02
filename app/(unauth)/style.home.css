@@ -550,8 +550,8 @@
 
 /* Hierarquia: quanto mais alta a cota, maior o logo. */
 .sponsor-item--master {
-  --logo-h: 140px;
-  --logo-w: 540px;
+  --logo-h: 160px;
+  --logo-w: 620px;
   display: flex;
   flex-basis: 100%;
   justify-content: center;
@@ -559,8 +559,8 @@
 }
 
 .sponsor-item--diamante {
-  --logo-h: 112px;
-  --logo-w: 380px;
+  --logo-h: 136px;
+  --logo-w: 460px;
 }
 
 .sponsor-item--ouro {
@@ -866,8 +866,8 @@
   }
 
   .sponsor-item--diamante {
-    --logo-h: 72px;
-    --logo-w: 74vw;
+    --logo-h: 80px;
+    --logo-w: 78vw;
   }
 
   .sponsor-item--ouro {
