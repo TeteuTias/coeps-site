@@ -561,23 +561,23 @@
 }
 
 .sponsor-item--diamante {
-  --logo-h: 76px;
-  --logo-w: 260px;
+  --logo-h: 112px;
+  --logo-w: 380px;
 }
 
 .sponsor-item--ouro {
-  --logo-h: 60px;
-  --logo-w: 210px;
+  --logo-h: 78px;
+  --logo-w: 270px;
 }
 
 .sponsor-item--prata {
-  --logo-h: 48px;
-  --logo-w: 170px;
+  --logo-h: 54px;
+  --logo-w: 190px;
 }
 
 .sponsor-item--bronze {
-  --logo-h: 38px;
-  --logo-w: 140px;
+  --logo-h: 36px;
+  --logo-w: 130px;
 }
 
 .sponsor-item--apoio {
@@ -868,17 +868,17 @@
   }
 
   .sponsor-item--diamante {
-    --logo-h: 54px;
-    --logo-w: 60vw;
+    --logo-h: 72px;
+    --logo-w: 74vw;
   }
 
   .sponsor-item--ouro {
-    --logo-h: 44px;
-    --logo-w: 46vw;
+    --logo-h: 54px;
+    --logo-w: 54vw;
   }
 
   .sponsor-item--bronze {
-    --logo-h: 32px;
+    --logo-h: 28px;
   }
 
   .sponsor-item--apoio {
