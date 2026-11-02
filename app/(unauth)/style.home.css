@@ -419,9 +419,8 @@
   border-bottom: 1px solid var(--cieps-line);
   border-top: 1px solid var(--cieps-line);
   display: grid;
-  gap: clamp(1.5rem, 5vw, 5rem);
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.45fr);
-  min-height: 92px;
+  gap: 0;
+  grid-template-columns: minmax(0, 1fr);
   padding-bottom: 0.9rem;
   padding-top: 0.9rem;
 }
@@ -430,7 +429,7 @@
   align-items: center;
   display: grid;
   gap: clamp(1rem, 2vw, 1.75rem);
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 6.5rem 1fr;
   min-width: 0;
 }
 
@@ -500,22 +499,88 @@
   letter-spacing: -0.01em;
 }
 
-.prefeitura-symbol {
+.landing-sponsors {
+  border-bottom: 1px solid var(--cieps-line);
+  margin: 0 auto;
+  max-width: 1380px;
+  padding: clamp(1.75rem, 3vw, 2.75rem) 1.5rem;
+}
+
+.landing-institution-support {
+  border-top: 1px solid var(--cieps-line);
+  margin-top: 0.9rem;
+  padding-top: 1rem;
+}
+
+.support-logos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.support-logos img {
+  --logo-h: 54px;
+  --logo-w: 230px;
   display: block;
-  height: 52px;
-  object-fit: contain;
-  width: auto;
+  height: auto;
+  width: min(var(--logo-w), calc(var(--logo-h) * var(--ar)));
 }
 
-.prefeitura-wordmark strong {
-  font-size: 1.04rem;
-  letter-spacing: 0.015em;
+.sponsor-cloud {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.75rem 3rem;
+  justify-content: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-.prefeitura-wordmark small {
-  font-size: 0.49rem;
-  margin-bottom: 0.14rem;
-  margin-top: 0;
+.sponsor-item {
+  --logo-h: 48px;
+  --logo-w: 170px;
+}
+
+.sponsor-item img {
+  display: block;
+  height: auto;
+  width: min(var(--logo-w), calc(var(--logo-h) * var(--ar)));
+}
+
+/* Hierarquia: quanto mais alta a cota, maior o logo. */
+.sponsor-item--master {
+  --logo-h: 160px;
+  --logo-w: 620px;
+  display: flex;
+  flex-basis: 100%;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.sponsor-item--diamante {
+  --logo-h: 136px;
+  --logo-w: 460px;
+}
+
+.sponsor-item--ouro {
+  --logo-h: 78px;
+  --logo-w: 270px;
+}
+
+.sponsor-item--prata {
+  --logo-h: 54px;
+  --logo-w: 190px;
+}
+
+.sponsor-item--bronze {
+  --logo-h: 36px;
+  --logo-w: 130px;
+}
+
+.sponsor-item--apoio {
+  --logo-h: 34px;
+  --logo-w: 150px;
 }
 
 .cieps-footer {
@@ -774,6 +839,48 @@
 
   .landing-logo-row {
     gap: 1.3rem;
+  }
+
+  .landing-sponsors {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .sponsor-item {
+    --logo-h: 38px;
+    --logo-w: 42vw;
+  }
+
+  .sponsor-cloud {
+    gap: 1.25rem 1.6rem;
+  }
+
+  .sponsor-item--master {
+    --logo-h: 84px;
+    --logo-w: 86vw;
+  }
+
+  .support-logos img {
+    --logo-h: 40px;
+    --logo-w: 40vw;
+  }
+
+  .sponsor-item--diamante {
+    --logo-h: 80px;
+    --logo-w: 78vw;
+  }
+
+  .sponsor-item--ouro {
+    --logo-h: 54px;
+    --logo-w: 54vw;
+  }
+
+  .sponsor-item--bronze {
+    --logo-h: 28px;
+  }
+
+  .sponsor-item--apoio {
+    --logo-h: 30px;
   }
 
   .landing-metrics article {

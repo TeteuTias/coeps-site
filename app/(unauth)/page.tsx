@@ -1,10 +1,14 @@
 'use client';
 
+import type { CSSProperties } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { BookOpen, Globe2, Presentation, Star, UsersRound } from 'lucide-react';
 import AvisoAutoresPopup from '@/components/AvisoAutoresPopup';
+import { sponsorTiers } from './sponsors';
 import './style.home.css';
+
+const supportTier = sponsorTiers.find((tier) => tier.id === 'apoio');
 
 const metrics = [
   {
@@ -223,26 +227,43 @@ export default function Home() {
 
         <article className="landing-institution-group landing-institution-support">
           <span className="landing-institution-label">Apoio</span>
-          <div className="landing-logo-row landing-support-row">
-            <div
-              className="landing-logo-item landing-logo-prefeitura"
-              aria-label="Prefeitura de Araguari"
-            >
-              <Image
-                className="prefeitura-symbol"
-                src="/cieps/logo-prefeitura-symbol-clean.png"
-                width={96}
-                height={96}
-                alt=""
-                aria-hidden="true"
-              />
-              <span className="prefeitura-wordmark">
-                <small>Prefeitura de</small>
-                <strong>Araguari/MG</strong>
-              </span>
-            </div>
-          </div>
+          <ul className="landing-logo-row support-logos">
+            {supportTier?.sponsors.map((sponsor) => (
+              <li key={sponsor.src}>
+                <Image
+                  src={sponsor.src}
+                  alt={sponsor.name}
+                  width={sponsor.width}
+                  height={sponsor.height}
+                  style={{ '--ar': sponsor.width / sponsor.height } as CSSProperties}
+                  sizes="(max-width: 640px) 45vw, 260px"
+                />
+              </li>
+            ))}
+          </ul>
         </article>
+      </section>
+
+      <section className="landing-sponsors" aria-label="Patrocinadores e apoiadores">
+        {/* TEMPORÁRIO: todos juntos, hierarquia só pelo tamanho. Versão por cota: commit anterior. */}
+        <ul className="sponsor-cloud">
+          {sponsorTiers
+            .filter((tier) => tier.id !== 'apoio')
+            .flatMap((tier) =>
+            tier.sponsors.map((sponsor) => (
+              <li key={sponsor.src} className={`sponsor-item sponsor-item--${tier.id}`}>
+                <Image
+                  src={sponsor.src}
+                  alt={sponsor.name}
+                  width={sponsor.width}
+                  height={sponsor.height}
+                  style={{ '--ar': sponsor.width / sponsor.height } as CSSProperties}
+                  sizes="(max-width: 640px) 45vw, 380px"
+                />
+              </li>
+            )),
+          )}
+        </ul>
       </section>
     </main>
   );
