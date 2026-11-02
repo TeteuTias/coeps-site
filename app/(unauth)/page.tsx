@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { BookOpen, Globe2, Presentation, Star, UsersRound } from 'lucide-react';
 import AvisoAutoresPopup from '@/components/AvisoAutoresPopup';
+import { sponsorTiers } from './sponsors';
 import './style.home.css';
 
 const metrics = [
@@ -220,29 +221,27 @@ export default function Home() {
             </div>
           </div>
         </article>
+      </section>
 
-        <article className="landing-institution-group landing-institution-support">
-          <span className="landing-institution-label">Apoio</span>
-          <div className="landing-logo-row landing-support-row">
-            <div
-              className="landing-logo-item landing-logo-prefeitura"
-              aria-label="Prefeitura de Araguari"
-            >
-              <Image
-                className="prefeitura-symbol"
-                src="/cieps/logo-prefeitura-symbol-clean.png"
-                width={96}
-                height={96}
-                alt=""
-                aria-hidden="true"
-              />
-              <span className="prefeitura-wordmark">
-                <small>Prefeitura de</small>
-                <strong>Araguari/MG</strong>
-              </span>
-            </div>
-          </div>
-        </article>
+      <section className="landing-sponsors" aria-label="Patrocinadores e apoiadores">
+        {sponsorTiers.map((tier) => (
+          <article key={tier.id} className={`sponsor-tier sponsor-tier--${tier.id}`}>
+            <h3 className="landing-institution-label">{tier.label}</h3>
+            <ul className="sponsor-logos">
+              {tier.sponsors.map((sponsor) => (
+                <li key={sponsor.src}>
+                  <Image
+                    src={sponsor.src}
+                    alt={sponsor.name}
+                    width={sponsor.width}
+                    height={sponsor.height}
+                    sizes="(max-width: 640px) 45vw, 380px"
+                  />
+                </li>
+              ))}
+            </ul>
+          </article>
+        ))}
       </section>
     </main>
   );

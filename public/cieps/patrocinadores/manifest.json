@@ -1,0 +1,163 @@
+[
+  {
+    "tier": "master",
+    "slug": "medgrupo",
+    "name": "Medgrupo",
+    "w": 869,
+    "h": 221
+  },
+  {
+    "tier": "diamante",
+    "slug": "imepac",
+    "name": "IMEPAC Centro Universitário",
+    "w": 949,
+    "h": 237
+  },
+  {
+    "tier": "diamante",
+    "slug": "husf",
+    "name": "Hospital Universitário Sagrada Família",
+    "w": 938,
+    "h": 600
+  },
+  {
+    "tier": "diamante",
+    "slug": "eliza-cardoso",
+    "name": "Eliza Cardoso Serviço de Buffet",
+    "w": 632,
+    "h": 329
+  },
+  {
+    "tier": "ouro",
+    "slug": "proformat",
+    "name": "Proformat Fotografias",
+    "w": 1014,
+    "h": 570
+  },
+  {
+    "tier": "ouro",
+    "slug": "cafe-vasconcelos",
+    "name": "Café Vasconcelos",
+    "w": 1371,
+    "h": 396
+  },
+  {
+    "tier": "ouro",
+    "slug": "topway",
+    "name": "Topway Nutrition",
+    "w": 1032,
+    "h": 252
+  },
+  {
+    "tier": "ouro",
+    "slug": "guarana-mineiro",
+    "name": "Guaraná Mineiro",
+    "w": 734,
+    "h": 524
+  },
+  {
+    "tier": "ouro",
+    "slug": "q-imagem",
+    "name": "Q.imagem Filmes",
+    "w": 2606,
+    "h": 600
+  },
+  {
+    "tier": "prata",
+    "slug": "eden",
+    "name": "Éden Estética e Bem-Estar",
+    "w": 832,
+    "h": 199
+  },
+  {
+    "tier": "prata",
+    "slug": "medcor-cematri",
+    "name": "Medcor Cursos e Cematri",
+    "w": 980,
+    "h": 600
+  },
+  {
+    "tier": "prata",
+    "slug": "palacio-de-cristal",
+    "name": "Palácio de Cristal",
+    "w": 1065,
+    "h": 524
+  },
+  {
+    "tier": "prata",
+    "slug": "unicred",
+    "name": "Unicred",
+    "w": 354,
+    "h": 54
+  },
+  {
+    "tier": "prata",
+    "slug": "smart-fluency",
+    "name": "Smart Fluency",
+    "w": 1156,
+    "h": 600
+  },
+  {
+    "tier": "prata",
+    "slug": "ana-godoi",
+    "name": "Ana Godoi Decoração",
+    "w": 811,
+    "h": 478
+  },
+  {
+    "tier": "prata",
+    "slug": "cafe-da-ana",
+    "name": "Café da Ana",
+    "w": 1427,
+    "h": 600
+  },
+  {
+    "tier": "bronze",
+    "slug": "cremiatta",
+    "name": "Cremiatta Sorvetes e Açaí",
+    "w": 909,
+    "h": 600
+  },
+  {
+    "tier": "bronze",
+    "slug": "grupo-fuerza",
+    "name": "Grupo Fuerza",
+    "w": 549,
+    "h": 600
+  },
+  {
+    "tier": "bronze",
+    "slug": "unimed-araguari",
+    "name": "Unimed Araguari",
+    "w": 1679,
+    "h": 600
+  },
+  {
+    "tier": "bronze",
+    "slug": "livraria-phl",
+    "name": "Livraria PHL",
+    "w": 622,
+    "h": 416
+  },
+  {
+    "tier": "apoio",
+    "slug": "prefeitura-araguari",
+    "name": "Prefeitura de Araguari",
+    "w": 585,
+    "h": 217
+  },
+  {
+    "tier": "apoio",
+    "slug": "abmlpm",
+    "name": "ABMLPM",
+    "w": 1887,
+    "h": 600
+  },
+  {
+    "tier": "apoio",
+    "slug": "abn-mg",
+    "name": "Academia Brasileira de Neurologia - MG",
+    "w": 1183,
+    "h": 288
+  }
+]
