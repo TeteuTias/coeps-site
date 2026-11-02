@@ -7,6 +7,8 @@ import AvisoAutoresPopup from '@/components/AvisoAutoresPopup';
 import { sponsorTiers } from './sponsors';
 import './style.home.css';
 
+const supportTier = sponsorTiers.find((tier) => tier.id === 'apoio');
+
 const metrics = [
   {
     icon: UsersRound,
@@ -221,12 +223,31 @@ export default function Home() {
             </div>
           </div>
         </article>
+
+        <article className="landing-institution-group landing-institution-support">
+          <span className="landing-institution-label">Apoio</span>
+          <ul className="landing-logo-row support-logos">
+            {supportTier?.sponsors.map((sponsor) => (
+              <li key={sponsor.src}>
+                <Image
+                  src={sponsor.src}
+                  alt={sponsor.name}
+                  width={sponsor.width}
+                  height={sponsor.height}
+                  sizes="(max-width: 640px) 45vw, 260px"
+                />
+              </li>
+            ))}
+          </ul>
+        </article>
       </section>
 
       <section className="landing-sponsors" aria-label="Patrocinadores e apoiadores">
         {/* TEMPORÁRIO: todos juntos, hierarquia só pelo tamanho. Versão por cota: commit anterior. */}
         <ul className="sponsor-cloud">
-          {sponsorTiers.flatMap((tier) =>
+          {sponsorTiers
+            .filter((tier) => tier.id !== 'apoio')
+            .flatMap((tier) =>
             tier.sponsors.map((sponsor) => (
               <li key={sponsor.src} className={`sponsor-item sponsor-item--${tier.id}`}>
                 <Image

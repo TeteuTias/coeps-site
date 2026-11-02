@@ -419,9 +419,8 @@
   border-bottom: 1px solid var(--cieps-line);
   border-top: 1px solid var(--cieps-line);
   display: grid;
-  gap: clamp(1.5rem, 5vw, 5rem);
+  gap: 0;
   grid-template-columns: minmax(0, 1fr);
-  min-height: 92px;
   padding-bottom: 0.9rem;
   padding-top: 0.9rem;
 }
@@ -430,7 +429,7 @@
   align-items: center;
   display: grid;
   gap: clamp(1rem, 2vw, 1.75rem);
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 6.5rem 1fr;
   min-width: 0;
 }
 
@@ -507,6 +506,26 @@
   padding: clamp(1.75rem, 3vw, 2.75rem) 1.5rem;
 }
 
+.landing-institution-support {
+  border-top: 1px solid var(--cieps-line);
+  margin-top: 0.9rem;
+  padding-top: 1rem;
+}
+
+.support-logos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.support-logos img {
+  display: block;
+  height: 54px;
+  max-width: 230px;
+  object-fit: contain;
+  width: auto;
+}
+
 .sponsor-cloud {
   align-items: center;
   display: flex;
@@ -533,8 +552,12 @@
 
 /* Hierarquia: quanto mais alta a cota, maior o logo. */
 .sponsor-item--master {
-  --logo-h: 96px;
-  --logo-w: 380px;
+  --logo-h: 140px;
+  --logo-w: 540px;
+  display: flex;
+  flex-basis: 100%;
+  justify-content: center;
+  margin-bottom: 0.75rem;
 }
 
 .sponsor-item--diamante {
@@ -835,8 +858,13 @@
   }
 
   .sponsor-item--master {
-    --logo-h: 64px;
-    --logo-w: 78vw;
+    --logo-h: 84px;
+    --logo-w: 86vw;
+  }
+
+  .support-logos img {
+    height: 40px;
+    max-width: 40vw;
   }
 
   .sponsor-item--diamante {
