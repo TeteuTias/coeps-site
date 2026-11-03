@@ -526,6 +526,12 @@
   width: min(var(--logo-w), calc(var(--logo-h) * var(--ar)));
 }
 
+/* O HUSF tem muita margem interna: precisa de mais altura para ficar do tamanho do IMEPAC. */
+.support-logos img[src*="husf"] {
+  --logo-h: 84px;
+  --logo-w: 150px;
+}
+
 .sponsor-cloud {
   align-items: center;
   display: flex;
@@ -568,6 +574,12 @@
   --logo-w: 270px;
 }
 
+.sponsor-item--ouro img[src*="topway"],
+.sponsor-item--ouro img[src*="cafe-vasconcelos"],
+.sponsor-item--ouro img[src*="q-imagem"] {
+  --logo-w: 240px;
+}
+
 .sponsor-item--prata {
   --logo-h: 54px;
   --logo-w: 190px;
@@ -576,6 +588,9 @@
 .sponsor-item--bronze {
   --logo-h: 36px;
   --logo-w: 130px;
+}
+.sponsor-item--bronze img[src*="grupo-fuerza"] {
+  --logo-h: 50px;
 }
 
 .sponsor-item--apoio {
@@ -877,6 +892,21 @@
 
   .sponsor-item--bronze {
     --logo-h: 28px;
+  }
+
+  .support-logos img[src*="husf"] {
+    --logo-h: 64px;
+    --logo-w: 42vw;
+  }
+
+  .sponsor-item--ouro img[src*="topway"],
+  .sponsor-item--ouro img[src*="cafe-vasconcelos"],
+  .sponsor-item--ouro img[src*="q-imagem"] {
+    --logo-w: 48vw;
+  }
+
+  .sponsor-item--bronze img[src*="grupo-fuerza"] {
+    --logo-h: 38px;
   }
 
   .sponsor-item--apoio {
