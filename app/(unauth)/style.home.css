@@ -589,9 +589,6 @@
   --logo-h: 36px;
   --logo-w: 130px;
 }
-.sponsor-item--bronze img[src*="grupo-fuerza"] {
-  --logo-h: 50px;
-}
 
 .sponsor-item--apoio {
   --logo-h: 34px;
@@ -903,10 +900,6 @@
   .sponsor-item--ouro img[src*="cafe-vasconcelos"],
   .sponsor-item--ouro img[src*="q-imagem"] {
     --logo-w: 48vw;
-  }
-
-  .sponsor-item--bronze img[src*="grupo-fuerza"] {
-    --logo-h: 38px;
   }
 
   .sponsor-item--apoio {

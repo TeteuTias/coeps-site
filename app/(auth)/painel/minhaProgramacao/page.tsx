@@ -108,7 +108,7 @@ export default function MinhaProgramacao() {
               Apresentação em formato de pôster / banner
             </h3>
             <ul className="programacao-aviso-list">
-              <li>Serão realizadas no dia 14/11, no Pica Pau, em Araguari.</li>
+              <li>Serão realizadas no dia 13/11, no Pica Pau, em Araguari.</li>
               <li>O autor principal ou coautor deverá expor o pôster durante todo o período, das 7h às 11h.</li>
             </ul>
           </div>
@@ -118,7 +118,7 @@ export default function MinhaProgramacao() {
               Apresentação dos trabalhos em formato oral
             </h3>
             <ul className="programacao-aviso-list">
-              <li>Serão realizadas no dia 15/11, no Pica Pau, em Araguari, das 7h às 11h.</li>
+              <li>Serão realizadas no dia 13/11, no Pica Pau, em Araguari, das 7h às 11h.</li>
               <li>Apenas o <strong>autor principal</strong> poderá apresentar o trabalho.</li>
             </ul>
           </div>

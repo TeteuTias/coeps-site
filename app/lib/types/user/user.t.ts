@@ -17,6 +17,7 @@ export interface IUser {
         "onde_conheceu"?: string,
         "situacao_academica"?: string,
         "curso"?: string,
+        "profissao"?: string,
         "ano_conclusao"?: number,
         "semestre_conclusao"?: number,
         "endereco"?: {

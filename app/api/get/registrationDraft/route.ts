@@ -61,6 +61,7 @@ export const GET = withApiAuthRequired(async function GET(request: Request) {
             referral: value(profile.onde_conheceu),
             academicStatus: value(profile.situacao_academica),
             course: value(profile.curso),
+            profession: value(profile.profissao),
             graduationYear: value(profile.ano_conclusao),
             graduationSemester: value(profile.semestre_conclusao),
         });
