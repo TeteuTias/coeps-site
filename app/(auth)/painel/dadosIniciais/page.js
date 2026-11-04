@@ -35,6 +35,7 @@ export default function UpdateData() {
     // Estados Acadêmicos / Outros
     const [value_situacao, setValueSituacao] = useState(''); // 'formado' ou 'estudante'
     const [value_curso, setValueCurso] = useState('');
+    const [value_profissao, setValueProfissao] = useState('');
     const [value_ano, setValueAno] = useState('');
     const [value_semestre, setValueSemestre] = useState('');
     const [value_onde_conheceu, setValueOndeConheceu] = useState('');
@@ -62,6 +63,7 @@ export default function UpdateData() {
 
     const handleChangeSituacao = (event) => setValueSituacao(event.target.value);
     const handleChangeCurso = (event) => setValueCurso(event.target.value);
+    const handleChangeProfissao = (event) => setValueProfissao(event.target.value);
     const handleChangeAno = (event) => setValueAno(event.target.value);
     const handleChangeSemestre = (event) => setValueSemestre(event.target.value);
     const handleChangeOndeConheceu = (event) => setValueOndeConheceu(event.target.value);
@@ -87,6 +89,7 @@ export default function UpdateData() {
                 setValueOndeConheceu(draft.referral || '');
                 setValueSituacao(draft.academicStatus || '');
                 setValueCurso(draft.course || '');
+                setValueProfissao(draft.profession || '');
                 setValueAno(draft.graduationYear || '');
                 setValueSemestre(draft.graduationSemester || '');
             } catch (error) {
@@ -132,9 +135,9 @@ export default function UpdateData() {
                     handleChangeSetIsLoadingForms(0)
                     handleChangeAvisoErro(`Preencha o campo "Número de telefone" com apenas números`)
                     return 0
-                case (value_telefone.trim().length <= 4):
+                case (value_telefone.trim().length < 10 || value_telefone.trim().length > 11):
                     handleChangeSetIsLoadingForms(0)
-                    handleChangeAvisoErro(`Preencha o campo "Número de telefone" corretamente`)
+                    handleChangeAvisoErro(`Preencha o campo "Número de telefone" com DDD + número (10 ou 11 dígitos)`)
                     return 0
             }
             switch (true) { // CPF/CNPJ
@@ -142,15 +145,15 @@ export default function UpdateData() {
                     handleChangeSetIsLoadingForms(0)
                     handleChangeAvisoErro(`Preencha o campo "CPF" com apenas números`)
                     return 0
-                case (value_cpf.trim().length < 11):
+                case (value_cpf.trim().length !== 11):
                     handleChangeSetIsLoadingForms(0)
-                    handleChangeAvisoErro(`O "CPF/CNPJ" deve ter no mínimo 11 caracteres`)
+                    handleChangeAvisoErro(`O "CPF" deve ter 11 números`)
                     return 0
             }
             switch (true) { // ENDEREÇO & OUTROS
-                case (value_postalCode.trim() == ""):
+                case (!/^\d{8}$/.test(value_postalCode.trim())):
                     handleChangeSetIsLoadingForms(0)
-                    handleChangeAvisoErro(`Preencha o campo "CEP"`)
+                    handleChangeAvisoErro(`Preencha o campo "CEP" com 8 números`)
                     return 0
                 case (value_address.trim() == ""):
                     handleChangeSetIsLoadingForms(0)
@@ -186,9 +189,13 @@ export default function UpdateData() {
                     handleChangeSetIsLoadingForms(0)
                     handleChangeAvisoErro(`Preencha o seu "Curso"`)
                     return 0
-                case (!/^\d+$/.test(value_ano.trim()) || value_ano.trim().length !== 4):
+                case (value_situacao === 'formado' && value_profissao.trim() == ""):
                     handleChangeSetIsLoadingForms(0)
-                    handleChangeAvisoErro(`Preencha o "Ano" com 4 números válidos (ex: 2024)`)
+                    handleChangeAvisoErro(`Preencha a sua "Profissão"`)
+                    return 0
+                case (!/^\d{4}$/.test(value_ano.trim()) || Number(value_ano) < 1900 || Number(value_ano) > 2100):
+                    handleChangeSetIsLoadingForms(0)
+                    handleChangeAvisoErro(`Preencha o "Ano" com 4 números entre 1900 e 2100 (ex: 2024)`)
                     return 0
                 case (value_semestre == ""):
                     handleChangeSetIsLoadingForms(0)
@@ -212,44 +219,50 @@ export default function UpdateData() {
                     onClose={() => { setOpenLgdp(false) }}
                     onConfirm={async () => {
                         setIsLoadingForms(true)
-                        // Payload rigorosamente tipado para evitar crashes no Banco
-                        const response = await fetchWithTimeout('/api/post/updateData', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                "nome": value_name.trim(),
-                                "cpf": value_cpf.trim(),
-                                "numero_telefone": value_telefone.trim(),
-                                "address": value_address,
-                                "addressNumber": value_addressNumber.trim(),
-                                "complement": value_complement.substring(0, 255),
-                                "province": value_province,
-                                "postalCode": value_postalCode,
-                                "cidade": value_cidade_nome.trim(),
-                                "pais": value_pais,
-                                "cidade_nome": value_cidade_nome,
-                                "data_nascimento": value_data_nascimento,
-                                "onde_conheceu": value_onde_conheceu,
-                                "situacao_academica": value_situacao,
-                                "curso": value_curso,
-                                "ano_conclusao": value_ano,
-                                "semestre_conclusao": value_semestre,
-                                "lgpdAccepted": true,
-                                "lgpdVersion": LGPD_CONSENT_VERSION
+                        try {
+                            const response = await fetchWithTimeout('/api/post/updateData', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    "nome": value_name.trim(),
+                                    "cpf": value_cpf.trim(),
+                                    "numero_telefone": value_telefone.trim(),
+                                    "address": value_address,
+                                    "addressNumber": value_addressNumber.trim(),
+                                    "complement": value_complement.substring(0, 255),
+                                    "province": value_province,
+                                    "postalCode": value_postalCode,
+                                    "cidade": value_cidade_nome.trim(),
+                                    "pais": value_pais,
+                                    "cidade_nome": value_cidade_nome,
+                                    "data_nascimento": value_data_nascimento,
+                                    "onde_conheceu": value_onde_conheceu,
+                                    "situacao_academica": value_situacao,
+                                    "curso": value_curso,
+                                    "profissao": value_situacao === 'formado' ? value_profissao.trim() : '',
+                                    "ano_conclusao": value_ano,
+                                    "semestre_conclusao": value_semestre,
+                                    "lgpdAccepted": true,
+                                    "lgpdVersion": LGPD_CONSENT_VERSION
+                                })
                             })
-                        })
 
-                        if (!response.ok) {
+                            if (!response.ok) {
+                                const responseJson = await readJsonResponse(response)
+                                setOpenLgdp(false)
+                                handleChangeAvisoErro(responseJson?.message || "Não foi possível salvar seus dados. Tente novamente.")
+                                return
+                            }
+                            router.push('/painel/suaInscricaoFoiConfirmada')
+                            router.refresh()
+                        } catch (error) {
+                            setOpenLgdp(false)
+                            handleChangeAvisoErro(error instanceof Error && error.message ? error.message : "Não foi possível salvar seus dados. Verifique sua conexão e tente novamente.")
+                        } finally {
                             setIsLoadingForms(false)
-                            const responseJson = await readJsonResponse(response)
-                            handleChangeAvisoErro(responseJson?.message || "Não foi possível salvar seus dados. Tente novamente.")
-                            handleChangeSetIsLoadingForms(0)
-                            throw new Error('Erro ao carregar os dados');
                         }
-                        router.push('/painel/suaInscricaoFoiConfirmada')
-                        router.refresh()
                     }} // ………………
                     isLoading={Boolean(isLoadingForms)}
                 />}
@@ -282,8 +295,8 @@ export default function UpdateData() {
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 <div className="flex flex-col space-y-1">
-                                    <h1 className="text-sm font-semibold text-tinta">CPF / CNPJ</h1>
-                                    <InputComponent ariaLabel="CPF ou CNPJ" type_text="number" placeholder="Apenas números" value={value_cpf} onChange={handleChangeCpf} />
+                                    <h1 className="text-sm font-semibold text-tinta">CPF</h1>
+                                    <InputComponent ariaLabel="CPF" type_text="number" placeholder="Apenas números" value={value_cpf} onChange={handleChangeCpf} />
                                 </div>
                             </div>
 
@@ -382,6 +395,13 @@ export default function UpdateData() {
                                         <InputComponent ariaLabel="Curso" placeholder="Ex: Medicina / Enfermagem" value={value_curso} onChange={handleChangeCurso} />
                                     </div>
 
+                                    {value_situacao === 'formado' && (
+                                        <div className="flex flex-col space-y-1">
+                                            <h1 className="text-sm font-semibold text-tinta">Qual é a sua profissão?</h1>
+                                            <InputComponent ariaLabel="Profissão" placeholder="Ex: Médico(a), Enfermeiro(a), Fisioterapeuta" value={value_profissao} onChange={handleChangeProfissao} />
+                                        </div>
+                                    )}
+
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                         <div className="flex flex-col space-y-1">
                                             <h1 className="text-sm font-semibold text-tinta">
@@ -431,7 +451,9 @@ function AvisoModal({ texto, handler }) {
         return null
     }
     return <Modal open={Boolean(texto)} onClose={() => handler("")} title="Revise seu cadastro">
-        <StatusBanner tone="warning" title="Algumas informações precisam de atenção">{texto}</StatusBanner>
+        <StatusBanner tone="warning" title="Algumas informações precisam de atenção">
+            <strong className="block uppercase">{texto}</strong>
+        </StatusBanner>
         <Button className="mt-5" full onClick={() => handler("")}>Entendi</Button>
     </Modal>
 }

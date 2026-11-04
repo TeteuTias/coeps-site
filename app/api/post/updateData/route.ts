@@ -4,16 +4,7 @@ import { getSession, withApiAuthRequired } from '@/lib/auth0-compat';
 import { normalizePaymentCustomerInput } from '@/lib/payments/customer-sync';
 import { syncPendingAsaasCustomer } from '@/lib/payments/customer-profile-sync';
 import { LGPD_CONSENT_VERSION } from '@/lib/registration-consent';
-
-function requiredString(value: unknown): string {
-    return typeof value === 'string' ? value.trim() : '';
-}
-
-function dateIsValid(value: string): boolean {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-    const date = new Date(`${value}T12:00:00Z`);
-    return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
-}
+import { validateRegistrationProfile } from '@/lib/registration-profile';
 
 export const POST = withApiAuthRequired(async function POST(request: Request) {
     try {
@@ -61,37 +52,17 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             );
         }
 
-        const phone = String(data.numero_telefone ?? '').replace(/\D/g, '');
-        const address = requiredString(data.address);
-        const province = requiredString(data.province);
-        const cityName = requiredString(data.cidade);
-        const country = requiredString(data.pais) || 'Brasil';
-        const birthDate = requiredString(data.data_nascimento);
-        const referral = requiredString(data.onde_conheceu);
-        const academicStatus = requiredString(data.situacao_academica);
-        const course = requiredString(data.curso);
-        const graduationYear = Number(data.ano_conclusao);
-        const graduationSemester = Number(data.semestre_conclusao);
-        if (
-            phone.length < 10 ||
-            phone.length > 11 ||
-            !address ||
-            !province ||
-            !cityName ||
-            !dateIsValid(birthDate) ||
-            !referral ||
-            !['estudante', 'formado'].includes(academicStatus) ||
-            !course ||
-            !Number.isInteger(graduationYear) ||
-            graduationYear < 1900 ||
-            graduationYear > 2100 ||
-            ![1, 2].includes(graduationSemester)
-        ) {
+        const profile = validateRegistrationProfile(data);
+        if (profile.ok === false) {
             return Response.json(
-                { error: 'invalid_registration_data', message: 'Revise os campos obrigatórios do cadastro.' },
+                { error: 'invalid_registration_data', message: profile.message },
                 { status: 400 },
             );
         }
+        const {
+            phone, address, province, cityName, country, birthDate, referral,
+            academicStatus, course, profession, graduationYear, graduationSemester,
+        } = profile.value;
 
         const now = new Date();
         const previousConsent = userDb.consentimentos?.lgpd;
@@ -113,6 +84,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             onde_conheceu: referral,
             situacao_academica: academicStatus,
             curso: course,
+            profissao: profession,
             ano_conclusao: graduationYear,
             semestre_conclusao: graduationSemester,
             endereco: {

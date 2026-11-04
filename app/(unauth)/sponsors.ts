@@ -48,7 +48,7 @@ export const sponsorTiers: SponsorTier[] = [
     label: 'Patrocínio Bronze',
     sponsors: [
       { name: 'Cremiatta Sorvetes e Açaí', src: '/cieps/patrocinadores/bronze/cremiatta.png', width: 909, height: 600 },
-      { name: 'Grupo Fuerza', src: '/cieps/patrocinadores/bronze/grupo-fuerza.png', width: 549, height: 600 },
+      { name: 'Grupo Fuerza', src: '/cieps/patrocinadores/bronze/grupo-fuerza.png', width: 719, height: 178 },
       { name: 'Unimed Araguari', src: '/cieps/patrocinadores/bronze/unimed-araguari.png', width: 1679, height: 600 },
       { name: 'Livraria PHL', src: '/cieps/patrocinadores/bronze/livraria-phl.png', width: 622, height: 416 },
     ],
