@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useState } from "react";
 import { ICourse, ILecture } from "@/lib/types/events/event.t";
-import { Calendar, Clock, MapPin, Info, X, Loader2 } from 'lucide-react';
-import { AsyncStatePanel } from '@/components/cieps';
+import { CalendarDays, Clock3, MapPin } from 'lucide-react';
+import { AsyncStatePanel, Modal } from '@/components/cieps';
 import { fetchWithTimeout, readJsonResponse } from '@/lib/client/fetchWithTimeout';
 import './style.css';
 
@@ -78,7 +78,7 @@ export default function MinhaProgramacao() {
 
   return (
     <div className="programacao-main">
-      {modal && <Modal handleModal={() => handleModal(0)} modal={modal} />}
+      <DetalhesModal modal={modal} onClose={() => handleModal(undefined)} />
       {showRegrasModal && <RegrasModal onClose={() => setShowRegrasModal(false)} />}
 
       <div className="programacao-container">
@@ -502,6 +502,7 @@ function organizeData(data) {
 
   data['palestras'].map((value1, index) => {
     value1.timeline.map((value2) => {
+      value2.kind = 'Palestra'
       value2.namePattern = value1.name
       value2.descriptionPattern = value1.description,
         value2.organization_namePattern = value1.organization_name,
@@ -511,6 +512,7 @@ function organizeData(data) {
 
   data['minicursos'].map((value1, index) => {
     value1.timeline.map((value2) => {
+      value2.kind = 'Minicurso'
       value2.namePattern = value1.name
       value2.descriptionPattern = value1.description,
         value2.organization_namePattern = value1.organization_name,
@@ -541,70 +543,38 @@ function organizeData(data) {
   return organized;
 }
 
-const Modal = ({ handleModal, modal }) => {
-  return (
-    <div className="programacao-modal-overlay" onClick={handleModal}>
-      <div className="programacao-modal" onClick={(e) => e.stopPropagation()}>
-        <button className="programacao-modal-close" onClick={handleModal}>
-          <X size={20} />
-        </button>
+const TZ = 'America/Sao_Paulo'
+const formatTime = (iso) => iso
+  ? new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ })
+  : '--:--'
+const formatDate = (iso) => iso
+  ? new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: TZ })
+  : '--/--'
 
-        <div className="programacao-modal-content">
-          <h2 className="programacao-modal-title">{modal.namePattern.toUpperCase()}</h2>
-
-          <div className="programacao-modal-section">
-            <h3 className="programacao-modal-section-title">
-              <Info size={16} className="inline mr-2" />
-              SOBRE
-            </h3>
-            <p className="programacao-modal-description">
-              {modal.descriptionPattern}
-            </p>
-          </div>
-
-          <div className="programacao-modal-section">
-            <h3 className="programacao-modal-section-title">
-              <Calendar size={16} className="inline mr-2" />
-              PROGRAMAÇÃO
-            </h3>
-            <div className="programacao-timeline">
-              {modal.timelinePattern.map((event, index) => {
-                const data = new Date(event.date_init).toLocaleDateString()
-                const time_init = new Date(event.date_init).toLocaleTimeString()
-                const time_end = new Date(event.date_end).toLocaleTimeString()
-
-                return (
-                  <div className="programacao-timeline-item" key={index}>
-                    <div className="programacao-timeline-event-name">
-                      {event.name.toUpperCase()}
-                    </div>
-                    <div className="programacao-timeline-details">
-                      <div className="programacao-timeline-detail">
-                        <span className="programacao-timeline-detail-icon">🕐</span>
-                        <span>{data.slice(0, 5)} - {time_init.slice(0, 5)} às {time_end.slice(0, 5)}</span>
-                      </div>
-                      <div className="programacao-timeline-detail">
-                        <span className="programacao-timeline-detail-icon">📍</span>
-                        <span>{event.local} - {event.local_description}</span>
-                      </div>
-                      <div className="programacao-timeline-detail">
-                        <span className="programacao-timeline-detail-icon">⭐</span>
-                        <span>{event.description}</span>
-                      </div>
-                    </div>
-                    {index < modal.timelinePattern.length - 1 && (
-                      <div className="programacao-timeline-divider"></div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
+const DetalhesModal = ({ modal, onClose }) => (
+  <Modal
+    open={Boolean(modal)}
+    onClose={onClose}
+    title={modal?.namePattern ?? 'Detalhes da atividade'}
+    description={modal?.descriptionPattern || 'Descrição oficial em atualização.'}
+  >
+    {modal && (
+      <div className="programacao-modal-timeline">
+        {modal.timelinePattern?.map((event, index) => (
+          <section className="programacao-modal-slot" key={event._id ?? index}>
+            <strong>{event.name}</strong>
+            <span><CalendarDays size={15} aria-hidden="true" />{formatDate(event.date_init)}</span>
+            <span><Clock3 size={15} aria-hidden="true" />{formatTime(event.date_init)} – {formatTime(event.date_end)}</span>
+            {(event.local || event.local_description) && (
+              <span><MapPin size={15} aria-hidden="true" />{[event.local, event.local_description].filter(Boolean).join(' · ')}</span>
+            )}
+            {event.description && <p>{event.description}</p>}
+          </section>
+        ))}
       </div>
-    </div>
-  )
-}
+    )}
+  </Modal>
+)
 
 function padZeroIfNeeded(number) {
   return number < 10 ? '0' + number : number.toString();
@@ -671,24 +641,27 @@ const RegrasModal = ({ onClose }) => {
 
 const CardProgramacao = ({ dateKey, event, handleModal }) => {
   const DATE = new Date(dateKey + "T12:00:00-03:00")
-  const daysNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
-  const dayName = daysNames[DATE.getDay()]
+  const weekday = DATE.toLocaleDateString('pt-BR', { weekday: 'long', timeZone: TZ })
+  const total = event?.length ?? 0
 
   return (
-    <div className="programacao-date-card">
-      <div className="programacao-date-header">
+    <section className="programacao-date-card">
+      <header className="programacao-date-header">
         <h2 className="programacao-date-title">
-          {DATE.toLocaleDateString().slice(0, 5)} - {dayName.toUpperCase()}
+          {formatDate(DATE.toISOString())} <span className="programacao-date-weekday">· {weekday}</span>
         </h2>
-      </div>
+        <span className="programacao-date-count">{total} {total === 1 ? 'atividade' : 'atividades'}</span>
+      </header>
       <div className="programacao-events-list">
         {event?.map((value, index) => {
-          const dateInit = new Date(value.date_init).toLocaleTimeString()
-          const dateEnd = new Date(value.date_end).toLocaleTimeString()
+          const showParent = value.namePattern && value.namePattern.trim().toLowerCase() !== value.name?.trim().toLowerCase()
+          const local = [value.local, value.local_description].filter(Boolean).join(' · ')
 
           return (
-            <div
-              className="programacao-event-card"
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              className={`programacao-event-card kind-${value.kind === 'Minicurso' ? 'minicurso' : 'palestra'}`}
               onClick={() => handleModal(value)}
               key={[
                 dateKey,
@@ -698,30 +671,22 @@ const CardProgramacao = ({ dateKey, event, handleModal }) => {
                 index,
               ].join('-')}
             >
-              <div className="programacao-event-indicator"></div>
-              <div className="programacao-event-content">
-                <div className="programacao-event-info">
-                  <h3 className="programacao-event-title">
-                    {value.name.toUpperCase()}
-                  </h3>
-                  <p className="programacao-event-description">
-                    {value.description}
-                  </p>
-                  <div className="programacao-event-type">
-                    <span className="programacao-event-type-icon">👩‍🎓</span>
-                    <span>{value.namePattern.toUpperCase()}</span>
-                  </div>
-                </div>
-                <div className="programacao-event-time">
-                  <p>{dateInit}</p>
-                  <p>às</p>
-                  <p>{dateEnd}</p>
-                </div>
+              <div className="programacao-event-info">
+                <span className="programacao-event-kind">{value.kind}{showParent ? ` · ${value.namePattern}` : ''}</span>
+                <h3 className="programacao-event-title">{value.name}</h3>
+                {value.description && <p className="programacao-event-description">{value.description}</p>}
+                {local && (
+                  <span className="programacao-event-local"><MapPin size={15} aria-hidden="true" />{local}</span>
+                )}
               </div>
-            </div>
+              <div className="programacao-event-time">
+                <Clock3 size={16} aria-hidden="true" />
+                <span>{formatTime(value.date_init)} – {formatTime(value.date_end)}</span>
+              </div>
+            </button>
           )
         })}
       </div>
-    </div>
+    </section>
   )
 }

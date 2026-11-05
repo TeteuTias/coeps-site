@@ -130,13 +130,6 @@
 .cieps-auth-shell :is(.programacao-artigos-table,.programacao-posters-table) { border-collapse:collapse;color:var(--cieps-ink);width:100%; }
 .cieps-auth-shell :is(.programacao-artigos-table,.programacao-posters-table) th { background:var(--cieps-ink);color:#fff;font-size:.72rem;padding:.85rem;text-transform:uppercase; }
 .cieps-auth-shell :is(.programacao-artigos-table,.programacao-posters-table) td { border-bottom:1px solid var(--cieps-line);padding:.85rem; }
-.cieps-auth-shell .programacao-date-card { overflow:hidden; }
-.cieps-auth-shell .programacao-date-header { background:var(--cieps-ink);color:#fff;padding:1rem 1.25rem; }
-.cieps-auth-shell .programacao-date-title { color:#fff;font-family:var(--cieps-display); }
-.cieps-auth-shell .programacao-event-card { background:transparent;border-bottom:1px solid var(--cieps-line);border-radius:0;box-shadow:none;padding:1.15rem; }
-.cieps-auth-shell .programacao-event-indicator { background:var(--cieps-yellow); }
-.cieps-auth-shell .programacao-event-title { color:var(--cieps-ink); }
-.cieps-auth-shell .programacao-event-description { color:var(--cieps-muted); }
 .cieps-auth-shell .programacao-loading {
   align-items:center;background:var(--cieps-paper-strong);border:1px solid var(--cieps-line);
   border-radius:8px;box-shadow:var(--cieps-shadow);color:var(--cieps-ink);display:flex;
