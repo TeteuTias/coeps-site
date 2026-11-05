@@ -94,24 +94,24 @@
 
 /* Botão de submeter trabalho */
 .btn-submeter {
-  background: linear-gradient(135deg, #541A2C 0%, #1B305F 100%);
+  background: var(--cieps-red);
   color: white;
   border: none;
-  border-radius: 12px;
+  border-radius: 4px;
   padding: 1rem 2.5rem;
   font-size: 1.1rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(84, 26, 44, 0.3);
+  box-shadow: none;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
 .btn-submeter:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(84, 26, 44, 0.4);
-  background: linear-gradient(135deg, #1B305F 0%, #541A2C 100%);
+  box-shadow: none;
+  background: #8f2323;
 }
 
 /* Seção de publicações */
@@ -408,10 +408,10 @@
 }
 
 .btn-toggle {
-  background: #541A2C;
+  background: var(--cieps-blue);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 0.5rem 1rem;
   font-weight: 700;
   cursor: pointer;
@@ -422,7 +422,7 @@
 }
 
 .btn-toggle:hover {
-  background: #1B305F;
+  background: #134c84;
   transform: translateY(-1px);
 }
 
@@ -496,14 +496,14 @@
 
 /* Botão de exclusão de trabalho */
 .btn-delete-work {
-  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  background: var(--cieps-red);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 0.5rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -513,8 +513,8 @@
 
 .btn-delete-work:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
-  background: linear-gradient(135deg, #DC2626 0%, #EF4444 100%);
+  box-shadow: none;
+  background: #8f2323;
 }
 
 .btn-delete-work:disabled {
@@ -536,16 +536,16 @@
 
 /* Botão de correção */
 .btn-correcao {
-  background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
+  background: var(--cieps-red);
   color: white;
   border: none;
-  border-radius: 12px;
+  border-radius: 4px;
   padding: 1rem 2rem;
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(220, 38, 38, 0.3);
+  box-shadow: none;
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-top: 1rem;
@@ -553,8 +553,8 @@
 
 .btn-correcao:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(220, 38, 38, 0.4);
-  background: linear-gradient(135deg, #B91C1C 0%, #DC2626 100%);
+  box-shadow: none;
+  background: #8f2323;
 }
 
 /* Linha de ações */
