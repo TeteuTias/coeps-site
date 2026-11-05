@@ -462,16 +462,16 @@
 }
 
 .btn-secundario {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  background: var(--cieps-red);
   color: white;
   border: none;
-  border-radius: 12px;
+  border-radius: 4px;
   padding: 1rem 2rem;
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(5, 150, 105, 0.3);
+  box-shadow: none;
   text-transform: uppercase;
   letter-spacing: 1px;
   display: flex;
@@ -482,8 +482,8 @@
 
 .btn-secundario:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(5, 150, 105, 0.4);
-  background: linear-gradient(135deg, #047857 0%, #059669 100%);
+  box-shadow: none;
+  background: #8f2323;
 }
 
 .btn-secundario:disabled {

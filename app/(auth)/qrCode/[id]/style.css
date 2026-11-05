@@ -170,22 +170,22 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(255,255,255,0.35);
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(27,48,95,0.10);
+  background: var(--cieps-paper-strong);
+  border-radius: 4px;
+  box-shadow: none;
   padding: 0.5rem 1.1rem 0.5rem 0.8rem;
   font-weight: 700;
-  color: #541A2C;
+  color: var(--cieps-red);
   text-decoration: none;
   font-size: 1.1rem;
   backdrop-filter: blur(8px);
-  border: 1px solid #D8D9DA;
+  border: 1px solid var(--cieps-line);
   transition: background 0.2s, color 0.2s, box-shadow 0.2s;
 }
 .qr-back-btn:hover {
-  background: rgba(255,255,255,0.6);
-  color: #1B305F;
-  box-shadow: 0 4px 16px rgba(27,48,95,0.18);
+  background: var(--cieps-paper);
+  color: var(--cieps-blue);
+  box-shadow: none;
 }
 .qr-back-icon {
   font-size: 1.5rem;

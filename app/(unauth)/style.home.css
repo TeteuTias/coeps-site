@@ -923,7 +923,7 @@
 }
 
 .cieps-modal-card.aviso-autores-card {
-  max-width: 460px;
+  max-width: 680px;
   padding: 1rem;
 }
 
@@ -947,8 +947,6 @@
   display: block;
   height: auto;
   margin: 0 auto;
-  max-height: calc(min(90vh, 760px) - 2rem);
-  object-fit: contain;
-  width: auto;
-  max-width: 100%;
+  /* Documento A4 com texto: ocupa a largura e o card rola, para manter legível. */
+  width: 100%;
 }
