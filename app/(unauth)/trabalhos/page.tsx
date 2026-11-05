@@ -8,6 +8,7 @@ import { fetchWithTimeout } from '@/lib/client/fetchWithTimeout';
 import { buildAuthEntryPath } from '@/lib/auth-migration-notice';
 import { workSubmissionIsOpen } from '@/lib/academic-work-files';
 import { ArrowRight, CalendarDays, Compass, Download, ExternalLink, Files, FileText, Loader2, Send, Sparkles } from 'lucide-react';
+import TrabalhosAprovados from './TrabalhosAprovados';
 import './style.css';
 
 /**
@@ -141,6 +142,8 @@ export default function Trabalhos() {
         <article className="cieps-surface trabalhos-date-card"><CalendarDays size={20} aria-hidden="true" /><strong>{formatShortDate(config?.data_limite_submissao)}</strong><span>Prazo de submissão</span></article>
         <article className="cieps-surface trabalhos-date-card"><CalendarDays size={20} aria-hidden="true" /><strong>{formatShortDate(config?.data_publicacao_resultados)}</strong><span>Publicação de resultados</span></article>
       </section>
+
+      <TrabalhosAprovados />
 
       <section className="trabalhos-content-grid">
         <article className="cieps-surface trabalhos-copy-card">
