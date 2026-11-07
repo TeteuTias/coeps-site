@@ -12,6 +12,8 @@ export type RegistrationProfile = {
     academicStatus: 'estudante' | 'formado';
     course: string;
     profession: string;
+    municipalRegistration: string;
+    originUnit: string;
     graduationYear: number;
     graduationSemester: number;
 };
@@ -24,6 +26,33 @@ function dateIsValid(value: string): boolean {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
     const date = new Date(`${value}T12:00:00Z`);
     return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+}
+
+function textFieldError(label: string, value: string, required: boolean, max: number): string | null {
+    if (required && !value) return `${label}: campo obrigatório.`;
+    if (value.length > max) return `${label}: use no máximo ${max} caracteres.`;
+    return null;
+}
+
+// Campos extras do formado (matrícula e unidade de origem), na ordem em que aparecem no formulário.
+function healthFieldsError(municipalRegistration: string, originUnit: string, required: boolean): string | null {
+    return textFieldError('Número da matrícula do município', municipalRegistration, required, 50)
+        ?? textFieldError('Unidade de Origem', originUnit, required, 100);
+}
+
+type HealthProfileComplement = { profession: string; municipalRegistration: string; originUnit: string };
+
+// Complemento pedido a quem já está inscrito como profissional da saúde (profissão, matrícula e unidade de origem).
+export function validateHealthProfileComplement(
+    data: Record<string, unknown>,
+): { ok: true; value: HealthProfileComplement } | { ok: false; message: string } {
+    const profession = text(data.profissao);
+    const municipalRegistration = text(data.matricula_municipio);
+    const originUnit = text(data.unidade_origem);
+    if (!profession) return { ok: false, message: 'Profissão: informe sua profissão.' };
+    const fieldError = healthFieldsError(municipalRegistration, originUnit, true);
+    if (fieldError) return { ok: false, message: fieldError };
+    return { ok: true, value: { profession, municipalRegistration, originUnit } };
 }
 
 export function validateRegistrationProfile(
@@ -39,6 +68,8 @@ export function validateRegistrationProfile(
     const academicStatus = text(data.situacao_academica);
     const course = text(data.curso);
     const profession = text(data.profissao);
+    const municipalRegistration = text(data.matricula_municipio);
+    const originUnit = text(data.unidade_origem);
     const graduationYear = Number(data.ano_conclusao);
     const graduationSemester = Number(data.semestre_conclusao);
     const yearLabel = academicStatus === 'formado' ? 'Ano de formação' : 'Ano de conclusão';
@@ -55,6 +86,8 @@ export function validateRegistrationProfile(
     }
     if (!course) return fail('Curso: campo obrigatório.');
     if (academicStatus === 'formado' && !profession) return fail('Profissão: informe sua profissão.');
+    const fieldError = healthFieldsError(municipalRegistration, originUnit, academicStatus === 'formado');
+    if (fieldError) return fail(fieldError);
     if (!Number.isInteger(graduationYear) || graduationYear < 1900 || graduationYear > 2100) {
         return fail(`${yearLabel}: use 4 números entre 1900 e 2100 (ex: 2024).`);
     }
@@ -73,6 +106,8 @@ export function validateRegistrationProfile(
             academicStatus,
             course,
             profession: academicStatus === 'formado' ? profession : '',
+            municipalRegistration: academicStatus === 'formado' ? municipalRegistration : '',
+            originUnit: academicStatus === 'formado' ? originUnit : '',
             graduationYear,
             graduationSemester,
         },

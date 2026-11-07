@@ -61,7 +61,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
         }
         const {
             phone, address, province, cityName, country, birthDate, referral,
-            academicStatus, course, profession, graduationYear, graduationSemester,
+            academicStatus, course, profession, municipalRegistration, originUnit, graduationYear, graduationSemester,
         } = profile.value;
 
         const now = new Date();
@@ -85,6 +85,8 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
             situacao_academica: academicStatus,
             curso: course,
             profissao: profession,
+            matricula_municipio: municipalRegistration,
+            unidade_origem: originUnit,
             ano_conclusao: graduationYear,
             semestre_conclusao: graduationSemester,
             endereco: {

@@ -2,8 +2,36 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
     getRegistrationRedirect,
+    isHealthProfileMissing,
     isRegistrationProfileComplete,
 } from '../registration-gate.ts';
+
+test('profissional da saúde inscrito sem profissão, matrícula ou unidade precisa do complemento', () => {
+    const health = (profile: Record<string, unknown>, situacao = 1, tipo = 'profissional_saude') => isHealthProfileMissing({
+        isPos_registration: true,
+        informacoes_usuario: profile,
+        pagamento: { situacao, tipo_pagamento: tipo },
+    });
+    const full = { profissao: 'Médica', matricula_municipio: '123', unidade_origem: 'UBS Centro' };
+    assert.equal(health({ ...full, matricula_municipio: '' }), true);
+    assert.equal(health({ ...full, profissao: ' ' }), true);
+    assert.equal(health({ profissao: 'Médica', matricula_municipio: '123' }), true);
+    assert.equal(health(full), false);
+    assert.equal(health({}, 1, 'PIX'), false);
+    assert.equal(health({}, 3), false);
+});
+
+test('complemento da saúde bloqueia o painel até ser preenchido', () => {
+    const base = { profileComplete: true, paymentConfirmed: true, confirmationSeen: true };
+    assert.equal(getRegistrationRedirect({ ...base, path: '/painel', healthProfileMissing: true }), '/painel/completarCadastro');
+    assert.equal(getRegistrationRedirect({ ...base, path: '/painel/completarCadastro', healthProfileMissing: true }), null);
+    assert.equal(getRegistrationRedirect({ ...base, path: '/painel/completarCadastro' }), '/painel');
+    assert.equal(getRegistrationRedirect({ ...base, path: '/painel' }), null);
+    assert.equal(
+        getRegistrationRedirect({ ...base, profileComplete: false, path: '/painel', healthProfileMissing: true }),
+        '/painel/dadosIniciais',
+    );
+});
 
 const decide = (
     path: string,

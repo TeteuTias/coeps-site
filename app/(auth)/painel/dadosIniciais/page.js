@@ -36,6 +36,8 @@ export default function UpdateData() {
     const [value_situacao, setValueSituacao] = useState(''); // 'formado' ou 'estudante'
     const [value_curso, setValueCurso] = useState('');
     const [value_profissao, setValueProfissao] = useState('');
+    const [value_matricula_municipio, setValueMatriculaMunicipio] = useState('');
+    const [value_unidade_origem, setValueUnidadeOrigem] = useState('');
     const [value_ano, setValueAno] = useState('');
     const [value_semestre, setValueSemestre] = useState('');
     const [value_onde_conheceu, setValueOndeConheceu] = useState('');
@@ -64,6 +66,8 @@ export default function UpdateData() {
     const handleChangeSituacao = (event) => setValueSituacao(event.target.value);
     const handleChangeCurso = (event) => setValueCurso(event.target.value);
     const handleChangeProfissao = (event) => setValueProfissao(event.target.value);
+    const handleChangeMatriculaMunicipio = (event) => setValueMatriculaMunicipio(event.target.value);
+    const handleChangeUnidadeOrigem = (event) => setValueUnidadeOrigem(event.target.value);
     const handleChangeAno = (event) => setValueAno(event.target.value);
     const handleChangeSemestre = (event) => setValueSemestre(event.target.value);
     const handleChangeOndeConheceu = (event) => setValueOndeConheceu(event.target.value);
@@ -90,6 +94,8 @@ export default function UpdateData() {
                 setValueSituacao(draft.academicStatus || '');
                 setValueCurso(draft.course || '');
                 setValueProfissao(draft.profession || '');
+                setValueMatriculaMunicipio(draft.municipalRegistration || '');
+                setValueUnidadeOrigem(draft.originUnit || '');
                 setValueAno(draft.graduationYear || '');
                 setValueSemestre(draft.graduationSemester || '');
             } catch (error) {
@@ -193,6 +199,14 @@ export default function UpdateData() {
                     handleChangeSetIsLoadingForms(0)
                     handleChangeAvisoErro(`Preencha a sua "Profissão"`)
                     return 0
+                case (value_situacao === 'formado' && value_matricula_municipio.trim() == ""):
+                    handleChangeSetIsLoadingForms(0)
+                    handleChangeAvisoErro(`Preencha o "Número da matrícula do município"`)
+                    return 0
+                case (value_situacao === 'formado' && value_unidade_origem.trim() == ""):
+                    handleChangeSetIsLoadingForms(0)
+                    handleChangeAvisoErro(`Preencha a "Unidade de Origem"`)
+                    return 0
                 case (!/^\d{4}$/.test(value_ano.trim()) || Number(value_ano) < 1900 || Number(value_ano) > 2100):
                     handleChangeSetIsLoadingForms(0)
                     handleChangeAvisoErro(`Preencha o "Ano" com 4 números entre 1900 e 2100 (ex: 2024)`)
@@ -242,6 +256,8 @@ export default function UpdateData() {
                                     "situacao_academica": value_situacao,
                                     "curso": value_curso,
                                     "profissao": value_situacao === 'formado' ? value_profissao.trim() : '',
+                                    "matricula_municipio": value_situacao === 'formado' ? value_matricula_municipio.trim() : '',
+                                    "unidade_origem": value_situacao === 'formado' ? value_unidade_origem.trim() : '',
                                     "ano_conclusao": value_ano,
                                     "semestre_conclusao": value_semestre,
                                     "lgpdAccepted": true,
@@ -399,6 +415,20 @@ export default function UpdateData() {
                                         <div className="flex flex-col space-y-1">
                                             <h1 className="text-sm font-semibold text-tinta">Qual é a sua profissão?</h1>
                                             <InputComponent ariaLabel="Profissão" placeholder="Ex: Médico(a), Enfermeiro(a), Fisioterapeuta" value={value_profissao} onChange={handleChangeProfissao} />
+                                        </div>
+                                    )}
+
+                                    {value_situacao === 'formado' && (
+                                        <div className="flex flex-col space-y-1">
+                                            <h1 className="text-sm font-semibold text-tinta">Número da matrícula do município</h1>
+                                            <InputComponent ariaLabel="Número da matrícula do município" placeholder="Informe o número da sua matrícula" value={value_matricula_municipio} onChange={handleChangeMatriculaMunicipio} />
+                                        </div>
+                                    )}
+
+                                    {value_situacao === 'formado' && (
+                                        <div className="flex flex-col space-y-1">
+                                            <h1 className="text-sm font-semibold text-tinta">Unidade de Origem</h1>
+                                            <InputComponent ariaLabel="Unidade de Origem" placeholder="Informe a sua unidade de origem" value={value_unidade_origem} onChange={handleChangeUnidadeOrigem} />
                                         </div>
                                     )}
 

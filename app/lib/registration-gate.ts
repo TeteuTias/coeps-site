@@ -6,6 +6,7 @@ export type RegistrationGateInput = {
     remoteWorkAccessActive?: boolean;
     remoteWorkAreaAccess?: boolean;
     remoteWorkSubmissionAllowed?: boolean;
+    healthProfileMissing?: boolean;
 };
 
 type RegistrationUser = {
@@ -14,8 +15,26 @@ type RegistrationUser = {
         nome?: unknown;
         cpf?: unknown;
         numero_telefone?: unknown;
+        profissao?: unknown;
+        matricula_municipio?: unknown;
+        unidade_origem?: unknown;
+    } | null;
+    pagamento?: {
+        situacao?: unknown;
+        tipo_pagamento?: unknown;
     } | null;
 } | null | undefined;
+
+export const HEALTH_PROFILE_PATH = '/painel/completarCadastro';
+
+const filled = (value: unknown) => typeof value === 'string' && value.trim() !== '';
+
+// Inscrito como profissional da saúde antes da nova política: falta profissão, matrícula ou unidade de origem.
+export function isHealthProfileMissing(user: RegistrationUser): boolean {
+    if (user?.pagamento?.situacao !== 1 || user.pagamento.tipo_pagamento !== 'profissional_saude') return false;
+    const profile = user.informacoes_usuario;
+    return !filled(profile?.profissao) || !filled(profile?.matricula_municipio) || !filled(profile?.unidade_origem);
+}
 
 export function isRegistrationProfileComplete(user: RegistrationUser): boolean {
     if (!user?.isPos_registration) return false;
@@ -36,6 +55,7 @@ export function getRegistrationRedirect({
     remoteWorkAccessActive = false,
     remoteWorkAreaAccess = remoteWorkAccessActive,
     remoteWorkSubmissionAllowed = remoteWorkAccessActive,
+    healthProfileMissing = false,
 }: RegistrationGateInput): string | null {
     const isPayments = path.startsWith('/pagamentos');
     const isProfile = path === '/painel/dadosIniciais';
@@ -60,6 +80,10 @@ export function getRegistrationRedirect({
         if (!paymentConfirmed) return isPayments ? null : '/pagamentos';
         return isProfile ? null : '/painel/dadosIniciais';
     }
+
+    const isHealthProfile = path === HEALTH_PROFILE_PATH;
+    if (paymentConfirmed && healthProfileMissing) return isHealthProfile ? null : HEALTH_PROFILE_PATH;
+    if (isHealthProfile) return '/painel';
 
     if (!paymentConfirmed && !isCertificates && !isPayments) return '/pagamentos';
     if (paymentConfirmed && !confirmationSeen && !isConfirmation) {
