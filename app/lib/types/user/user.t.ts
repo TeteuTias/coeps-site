@@ -18,6 +18,7 @@ export interface IUser {
         "situacao_academica"?: string,
         "curso"?: string,
         "profissao"?: string,
+        "matricula_municipio"?: string,
         "ano_conclusao"?: number,
         "semestre_conclusao"?: number,
         "endereco"?: {

@@ -62,6 +62,7 @@ export const GET = withApiAuthRequired(async function GET(request: Request) {
             academicStatus: value(profile.situacao_academica),
             course: value(profile.curso),
             profession: value(profile.profissao),
+            municipalRegistration: value(profile.matricula_municipio),
             graduationYear: value(profile.ano_conclusao),
             graduationSemester: value(profile.semestre_conclusao),
         });

@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateRegistrationProfile } from '../registration-profile.ts';
+import { validateHealthProfileComplement, validateRegistrationProfile } from '../registration-profile.ts';
+
+test('complemento da saúde exige profissão e matrícula', () => {
+    const ok = validateHealthProfileComplement({ profissao: ' Médica ', matricula_municipio: ' 123 ' });
+    assert.deepEqual(ok, { ok: true, value: { profession: 'Médica', municipalRegistration: '123' } });
+    const noProfession = validateHealthProfileComplement({ matricula_municipio: '123' });
+    assert.match('message' in noProfession ? noProfession.message : '', /^Profissão/);
+    const noRegistration = validateHealthProfileComplement({ profissao: 'Médica' });
+    assert.match('message' in noRegistration ? noRegistration.message : '', /^Número da matrícula do município/);
+});
 
 const valid = {
     numero_telefone: '34999998888',
@@ -13,6 +22,7 @@ const valid = {
     situacao_academica: 'formado',
     curso: 'Medicina',
     profissao: 'Médica',
+    matricula_municipio: '12345-6',
     ano_conclusao: '2015',
     semestre_conclusao: '2',
 };
@@ -27,6 +37,17 @@ test('cadastro válido de formado guarda a profissão', () => {
     assert.equal(result.ok, true);
     assert.equal(result.ok && result.value.profession, 'Médica');
     assert.equal(result.ok && result.value.graduationYear, 2015);
+    assert.equal(result.ok && result.value.municipalRegistration, '12345-6');
+});
+
+test('estudante descarta a matrícula do município', () => {
+    const result = validateRegistrationProfile({ ...valid, situacao_academica: 'estudante' });
+    assert.equal(result.ok && result.value.municipalRegistration, '');
+});
+
+test('formado sem matrícula ou com mais de 50 caracteres é recusado', () => {
+    assert.match(messageOf({ matricula_municipio: '  ' }) ?? '', /^Número da matrícula do município/);
+    assert.match(messageOf({ matricula_municipio: '1'.repeat(51) }) ?? '', /^Número da matrícula do município/);
 });
 
 test('estudante não precisa de profissão e não guarda o valor', () => {

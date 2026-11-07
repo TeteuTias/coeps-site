@@ -6,7 +6,7 @@ import ts from 'typescript';
 import { ObjectId } from 'mongodb';
 import type { Db, Document } from 'mongodb';
 import { ensureAuthenticatedUser } from '../authenticated-user.ts';
-import { getRegistrationRedirect, isRegistrationProfileComplete } from '../registration-gate.ts';
+import { getRegistrationRedirect, isHealthProfileMissing, isRegistrationProfileComplete } from '../registration-gate.ts';
 
 const identity = { sub: 'auth0|507f1f77bcf86cd799439011', email: 'conta@example.test' };
 const firstAccess = new Date('2026-10-06T12:00:00Z');
@@ -160,7 +160,7 @@ function proxyHarness(options: { user?: typeof identity | { sub: unknown }; fail
             isAuthMigrationGateSatisfied: () => true,
             buildAuthEntryPath: () => '/entrada',
         },
-        '@/lib/registration-gate': { getRegistrationRedirect, isRegistrationProfileComplete },
+        '@/lib/registration-gate': { getRegistrationRedirect, isHealthProfileMissing, isRegistrationProfileComplete },
         '@/lib/payments/config': { getActivePaymentConfig: async () => null },
         '@/lib/remote-work-access': { findRemoteWorkAccess: async () => null },
         '@/lib/authenticated-user': { ensureAuthenticatedUser },

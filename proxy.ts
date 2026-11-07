@@ -10,6 +10,7 @@ import {
 } from '@/lib/auth-migration-notice';
 import {
   getRegistrationRedirect,
+  isHealthProfileMissing,
   isRegistrationProfileComplete,
 } from '@/lib/registration-gate';
 import { getActivePaymentConfig, getEditionId } from '@/lib/payments/config';
@@ -121,6 +122,7 @@ export async function proxy(req) {
     remoteWorkAccessActive: remoteAccess?.status === 'ACTIVE' && remoteAccess.proofReviewStatus !== 'INCONSISTENT',
     remoteWorkAreaAccess: ['ACTIVE', 'REVIEW_REQUIRED', 'REVOKED'].includes(String(remoteAccess?.status || '')),
     remoteWorkSubmissionAllowed: remoteAccess?.status === 'ACTIVE' && remoteAccess.proofReviewStatus !== 'INCONSISTENT',
+    healthProfileMissing: isHealthProfileMissing(user),
   });
   if (redirect) {
     return NextResponse.redirect(new URL(redirect, req.nextUrl.origin));

@@ -12,6 +12,7 @@ export type RegistrationProfile = {
     academicStatus: 'estudante' | 'formado';
     course: string;
     profession: string;
+    municipalRegistration: string;
     graduationYear: number;
     graduationSemester: number;
 };
@@ -24,6 +25,24 @@ function dateIsValid(value: string): boolean {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
     const date = new Date(`${value}T12:00:00Z`);
     return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
+}
+
+function municipalRegistrationError(value: string, required: boolean): string | null {
+    if (required && !value) return 'Número da matrícula do município: campo obrigatório.';
+    if (value.length > 50) return 'Número da matrícula do município: use no máximo 50 caracteres.';
+    return null;
+}
+
+// Complemento pedido a quem já está inscrito como profissional da saúde (só profissão e matrícula).
+export function validateHealthProfileComplement(
+    data: Record<string, unknown>,
+): { ok: true; value: { profession: string; municipalRegistration: string } } | { ok: false; message: string } {
+    const profession = text(data.profissao);
+    const municipalRegistration = text(data.matricula_municipio);
+    if (!profession) return { ok: false, message: 'Profissão: informe sua profissão.' };
+    const registrationError = municipalRegistrationError(municipalRegistration, true);
+    if (registrationError) return { ok: false, message: registrationError };
+    return { ok: true, value: { profession, municipalRegistration } };
 }
 
 export function validateRegistrationProfile(
@@ -39,6 +58,7 @@ export function validateRegistrationProfile(
     const academicStatus = text(data.situacao_academica);
     const course = text(data.curso);
     const profession = text(data.profissao);
+    const municipalRegistration = text(data.matricula_municipio);
     const graduationYear = Number(data.ano_conclusao);
     const graduationSemester = Number(data.semestre_conclusao);
     const yearLabel = academicStatus === 'formado' ? 'Ano de formação' : 'Ano de conclusão';
@@ -55,6 +75,8 @@ export function validateRegistrationProfile(
     }
     if (!course) return fail('Curso: campo obrigatório.');
     if (academicStatus === 'formado' && !profession) return fail('Profissão: informe sua profissão.');
+    const registrationError = municipalRegistrationError(municipalRegistration, academicStatus === 'formado');
+    if (registrationError) return fail(registrationError);
     if (!Number.isInteger(graduationYear) || graduationYear < 1900 || graduationYear > 2100) {
         return fail(`${yearLabel}: use 4 números entre 1900 e 2100 (ex: 2024).`);
     }
@@ -73,6 +95,7 @@ export function validateRegistrationProfile(
             academicStatus,
             course,
             profession: academicStatus === 'formado' ? profession : '',
+            municipalRegistration: academicStatus === 'formado' ? municipalRegistration : '',
             graduationYear,
             graduationSemester,
         },
