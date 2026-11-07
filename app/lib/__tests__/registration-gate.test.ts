@@ -101,3 +101,16 @@ test('acesso remoto em revisão preserva consulta de trabalhos mas não libera o
     assert.equal(getRegistrationRedirect({ ...base, path: '/painel/trabalhos/enviarTrabalho' }), '/painel/trabalhos');
     assert.equal(getRegistrationRedirect({ ...base, path: '/painel/certificados' }), '/painel/trabalhos');
 });
+
+test('aceite pendente da LGPD bloqueia todas as áreas de quem tem cadastro completo', () => {
+    const base = { profileComplete: true, paymentConfirmed: true, confirmationSeen: true };
+    assert.equal(getRegistrationRedirect({ ...base, path: '/painel', consentMissing: true }), '/painel/aceiteLgpd');
+    assert.equal(getRegistrationRedirect({ ...base, path: '/qrCode', consentMissing: true }), '/painel/aceiteLgpd');
+    assert.equal(getRegistrationRedirect({ ...base, path: '/painel', consentMissing: true, healthProfileMissing: true }), '/painel/aceiteLgpd');
+    assert.equal(getRegistrationRedirect({ ...base, paymentConfirmed: false, path: '/pagamentos', consentMissing: true }), '/painel/aceiteLgpd');
+    assert.equal(getRegistrationRedirect({ ...base, path: '/painel/aceiteLgpd', consentMissing: true }), null);
+    assert.equal(getRegistrationRedirect({ ...base, path: '/painel/aceiteLgpd' }), '/painel');
+    assert.equal(getRegistrationRedirect({ ...base, path: '/painel' }), null);
+    // Sem cadastro completo, o aceite acontece no próprio formulário.
+    assert.equal(getRegistrationRedirect({ ...base, profileComplete: false, path: '/painel', consentMissing: true }), '/painel/dadosIniciais');
+});

@@ -14,6 +14,7 @@ import {
   isRegistrationProfileComplete,
 } from '@/lib/registration-gate';
 import { getActivePaymentConfig, getEditionId } from '@/lib/payments/config';
+import { isConsentMissing } from '@/lib/registration-consent';
 import { findRemoteWorkAccess } from '@/lib/remote-work-access';
 import { ensureAuthenticatedUser } from '@/lib/authenticated-user';
 
@@ -123,6 +124,7 @@ export async function proxy(req) {
     remoteWorkAreaAccess: ['ACTIVE', 'REVIEW_REQUIRED', 'REVOKED'].includes(String(remoteAccess?.status || '')),
     remoteWorkSubmissionAllowed: remoteAccess?.status === 'ACTIVE' && remoteAccess.proofReviewStatus !== 'INCONSISTENT',
     healthProfileMissing: isHealthProfileMissing(user),
+    consentMissing: isConsentMissing(user),
   });
   if (redirect) {
     return NextResponse.redirect(new URL(redirect, req.nextUrl.origin));
