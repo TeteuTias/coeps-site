@@ -17,6 +17,7 @@ type RegistrationUser = {
         numero_telefone?: unknown;
         profissao?: unknown;
         matricula_municipio?: unknown;
+        unidade_origem?: unknown;
     } | null;
     pagamento?: {
         situacao?: unknown;
@@ -28,10 +29,11 @@ export const HEALTH_PROFILE_PATH = '/painel/completarCadastro';
 
 const filled = (value: unknown) => typeof value === 'string' && value.trim() !== '';
 
-// Inscrito como profissional da saúde antes da nova política: falta profissão ou matrícula do município.
+// Inscrito como profissional da saúde antes da nova política: falta profissão, matrícula ou unidade de origem.
 export function isHealthProfileMissing(user: RegistrationUser): boolean {
     if (user?.pagamento?.situacao !== 1 || user.pagamento.tipo_pagamento !== 'profissional_saude') return false;
-    return !filled(user.informacoes_usuario?.profissao) || !filled(user.informacoes_usuario?.matricula_municipio);
+    const profile = user.informacoes_usuario;
+    return !filled(profile?.profissao) || !filled(profile?.matricula_municipio) || !filled(profile?.unidade_origem);
 }
 
 export function isRegistrationProfileComplete(user: RegistrationUser): boolean {

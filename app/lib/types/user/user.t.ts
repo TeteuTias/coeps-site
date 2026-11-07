@@ -19,6 +19,7 @@ export interface IUser {
         "curso"?: string,
         "profissao"?: string,
         "matricula_municipio"?: string,
+        "unidade_origem"?: string,
         "ano_conclusao"?: number,
         "semestre_conclusao"?: number,
         "endereco"?: {

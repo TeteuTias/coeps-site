@@ -63,6 +63,7 @@ export const GET = withApiAuthRequired(async function GET(request: Request) {
             course: value(profile.curso),
             profession: value(profile.profissao),
             municipalRegistration: value(profile.matricula_municipio),
+            originUnit: value(profile.unidade_origem),
             graduationYear: value(profile.ano_conclusao),
             graduationSemester: value(profile.semestre_conclusao),
         });

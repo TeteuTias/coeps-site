@@ -13,6 +13,7 @@ export type RegistrationProfile = {
     course: string;
     profession: string;
     municipalRegistration: string;
+    originUnit: string;
     graduationYear: number;
     graduationSemester: number;
 };
@@ -27,22 +28,31 @@ function dateIsValid(value: string): boolean {
     return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
 }
 
-function municipalRegistrationError(value: string, required: boolean): string | null {
-    if (required && !value) return 'Número da matrícula do município: campo obrigatório.';
-    if (value.length > 50) return 'Número da matrícula do município: use no máximo 50 caracteres.';
+function textFieldError(label: string, value: string, required: boolean, max: number): string | null {
+    if (required && !value) return `${label}: campo obrigatório.`;
+    if (value.length > max) return `${label}: use no máximo ${max} caracteres.`;
     return null;
 }
 
-// Complemento pedido a quem já está inscrito como profissional da saúde (só profissão e matrícula).
+// Campos extras do formado (matrícula e unidade de origem), na ordem em que aparecem no formulário.
+function healthFieldsError(municipalRegistration: string, originUnit: string, required: boolean): string | null {
+    return textFieldError('Número da matrícula do município', municipalRegistration, required, 50)
+        ?? textFieldError('Unidade de Origem', originUnit, required, 100);
+}
+
+type HealthProfileComplement = { profession: string; municipalRegistration: string; originUnit: string };
+
+// Complemento pedido a quem já está inscrito como profissional da saúde (profissão, matrícula e unidade de origem).
 export function validateHealthProfileComplement(
     data: Record<string, unknown>,
-): { ok: true; value: { profession: string; municipalRegistration: string } } | { ok: false; message: string } {
+): { ok: true; value: HealthProfileComplement } | { ok: false; message: string } {
     const profession = text(data.profissao);
     const municipalRegistration = text(data.matricula_municipio);
+    const originUnit = text(data.unidade_origem);
     if (!profession) return { ok: false, message: 'Profissão: informe sua profissão.' };
-    const registrationError = municipalRegistrationError(municipalRegistration, true);
-    if (registrationError) return { ok: false, message: registrationError };
-    return { ok: true, value: { profession, municipalRegistration } };
+    const fieldError = healthFieldsError(municipalRegistration, originUnit, true);
+    if (fieldError) return { ok: false, message: fieldError };
+    return { ok: true, value: { profession, municipalRegistration, originUnit } };
 }
 
 export function validateRegistrationProfile(
@@ -59,6 +69,7 @@ export function validateRegistrationProfile(
     const course = text(data.curso);
     const profession = text(data.profissao);
     const municipalRegistration = text(data.matricula_municipio);
+    const originUnit = text(data.unidade_origem);
     const graduationYear = Number(data.ano_conclusao);
     const graduationSemester = Number(data.semestre_conclusao);
     const yearLabel = academicStatus === 'formado' ? 'Ano de formação' : 'Ano de conclusão';
@@ -75,8 +86,8 @@ export function validateRegistrationProfile(
     }
     if (!course) return fail('Curso: campo obrigatório.');
     if (academicStatus === 'formado' && !profession) return fail('Profissão: informe sua profissão.');
-    const registrationError = municipalRegistrationError(municipalRegistration, academicStatus === 'formado');
-    if (registrationError) return fail(registrationError);
+    const fieldError = healthFieldsError(municipalRegistration, originUnit, academicStatus === 'formado');
+    if (fieldError) return fail(fieldError);
     if (!Number.isInteger(graduationYear) || graduationYear < 1900 || graduationYear > 2100) {
         return fail(`${yearLabel}: use 4 números entre 1900 e 2100 (ex: 2024).`);
     }
@@ -96,6 +107,7 @@ export function validateRegistrationProfile(
             course,
             profession: academicStatus === 'formado' ? profession : '',
             municipalRegistration: academicStatus === 'formado' ? municipalRegistration : '',
+            originUnit: academicStatus === 'formado' ? originUnit : '',
             graduationYear,
             graduationSemester,
         },

@@ -7,11 +7,12 @@ import { fetchWithTimeout, readJsonResponse } from '@/lib/client/fetchWithTimeou
 
 const inputClass = "w-full rounded-md border border-linha bg-white px-4 py-3 text-tinta transition-colors placeholder:text-muted focus:border-goles focus:outline-none focus:ring-2 focus:ring-goles/15";
 
-// Só chega aqui (via proxy) quem já está inscrito como profissional da saúde e não tem profissão ou matrícula.
+// Só chega aqui (via proxy) quem já está inscrito como profissional da saúde e não tem profissão, matrícula ou unidade de origem.
 export default function CompletarCadastroSaude() {
     const router = useRouter();
     const [profissao, setProfissao] = useState('');
     const [matricula, setMatricula] = useState('');
+    const [unidade, setUnidade] = useState('');
     const [loaded, setLoaded] = useState(false);
     const [saving, setSaving] = useState(false);
     const [erro, setErro] = useState('');
@@ -23,6 +24,7 @@ export default function CompletarCadastroSaude() {
                 if (!draft) return;
                 setProfissao(draft.profession || '');
                 setMatricula(draft.municipalRegistration || '');
+                setUnidade(draft.originUnit || '');
             })
             .catch(() => { })
             .finally(() => setLoaded(true));
@@ -35,6 +37,7 @@ export default function CompletarCadastroSaude() {
         if (saving) return;
         if (!profissao.trim()) return setErro('Preencha a sua "Profissão".');
         if (!matricula.trim()) return setErro('Preencha o "Número da matrícula do município".');
+        if (!unidade.trim()) return setErro('Preencha a "Unidade de Origem".');
 
         setSaving(true);
         setErro('');
@@ -42,7 +45,7 @@ export default function CompletarCadastroSaude() {
             const response = await fetchWithTimeout('/api/post/completeHealthProfile', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ profissao: profissao.trim(), matricula_municipio: matricula.trim() }),
+                body: JSON.stringify({ profissao: profissao.trim(), matricula_municipio: matricula.trim(), unidade_origem: unidade.trim() }),
             });
             if (!response.ok) {
                 const json = await readJsonResponse(response);
@@ -91,6 +94,17 @@ export default function CompletarCadastroSaude() {
                         maxLength={50}
                         value={matricula}
                         onChange={(event) => setMatricula(event.target.value)}
+                    />
+                </label>
+
+                <label className="flex flex-col gap-1">
+                    <span className="text-sm font-semibold text-tinta">Unidade de Origem</span>
+                    <input
+                        className={inputClass}
+                        placeholder="Informe a sua unidade de origem"
+                        maxLength={100}
+                        value={unidade}
+                        onChange={(event) => setUnidade(event.target.value)}
                     />
                 </label>
 

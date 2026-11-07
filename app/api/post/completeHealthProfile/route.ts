@@ -3,7 +3,7 @@ import { connectToDatabase } from '../../../lib/mongodb';
 import { getSession, withApiAuthRequired } from '@/lib/auth0-compat';
 import { validateHealthProfileComplement } from '@/lib/registration-profile';
 
-// Grava só profissão e matrícula de quem já está inscrito como profissional da saúde.
+// Grava só profissão, matrícula e unidade de origem de quem já está inscrito como profissional da saúde.
 export const POST = withApiAuthRequired(async function POST(request: Request) {
     try {
         const { user } = await getSession(request);
@@ -36,6 +36,7 @@ export const POST = withApiAuthRequired(async function POST(request: Request) {
                 $set: {
                     'informacoes_usuario.profissao': profile.value.profession,
                     'informacoes_usuario.matricula_municipio': profile.value.municipalRegistration,
+                    'informacoes_usuario.unidade_origem': profile.value.originUnit,
                 },
             },
         );
