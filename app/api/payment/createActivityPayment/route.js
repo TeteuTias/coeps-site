@@ -14,6 +14,8 @@ import { includedActivityIds, syncIncludedActivities } from '@/lib/activity-bund
 /** @type {any} */
 export const POST = withApiAuthRequired(async function POST(request) {
     if (!isPaymentSalesEnabled()) return paymentSalesPausedResponse();
+    // Vaga reservada e cobrança ainda não criada: se falhar aqui, nada mais libera a vaga.
+    let releaseSeat = async () => { }
     try {
         // Verificando se ele está logado
         // 
@@ -133,6 +135,11 @@ export const POST = withApiAuthRequired(async function POST(request) {
             // return Response.json({ message: 'AQUI!' }, { status: 200 });
             // Reserva as etapas incluídas junto com a vaga (o webhook reaplica na confirmação).
             await syncIncludedActivities(db, eventId, _id, 'add')
+            releaseSeat = async () => {
+                releaseSeat = async () => { }
+                await db.collection(collection).updateOne({ _id: new ObjectId(eventId) }, { $pull: { participants: _id } })
+                await syncIncludedActivities(db, eventId, _id, 'remove')
+            }
         }
         else {
             throw new Error('Ocorreu algum erro, por favor recarregue a página! [código de erro: updateResult]');
@@ -172,9 +179,11 @@ export const POST = withApiAuthRequired(async function POST(request) {
         ).toArray()
 
         if (userInfos.length == 0) {
+            await releaseSeat()
             return Response.json({ message: 'Ocorreu algum erro, por favor recarregue a página! [userInfos.length == 0]' }, { status: 500 });
         }
         if (!userInfos[0].id_api) {
+            await releaseSeat()
             return Response.json({ message: 'Ocorreu algum erro, por favor recarregue a página! [!userInfos[0].id_api]' }, { status: 500 });
         }
 
@@ -202,11 +211,14 @@ export const POST = withApiAuthRequired(async function POST(request) {
         const responseAPI = await fetch(ASAAS_API_URL, options)
 
         if (!responseAPI.ok) {
+            await releaseSeat()
             return Response.json({ message: 'Ocorreu algum erro, por favor recarregue a página. [!responseAPI.ok => Registro API Pagamentos]' }, { status: 500 });
 
         }
 
 
+        // Cobrança criada no Asaas: a partir daqui o webhook cuida da vaga.
+        releaseSeat = async () => { }
         var responseJson = await responseAPI.json()
         // 
         // Registrando o pagamento no DB
@@ -232,6 +244,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
         return Response.json({ message: 'Você completou sua inscrição! Para garantir sua vaga, é essencial que o pagamento seja realizado até o final do dia. Caso contrário, sua vaga será perdida.Para efetuar o pagamento, clique no botão abaixo ou acesse o menu MEUS PAGAMENTOS.', "link": responseJson.invoiceUrl }, { status: 200 });
     }
     catch {
+        await releaseSeat().catch(() => { })
         return Response.json(
             { error: "internal_server_error", message: "Não foi possível iniciar o pagamento da atividade." },
             { status: 500 }
