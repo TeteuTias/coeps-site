@@ -27,6 +27,7 @@ export async function GET(request, { params }) {
             db.collection(colecao2).find(
                 {
                     showToUser: true,
+                    somenteViaPacote: { $ne: true },
                 },
             ).toArray(),
         ]);

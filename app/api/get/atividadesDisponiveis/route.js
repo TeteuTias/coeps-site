@@ -25,6 +25,7 @@ export const GET = withApiAuthRequired(async function GET(request, { params }) {
     const result = await db.collection(colecao).find(
       {
         showToUser: true,
+        somenteViaPacote: { $ne: true },
       },
 
     ).toArray()

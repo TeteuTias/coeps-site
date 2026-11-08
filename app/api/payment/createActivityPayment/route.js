@@ -5,6 +5,7 @@ import { connectToDatabase } from '@/app/lib/mongodb';
 import { DateTime } from "luxon"
 import { asaasRequestHeaders } from '@/lib/payments/asaas';
 import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
+import { includedActivityIds, syncIncludedActivities } from '@/lib/activity-bundle';
 //
 //
 //
@@ -46,7 +47,9 @@ export const POST = withApiAuthRequired(async function POST(request) {
                     "timeline": 1,
                     "value": 1,
                     "isFree": 1,
-                    "participants": 1
+                    "participants": 1,
+                    "incluiAtividades": 1,
+                    "somenteViaPacote": 1
                 }
             }
         ).toArray()
@@ -70,6 +73,16 @@ export const POST = withApiAuthRequired(async function POST(request) {
         const timeConflict = isScheduleConflict(userRegistrationsCount, eventStatus[0])
         if (timeConflict) {
             return Response.json({ message: 'Não foi possível se inscrever no evento, pois você já possui outro evento que ocorrerá no mesmo dia/horário.' }, { status: 400 });
+        }
+        if (eventStatus[0].somenteViaPacote) {
+            return Response.json({ message: 'Esta etapa já está incluída na inscrição da prática.' }, { status: 400 });
+        }
+        const includedEvents = await db.collection(collection).find(
+            { _id: { $in: includedActivityIds(eventStatus[0]) } },
+            { projection: { timeline: 1 } }
+        ).toArray()
+        if (includedEvents.some(event => isScheduleConflict(userRegistrationsCount, event))) {
+            return Response.json({ message: 'Não foi possível se inscrever: você já está inscrito em uma etapa deste curso (por exemplo, a teórica avulsa) ou em outro evento no mesmo horário. Se estiver na teórica avulsa, retire essa inscrição antes de se inscrever na prática.' }, { status: 400 });
         }
 
         const updateResult = await db.collection("minicursos").findOneAndUpdate(
@@ -118,7 +131,8 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 */
             }
             // return Response.json({ message: 'AQUI!' }, { status: 200 });
-
+            // Reserva as etapas incluídas junto com a vaga (o webhook reaplica na confirmação).
+            await syncIncludedActivities(db, eventId, _id, 'add')
         }
         else {
             throw new Error('Ocorreu algum erro, por favor recarregue a página! [código de erro: updateResult]');
