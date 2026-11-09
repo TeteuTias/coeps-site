@@ -1,11 +1,11 @@
 import { ObjectId } from 'mongodb';
-import { withApiAuthRequired } from '@/lib/auth0-compat';
+import { publicErrorResponse, withApiAuthRequired } from '@/lib/auth0-compat';
 import { getSession } from '@/lib/auth0-compat';
 import { connectToDatabase } from '@/app/lib/mongodb';
 import { DateTime } from "luxon"
 import { asaasRequestHeaders } from '@/lib/payments/asaas';
 import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
-import { includedActivityIds, syncIncludedActivities } from '@/lib/activity-bundle';
+import { acquireRegistrationLock, includedActivityIds, syncIncludedActivities } from '@/lib/activity-bundle';
 //
 //
 //
@@ -16,6 +16,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
     if (!isPaymentSalesEnabled()) return paymentSalesPausedResponse();
     // Vaga reservada e cobrança ainda não criada: se falhar aqui, nada mais libera a vaga.
     let releaseSeat = async () => { }
+    let releaseLock = async () => { }
     try {
         // Verificando se ele está logado
         // 
@@ -26,6 +27,11 @@ export const POST = withApiAuthRequired(async function POST(request) {
         //
         const { db } = await connectToDatabase()
         const collection = 'minicursos'
+        const unlock = await acquireRegistrationLock(db, _id)
+        if (!unlock) {
+            return Response.json({ message: 'Já existe uma inscrição sua sendo processada. Aguarde alguns segundos e tente novamente.' }, { status: 409 });
+        }
+        releaseLock = unlock
 
         // Verifica se o usuário tem 4 ou menos inscrições
         const userRegistrationsCount = await db.collection(collection).find(
@@ -59,10 +65,10 @@ export const POST = withApiAuthRequired(async function POST(request) {
             return Response.json({ message: 'Você já está inscrito nesse evento.' }, { status: 402 });
         }
         if (eventStatus[0].isFree == 1) {
-            return Response.json({ message: 'Você não precisa pagar por esse evento. Por favor, recarregue a página para atualizar os eventos.' }, { status: 500 });
+            return publicErrorResponse('Você não precisa pagar por esse evento. Por favor, recarregue a página para atualizar os eventos.');
         }
         if (eventStatus.length == 0) {
-            return Response.json({ message: 'Evento não encontrado. Por favor, recarregue a página' }, { status: 500 });
+            return publicErrorResponse('Evento não encontrado. Por favor, recarregue a página');
         }
         if (!eventStatus[0].isOpen) {
             return Response.json({ message: 'Não é mais possível se inscrever no evento' }, { status: 400 });
@@ -96,13 +102,6 @@ export const POST = withApiAuthRequired(async function POST(request) {
             [
                 {
                     $set: {
-                        participantsCount: {
-                            $cond: {
-                                if: { $lt: [{ $size: "$participants" }, "$maxParticipants"] },
-                                then: { $add: ["$participantsCount", 1] },
-                                else: "$participantsCount"
-                            }
-                        },
                         participants: {
                             $cond: {
                                 if: {
@@ -116,7 +115,8 @@ export const POST = withApiAuthRequired(async function POST(request) {
                             }
                         }
                     }
-                }
+                },
+                { $set: { participantsCount: { $size: "$participants" } } }
             ],
             { returnDocument: "after" } // Para retornar o documento atualizado
         );
@@ -180,11 +180,11 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
         if (userInfos.length == 0) {
             await releaseSeat()
-            return Response.json({ message: 'Ocorreu algum erro, por favor recarregue a página! [userInfos.length == 0]' }, { status: 500 });
+            return publicErrorResponse('Não foi possível gerar o PIX porque seu cadastro de pagamento está incompleto, e sua vaga não foi reservada. Recarregue a página e tente novamente; se continuar, fale com a equipe CIEPS.');
         }
         if (!userInfos[0].id_api) {
             await releaseSeat()
-            return Response.json({ message: 'Ocorreu algum erro, por favor recarregue a página! [!userInfos[0].id_api]' }, { status: 500 });
+            return publicErrorResponse('Não foi possível gerar o PIX porque seu cadastro de pagamento está incompleto, e sua vaga não foi reservada. Recarregue a página e tente novamente; se continuar, fale com a equipe CIEPS.');
         }
 
 
@@ -212,7 +212,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
         if (!responseAPI.ok) {
             await releaseSeat()
-            return Response.json({ message: 'Ocorreu algum erro, por favor recarregue a página. [!responseAPI.ok => Registro API Pagamentos]' }, { status: 500 });
+            return publicErrorResponse('Não foi possível gerar o PIX agora e sua vaga não foi reservada. Tente novamente em alguns minutos.');
 
         }
 
@@ -245,10 +245,10 @@ export const POST = withApiAuthRequired(async function POST(request) {
     }
     catch {
         await releaseSeat().catch(() => { })
-        return Response.json(
-            { error: "internal_server_error", message: "Não foi possível iniciar o pagamento da atividade." },
-            { status: 500 }
-        )
+        return publicErrorResponse("Não foi possível iniciar o pagamento da atividade.")
+    }
+    finally {
+        await releaseLock().catch(() => { })
     }
 })
 //
