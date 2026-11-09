@@ -6,6 +6,7 @@ import { DateTime } from "luxon"
 import { asaasRequestHeaders } from '@/lib/payments/asaas';
 import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
 import { acquireRegistrationLock, includedActivityIds, syncIncludedActivities } from '@/lib/activity-bundle';
+import { hasScheduleConflict } from '@/lib/schedule-conflict';
 //
 //
 //
@@ -252,52 +253,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
     }
 })
 //
-const isScheduleConflict = (existingEvents, newEvent) => {
-    /*
-    for (const event of existingEvents) {
-        for (const existingTimeline of event.timeline) {
-            const existingStart = DateTime.fromISO(existingTimeline.date_init);
-            const existingEnd = DateTime.fromISO(existingTimeline.date_end);
-
-            for (const newTimeline of newEvent.timeline) {
-                const newStart = DateTime.fromISO(newTimeline.date_init);
-                const newEnd = DateTime.fromISO(newTimeline.date_end);
-
-                if (
-                    (newStart >= existingStart && newStart < existingEnd) ||
-                    (newEnd > existingStart && newEnd <= existingEnd) ||
-                    (newStart <= existingStart && newEnd >= existingEnd)
-                ) {
-                    return 1; // Horário conflitante
-                }
-            }
-        }
-    }
-    */
-    for (const event of existingEvents) {
-        for (const existingTimeline of event.timeline) {
-            const existingStart = DateTime.fromISO(existingTimeline.date_init);
-            const existingEnd = DateTime.fromISO(existingTimeline.date_end);
-
-            for (const newTimeline of newEvent.timeline) {
-                const newStart = DateTime.fromISO(newTimeline.date_init);
-                const newEnd = DateTime.fromISO(newTimeline.date_end);
-
-                // Verificação de conflito, considerando que o novo evento pode começar exatamente quando o evento existente termina
-                if (
-                    (newStart > existingStart && newStart < existingEnd) ||
-                    (newEnd > existingStart && newEnd <= existingEnd) ||
-                    (newStart < existingStart && newEnd > existingEnd) ||
-                    (newStart <= existingEnd && newEnd >= existingEnd)
-                ) {
-                    return 1; // Horário conflitante
-                }
-            }
-        }
-    }
-
-    return 0; // Nenhum conflito encontrado
-}
+const isScheduleConflict = hasScheduleConflict
 //
 const isDateEqualOrAfterToday = (inputDate) => {
     // Define a data atual no fuso horário -03:00 (America/Sao_Paulo)
