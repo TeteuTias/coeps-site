@@ -442,7 +442,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
                     </div> : ""
             }
             {
-                buttonText == "INSCREVER" && !includesUser ?
+                !includesUser ?
                     <div className="atividades-vagas-tag">
                         <span>{nVagas} {nVagas === 1 ? 'vaga' : 'vagas'}</span>
                     </div> : ""
