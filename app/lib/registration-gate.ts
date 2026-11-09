@@ -7,6 +7,7 @@ export type RegistrationGateInput = {
     remoteWorkAreaAccess?: boolean;
     remoteWorkSubmissionAllowed?: boolean;
     healthProfileMissing?: boolean;
+    consentMissing?: boolean;
 };
 
 type RegistrationUser = {
@@ -26,6 +27,7 @@ type RegistrationUser = {
 } | null | undefined;
 
 export const HEALTH_PROFILE_PATH = '/painel/completarCadastro';
+export const CONSENT_PATH = '/painel/aceiteLgpd';
 
 const filled = (value: unknown) => typeof value === 'string' && value.trim() !== '';
 
@@ -56,6 +58,7 @@ export function getRegistrationRedirect({
     remoteWorkAreaAccess = remoteWorkAccessActive,
     remoteWorkSubmissionAllowed = remoteWorkAccessActive,
     healthProfileMissing = false,
+    consentMissing = false,
 }: RegistrationGateInput): string | null {
     const isPayments = path.startsWith('/pagamentos');
     const isProfile = path === '/painel/dadosIniciais';
@@ -80,6 +83,11 @@ export function getRegistrationRedirect({
         if (!paymentConfirmed) return isPayments ? null : '/pagamentos';
         return isProfile ? null : '/painel/dadosIniciais';
     }
+
+    // Cadastro completo sem aceite da versão atual da LGPD: bloqueia tudo até aceitar.
+    const isConsent = path === CONSENT_PATH;
+    if (consentMissing) return isConsent ? null : CONSENT_PATH;
+    if (isConsent) return '/painel';
 
     const isHealthProfile = path === HEALTH_PROFILE_PATH;
     if (paymentConfirmed && healthProfileMissing) return isHealthProfile ? null : HEALTH_PROFILE_PATH;
