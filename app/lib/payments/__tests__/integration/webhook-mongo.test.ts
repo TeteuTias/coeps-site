@@ -1423,6 +1423,60 @@ test('atividade vencida mantem participante e confirmacao tardia o reinsere', as
     );
 });
 
+test('pacote de atividade: confirmacao inclui as etapas e estorno remove das tres', async () => {
+    const db = client.db(TEST_DATABASE_NAME);
+    const { updateLegacyPayment } = await import(
+        '../../../../api/payment/webhook/payment_notification/route.js'
+    );
+    const userId = String(new ObjectId());
+    const praticaId = new ObjectId();
+    const teoricaId = new ObjectId();
+    const simulacaoId = new ObjectId();
+    const otherUser = String(new ObjectId());
+    const payment = {
+        id: 'pay_bundle_fixture',
+        invoiceNumber: 'bundle-555',
+        customer: 'cus_bundle_fixture',
+        status: 'CONFIRMED',
+    };
+    await db.collection('usuarios').insertOne({
+        _id: new ObjectId(userId),
+        id_api: payment.customer,
+        pagamento: {
+            lista_pagamentos: [{
+                id: payment.id,
+                invoiceNumber: payment.invoiceNumber,
+                _type: 'activity',
+                _eventID: String(praticaId),
+                _userId: userId,
+            }],
+        },
+    });
+    await db.collection<any>('minicursos').insertMany([
+        { _id: praticaId, participants: [], incluiAtividades: [String(teoricaId), String(simulacaoId)] },
+        { _id: teoricaId, participants: [otherUser], somenteViaPacote: true },
+        { _id: simulacaoId, participants: [], somenteViaPacote: true },
+    ]);
+    const participantsOf = async (id: ObjectId) =>
+        (await db.collection('minicursos').findOne({ _id: id }))?.participants;
+
+    await runPaymentTransaction(client, (session) => updateLegacyPayment(db, {
+        id: 'evt_bundle_confirmed', event: 'PAYMENT_CONFIRMED', payment,
+    }, session));
+    assert.deepEqual(await participantsOf(praticaId), [userId]);
+    assert.deepEqual(await participantsOf(teoricaId), [otherUser, userId]);
+    assert.deepEqual(await participantsOf(simulacaoId), [userId]);
+
+    await runPaymentTransaction(client, (session) => updateLegacyPayment(db, {
+        id: 'evt_bundle_refunded',
+        event: 'PAYMENT_REFUNDED',
+        payment: { ...payment, status: 'REFUNDED' },
+    }, session));
+    assert.deepEqual(await participantsOf(praticaId), []);
+    assert.deepEqual(await participantsOf(teoricaId), [otherUser]);
+    assert.deepEqual(await participantsOf(simulacaoId), []);
+});
+
 test('estorno tardio de uma edicao nao sobrescreve a compra atual do usuario', async () => {
     const db = client.db(TEST_DATABASE_NAME);
     const owner = new ObjectId();

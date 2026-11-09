@@ -5,6 +5,7 @@ import { connectToDatabase } from '@/app/lib/mongodb';
 import { DateTime } from "luxon"
 import { asaasRequestHeaders } from '@/lib/payments/asaas';
 import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
+import { includedActivityIds, syncIncludedActivities } from '@/lib/activity-bundle';
 //
 //
 //
@@ -13,6 +14,8 @@ import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payment
 /** @type {any} */
 export const POST = withApiAuthRequired(async function POST(request) {
     if (!isPaymentSalesEnabled()) return paymentSalesPausedResponse();
+    // Vaga reservada e cobrança ainda não criada: se falhar aqui, nada mais libera a vaga.
+    let releaseSeat = async () => { }
     try {
         // Verificando se ele está logado
         // 
@@ -46,7 +49,9 @@ export const POST = withApiAuthRequired(async function POST(request) {
                     "timeline": 1,
                     "value": 1,
                     "isFree": 1,
-                    "participants": 1
+                    "participants": 1,
+                    "incluiAtividades": 1,
+                    "somenteViaPacote": 1
                 }
             }
         ).toArray()
@@ -70,6 +75,16 @@ export const POST = withApiAuthRequired(async function POST(request) {
         const timeConflict = isScheduleConflict(userRegistrationsCount, eventStatus[0])
         if (timeConflict) {
             return Response.json({ message: 'Não foi possível se inscrever no evento, pois você já possui outro evento que ocorrerá no mesmo dia/horário.' }, { status: 400 });
+        }
+        if (eventStatus[0].somenteViaPacote) {
+            return Response.json({ message: 'Esta etapa já está incluída na inscrição da prática.' }, { status: 400 });
+        }
+        const includedEvents = await db.collection(collection).find(
+            { _id: { $in: includedActivityIds(eventStatus[0]) } },
+            { projection: { timeline: 1 } }
+        ).toArray()
+        if (includedEvents.some(event => isScheduleConflict(userRegistrationsCount, event))) {
+            return Response.json({ message: 'Não foi possível se inscrever: você já está inscrito em uma etapa deste curso (por exemplo, a teórica avulsa) ou em outro evento no mesmo horário. Se estiver na teórica avulsa, retire essa inscrição antes de se inscrever na prática.' }, { status: 400 });
         }
 
         const updateResult = await db.collection("minicursos").findOneAndUpdate(
@@ -118,7 +133,13 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 */
             }
             // return Response.json({ message: 'AQUI!' }, { status: 200 });
-
+            // Reserva as etapas incluídas junto com a vaga (o webhook reaplica na confirmação).
+            await syncIncludedActivities(db, eventId, _id, 'add')
+            releaseSeat = async () => {
+                releaseSeat = async () => { }
+                await db.collection(collection).updateOne({ _id: new ObjectId(eventId) }, { $pull: { participants: _id } })
+                await syncIncludedActivities(db, eventId, _id, 'remove')
+            }
         }
         else {
             throw new Error('Ocorreu algum erro, por favor recarregue a página! [código de erro: updateResult]');
@@ -158,9 +179,11 @@ export const POST = withApiAuthRequired(async function POST(request) {
         ).toArray()
 
         if (userInfos.length == 0) {
+            await releaseSeat()
             return Response.json({ message: 'Ocorreu algum erro, por favor recarregue a página! [userInfos.length == 0]' }, { status: 500 });
         }
         if (!userInfos[0].id_api) {
+            await releaseSeat()
             return Response.json({ message: 'Ocorreu algum erro, por favor recarregue a página! [!userInfos[0].id_api]' }, { status: 500 });
         }
 
@@ -188,11 +211,14 @@ export const POST = withApiAuthRequired(async function POST(request) {
         const responseAPI = await fetch(ASAAS_API_URL, options)
 
         if (!responseAPI.ok) {
+            await releaseSeat()
             return Response.json({ message: 'Ocorreu algum erro, por favor recarregue a página. [!responseAPI.ok => Registro API Pagamentos]' }, { status: 500 });
 
         }
 
 
+        // Cobrança criada no Asaas: a partir daqui o webhook cuida da vaga.
+        releaseSeat = async () => { }
         var responseJson = await responseAPI.json()
         // 
         // Registrando o pagamento no DB
@@ -218,6 +244,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
         return Response.json({ message: 'Você completou sua inscrição! Para garantir sua vaga, é essencial que o pagamento seja realizado até o final do dia. Caso contrário, sua vaga será perdida.Para efetuar o pagamento, clique no botão abaixo ou acesse o menu MEUS PAGAMENTOS.', "link": responseJson.invoiceUrl }, { status: 200 });
     }
     catch {
+        await releaseSeat().catch(() => { })
         return Response.json(
             { error: "internal_server_error", message: "Não foi possível iniciar o pagamento da atividade." },
             { status: 500 }

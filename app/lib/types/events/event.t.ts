@@ -26,7 +26,10 @@ export interface ICourse { // considere como MINICURSOS
     "emoji": string,
     "value": number,
     "_nSerie": string & { readonly __brand: 'ObjectId' },
-    "attendanceList": string & { readonly __brand: 'ObjectId' }[]
+    "attendanceList": string & { readonly __brand: 'ObjectId' }[],
+    "incluiAtividades"?: string[], // pacote: inscrição nesta atividade inclui estas
+    "somenteViaPacote"?: boolean, // só entra pelo pacote; fora da lista de inscrição
+    "aviso"?: string // mostrado para confirmar antes da inscrição
 }
 
 export interface ILecture { // considere como PALESTRAS

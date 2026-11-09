@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/app/lib/mongodb'
 import { getSession } from '@/lib/auth0-compat';
 import { withApiAuthRequired } from '@/lib/auth0-compat';
 import { DateTime } from "luxon"
+import { syncIncludedActivities } from '@/lib/activity-bundle';
 //
 //
 //
@@ -28,13 +29,17 @@ export const DELETE = withApiAuthRequired(async function (req) {
                 projection: {
                     "dateOpen": 1,
                     "isOpen": 1,
-                    "timeline": 1
+                    "timeline": 1,
+                    "somenteViaPacote": 1
                 }
             }
         ).toArray()
 
         if (eventStatus.length == 0) {
             return Response.json({ message: 'Evento não encontrado' }, { status: 400 });
+        }
+        if (eventStatus[0].somenteViaPacote) {
+            return Response.json({ message: 'Esta etapa faz parte do pacote da prática e não pode ser retirada separadamente.' }, { status: 400 });
         }
         if (!eventStatus[0].isOpen) {
             return Response.json({ message: 'O evento não está mais aberto, por isso não é mais possível retirar sua inscrição.' }, { status: 400 });
@@ -62,7 +67,7 @@ export const DELETE = withApiAuthRequired(async function (req) {
                 case updateResult.participants.includes(userId):
                     return Response.json({ message: 'Não foi possível retirar sua inscrição. Regarregue a página e tente novamente.' }, { status: 403 });
             }
-
+            await syncIncludedActivities(db, eventId, userId, 'remove')
 
             return Response.json({ message: 'Sua inscrição foi retirada com sucesso!' }, { status: 200 });
 

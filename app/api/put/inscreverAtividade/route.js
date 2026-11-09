@@ -44,7 +44,8 @@ export const PUT = withApiAuthRequired(async function (req) {
                     "dateOpen": 1,
                     "isOpen": 1,
                     "timeline": 1,
-                    "participants": 1
+                    "participants": 1,
+                    "somenteViaPacote": 1
                 }
             }
         ).toArray()
@@ -56,6 +57,9 @@ export const PUT = withApiAuthRequired(async function (req) {
 
         if (eventStatus.length == 0) {
             return Response.json({ message: 'Evento não encontrado. Por favor, recarregue a página' }, { status: 500 });
+        }
+        if (eventStatus[0].somenteViaPacote) {
+            return Response.json({ message: 'Esta etapa já está incluída na inscrição da prática.' }, { status: 400 });
         }
         if (!eventStatus[0].isOpen) {
             return Response.json({ message: 'Não é mais possível se inscrever no evento' }, { status: 400 });

@@ -247,6 +247,8 @@ const BannerAtividade = ({ activity, userId, color }) => {
     const [modal3Link, setModal3Link] = useState("/pagamentos")
     const [loadingModal, setLoadingModal] = useState(0)
     const [showConfirmRemove, setShowConfirmRemove] = useState(false)
+    const [showAviso, setShowAviso] = useState(false)
+    const startRegister = () => activity.isFree ? handleRegister(activity._id) : handlePayedRegister(activity._id)
     const nVagas = Math.max(0, Number(activity.maxParticipants || 0) - participantCount)
     const timeline = formatTimeline(activity.timeline)
     const openingDate = formatOpeningDate(activity.dateOpen)
@@ -433,6 +435,12 @@ const BannerAtividade = ({ activity, userId, color }) => {
                 onConfirm={() => handleRemoveRegister(activity._id)}
                 activityName={activity.name}
             />
+            <ConfirmAvisoModal
+                isOpen={showAviso}
+                aviso={activity.aviso}
+                onClose={() => setShowAviso(false)}
+                onConfirm={() => { setShowAviso(false); startRegister() }}
+            />
 
             {
                 !activity.isFree ?
@@ -501,7 +509,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
                         type="button"
                         className="atividades-inscrever" 
                         onClick={() => {
-                            activity.isFree ? handleRegister(activity._id) : handlePayedRegister(activity._id)
+                            activity.aviso ? setShowAviso(true) : startRegister()
                         }}
                         disabled={Boolean(loadingModal)}
                     >
@@ -609,6 +617,38 @@ const ConfirmRemoveModal = ({ isOpen, onClose, onConfirm, activityName }) => {
                         onClick={onConfirm}
                     >
                         CONFIRMAR
+                    </button>
+                </div>
+            </div>
+        </div>,
+        typeof window !== 'undefined' ? document.body : document.createElement('div')
+    );
+};
+
+// Aviso obrigatório antes da inscrição (campo `aviso` da atividade)
+const ConfirmAvisoModal = ({ isOpen, aviso, onClose, onConfirm }) => {
+    if (!isOpen) return null;
+
+    return createPortal(
+        <div role="dialog" aria-modal="true" aria-labelledby="aviso-inscricao-titulo" className="fixed inset-0 flex items-center justify-center z-[9999] bg-black bg-opacity-50" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}>
+            <div className="w-[85%] sm:w-full bg-white p-6 rounded-lg shadow-lg max-w-md">
+                <div className="flex items-center mb-4">
+                    <span className="text-yellow-500 text-2xl mr-2" aria-hidden="true">⚠️</span>
+                    <h2 id="aviso-inscricao-titulo" className="text-xl font-semibold text-gray-800">Antes de se inscrever</h2>
+                </div>
+                <p className="text-gray-600 whitespace-pre-line">{aviso}</p>
+                <div className="flex flex-row justify-end space-x-2 mt-6">
+                    <button
+                        className="bg-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-400 transition font-semibold"
+                        onClick={onClose}
+                    >
+                        CANCELAR
+                    </button>
+                    <button
+                        className="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700 transition font-semibold"
+                        onClick={onConfirm}
+                    >
+                        LI E CONCORDO
                     </button>
                 </div>
             </div>
