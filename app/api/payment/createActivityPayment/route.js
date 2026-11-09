@@ -62,20 +62,20 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 }
             }
         ).toArray()
+        if (eventStatus.length == 0) {
+            return Response.json({ message: 'Evento não encontrado. Por favor, recarregue a página' }, { status: 404 });
+        }
         if (eventStatus[0].participants.includes(_id)) {
             return Response.json({ message: 'Você já está inscrito nesse evento.' }, { status: 402 });
         }
         if (eventStatus[0].isFree == 1) {
             return publicErrorResponse('Você não precisa pagar por esse evento. Por favor, recarregue a página para atualizar os eventos.');
         }
-        if (eventStatus.length == 0) {
-            return publicErrorResponse('Evento não encontrado. Por favor, recarregue a página');
-        }
         if (!eventStatus[0].isOpen) {
             return Response.json({ message: 'Não é mais possível se inscrever no evento' }, { status: 400 });
         }
         if (!isDateEqualOrAfterToday(eventStatus[0].dateOpen)) {
-            return Response.json({ message: 'Não é mais possível se inscrever no evento' }, { status: 400 });
+            return Response.json({ message: 'As inscrições para este evento ainda não abriram. Confira a data de abertura na programação.' }, { status: 400 });
         }
 
 

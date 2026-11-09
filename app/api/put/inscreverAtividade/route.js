@@ -58,13 +58,13 @@ export const PUT = withApiAuthRequired(async function (req) {
         ).toArray()
 
         //console.log(eventStatus)
+        if (eventStatus.length == 0) {
+            return Response.json({ message: 'Evento não encontrado. Por favor, recarregue a página' }, { status: 404 });
+        }
         if (eventStatus[0].participants.includes(userId)) {
             return Response.json({ message: 'Você já está inscrito nesse evento.' }, { status: 402 });
         }
 
-        if (eventStatus.length == 0) {
-            return Response.json({ message: 'Evento não encontrado. Por favor, recarregue a página' }, { status: 500 });
-        }
         if (eventStatus[0].somenteViaPacote) {
             return Response.json({ message: 'Esta etapa já está incluída na inscrição da prática.' }, { status: 400 });
         }
@@ -72,7 +72,7 @@ export const PUT = withApiAuthRequired(async function (req) {
             return Response.json({ message: 'Não é mais possível se inscrever no evento' }, { status: 400 });
         }
         if (!isDateEqualOrAfterToday(eventStatus[0].dateOpen)) {
-            return Response.json({ message: 'Não é mais possível se inscrever no evento' }, { status: 400 });
+            return Response.json({ message: 'As inscrições para este evento ainda não abriram. Confira a data de abertura na programação.' }, { status: 400 });
         }
 
         const timeConflict = isScheduleConflict(userRegistrationsCount, eventStatus[0])
