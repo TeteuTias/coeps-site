@@ -100,6 +100,7 @@ export default function Minicursos() {
                     <p style={{ textAlign: 'left' }}>
                         <CheckCircle size={16} style={{ color: '#1B305F', marginRight: 6, verticalAlign: 'middle' }} /> A soma das inscrições dos minicursos deve totalizar, no mínimo, <span className="atividades-highlight">8 horas</span>.<br />
                         <Info size={16} style={{ color: '#1B305F', marginRight: 6, verticalAlign: 'middle' }} /> <b>NÃO</b> são permitidas inscrições em atividades com horários conflitantes. É de responsabilidade do congressista realizar um planejamento prévio antes da abertura das inscrições.<br />
+                        <Clock size={16} style={{ color: '#A32D2D', marginRight: 6, verticalAlign: 'middle' }} /> <b>Pontualidade:</b> nos minicursos, quem chegar com mais de <span className="atividades-highlight">10 minutos de atraso</span> pode perder a vaga, que será passada para quem estiver aguardando na portaria. Nos minicursos pagos, a vaga perdida por atraso <b>não é reembolsada</b>.<br />
                         <Calendar size={16} style={{ color: '#185FA5', marginRight: 6, verticalAlign: 'middle' }} /> O congressista pode consultar as datas de abertura das inscrições, os horários, os locais e as datas de realização das atividades <span className="atividades-highlight"><Link className="font-bold text-[var(--cieps-blue)] underline" href="/programacao" prefetch={false} target="_blank">clicando aqui</Link></span>.
                     </p>
                 </div>
