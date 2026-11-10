@@ -20,6 +20,8 @@ export interface ILoteAutomatico {
     nome: string;
     limiteVagas: number;
     precos: IPrecosLote;
+    /** ISO 8601. Antes desse instante o checkout não vende o lote. */
+    abreEm?: string | null;
 }
 
 // 4. Interface Principal (Raiz)

@@ -1,7 +1,66 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ObjectId } from 'mongodb';
-import { getActivePaymentConfig, getCurrentAutomaticLot } from '../config.ts';
+import { getActivePaymentConfig, getCurrentAutomaticLot, isAutomaticLotOpen } from '../config.ts';
+
+function dbWithOccupiedPlaces(occupied: number) {
+    return {
+        collection(name: string) {
+            return {
+                async countDocuments() {
+                    return name === 'usuarios' ? occupied : 0;
+                },
+                aggregate() {
+                    return { async toArray() { return [{ total: 0 }]; } };
+                },
+            };
+        },
+    };
+}
+
+test('lote travado por abreEm só vende a partir do horário', async () => {
+    const config = {
+        _id: new ObjectId(),
+        edicaoId: 'CIEPS-2026',
+        configuracaoLotesAutomaticos: {
+            lotes: [
+                { codigo: 1, nome: 'Lote 1', limiteVagas: 2, precos: {} },
+                { codigo: 2, nome: 'Lote 2', limiteVagas: 25, precos: {}, abreEm: '2026-11-10T15:00:00.000Z' },
+                { codigo: 3, nome: 'Lote 3', limiteVagas: 10, precos: {} },
+            ],
+        },
+    };
+    const db = dbWithOccupiedPlaces(2);
+
+    const antes = await getCurrentAutomaticLot(db as never, config as never, new Date('2026-11-10T14:59:59.999Z'));
+    const depois = await getCurrentAutomaticLot(db as never, config as never, new Date('2026-11-10T15:00:00.000Z'));
+
+    assert.equal(antes, null);
+    assert.equal(depois?.codigo, 2);
+});
+
+test('lote ainda não alcançado pela capacidade não é afetado pela trava', async () => {
+    const config = {
+        _id: new ObjectId(),
+        configuracaoLotesAutomaticos: {
+            lotes: [
+                { codigo: 1, nome: 'Lote 1', limiteVagas: 2, precos: {} },
+                { codigo: 2, nome: 'Lote 2', limiteVagas: 25, precos: {}, abreEm: '2099-01-01T00:00:00.000Z' },
+            ],
+        },
+    };
+
+    const lot = await getCurrentAutomaticLot(dbWithOccupiedPlaces(1) as never, config as never);
+
+    assert.equal(lot?.codigo, 1);
+});
+
+test('abreEm vazio abre; inválido fica fechado', () => {
+    assert.equal(isAutomaticLotOpen({}), true);
+    assert.equal(isAutomaticLotOpen({ abreEm: null }), true);
+    assert.equal(isAutomaticLotOpen({ abreEm: '' }), true);
+    assert.equal(isAutomaticLotOpen({ abreEm: 'amanhã' }), false);
+});
 
 test('conta comprador moderno uma unica vez e exige compraId ausente no legado', async () => {
     const calls: Array<{ collection: string; filter?: Record<string, unknown>; pipeline?: unknown[] }> = [];

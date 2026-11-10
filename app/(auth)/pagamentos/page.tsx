@@ -1084,6 +1084,13 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
     const [loadingModal, setLoadingModal] = useState<boolean>(false);
     const ticketRequestInFlight = useRef(false);
     const loteAtual = dataPaymentConfig.loteAutomaticoAtual;
+    // Sem lote vigente por causa de um lote travado: avisa quando ele abre em vez de dizer "esgotado".
+    const proximaAbertura = loteAtual ? undefined : (dataPaymentConfig.configuracaoLotesAutomaticos?.lotes ?? [])
+        .map((lote) => (lote.abreEm ? new Date(lote.abreEm) : null))
+        .find((data): data is Date => data !== null && data.getTime() > Date.now());
+    const proximaAberturaTexto = proximaAbertura
+        ? `${proximaAbertura.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' })} às ${proximaAbertura.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })}`
+        : null;
     const [codigoDesconto, setCodigoDesconto] = useState('');
     const [codigoRastreio, setCodigoRastreio] = useState('');
     const [codesPreview, setCodesPreview] = useState<PaymentCodesPreview | null>(null);
@@ -1296,11 +1303,15 @@ function NotPayedYet({ dataPaymentConfig, hydratePage }: { dataPaymentConfig: Pa
                         </div>
                         <div className='flex flex-col gap-4'>
                             <h1 className='w-full text-2xl font-bold text-tinta text-center'>
-                                {loteAtual?.nome ? `${loteAtual.nome}` : "Vagas regulares esgotadas"}
+                                {loteAtual?.nome ? `${loteAtual.nome}` : proximaAberturaTexto ? "Novo lote em breve" : "Vagas regulares esgotadas"}
                             </h1>
                             {loteAtual ? (
                                 <div className='text-tinta text-lg'>
                                     <h1 className='inline font-bold text-goles'>Atenção! Para os primeiros {loteAtual.limiteVagas} participantes</h1> os valores são:
+                                </div>
+                            ) : proximaAberturaTexto ? (
+                                <div className='bg-amber-50 text-amber-900 p-4 rounded-lg border border-amber-300'>
+                                    O próximo lote abre em {proximaAberturaTexto} (horário de Brasília). Recarregue esta página nesse horário para garantir sua vaga.
                                 </div>
                             ) : (
                                 <div className='bg-amber-50 text-amber-900 p-4 rounded-lg border border-amber-300'>
