@@ -163,8 +163,10 @@ const Pagamentos = () => {
                 const responseData: { data: { pagamento: IUser["pagamento"] } } = await response.json();
                 setData(responseData.data)
                 if (responseData.data.pagamento.situacao === 1) {
+                    /*
                     router.replace('/painel');
                     router.refresh();
+                    */
                 }
 
                 handleIsFetchingData(false);
