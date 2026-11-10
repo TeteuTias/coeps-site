@@ -56,7 +56,9 @@ export async function proxy(req) {
 
   // 3. Fazemos a classificação antes de consultar a sessão para manter
   // todas as rotas públicas livres de dependências de autenticação.
-
+  if (!isProtectedRoute(path)) {
+    return NextResponse.next();
+  }
 
   // ============== DAQUI PARA BAIXO, SÓ ROTAS PROTEGIDAS ==============
 

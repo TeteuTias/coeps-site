@@ -218,10 +218,12 @@ const Pagamentos = () => {
             const userData = await userResponse.json() as { data: { pagamento: IUser['pagamento'] } };
             setDataPaymentConfig(responseData);
             setData(userData.data);
+            /*
             if (userData.data.pagamento.situacao === 1) {
                 router.replace('/painel');
                 router.refresh();
             }
+            */
             setPageError(null);
         } catch {
             setPageError('Não foi possível atualizar a sessão de pagamento.');
