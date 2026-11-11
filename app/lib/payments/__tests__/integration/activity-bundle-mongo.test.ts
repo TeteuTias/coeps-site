@@ -225,23 +225,35 @@ test('participantsCount acompanha a lista em compra, desinscrição e falha do P
     assert.deepEqual(await counts(), { teoriaAvulsa: 0, teoriaPacote: 1, simulacaoT1: 1, simulacaoT2: 0, turma1: 1, turma2: 0 });
 });
 
-test('PIX da atividade: em aberto devolve o mesmo; vencido é renovado sem segunda cobrança nem segunda vaga', async () => {
+test('PIX da atividade: dentro dos 15 minutos devolve o mesmo; reserva expirada é renovada na mesma cobrança', async () => {
     asaas.calls = 0;
     const userId = await newUser();
     const charges = async () => (await db.collection('usuarios').findOne({ _id: new ObjectId(userId) }))!.pagamento.lista_pagamentos;
-    const setStatus = (status: string) => db.collection('usuarios').updateOne(
+    const set = (fields: Record<string, unknown>) => db.collection('usuarios').updateOne(
         { _id: new ObjectId(userId) },
-        { $set: { 'pagamento.lista_pagamentos.0.status': status } },
+        { $set: Object.fromEntries(Object.entries(fields).map(([key, value]) => [`pagamento.lista_pagamentos.0.${key}`, value])) },
     );
+    const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60 * 1000);
+    const today = luxon.DateTime.now().setZone('America/Sao_Paulo').toFormat('yyyy-MM-dd');
 
     const first = await buy(userId)(ids.turma1);
     assert.equal(first.status, 200);
+    assert.ok((await charges())[0]._reservedAt instanceof Date, 'a reserva guarda o horário');
+    assert.match(first.body.message, /15 minutos/);
     const again = await buy(userId)(ids.turma1);
     assert.equal(again.status, 200);
     assert.equal(again.body.link, first.body.link);
     assert.equal(asaas.calls, 1, 'PIX em aberto não gera outra cobrança');
 
-    await setStatus('PAYMENT_OVERDUE');
+    // passou dos 15 minutos no mesmo dia: renova a reserva sem chamar o Asaas
+    await set({ _reservedAt: minutesAgo(20), dueDate: today });
+    const sameDay = await buy(userId)(ids.turma1);
+    assert.equal(sameDay.status, 200);
+    assert.equal(asaas.calls, 1);
+    assert.ok((await charges())[0]._reservedAt > minutesAgo(1));
+
+    // venceu em outro dia: a mesma cobrança ganha vencimento novo no Asaas
+    await set({ _reservedAt: minutesAgo(60 * 30), dueDate: '2026-01-01', status: 'PAYMENT_OVERDUE' });
     const renewed = await buy(userId)(ids.turma1);
     assert.equal(renewed.status, 200);
     assert.equal(asaas.calls, 2);
@@ -249,11 +261,12 @@ test('PIX da atividade: em aberto devolve o mesmo; vencido é renovado sem segun
     assert.equal(list.length, 1, 'a mesma cobrança é reaberta');
     assert.equal(list[0].id, 'pay_1');
     assert.equal(list[0].status, 'PENDING');
+    assert.equal(list[0].dueDate, today);
     assert.equal((await activity(ids.turma1))!.participants.filter((id: string) => id === userId).length, 1);
 
     asaas.fail = true;
     try {
-        await setStatus('PAYMENT_OVERDUE');
+        await set({ _reservedAt: minutesAgo(60 * 30), dueDate: '2026-01-01', status: 'PAYMENT_OVERDUE' });
         assert.equal((await buy(userId)(ids.turma1)).status, 500);
         assert.equal((await charges())[0].status, 'PAYMENT_OVERDUE');
         assert.equal(await isIn(ids.turma1, userId), true, 'falha do Asaas não tira a vaga reservada');
@@ -261,6 +274,6 @@ test('PIX da atividade: em aberto devolve o mesmo; vencido é renovado sem segun
         asaas.fail = false;
     }
 
-    await setStatus('PAYMENT_RECEIVED');
+    await set({ status: 'PAYMENT_RECEIVED' });
     assert.equal((await buy(userId)(ids.turma1)).status, 402);
 });

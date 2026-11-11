@@ -219,6 +219,14 @@ const formatOpeningDate = (value) => {
     return date.isValid ? date.toFormat("dd 'de' LLLL, HH:mm") : null
 }
 
+// Só a hora quando a reserva vence hoje (caso normal: 15 minutos); cobrança antiga pode vencer em outro dia.
+const formatHoldUntil = (value) => {
+    const date = DateTime.fromISO(value || '', { zone: 'America/Sao_Paulo' }).setLocale('pt-BR')
+    if (!date.isValid) return null
+    const today = DateTime.now().setZone('America/Sao_Paulo')
+    return date.hasSame(today, 'day') ? date.toFormat('HH:mm') : date.toFormat("dd/LL 'às' HH:mm")
+}
+
 const activityPriceLabel = (activity) => {
     if (activity.isFree) return 'Gratuita'
     if (activity.value === undefined || activity.value === null || activity.value === '') {
@@ -250,6 +258,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
     const [loadingModal, setLoadingModal] = useState(0)
     const [showConfirmRemove, setShowConfirmRemove] = useState(false)
     const [showAviso, setShowAviso] = useState(false)
+    const holdUntilLabel = formatHoldUntil(charge?.holdUntil)
     const startRegister = () => activity.isFree ? handleRegister(activity._id) : handlePayedRegister(activity._id)
     const nVagas = Math.max(0, Number(activity.maxParticipants || 0) - participantCount)
     const timeline = formatTimeline(activity.timeline)
@@ -270,7 +279,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
     const stateLabel = {
         registered: 'Inscrito',
         'payment-pending': 'Pagamento pendente',
-        'payment-overdue': 'Pagamento vencido',
+        'payment-overdue': 'Reserva expirada',
         closed: 'Inscrições encerradas',
         full: 'Vagas esgotadas',
         'not-open': 'Inscrições em breve',
@@ -377,7 +386,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
             // handleAlreadyInscribed()
             setIncludesUser(1)
             setParticipantCount((count) => count + 1)
-            setCharge({ state: 'pendente', link: result.link || null })
+            setCharge({ state: 'pendente', link: result.link || null, holdUntil: result.holdUntil || null })
             setModalMessage3(result.message)
             setModal3Link(result.link || "/pagamentos")
             setButtonText('INSCRITO')
@@ -403,7 +412,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
             if (!response.ok) {
                 throw new Error(result?.message || 'Não foi possível gerar um novo PIX.');
             }
-            setCharge({ state: 'pendente', link: result.link || null })
+            setCharge({ state: 'pendente', link: result.link || null, holdUntil: result.holdUntil || null })
             setModalMessage3(result.message)
             setModal3Link(result.link || "/pagamentos")
         } catch (error) {
@@ -558,7 +567,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
                     <>
                         <div className="atividades-fechado">
                             <strong>{stateLabel}</strong>
-                            <span>Vaga reservada. A inscrição só é confirmada após o pagamento.</span>
+                            <span>{holdUntilLabel ? `Vaga reservada até ${holdUntilLabel}. Sem pagamento, ela é liberada.` : 'Vaga reservada. A inscrição só é confirmada após o pagamento.'}</span>
                         </div>
                         <Link className="atividades-inscrever" href={charge?.link || '/pagamentos'} prefetch={false} target="_blank">
                             PAGAR AGORA
@@ -570,7 +579,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
                     <>
                         <div className="atividades-fechado">
                             <strong>{stateLabel}</strong>
-                            <span>O PIX desta atividade venceu sem pagamento. Gere um novo para concluir a inscrição.</span>
+                            <span>A reserva de 15 minutos passou sem pagamento. Reserve de novo para pagar.</span>
                         </div>
                         <button
                             type="button"
@@ -578,7 +587,7 @@ const BannerAtividade = ({ activity, userId, color }) => {
                             onClick={() => handleRenewPayment(activity._id)}
                             disabled={Boolean(loadingModal)}
                         >
-                            {loadingModal ? 'PROCESSANDO...' : 'GERAR NOVO PIX'}
+                            {loadingModal ? 'PROCESSANDO...' : 'RESERVAR DE NOVO'}
                         </button>
                     </>
             }

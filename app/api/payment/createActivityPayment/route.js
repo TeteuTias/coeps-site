@@ -7,7 +7,7 @@ import { asaasRequestHeaders } from '@/lib/payments/asaas';
 import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
 import { acquireRegistrationLock, includedActivityIds, syncIncludedActivities } from '@/lib/activity-bundle';
 import { hasScheduleConflict } from '@/lib/schedule-conflict';
-import { activityChargeState } from '@/lib/activity-charge-state';
+import { ACTIVITY_SEAT_HOLD_MINUTES, activityChargeState } from '@/lib/activity-charge-state';
 //
 //
 //
@@ -67,7 +67,8 @@ export const POST = withApiAuthRequired(async function POST(request) {
             return Response.json({ message: 'Evento não encontrado. Por favor, recarregue a página' }, { status: 404 });
         }
         if (eventStatus[0].participants.includes(_id)) {
-            // Vaga já reservada. Se o PIX ainda não foi pago, devolve o mesmo PIX; se venceu, renova o vencimento.
+            // Vaga já reservada. PIX dentro dos 15 minutos: devolve o mesmo. Reserva expirada e vaga ainda
+            // não liberada: renova a reserva na mesma cobrança.
             const owner = ObjectId.isValid(_id)
                 ? await db.collection('usuarios').findOne(
                     { _id: new ObjectId(_id) },
@@ -75,9 +76,9 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 )
                 : null
             const today = DateTime.now().setZone('America/Sao_Paulo').toFormat('yyyy-MM-dd')
-            const charge = activityChargeState(owner?.pagamento?.lista_pagamentos, String(eventId), today)
+            const charge = activityChargeState(owner?.pagamento?.lista_pagamentos, String(eventId), new Date())
             if (charge?.state === 'pendente' && charge.link) {
-                return Response.json({ message: 'Você já tem um PIX em aberto para esta atividade. Sua vaga só é confirmada após o pagamento.', link: charge.link }, { status: 200 });
+                return Response.json({ message: 'Você já tem um PIX em aberto para esta atividade. Sua vaga só é confirmada após o pagamento.', link: charge.link, holdUntil: charge.holdUntil }, { status: 200 });
             }
             if (charge?.state === 'vencida' && charge.id) {
                 if (!eventStatus[0].isOpen) {
@@ -240,6 +241,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
         // Cobrança criada no Asaas: a partir daqui o webhook cuida da vaga.
         releaseSeat = async () => { }
         var responseJson = await responseAPI.json()
+        const reservedAt = new Date()
         // 
         // Registrando o pagamento no DB
         const dbUpdateOne = await db.collection('usuarios').updateOne(
@@ -247,7 +249,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 '_id': new ObjectId(_id)
             },
             {
-                "$push": { 'pagamento.lista_pagamentos': { ...responseJson, _webhook: [], _type: "activity", _userId: _id, _eventID: eventId } },
+                "$push": { 'pagamento.lista_pagamentos': { ...responseJson, _webhook: [], _type: "activity", _userId: _id, _eventID: eventId, _reservedAt: reservedAt } },
             }
         )
 
@@ -261,7 +263,11 @@ export const POST = withApiAuthRequired(async function POST(request) {
             return Response.json({ "erro": "Ocorreu algum erro, por favor, recarregue a página. [result.modifiedCount === 0 - dbUpdateOne]" }, { status: 500 })
         }
 
-        return Response.json({ message: 'Você completou sua inscrição! Para garantir sua vaga, é essencial que o pagamento seja realizado até o final do dia. Caso contrário, sua vaga será perdida.Para efetuar o pagamento, clique no botão abaixo ou acesse o menu MEUS PAGAMENTOS.', "link": responseJson.invoiceUrl }, { status: 200 });
+        return Response.json({
+            message: `Sua vaga está reservada por ${ACTIVITY_SEAT_HOLD_MINUTES} minutos. Pague o PIX nesse prazo para confirmar a inscrição; sem pagamento, a vaga é liberada. Para pagar, clique no botão abaixo ou acesse o menu MEUS PAGAMENTOS.`,
+            "link": responseJson.invoiceUrl,
+            holdUntil: new Date(reservedAt.getTime() + ACTIVITY_SEAT_HOLD_MINUTES * 60 * 1000).toISOString(),
+        }, { status: 200 });
     }
     catch {
         await releaseSeat().catch(() => { })
@@ -272,37 +278,50 @@ export const POST = withApiAuthRequired(async function POST(request) {
     }
 })
 //
-// O PIX da atividade vence no fim do dia. Quem não pagou continua com a vaga reservada e pode pedir
-// um novo vencimento: a mesma cobrança é reaberta no Asaas, sem criar uma segunda.
+// A reserva da vaga dura 15 minutos. Quem deixou passar e ainda não teve a vaga liberada (a liberação
+// roda na reconciliação) pode reservar de novo: a mesma cobrança é reaberta, sem criar uma segunda.
+// Se o vencimento do PIX já passou, o Asaas recebe a nova data.
 async function renewOverdueCharge(db, userId, charge, today) {
-    const response = await fetch(`${process.env.ASAAS_API_URL}/payments/${encodeURIComponent(charge.id)}`, {
-        method: 'PUT',
-        headers: asaasRequestHeaders(process.env.ASAAS_API_KEY, {
-            json: true,
-            apiUrl: process.env.ASAAS_API_URL,
-        }),
-        signal: AbortSignal.timeout(10_000),
-        body: JSON.stringify({ billingType: 'PIX', value: charge.value, dueDate: today }),
-    })
-    if (!response.ok) {
-        return publicErrorResponse('Não foi possível gerar um novo PIX agora. Tente novamente em alguns minutos; se continuar, fale com a equipe CIEPS.');
+    const set = { 'pagamento.lista_pagamentos.$[charge]._reservedAt': new Date() }
+    let link = charge.link
+    const pastDue = typeof charge.dueDate !== 'string' || charge.dueDate.slice(0, 10) < today
+    if (pastDue) {
+        const response = await fetch(`${process.env.ASAAS_API_URL}/payments/${encodeURIComponent(charge.id)}`, {
+            method: 'PUT',
+            headers: asaasRequestHeaders(process.env.ASAAS_API_KEY, {
+                json: true,
+                apiUrl: process.env.ASAAS_API_URL,
+            }),
+            signal: AbortSignal.timeout(10_000),
+            body: JSON.stringify({ billingType: 'PIX', value: charge.value, dueDate: today }),
+        })
+        if (response.status === 404) {
+            return Response.json({ message: RESERVA_LIBERADA }, { status: 409 });
+        }
+        if (!response.ok) {
+            return publicErrorResponse('Não foi possível gerar um novo PIX agora. Tente novamente em alguns minutos; se continuar, fale com a equipe CIEPS.');
+        }
+        const updated = await response.json()
+        link = updated?.invoiceUrl || charge.link
+        set['pagamento.lista_pagamentos.$[charge].status'] = !updated?.status || updated.status === 'OVERDUE' ? 'PENDING' : updated.status
+        set['pagamento.lista_pagamentos.$[charge].dueDate'] = updated?.dueDate || today
+        set['pagamento.lista_pagamentos.$[charge].invoiceUrl'] = link
     }
-    const updated = await response.json()
-    const status = !updated?.status || updated.status === 'OVERDUE' ? 'PENDING' : updated.status
-    const link = updated?.invoiceUrl || charge.link
-    await db.collection('usuarios').updateOne(
+    const renewed = await db.collection('usuarios').updateOne(
         { _id: new ObjectId(userId) },
-        {
-            $set: {
-                'pagamento.lista_pagamentos.$[charge].status': status,
-                'pagamento.lista_pagamentos.$[charge].dueDate': updated?.dueDate || today,
-                'pagamento.lista_pagamentos.$[charge].invoiceUrl': link,
-            },
-        },
+        { $set: set },
         { arrayFilters: [{ 'charge.id': charge.id, 'charge._type': 'activity' }] },
     )
-    return Response.json({ message: 'Geramos um novo PIX com vencimento hoje. Sua vaga só é confirmada após o pagamento. Para pagar, clique no botão abaixo ou acesse o menu MEUS PAGAMENTOS.', link }, { status: 200 });
+    if (renewed.modifiedCount === 0) {
+        return Response.json({ message: RESERVA_LIBERADA }, { status: 409 });
+    }
+    return Response.json({
+        message: `Sua vaga está reservada por mais ${ACTIVITY_SEAT_HOLD_MINUTES} minutos. Pague o PIX nesse prazo; sem pagamento, a vaga é liberada. Para pagar, clique no botão abaixo ou acesse o menu MEUS PAGAMENTOS.`,
+        link,
+        holdUntil: new Date(Date.now() + ACTIVITY_SEAT_HOLD_MINUTES * 60 * 1000).toISOString(),
+    }, { status: 200 });
 }
+const RESERVA_LIBERADA = 'Sua reserva expirou e a vaga foi liberada. Recarregue a página para se inscrever de novo, se ainda houver vaga.'
 //
 const isScheduleConflict = hasScheduleConflict
 //
