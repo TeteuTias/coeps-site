@@ -4,6 +4,8 @@ import { getAccessToken } from '@/lib/auth0-compat';
 import { execOnce } from 'next/dist/shared/lib/utils';
 import { ObjectId } from 'mongodb';
 import { getSession, withApiAuthRequired } from '@/lib/auth0-compat';
+import { DateTime } from 'luxon';
+import { activityChargeState } from '@/lib/activity-charge-state';
 //
 //
 // Exemplo de return:
@@ -41,7 +43,23 @@ export const GET = withApiAuthRequired(async function GET(request, { params }) {
         const alreadIinscrivy = 3 - userRegistrationsCount > 0 ? 3 - userRegistrationsCount : 0
     */
 
-    return NextResponse.json({ _id, listEvents: result }, { status: 200 });
+    // Atividade paga: a vaga é reservada quando o PIX é gerado, mas a inscrição só vale depois do pagamento.
+    // A tela usa isso para não mostrar "Inscrito" a quem ainda não pagou.
+    const usuario = ObjectId.isValid(_id)
+      ? await db.collection('usuarios').findOne(
+        { _id: new ObjectId(_id) },
+        { projection: { 'pagamento.lista_pagamentos': 1 } },
+      )
+      : null
+    const hoje = DateTime.now().setZone('America/Sao_Paulo').toFormat('yyyy-MM-dd')
+    const listEvents = result.map((evento) => {
+      if (evento.isFree || !Array.isArray(evento.participants) || !evento.participants.includes(_id)) return evento
+      const cobranca = activityChargeState(usuario?.pagamento?.lista_pagamentos, String(evento._id), hoje)
+      if (!cobranca || cobranca.state === 'paga') return evento
+      return { ...evento, minhaCobranca: { state: cobranca.state, link: cobranca.link } }
+    })
+
+    return NextResponse.json({ _id, listEvents }, { status: 200 });
 
   }
   catch {

@@ -242,6 +242,8 @@ const BannerAtividade = ({ activity, userId, color }) => {
     const [participantCount, setParticipantCount] = useState(initialParticipants.length)
     const [buttonText, setButtonText] = useState(isDateEqualOrAfterToday(activity.dateOpen, initialParticipants.length, activity.maxParticipants))
     const [includesUser, setIncludesUser] = useState(initialParticipants.includes(userId))
+    // Atividade paga com PIX ainda não pago (pendente ou vencido): a vaga está reservada, mas não é inscrição.
+    const [charge, setCharge] = useState(activity.minhaCobranca || null)
     const [modalMessage, setModalMessage] = useState(0)
     const [modalMessage3, setModalMessage3] = useState(0)
     const [modal3Link, setModal3Link] = useState("/pagamentos")
@@ -253,7 +255,11 @@ const BannerAtividade = ({ activity, userId, color }) => {
     const timeline = formatTimeline(activity.timeline)
     const openingDate = formatOpeningDate(activity.dateOpen)
     const visualState = includesUser
-        ? 'registered'
+        ? charge?.state === 'pendente'
+            ? 'payment-pending'
+            : charge?.state === 'vencida'
+                ? 'payment-overdue'
+                : 'registered'
         : !activity.isOpen
             ? 'closed'
             : buttonText === 'CHEIO'
@@ -263,6 +269,8 @@ const BannerAtividade = ({ activity, userId, color }) => {
                     : 'open'
     const stateLabel = {
         registered: 'Inscrito',
+        'payment-pending': 'Pagamento pendente',
+        'payment-overdue': 'Pagamento vencido',
         closed: 'Inscrições encerradas',
         full: 'Vagas esgotadas',
         'not-open': 'Inscrições em breve',
@@ -369,11 +377,37 @@ const BannerAtividade = ({ activity, userId, color }) => {
             // handleAlreadyInscribed()
             setIncludesUser(1)
             setParticipantCount((count) => count + 1)
+            setCharge({ state: 'pendente', link: result.link || null })
             setModalMessage3(result.message)
             setModal3Link(result.link || "/pagamentos")
             setButtonText('INSCRITO')
         } catch (error) {
             setModalMessage(error instanceof Error ? error.message : 'Não foi possível iniciar o pagamento.')
+        } finally {
+            setLoadingModal(0)
+        }
+    };
+    const handleRenewPayment = async (eventId) => {
+        setLoadingModal(1)
+        try {
+            const response = await fetchWithTimeout('/api/payment/createActivityPayment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ eventId }),
+            });
+
+            const result = await readJsonResponse(response);
+
+            if (!response.ok) {
+                throw new Error(result?.message || 'Não foi possível gerar um novo PIX.');
+            }
+            setCharge({ state: 'pendente', link: result.link || null })
+            setModalMessage3(result.message)
+            setModal3Link(result.link || "/pagamentos")
+        } catch (error) {
+            setModalMessage(error instanceof Error ? error.message : 'Não foi possível gerar um novo PIX.')
         } finally {
             setLoadingModal(0)
         }
@@ -518,6 +552,35 @@ const BannerAtividade = ({ activity, userId, color }) => {
             }
             {
                 visualState === 'registered' && <div className="atividades-inscrito"><CheckCircle2 size={15} /> {stateLabel}</div>
+            }
+            {
+                visualState === 'payment-pending' &&
+                    <>
+                        <div className="atividades-fechado">
+                            <strong>{stateLabel}</strong>
+                            <span>Vaga reservada. A inscrição só é confirmada após o pagamento.</span>
+                        </div>
+                        <Link className="atividades-inscrever" href={charge?.link || '/pagamentos'} prefetch={false} target="_blank">
+                            PAGAR AGORA
+                        </Link>
+                    </>
+            }
+            {
+                visualState === 'payment-overdue' &&
+                    <>
+                        <div className="atividades-fechado">
+                            <strong>{stateLabel}</strong>
+                            <span>O PIX desta atividade venceu sem pagamento. Gere um novo para concluir a inscrição.</span>
+                        </div>
+                        <button
+                            type="button"
+                            className="atividades-inscrever"
+                            onClick={() => handleRenewPayment(activity._id)}
+                            disabled={Boolean(loadingModal)}
+                        >
+                            {loadingModal ? 'PROCESSANDO...' : 'GERAR NOVO PIX'}
+                        </button>
+                    </>
             }
         </article>
     )
