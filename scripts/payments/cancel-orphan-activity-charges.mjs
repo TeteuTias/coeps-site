@@ -32,9 +32,17 @@ const headers = {
 };
 const paymentUrl = (id) => `${ASAAS_API_URL.replace(/\/+$/, '')}/payments/${encodeURIComponent(id)}`;
 
-async function lookup(id) {
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Asaas limita requisições por minuto: espaça as consultas e espera quando responde 429.
+async function lookup(id, attempt = 0) {
     try {
+        await wait(250);
         const response = await fetch(paymentUrl(id), { headers, signal: AbortSignal.timeout(10_000) });
+        if (response.status === 429 && attempt < 6) {
+            await wait(Number(response.headers.get('retry-after')) * 1000 || 15_000 * (attempt + 1));
+            return lookup(id, attempt + 1);
+        }
         if (response.status === 404) return { notFound: true };
         if (!response.ok) return { error: `HTTP ${response.status}` };
         const body = await response.json();

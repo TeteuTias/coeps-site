@@ -34,6 +34,7 @@ export function findCandidates(users, activities) {
                     eventId,
                     atividade: activity?.name ?? null,
                     valor: charge.value ?? null,
+                    criadaEm: charge.dateCreated ?? null,
                     atividadeExiste: Boolean(activity),
                     inscrito,
                 });
