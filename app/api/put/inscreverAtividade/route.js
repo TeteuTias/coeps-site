@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/app/lib/mongodb'
 import { getSession } from '@/lib/auth0-compat';
 import { withApiAuthRequired } from '@/lib/auth0-compat';
 import { DateTime } from "luxon"
+import { acquireRegistrationLock } from '@/lib/activity-bundle';
 //
 //
 //
@@ -21,7 +22,13 @@ export const PUT = withApiAuthRequired(async function (req) {
     // console.log(eventId)
     // console.log("userId: ", userId)
 
+    let releaseLock = async () => { }
     try {
+        const unlock = await acquireRegistrationLock(db, userId)
+        if (!unlock) {
+            return Response.json({ message: 'Já existe uma inscrição sua sendo processada. Aguarde alguns segundos e tente novamente.' }, { status: 409 });
+        }
+        releaseLock = unlock
         // Verifica se o usuário tem 4 ou menos inscrições
         const userRegistrationsCount = await db.collection(collection).find(
             {
@@ -51,13 +58,13 @@ export const PUT = withApiAuthRequired(async function (req) {
         ).toArray()
 
         //console.log(eventStatus)
+        if (eventStatus.length == 0) {
+            return Response.json({ message: 'Evento não encontrado. Por favor, recarregue a página' }, { status: 404 });
+        }
         if (eventStatus[0].participants.includes(userId)) {
             return Response.json({ message: 'Você já está inscrito nesse evento.' }, { status: 402 });
         }
 
-        if (eventStatus.length == 0) {
-            return Response.json({ message: 'Evento não encontrado. Por favor, recarregue a página' }, { status: 500 });
-        }
         if (eventStatus[0].somenteViaPacote) {
             return Response.json({ message: 'Esta etapa já está incluída na inscrição da prática.' }, { status: 400 });
         }
@@ -65,7 +72,7 @@ export const PUT = withApiAuthRequired(async function (req) {
             return Response.json({ message: 'Não é mais possível se inscrever no evento' }, { status: 400 });
         }
         if (!isDateEqualOrAfterToday(eventStatus[0].dateOpen)) {
-            return Response.json({ message: 'Não é mais possível se inscrever no evento' }, { status: 400 });
+            return Response.json({ message: 'As inscrições para este evento ainda não abriram. Confira a data de abertura na programação.' }, { status: 400 });
         }
 
         const timeConflict = isScheduleConflict(userRegistrationsCount, eventStatus[0])
@@ -83,13 +90,6 @@ export const PUT = withApiAuthRequired(async function (req) {
             [
                 {
                     $set: {
-                        participantsCount: {
-                            $cond: {
-                                if: { $lt: [{ $size: "$participants" }, "$maxParticipants"] },
-                                then: { $add: ["$participantsCount", 1] },
-                                else: "$participantsCount"
-                            }
-                        },
                         participants: {
                             $cond: {
                                 if: {
@@ -103,7 +103,8 @@ export const PUT = withApiAuthRequired(async function (req) {
                             }
                         }
                     }
-                }
+                },
+                { $set: { participantsCount: { $size: "$participants" } } }
             ],
             { returnDocument: "after" } // Para retornar o documento atualizado
         );
@@ -129,6 +130,8 @@ export const PUT = withApiAuthRequired(async function (req) {
             { error: 'internal_server_error', message: 'Não foi possível concluir a inscrição.' },
             { status: 500 }
         );
+    } finally {
+        await releaseLock().catch(() => { })
     }
 
 })

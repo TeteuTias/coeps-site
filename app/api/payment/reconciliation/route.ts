@@ -2,7 +2,7 @@ import { ObjectId } from 'mongodb';
 import { connectToDatabase } from '../../../lib/mongodb.js';
 import { isReconciliationAuthorized } from '../../../lib/payments/webhook-auth.ts';
 import { asaasRequestHeaders } from '../../../lib/payments/asaas.ts';
-import { drainPendingWebhookEvents, processEvent } from '../webhook/payment_notification/route.js';
+import { drainPendingWebhookEvents, processEvent, updateLegacyPayment } from '../webhook/payment_notification/route.js';
 import {
     releaseDiscountReservation,
     updatePaymentAssignment,
@@ -18,6 +18,7 @@ import {
     isCancellationEligible,
 } from '../../../lib/payments/overdue.ts';
 import { isRemoteWorkSession } from '../../../lib/remote-work-access.ts';
+import { releaseUnpaidActivitySeats } from '../../../lib/payments/activity-seat-release.ts';
 import {
     markProductPaymentPending,
     releaseRemoteWorkAccessPayment,
@@ -1091,5 +1092,33 @@ export async function POST(request: Request) {
         }
     }
 
-    return Response.json(counters, { status: 200 });
+    // Vagas de atividades pagas: reserva de 15 minutos sem pagamento é liberada (a cobrança é excluída
+    // no Asaas e o webhook PAYMENT_DELETED tira a pessoa). Falha aqui não derruba a conciliação acima.
+    let activitySeats: Record<string, unknown> | null = null;
+    if (process.env.ACTIVITY_SEAT_RELEASE !== 'off') {
+        try {
+            const report = await releaseUnpaidActivitySeats(db, {
+                apiUrl,
+                apiKey,
+                limit: 20,
+                deadline: reconciliationDeadline,
+                applyLegacyEvent: (payload) => runPaymentTransaction(
+                    client,
+                    (mongoSession) => updateLegacyPayment(db, payload, mongoSession),
+                ),
+            });
+            activitySeats = {
+                released: report.released,
+                confirmed: report.confirmed,
+                ignored: report.ignored,
+                failed: report.failed,
+                pendingNextRound: report.pendingNextRound,
+            };
+        } catch (error) {
+            console.error('Falha ao liberar vagas de atividades não pagas:', error);
+            activitySeats = { error: true };
+        }
+    }
+
+    return Response.json({ ...counters, activitySeats }, { status: 200 });
 }

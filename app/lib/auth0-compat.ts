@@ -15,6 +15,16 @@ function jsonError(status: number, code: string, message: string) {
   );
 }
 
+const PUBLIC_ERROR_HEADER = "x-public-error-message";
+
+/** Erro 5xx cuja mensagem foi escrita para o participante (sem detalhes internos) e pode ser exibida. */
+export function publicErrorResponse(message: string, status = 500) {
+  return Response.json(
+    { error: "internal_server_error", message },
+    { status, headers: { [PUBLIC_ERROR_HEADER]: "1" } },
+  );
+}
+
 function isConfigurationError(error: unknown) {
   if (!(error instanceof Error)) {
     return false;
@@ -83,6 +93,12 @@ export function withApiAuthRequired<T extends ApiRouteHandler>(handler: T): T {
       }
 
       if (response.status >= 500) {
+        if (response.headers.get(PUBLIC_ERROR_HEADER) === "1") {
+          const body = await response.json().catch(() => null);
+          if (typeof body?.message === "string" && body.message) {
+            return jsonError(response.status, "internal_server_error", body.message);
+          }
+        }
         return jsonError(
           500,
           "internal_server_error",

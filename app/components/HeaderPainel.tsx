@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, CreditCard, FileText, Home, LogOut, Menu, User, X } from 'lucide-react';
+import { BookOpen, Calendar, CreditCard, FileText, Home, LogOut, Menu, User, X } from 'lucide-react';
 
 const menuItems = [
   { name: 'Início', href: '/', icon: <Home size={16} /> },
   { name: 'Meu painel', href: '/painel', icon: <User size={16} /> },
   { name: 'Trabalhos', href: '/painel/trabalhos', icon: <FileText size={16} /> },
+  { name: 'Atividades', href: '/painel/atividades', icon: <BookOpen size={16} /> },
   { name: 'Programação', href: '/painel/minhaProgramacao', icon: <Calendar size={16} /> },
   { name: 'Pagamentos', href: '/pagamentos', icon: <CreditCard size={16} /> },
 ];

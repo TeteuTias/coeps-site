@@ -99,6 +99,7 @@ export default function Minicursos() {
                     <h1>REGRAS DE INSCRIÇÃO</h1>
                     <p style={{ textAlign: 'left' }}>
                         <Info size={16} style={{ color: '#1B305F', marginRight: 6, verticalAlign: 'middle' }} /> <b>NÃO</b> são permitidas inscrições em atividades com horários conflitantes. É de responsabilidade do congressista realizar um planejamento prévio antes da abertura das inscrições.<br />
+                        <Clock size={16} style={{ color: '#A32D2D', marginRight: 6, verticalAlign: 'middle' }} /> <b>Pontualidade:</b> nos minicursos, quem chegar com mais de <span className="atividades-highlight">10 minutos de atraso</span> pode perder a vaga, que será passada para quem estiver aguardando na portaria. Nos minicursos pagos, a vaga perdida por atraso <b>não é reembolsada</b>.<br />
                         <Calendar size={16} style={{ color: '#185FA5', marginRight: 6, verticalAlign: 'middle' }} /> O congressista pode consultar as datas de abertura das inscrições, os horários, os locais e as datas de realização das atividades <span className="atividades-highlight"><Link className="font-bold text-[var(--cieps-blue)] underline" href="/programacao" prefetch={false} target="_blank">clicando aqui</Link></span>.
                     </p>
                 </div>
@@ -218,6 +219,14 @@ const formatOpeningDate = (value) => {
     return date.isValid ? date.toFormat("dd 'de' LLLL, HH:mm") : null
 }
 
+// Só a hora quando a reserva vence hoje (caso normal: 15 minutos); cobrança antiga pode vencer em outro dia.
+const formatHoldUntil = (value) => {
+    const date = DateTime.fromISO(value || '', { zone: 'America/Sao_Paulo' }).setLocale('pt-BR')
+    if (!date.isValid) return null
+    const today = DateTime.now().setZone('America/Sao_Paulo')
+    return date.hasSame(today, 'day') ? date.toFormat('HH:mm') : date.toFormat("dd/LL 'às' HH:mm")
+}
+
 const activityPriceLabel = (activity) => {
     if (activity.isFree) return 'Gratuita'
     if (activity.value === undefined || activity.value === null || activity.value === '') {
@@ -241,18 +250,25 @@ const BannerAtividade = ({ activity, userId, color }) => {
     const [participantCount, setParticipantCount] = useState(initialParticipants.length)
     const [buttonText, setButtonText] = useState(isDateEqualOrAfterToday(activity.dateOpen, initialParticipants.length, activity.maxParticipants))
     const [includesUser, setIncludesUser] = useState(initialParticipants.includes(userId))
+    // Atividade paga com PIX ainda não pago (pendente ou vencido): a vaga está reservada, mas não é inscrição.
+    const [charge, setCharge] = useState(activity.minhaCobranca || null)
     const [modalMessage, setModalMessage] = useState(0)
     const [modalMessage3, setModalMessage3] = useState(0)
     const [modal3Link, setModal3Link] = useState("/pagamentos")
     const [loadingModal, setLoadingModal] = useState(0)
     const [showConfirmRemove, setShowConfirmRemove] = useState(false)
     const [showAviso, setShowAviso] = useState(false)
+    const holdUntilLabel = formatHoldUntil(charge?.holdUntil)
     const startRegister = () => activity.isFree ? handleRegister(activity._id) : handlePayedRegister(activity._id)
     const nVagas = Math.max(0, Number(activity.maxParticipants || 0) - participantCount)
     const timeline = formatTimeline(activity.timeline)
     const openingDate = formatOpeningDate(activity.dateOpen)
     const visualState = includesUser
-        ? 'registered'
+        ? charge?.state === 'pendente'
+            ? 'payment-pending'
+            : charge?.state === 'vencida'
+                ? 'payment-overdue'
+                : 'registered'
         : !activity.isOpen
             ? 'closed'
             : buttonText === 'CHEIO'
@@ -262,6 +278,8 @@ const BannerAtividade = ({ activity, userId, color }) => {
                     : 'open'
     const stateLabel = {
         registered: 'Inscrito',
+        'payment-pending': 'Pagamento pendente',
+        'payment-overdue': 'Reserva expirada',
         closed: 'Inscrições encerradas',
         full: 'Vagas esgotadas',
         'not-open': 'Inscrições em breve',
@@ -368,11 +386,37 @@ const BannerAtividade = ({ activity, userId, color }) => {
             // handleAlreadyInscribed()
             setIncludesUser(1)
             setParticipantCount((count) => count + 1)
+            setCharge({ state: 'pendente', link: result.link || null, holdUntil: result.holdUntil || null })
             setModalMessage3(result.message)
             setModal3Link(result.link || "/pagamentos")
             setButtonText('INSCRITO')
         } catch (error) {
             setModalMessage(error instanceof Error ? error.message : 'Não foi possível iniciar o pagamento.')
+        } finally {
+            setLoadingModal(0)
+        }
+    };
+    const handleRenewPayment = async (eventId) => {
+        setLoadingModal(1)
+        try {
+            const response = await fetchWithTimeout('/api/payment/createActivityPayment', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ eventId }),
+            });
+
+            const result = await readJsonResponse(response);
+
+            if (!response.ok) {
+                throw new Error(result?.message || 'Não foi possível gerar um novo PIX.');
+            }
+            setCharge({ state: 'pendente', link: result.link || null, holdUntil: result.holdUntil || null })
+            setModalMessage3(result.message)
+            setModal3Link(result.link || "/pagamentos")
+        } catch (error) {
+            setModalMessage(error instanceof Error ? error.message : 'Não foi possível gerar um novo PIX.')
         } finally {
             setLoadingModal(0)
         }
@@ -517,6 +561,35 @@ const BannerAtividade = ({ activity, userId, color }) => {
             }
             {
                 visualState === 'registered' && <div className="atividades-inscrito"><CheckCircle2 size={15} /> {stateLabel}</div>
+            }
+            {
+                visualState === 'payment-pending' &&
+                    <>
+                        <div className="atividades-fechado">
+                            <strong>{stateLabel}</strong>
+                            <span>{holdUntilLabel ? `Vaga reservada até ${holdUntilLabel}. Sem pagamento, ela é liberada.` : 'Vaga reservada. A inscrição só é confirmada após o pagamento.'}</span>
+                        </div>
+                        <Link className="atividades-inscrever" href={charge?.link || '/pagamentos'} prefetch={false} target="_blank">
+                            PAGAR AGORA
+                        </Link>
+                    </>
+            }
+            {
+                visualState === 'payment-overdue' &&
+                    <>
+                        <div className="atividades-fechado">
+                            <strong>{stateLabel}</strong>
+                            <span>A reserva de 15 minutos passou sem pagamento. Reserve de novo para pagar.</span>
+                        </div>
+                        <button
+                            type="button"
+                            className="atividades-inscrever"
+                            onClick={() => handleRenewPayment(activity._id)}
+                            disabled={Boolean(loadingModal)}
+                        >
+                            {loadingModal ? 'PROCESSANDO...' : 'RESERVAR DE NOVO'}
+                        </button>
+                    </>
             }
         </article>
     )

@@ -1,11 +1,13 @@
 import { ObjectId } from 'mongodb';
-import { withApiAuthRequired } from '@/lib/auth0-compat';
+import { publicErrorResponse, withApiAuthRequired } from '@/lib/auth0-compat';
 import { getSession } from '@/lib/auth0-compat';
 import { connectToDatabase } from '@/app/lib/mongodb';
 import { DateTime } from "luxon"
 import { asaasRequestHeaders } from '@/lib/payments/asaas';
 import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payments/sales';
-import { includedActivityIds, syncIncludedActivities } from '@/lib/activity-bundle';
+import { acquireRegistrationLock, includedActivityIds, syncIncludedActivities } from '@/lib/activity-bundle';
+import { hasScheduleConflict } from '@/lib/schedule-conflict';
+import { ACTIVITY_SEAT_HOLD_MINUTES, activityChargeState } from '@/lib/activity-charge-state';
 //
 //
 //
@@ -16,6 +18,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
     if (!isPaymentSalesEnabled()) return paymentSalesPausedResponse();
     // Vaga reservada e cobrança ainda não criada: se falhar aqui, nada mais libera a vaga.
     let releaseSeat = async () => { }
+    let releaseLock = async () => { }
     try {
         // Verificando se ele está logado
         // 
@@ -26,6 +29,11 @@ export const POST = withApiAuthRequired(async function POST(request) {
         //
         const { db } = await connectToDatabase()
         const collection = 'minicursos'
+        const unlock = await acquireRegistrationLock(db, _id)
+        if (!unlock) {
+            return Response.json({ message: 'Já existe uma inscrição sua sendo processada. Aguarde alguns segundos e tente novamente.' }, { status: 409 });
+        }
+        releaseLock = unlock
 
         // Verifica se o usuário tem 4 ou menos inscrições
         const userRegistrationsCount = await db.collection(collection).find(
@@ -55,20 +63,39 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 }
             }
         ).toArray()
+        if (eventStatus.length == 0) {
+            return Response.json({ message: 'Evento não encontrado. Por favor, recarregue a página' }, { status: 404 });
+        }
         if (eventStatus[0].participants.includes(_id)) {
+            // Vaga já reservada. PIX dentro dos 15 minutos: devolve o mesmo. Reserva expirada e vaga ainda
+            // não liberada: renova a reserva na mesma cobrança.
+            const owner = ObjectId.isValid(_id)
+                ? await db.collection('usuarios').findOne(
+                    { _id: new ObjectId(_id) },
+                    { projection: { 'pagamento.lista_pagamentos': 1 } },
+                )
+                : null
+            const today = DateTime.now().setZone('America/Sao_Paulo').toFormat('yyyy-MM-dd')
+            const charge = activityChargeState(owner?.pagamento?.lista_pagamentos, String(eventId), new Date())
+            if (charge?.state === 'pendente' && charge.link) {
+                return Response.json({ message: 'Você já tem um PIX em aberto para esta atividade. Sua vaga só é confirmada após o pagamento.', link: charge.link, holdUntil: charge.holdUntil }, { status: 200 });
+            }
+            if (charge?.state === 'vencida' && charge.id) {
+                if (!eventStatus[0].isOpen) {
+                    return Response.json({ message: 'Não é mais possível se inscrever no evento' }, { status: 400 });
+                }
+                return await renewOverdueCharge(db, _id, charge, today)
+            }
             return Response.json({ message: 'Você já está inscrito nesse evento.' }, { status: 402 });
         }
         if (eventStatus[0].isFree == 1) {
-            return Response.json({ message: 'Você não precisa pagar por esse evento. Por favor, recarregue a página para atualizar os eventos.' }, { status: 500 });
-        }
-        if (eventStatus.length == 0) {
-            return Response.json({ message: 'Evento não encontrado. Por favor, recarregue a página' }, { status: 500 });
+            return publicErrorResponse('Você não precisa pagar por esse evento. Por favor, recarregue a página para atualizar os eventos.');
         }
         if (!eventStatus[0].isOpen) {
             return Response.json({ message: 'Não é mais possível se inscrever no evento' }, { status: 400 });
         }
         if (!isDateEqualOrAfterToday(eventStatus[0].dateOpen)) {
-            return Response.json({ message: 'Não é mais possível se inscrever no evento' }, { status: 400 });
+            return Response.json({ message: 'As inscrições para este evento ainda não abriram. Confira a data de abertura na programação.' }, { status: 400 });
         }
 
 
@@ -96,13 +123,6 @@ export const POST = withApiAuthRequired(async function POST(request) {
             [
                 {
                     $set: {
-                        participantsCount: {
-                            $cond: {
-                                if: { $lt: [{ $size: "$participants" }, "$maxParticipants"] },
-                                then: { $add: ["$participantsCount", 1] },
-                                else: "$participantsCount"
-                            }
-                        },
                         participants: {
                             $cond: {
                                 if: {
@@ -116,7 +136,8 @@ export const POST = withApiAuthRequired(async function POST(request) {
                             }
                         }
                     }
-                }
+                },
+                { $set: { participantsCount: { $size: "$participants" } } }
             ],
             { returnDocument: "after" } // Para retornar o documento atualizado
         );
@@ -180,11 +201,11 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
         if (userInfos.length == 0) {
             await releaseSeat()
-            return Response.json({ message: 'Ocorreu algum erro, por favor recarregue a página! [userInfos.length == 0]' }, { status: 500 });
+            return publicErrorResponse('Não foi possível gerar o PIX porque seu cadastro de pagamento está incompleto, e sua vaga não foi reservada. Recarregue a página e tente novamente; se continuar, fale com a equipe CIEPS.');
         }
         if (!userInfos[0].id_api) {
             await releaseSeat()
-            return Response.json({ message: 'Ocorreu algum erro, por favor recarregue a página! [!userInfos[0].id_api]' }, { status: 500 });
+            return publicErrorResponse('Não foi possível gerar o PIX porque seu cadastro de pagamento está incompleto, e sua vaga não foi reservada. Recarregue a página e tente novamente; se continuar, fale com a equipe CIEPS.');
         }
 
 
@@ -212,7 +233,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
 
         if (!responseAPI.ok) {
             await releaseSeat()
-            return Response.json({ message: 'Ocorreu algum erro, por favor recarregue a página. [!responseAPI.ok => Registro API Pagamentos]' }, { status: 500 });
+            return publicErrorResponse('Não foi possível gerar o PIX agora e sua vaga não foi reservada. Tente novamente em alguns minutos.');
 
         }
 
@@ -220,6 +241,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
         // Cobrança criada no Asaas: a partir daqui o webhook cuida da vaga.
         releaseSeat = async () => { }
         var responseJson = await responseAPI.json()
+        const reservedAt = new Date()
         // 
         // Registrando o pagamento no DB
         const dbUpdateOne = await db.collection('usuarios').updateOne(
@@ -227,7 +249,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 '_id': new ObjectId(_id)
             },
             {
-                "$push": { 'pagamento.lista_pagamentos': { ...responseJson, _webhook: [], _type: "activity", _userId: _id, _eventID: eventId } },
+                "$push": { 'pagamento.lista_pagamentos': { ...responseJson, _webhook: [], _type: "activity", _userId: _id, _eventID: eventId, _reservedAt: reservedAt } },
             }
         )
 
@@ -241,63 +263,67 @@ export const POST = withApiAuthRequired(async function POST(request) {
             return Response.json({ "erro": "Ocorreu algum erro, por favor, recarregue a página. [result.modifiedCount === 0 - dbUpdateOne]" }, { status: 500 })
         }
 
-        return Response.json({ message: 'Você completou sua inscrição! Para garantir sua vaga, é essencial que o pagamento seja realizado até o final do dia. Caso contrário, sua vaga será perdida.Para efetuar o pagamento, clique no botão abaixo ou acesse o menu MEUS PAGAMENTOS.', "link": responseJson.invoiceUrl }, { status: 200 });
+        return Response.json({
+            message: `Sua vaga está reservada por ${ACTIVITY_SEAT_HOLD_MINUTES} minutos. Pague o PIX nesse prazo para confirmar a inscrição; sem pagamento, a vaga é liberada. Para pagar, clique no botão abaixo ou acesse o menu MEUS PAGAMENTOS.`,
+            "link": responseJson.invoiceUrl,
+            holdUntil: new Date(reservedAt.getTime() + ACTIVITY_SEAT_HOLD_MINUTES * 60 * 1000).toISOString(),
+        }, { status: 200 });
     }
     catch {
         await releaseSeat().catch(() => { })
-        return Response.json(
-            { error: "internal_server_error", message: "Não foi possível iniciar o pagamento da atividade." },
-            { status: 500 }
-        )
+        return publicErrorResponse("Não foi possível iniciar o pagamento da atividade.")
+    }
+    finally {
+        await releaseLock().catch(() => { })
     }
 })
 //
-const isScheduleConflict = (existingEvents, newEvent) => {
-    /*
-    for (const event of existingEvents) {
-        for (const existingTimeline of event.timeline) {
-            const existingStart = DateTime.fromISO(existingTimeline.date_init);
-            const existingEnd = DateTime.fromISO(existingTimeline.date_end);
-
-            for (const newTimeline of newEvent.timeline) {
-                const newStart = DateTime.fromISO(newTimeline.date_init);
-                const newEnd = DateTime.fromISO(newTimeline.date_end);
-
-                if (
-                    (newStart >= existingStart && newStart < existingEnd) ||
-                    (newEnd > existingStart && newEnd <= existingEnd) ||
-                    (newStart <= existingStart && newEnd >= existingEnd)
-                ) {
-                    return 1; // Horário conflitante
-                }
-            }
+// A reserva da vaga dura 15 minutos. Quem deixou passar e ainda não teve a vaga liberada (a liberação
+// roda na reconciliação) pode reservar de novo: a mesma cobrança é reaberta, sem criar uma segunda.
+// Se o vencimento do PIX já passou, o Asaas recebe a nova data.
+async function renewOverdueCharge(db, userId, charge, today) {
+    const set = { 'pagamento.lista_pagamentos.$[charge]._reservedAt': new Date() }
+    let link = charge.link
+    const pastDue = typeof charge.dueDate !== 'string' || charge.dueDate.slice(0, 10) < today
+    if (pastDue) {
+        const response = await fetch(`${process.env.ASAAS_API_URL}/payments/${encodeURIComponent(charge.id)}`, {
+            method: 'PUT',
+            headers: asaasRequestHeaders(process.env.ASAAS_API_KEY, {
+                json: true,
+                apiUrl: process.env.ASAAS_API_URL,
+            }),
+            signal: AbortSignal.timeout(10_000),
+            body: JSON.stringify({ billingType: 'PIX', value: charge.value, dueDate: today }),
+        })
+        if (response.status === 404) {
+            return Response.json({ message: RESERVA_LIBERADA }, { status: 409 });
         }
-    }
-    */
-    for (const event of existingEvents) {
-        for (const existingTimeline of event.timeline) {
-            const existingStart = DateTime.fromISO(existingTimeline.date_init);
-            const existingEnd = DateTime.fromISO(existingTimeline.date_end);
-
-            for (const newTimeline of newEvent.timeline) {
-                const newStart = DateTime.fromISO(newTimeline.date_init);
-                const newEnd = DateTime.fromISO(newTimeline.date_end);
-
-                // Verificação de conflito, considerando que o novo evento pode começar exatamente quando o evento existente termina
-                if (
-                    (newStart > existingStart && newStart < existingEnd) ||
-                    (newEnd > existingStart && newEnd <= existingEnd) ||
-                    (newStart < existingStart && newEnd > existingEnd) ||
-                    (newStart <= existingEnd && newEnd >= existingEnd)
-                ) {
-                    return 1; // Horário conflitante
-                }
-            }
+        if (!response.ok) {
+            return publicErrorResponse('Não foi possível gerar um novo PIX agora. Tente novamente em alguns minutos; se continuar, fale com a equipe CIEPS.');
         }
+        const updated = await response.json()
+        link = updated?.invoiceUrl || charge.link
+        set['pagamento.lista_pagamentos.$[charge].status'] = !updated?.status || updated.status === 'OVERDUE' ? 'PENDING' : updated.status
+        set['pagamento.lista_pagamentos.$[charge].dueDate'] = updated?.dueDate || today
+        set['pagamento.lista_pagamentos.$[charge].invoiceUrl'] = link
     }
-
-    return 0; // Nenhum conflito encontrado
+    const renewed = await db.collection('usuarios').updateOne(
+        { _id: new ObjectId(userId) },
+        { $set: set },
+        { arrayFilters: [{ 'charge.id': charge.id, 'charge._type': 'activity' }] },
+    )
+    if (renewed.modifiedCount === 0) {
+        return Response.json({ message: RESERVA_LIBERADA }, { status: 409 });
+    }
+    return Response.json({
+        message: `Sua vaga está reservada por mais ${ACTIVITY_SEAT_HOLD_MINUTES} minutos. Pague o PIX nesse prazo; sem pagamento, a vaga é liberada. Para pagar, clique no botão abaixo ou acesse o menu MEUS PAGAMENTOS.`,
+        link,
+        holdUntil: new Date(Date.now() + ACTIVITY_SEAT_HOLD_MINUTES * 60 * 1000).toISOString(),
+    }, { status: 200 });
 }
+const RESERVA_LIBERADA = 'Sua reserva expirou e a vaga foi liberada. Recarregue a página para se inscrever de novo, se ainda houver vaga.'
+//
+const isScheduleConflict = hasScheduleConflict
 //
 const isDateEqualOrAfterToday = (inputDate) => {
     // Define a data atual no fuso horário -03:00 (America/Sao_Paulo)

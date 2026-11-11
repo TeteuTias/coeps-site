@@ -29,6 +29,8 @@ export async function GET(request, { params }) {
                     showToUser: true,
                     somenteViaPacote: { $ne: true },
                 },
+                // Rota pública: sem a lista de ids dos inscritos (a tela não usa).
+                { projection: { participants: 0 } },
             ).toArray(),
         ]);
         // result 1 == ICourse
