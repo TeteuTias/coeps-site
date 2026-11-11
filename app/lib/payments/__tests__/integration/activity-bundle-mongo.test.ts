@@ -8,6 +8,8 @@ import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import * as luxon from 'luxon';
 import ts from 'typescript';
 import * as activityBundle from '../../../activity-bundle.js';
+import * as activityChargeState from '../../../activity-charge-state.js';
+import * as scheduleConflict from '../../../schedule-conflict.js';
 
 // Rotas reais de inscrição/compra de atividade contra um Mongo em memória (replica set).
 // Asaas e Auth0 são falsos: nenhuma chamada sai da máquina.
@@ -85,6 +87,8 @@ function loadRoute(path: string, method: string, userId: string) {
         '@/lib/payments/asaas': { asaasRequestHeaders: () => ({}) },
         '@/lib/payments/sales': { isPaymentSalesEnabled: () => true, paymentSalesPausedResponse: () => Response.json({}, { status: 503 }) },
         '@/lib/activity-bundle': activityBundle,
+        '@/lib/schedule-conflict': scheduleConflict,
+        '@/lib/activity-charge-state': activityChargeState,
     };
     const fakeFetch = async () => {
         asaas.calls += 1;
@@ -219,4 +223,44 @@ test('participantsCount acompanha a lista em compra, desinscrição e falha do P
         asaas.fail = false;
     }
     assert.deepEqual(await counts(), { teoriaAvulsa: 0, teoriaPacote: 1, simulacaoT1: 1, simulacaoT2: 0, turma1: 1, turma2: 0 });
+});
+
+test('PIX da atividade: em aberto devolve o mesmo; vencido é renovado sem segunda cobrança nem segunda vaga', async () => {
+    asaas.calls = 0;
+    const userId = await newUser();
+    const charges = async () => (await db.collection('usuarios').findOne({ _id: new ObjectId(userId) }))!.pagamento.lista_pagamentos;
+    const setStatus = (status: string) => db.collection('usuarios').updateOne(
+        { _id: new ObjectId(userId) },
+        { $set: { 'pagamento.lista_pagamentos.0.status': status } },
+    );
+
+    const first = await buy(userId)(ids.turma1);
+    assert.equal(first.status, 200);
+    const again = await buy(userId)(ids.turma1);
+    assert.equal(again.status, 200);
+    assert.equal(again.body.link, first.body.link);
+    assert.equal(asaas.calls, 1, 'PIX em aberto não gera outra cobrança');
+
+    await setStatus('PAYMENT_OVERDUE');
+    const renewed = await buy(userId)(ids.turma1);
+    assert.equal(renewed.status, 200);
+    assert.equal(asaas.calls, 2);
+    const list = await charges();
+    assert.equal(list.length, 1, 'a mesma cobrança é reaberta');
+    assert.equal(list[0].id, 'pay_1');
+    assert.equal(list[0].status, 'PENDING');
+    assert.equal((await activity(ids.turma1))!.participants.filter((id: string) => id === userId).length, 1);
+
+    asaas.fail = true;
+    try {
+        await setStatus('PAYMENT_OVERDUE');
+        assert.equal((await buy(userId)(ids.turma1)).status, 500);
+        assert.equal((await charges())[0].status, 'PAYMENT_OVERDUE');
+        assert.equal(await isIn(ids.turma1, userId), true, 'falha do Asaas não tira a vaga reservada');
+    } finally {
+        asaas.fail = false;
+    }
+
+    await setStatus('PAYMENT_RECEIVED');
+    assert.equal((await buy(userId)(ids.turma1)).status, 402);
 });
