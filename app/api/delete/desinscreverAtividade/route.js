@@ -30,13 +30,18 @@ export const DELETE = withApiAuthRequired(async function (req) {
                     "dateOpen": 1,
                     "isOpen": 1,
                     "timeline": 1,
-                    "somenteViaPacote": 1
+                    "somenteViaPacote": 1,
+                    "isFree": 1
                 }
             }
         ).toArray()
 
         if (eventStatus.length == 0) {
             return Response.json({ message: 'Evento não encontrado' }, { status: 400 });
+        }
+        // Paga sai só pela equipe (Admin), que cancela a cobrança no Asaas junto.
+        if (eventStatus[0].isFree === false || eventStatus[0].isFree === 0) {
+            return Response.json({ message: 'Para cancelar sua inscrição de um evento PAGO, entre em contato com a equipe CIEPS.' }, { status: 400 });
         }
         if (eventStatus[0].somenteViaPacote) {
             return Response.json({ message: 'Esta etapa faz parte do pacote da prática e não pode ser retirada separadamente.' }, { status: 400 });

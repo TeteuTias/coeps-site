@@ -236,11 +236,19 @@ export async function getCurrentAutomaticLot(
         accumulatedCapacity += lot.limiteVagas;
 
         if (occupied < accumulatedCapacity) {
-            return lot;
+            // Lote travado não vende, e os seguintes também não: a ordem de abertura é sequencial.
+            return isAutomaticLotOpen(lot, now) ? lot : null;
         }
     }
 
     return null;
+}
+
+/** Sem `abreEm` o lote está aberto; com data futura ou inválida fica fechado (falha fechado). */
+export function isAutomaticLotOpen(lot: Pick<ILoteAutomatico, 'abreEm'>, now = new Date()): boolean {
+    if (lot.abreEm === undefined || lot.abreEm === null || lot.abreEm === '') return true;
+    const opensAt = new Date(lot.abreEm).getTime();
+    return Number.isFinite(opensAt) && now.getTime() >= opensAt;
 }
 
 export async function lockPaymentCapacityCalculation(
