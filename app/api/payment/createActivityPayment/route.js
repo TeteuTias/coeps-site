@@ -8,6 +8,7 @@ import { isPaymentSalesEnabled, paymentSalesPausedResponse } from '@/lib/payment
 import { acquireRegistrationLock, includedActivityIds, syncIncludedActivities } from '@/lib/activity-bundle';
 import { hasScheduleConflict } from '@/lib/schedule-conflict';
 import { ACTIVITY_SEAT_HOLD_MINUTES, activityChargeState } from '@/lib/activity-charge-state';
+import { ensureProfileCustomer } from '@/lib/payments/customer-profile-sync';
 //
 //
 //
@@ -114,6 +115,21 @@ export const POST = withApiAuthRequired(async function POST(request) {
             return Response.json({ message: 'Não foi possível se inscrever: você já está inscrito em uma etapa deste curso (por exemplo, a teórica avulsa) ou em outro evento no mesmo horário. Se estiver na teórica avulsa, retire essa inscrição antes de se inscrever na prática.' }, { status: 400 });
         }
 
+        // Antes de reservar a vaga: quem entrou por cortesia ainda não tem Customer no Asaas.
+        const customer = await ensureProfileCustomer({
+            db,
+            owner: new ObjectId(_id),
+            userId: _id,
+            apiUrl: process.env.ASAAS_API_URL,
+            apiKey: process.env.ASAAS_API_KEY,
+        })
+        if (!customer.ok) {
+            if (customer.reason === 'PROFILE_INCOMPLETE') {
+                return Response.json({ message: 'Para gerar o PIX, seu cadastro precisa ter nome completo, CPF, CEP e número do endereço. Nenhuma vaga foi reservada. Se seus dados já estiverem completos, fale com a equipe CIEPS.' }, { status: 400 });
+            }
+            return publicErrorResponse('Não foi possível preparar seu cadastro de pagamento agora, e nenhuma vaga foi reservada. Tente novamente em alguns minutos; se continuar, fale com a equipe CIEPS.');
+        }
+
         const updateResult = await db.collection("minicursos").findOneAndUpdate(
             {
                 _id: new ObjectId(eventId),
@@ -188,26 +204,6 @@ export const POST = withApiAuthRequired(async function POST(request) {
         const descricao = "Pagamento ATIVIDADES - CIEPS."
         const desconto = 0
 
-        // Puxando id API
-        const userInfos = await db.collection("usuarios").find(
-            { _id: new ObjectId(_id) },
-            {
-                projection: {
-                    _id: 0,
-                    id_api: 1
-                }
-            }
-        ).toArray()
-
-        if (userInfos.length == 0) {
-            await releaseSeat()
-            return publicErrorResponse('Não foi possível gerar o PIX porque seu cadastro de pagamento está incompleto, e sua vaga não foi reservada. Recarregue a página e tente novamente; se continuar, fale com a equipe CIEPS.');
-        }
-        if (!userInfos[0].id_api) {
-            await releaseSeat()
-            return publicErrorResponse('Não foi possível gerar o PIX porque seu cadastro de pagamento está incompleto, e sua vaga não foi reservada. Recarregue a página e tente novamente; se continuar, fale com a equipe CIEPS.');
-        }
-
 
         const options = {
             method: 'POST',
@@ -220,7 +216,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 billingType: 'PIX',
                 discount: { value: desconto },
                 callback: { successUrl: urlCallback, autoRedirect: false },
-                customer: userInfos[0].id_api,
+                customer: customer.customerId,
                 value: valor,
                 dueDate: data_vencimento,
                 postalService: false,
