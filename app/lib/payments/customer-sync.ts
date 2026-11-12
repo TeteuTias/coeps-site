@@ -302,6 +302,27 @@ export async function preparePaymentCustomer(input: {
         return { ok: true, customerId: storedCustomerId, payer: normalized.value };
     }
 
+    const resolved = await resolveNewAsaasCustomer({ ...input, customer, now });
+    if (resolved.ok === false) return resolved;
+    return { ok: true, customerId: resolved.customerId, payer: normalized.value };
+}
+
+/** Localiza ou cria o Customer de quem ainda não tem `id_api` e o grava no usuário. */
+export async function resolveNewAsaasCustomer(input: {
+    db: Db;
+    owner: ObjectId;
+    userId: string;
+    customer: AsaasCustomerPayload;
+    apiUrl: string;
+    apiKey: string;
+    fetchImpl?: typeof fetch;
+    now?: () => Date;
+}): Promise<
+    | { ok: true; customerId: string }
+    | { ok: false; status: 409 | 422 | 503; code: string; message: string }
+> {
+    const now = input.now ?? (() => new Date());
+    const { customer } = input;
     const ensured = await ensureAsaasCustomer({
         db: input.db,
         userId: input.userId,
@@ -341,5 +362,5 @@ export async function preparePaymentCustomer(input: {
     }
 
     await persistResolvedCustomer(input.db, input.owner, ensured.customerId, now());
-    return { ok: true, customerId: ensured.customerId, payer: normalized.value };
+    return { ok: true, customerId: ensured.customerId };
 }

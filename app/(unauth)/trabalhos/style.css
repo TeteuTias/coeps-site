@@ -442,6 +442,288 @@
   text-align: right;
 }
 
+/* Programação de apresentações */
+.programacao {
+  display: grid;
+  gap: 1rem;
+}
+
+.programacao .is-oral { --prog-cor: var(--cieps-blue); --prog-texto: var(--cieps-blue); }
+.programacao .is-poster-pares { --prog-cor: var(--cieps-red); --prog-texto: var(--cieps-red); }
+/* Amarelo só como acento; o texto usa um tom mais escuro para manter contraste. */
+.programacao .is-poster-impares { --prog-cor: var(--cieps-yellow); --prog-texto: #9a5a00; }
+
+.programacao-cabecalho {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  justify-content: space-between;
+}
+
+.programacao-cabecalho .trabalhos-section-heading {
+  flex: 1 1 520px;
+}
+
+.programacao-cabecalho .cieps-kicker {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+.programacao-cabecalho p {
+  color: var(--cieps-muted);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 62ch;
+}
+
+.programacao-abas {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.programacao-aba {
+  align-items: center;
+  background: var(--cieps-paper-strong);
+  border: 1px solid var(--cieps-line);
+  border-top: 4px solid var(--prog-cor);
+  color: var(--cieps-ink);
+  cursor: pointer;
+  display: grid;
+  font: inherit;
+  gap: 0.85rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 1rem 1.1rem;
+  text-align: left;
+  transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.programacao-aba:hover {
+  box-shadow: var(--cieps-shadow);
+}
+
+.programacao-aba:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--prog-cor) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.programacao-aba[aria-selected='true'] {
+  background: var(--cieps-ink);
+  border-color: var(--cieps-ink);
+  border-top-color: var(--prog-cor);
+  box-shadow: var(--cieps-shadow);
+  color: #fff;
+}
+
+.programacao-aba-icone {
+  align-items: center;
+  background: color-mix(in srgb, var(--prog-cor) 12%, transparent);
+  border-radius: 6px;
+  color: var(--prog-texto);
+  display: inline-flex;
+  height: 42px;
+  justify-content: center;
+  width: 42px;
+}
+
+.programacao-aba[aria-selected='true'] .programacao-aba-icone {
+  background: color-mix(in srgb, var(--prog-cor) 30%, transparent);
+  color: #fff;
+}
+
+.programacao-aba-texto {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.programacao-aba-texto strong {
+  font-size: 1.05rem;
+}
+
+.programacao-aba-texto span {
+  align-items: center;
+  display: inline-flex;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  gap: 0.35rem;
+}
+
+.programacao-aba-texto small {
+  color: var(--cieps-muted);
+  font-size: 0.8rem;
+}
+
+.programacao-aba[aria-selected='true'] .programacao-aba-texto small {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.programacao-aba-total {
+  color: var(--prog-texto);
+  font-size: 2.4rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.programacao-aba[aria-selected='true'] .programacao-aba-total {
+  color: #fff;
+}
+
+.programacao-busca {
+  max-width: 640px;
+}
+
+.programacao-painel {
+  border-top: 4px solid var(--prog-cor);
+  padding: 0.4rem 1.35rem 1.35rem;
+}
+
+.programacao-horarios,
+.programacao-posteres {
+  display: grid;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.programacao-horario {
+  border-top: 1px solid var(--cieps-line);
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  padding: 1rem 0;
+}
+
+.programacao-hora {
+  align-content: start;
+  display: grid;
+  gap: 0.15rem;
+  position: sticky;
+  top: 6.5rem;
+}
+
+.programacao-hora strong {
+  color: var(--cieps-blue);
+  font-size: 1.9rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.programacao-hora span {
+  color: var(--cieps-muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.programacao-salas {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.programacao-card,
+.programacao-poster {
+  background: #fff;
+  border: 1px solid var(--cieps-line);
+  border-radius: 6px;
+}
+
+.programacao-card {
+  align-content: start;
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.85rem;
+}
+
+.programacao-local {
+  align-items: center;
+  color: var(--cieps-blue);
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 800;
+  gap: 0.3rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.programacao-card h3,
+.programacao-poster h3 {
+  color: var(--cieps-ink);
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.programacao-card p,
+.programacao-poster p {
+  color: var(--cieps-ink);
+  font-size: 0.86rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.programacao-card small,
+.programacao-poster small {
+  color: var(--cieps-muted);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+}
+
+.programacao-posteres {
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: 0.25rem;
+}
+
+.programacao-poster {
+  align-items: start;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 4.25rem minmax(0, 1fr);
+  padding: 0.9rem;
+}
+
+.programacao-poster > div {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.programacao-painel-numero {
+  align-items: center;
+  background: color-mix(in srgb, var(--prog-cor) 12%, #fff);
+  border-radius: 6px;
+  color: var(--prog-texto);
+  display: flex;
+  font-size: 1.9rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  height: 4.25rem;
+  justify-content: center;
+}
+
+.programacao-vazio {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1rem 0 0.5rem;
+}
+
+.programacao-vazio p {
+  color: var(--cieps-muted);
+  margin: 0;
+}
+
+.programacao-vazio-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
 .spin {
   animation: cieps-spin 1s linear infinite;
 }
@@ -466,6 +748,25 @@
   .aprovados-resumo {
     grid-column: 1 / -1;
   }
+
+  /* Sem espaço para 5 salas lado a lado: os cards empilham e a sala vira o rótulo. */
+  .programacao-salas {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .programacao-salas .programacao-card {
+    grid-column: auto !important;
+  }
+
+  .programacao-posteres {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  .programacao-abas {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {
@@ -481,6 +782,34 @@
 
   .trabalhos-action-row {
     flex-direction: column;
+  }
+
+  .programacao-horario {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+
+  .programacao-hora {
+    align-items: baseline;
+    background: var(--cieps-paper-strong);
+    display: flex;
+    gap: 0.6rem;
+    padding: 0.35rem 0;
+    top: 5.5rem;
+    z-index: 1;
+  }
+
+  .programacao-salas {
+    grid-template-columns: 1fr;
+  }
+
+  .programacao-painel {
+    padding: 0.4rem 1rem 1rem;
+  }
+
+  .programacao-cabecalho > a {
+    justify-content: center;
+    width: 100%;
   }
 
   .trabalhos-modelo-actions {

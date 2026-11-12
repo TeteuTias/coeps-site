@@ -3,9 +3,49 @@ import { ObjectId, type Db, type Document } from 'mongodb';
 import {
     buildAsaasCustomerPayload,
     normalizePaymentCustomerInput,
+    resolveNewAsaasCustomer,
     updateExistingAsaasCustomer,
     type CustomerSyncStatus,
 } from './customer-sync.ts';
+
+export type ProfileCustomerResult =
+    | { ok: true; customerId: string }
+    | { ok: false; reason: 'PROFILE_INCOMPLETE' | 'CUSTOMER_FAILED' };
+
+/**
+ * Devolve o `id_api` do usuário e, se faltar, cria o Customer com os dados do cadastro.
+ * Quem entrou por cortesia (profissional da saúde) não passou pela criação do Customer no ingresso.
+ */
+export async function ensureProfileCustomer(input: {
+    db: Db;
+    owner: ObjectId;
+    userId: string;
+    apiUrl?: string;
+    apiKey?: string;
+    fetchImpl?: typeof fetch;
+}): Promise<ProfileCustomerResult> {
+    const user = await input.db.collection('usuarios').findOne(
+        { _id: input.owner },
+        { projection: { id_api: 1, isPos_registration: 1, informacoes_usuario: 1 } },
+    );
+    const storedId = typeof user?.id_api === 'string' ? user.id_api.trim() : '';
+    if (storedId) return { ok: true, customerId: storedId };
+
+    const customer = user?.isPos_registration === true ? buildProfileCustomer(user, input.userId) : null;
+    if (!customer) return { ok: false, reason: 'PROFILE_INCOMPLETE' };
+    if (!input.apiUrl || !input.apiKey) return { ok: false, reason: 'CUSTOMER_FAILED' };
+
+    const resolved = await resolveNewAsaasCustomer({
+        db: input.db,
+        owner: input.owner,
+        userId: input.userId,
+        customer,
+        apiUrl: input.apiUrl,
+        apiKey: input.apiKey,
+        fetchImpl: input.fetchImpl,
+    });
+    return resolved.ok ? { ok: true, customerId: resolved.customerId } : { ok: false, reason: 'CUSTOMER_FAILED' };
+}
 
 type SyncResult = {
     status: CustomerSyncStatus | 'IDLE';
