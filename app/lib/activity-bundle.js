@@ -8,6 +8,17 @@ export function includedActivityIds(activity) {
         .map((id) => new ObjectId(String(id)));
 }
 
+// O Admin grava em minicursos.cancelamentosSemEstorno quem foi tirado sem estorno (aceitou perder o valor)
+// e com quais cobranças. Pagamento ou confirmação posterior dessas cobranças não reinscreve a pessoa.
+// Uma compra nova tem outra cobrança e entra normalmente.
+export function notCancelledWithoutRefund(userId, chargeId) {
+    return {
+        cancelamentosSemEstorno: {
+            $not: { $elemMatch: { userId: String(userId), cobrancas: String(chargeId) } },
+        },
+    };
+}
+
 /** action: 'add' | 'remove'. A vaga da atividade principal já limita as incluídas. */
 export async function syncIncludedActivities(db, activityId, userId, action, session) {
     const activityObjectId = new ObjectId(String(activityId));
