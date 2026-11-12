@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { after } from 'next/server.js';
 import { connectToDatabase } from '../../../../lib/mongodb.js';
-import { syncIncludedActivities } from '../../../../lib/activity-bundle.js';
+import { notCancelledWithoutRefund, syncIncludedActivities } from '../../../../lib/activity-bundle.js';
 import {
   consumeDiscountCode,
   releaseDiscountReservation,
@@ -616,12 +616,18 @@ export async function updateLegacyPayment(
 
   if (storedPayment?._type === 'activity' && ObjectId.isValid(String(storedPayment?._eventID))) {
     if (isAccessGrantingEvent(event, payment)) {
-      await db.collection('minicursos').updateOne(
-        { _id: new ObjectId(storedPayment._eventID) },
+      const reinscricao = await db.collection('minicursos').updateOne(
+        {
+          _id: new ObjectId(storedPayment._eventID),
+          ...notCancelledWithoutRefund(storedPayment._userId, storedPayment.id),
+        },
         { $addToSet: { participants: storedPayment._userId } },
         { session: mongoSession },
       );
-      await syncIncludedActivities(db, storedPayment._eventID, storedPayment._userId, 'add', mongoSession);
+      // Sem match: atividade inexistente ou cancelada sem estorno pelo Admin; não entra nas etapas do pacote.
+      if (reinscricao.matchedCount > 0) {
+        await syncIncludedActivities(db, storedPayment._eventID, storedPayment._userId, 'add', mongoSession);
+      }
     } else if (isCancelledEvent(event) || isFullRefundEvent(event)) {
       await db.collection('minicursos').updateOne(
         { _id: new ObjectId(storedPayment._eventID) },
