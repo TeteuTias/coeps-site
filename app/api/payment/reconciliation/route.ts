@@ -19,6 +19,7 @@ import {
 } from '../../../lib/payments/overdue.ts';
 import { isRemoteWorkSession } from '../../../lib/remote-work-access.ts';
 import { releaseUnpaidActivitySeats } from '../../../lib/payments/activity-seat-release.ts';
+import { ATOR_SISTEMA, registrarLog } from '../../../lib/auditoria.js';
 import {
     markProductPaymentPending,
     releaseRemoteWorkAccessPayment,
@@ -1107,6 +1108,29 @@ export async function POST(request: Request) {
                     (mongoSession) => updateLegacyPayment(db, payload, mongoSession),
                 ),
             });
+            // Aba Logs do Admin: cada vaga liberada (ou pagamento achado) pela rodada automática.
+            for (const detail of report.details) {
+                const liberou = detail.outcome === 'released';
+                const confirmou = detail.outcome === 'confirmed';
+                await registrarLog(db, {
+                    chave: `liberacao:${detail.paymentId}:${detail.outcome}`,
+                    origem: 'sistema',
+                    acao: liberou
+                        ? 'inscricao.liberacao_automatica'
+                        : confirmou ? 'pagamento.atividade_achado_na_reconciliacao' : 'inscricao.liberacao_automatica_falhou',
+                    categoria: 'inscricao',
+                    resumo: liberou
+                        ? 'Reserva de 15 min venceu sem pagamento: cobrança excluída no Asaas e vaga liberada'
+                        : confirmou
+                            ? 'Reconciliação achou o pagamento no Asaas (webhook perdido): inscrição confirmada'
+                            : 'Liberação automática não conseguiu concluir; tenta de novo na próxima rodada',
+                    sucesso: detail.outcome !== 'failed',
+                    ator: ATOR_SISTEMA,
+                    alvo: { usuarioId: detail.userId, minicursoId: detail.activityId, minicursoNome: detail.activityName, cobrancaId: detail.paymentId },
+                    antes: { statusGravado: detail.storedStatus, statusNoAsaas: detail.gatewayStatus },
+                    depois: { inscrito: confirmou ? true : liberou ? false : null },
+                });
+            }
             activitySeats = {
                 released: report.released,
                 confirmed: report.confirmed,

@@ -1421,6 +1421,24 @@ test('atividade vencida mantem participante e confirmacao tardia o reinsere', as
         (await db.collection('minicursos').findOne({ _id: activityId }))?.participants.length,
         0,
     );
+
+    // Aba Logs do Admin: confirmação e exclusão da cobrança ficam registradas, uma vez cada.
+    await runPaymentTransaction(client, (session) => updateLegacyPayment(db, {
+        id: 'evt_activity_deleted_repetido',
+        event: 'PAYMENT_DELETED',
+        payment: { ...payment, status: 'DELETED' },
+    }, session));
+    const logs = await db.collection('logs_auditoria')
+        .find({ 'alvo.cobrancaId': payment.id })
+        .sort({ em: 1 })
+        .toArray();
+    assert.deepEqual(logs.map((l) => l.acao), ['pagamento.atividade_confirmado', 'inscricao.removida_cobranca_excluida']);
+    assert.equal(logs[0].origem, 'webhook');
+    assert.equal(logs[0].ator.tipo, 'asaas');
+    assert.equal(logs[0].alvo.minicursoId, String(activityId));
+    assert.equal(logs[0].alvo.usuarioId, String(userId));
+    assert.equal(logs[0].depois.inscrito, true);
+    assert.equal(logs[1].depois.inscrito, false);
 });
 
 test('pacote de atividade: confirmacao inclui as etapas e estorno remove das tres', async () => {

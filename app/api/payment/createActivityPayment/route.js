@@ -9,6 +9,7 @@ import { acquireRegistrationLock, includedActivityIds, syncIncludedActivities } 
 import { hasScheduleConflict } from '@/lib/schedule-conflict';
 import { ACTIVITY_SEAT_HOLD_MINUTES, activityChargeState } from '@/lib/activity-charge-state';
 import { ensureProfileCustomer } from '@/lib/payments/customer-profile-sync';
+import { atorCongressista, origemDoPedido, registrarLog } from '@/lib/auditoria';
 //
 //
 //
@@ -85,7 +86,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
                 if (!eventStatus[0].isOpen) {
                     return Response.json({ message: 'Não é mais possível se inscrever no evento' }, { status: 400 });
                 }
-                return await renewOverdueCharge(db, _id, charge, today)
+                return await renewOverdueCharge(db, _id, charge, today, request, String(eventId))
             }
             return Response.json({ message: 'Você já está inscrito nesse evento.' }, { status: 402 });
         }
@@ -259,6 +260,17 @@ export const POST = withApiAuthRequired(async function POST(request) {
             return Response.json({ "erro": "Ocorreu algum erro, por favor, recarregue a página. [result.modifiedCount === 0 - dbUpdateOne]" }, { status: 500 })
         }
 
+        await registrarLog(db, {
+            origem: 'site',
+            acao: 'inscricao.reservar',
+            categoria: 'inscricao',
+            resumo: `Reservou vaga e gerou PIX (vaga guardada por ${ACTIVITY_SEAT_HOLD_MINUTES} min)`,
+            ator: atorCongressista(_id),
+            alvo: { usuarioId: _id, minicursoId: eventId, minicursoNome: eventStatus[0].name, cobrancaId: responseJson?.id },
+            depois: { inscrito: true, cobranca: { id: responseJson?.id, status: responseJson?.status, value: responseJson?.value, dueDate: responseJson?.dueDate } },
+            requisicao: origemDoPedido(request),
+        })
+
         return Response.json({
             message: `Sua vaga está reservada por ${ACTIVITY_SEAT_HOLD_MINUTES} minutos. Pague o PIX nesse prazo para confirmar a inscrição; sem pagamento, a vaga é liberada. Para pagar, clique no botão abaixo ou acesse o menu MEUS PAGAMENTOS.`,
             "link": responseJson.invoiceUrl,
@@ -277,7 +289,7 @@ export const POST = withApiAuthRequired(async function POST(request) {
 // A reserva da vaga dura 15 minutos. Quem deixou passar e ainda não teve a vaga liberada (a liberação
 // roda na reconciliação) pode reservar de novo: a mesma cobrança é reaberta, sem criar uma segunda.
 // Se o vencimento do PIX já passou, o Asaas recebe a nova data.
-async function renewOverdueCharge(db, userId, charge, today) {
+async function renewOverdueCharge(db, userId, charge, today, request, eventId) {
     const set = { 'pagamento.lista_pagamentos.$[charge]._reservedAt': new Date() }
     let link = charge.link
     const pastDue = typeof charge.dueDate !== 'string' || charge.dueDate.slice(0, 10) < today
@@ -311,6 +323,16 @@ async function renewOverdueCharge(db, userId, charge, today) {
     if (renewed.modifiedCount === 0) {
         return Response.json({ message: RESERVA_LIBERADA }, { status: 409 });
     }
+    await registrarLog(db, {
+        origem: 'site',
+        acao: 'inscricao.renovar_reserva',
+        categoria: 'inscricao',
+        resumo: `Renovou a reserva da vaga (mesma cobrança, mais ${ACTIVITY_SEAT_HOLD_MINUTES} min)`,
+        ator: atorCongressista(userId),
+        alvo: { usuarioId: userId, minicursoId: eventId, cobrancaId: charge.id },
+        detalhes: { pixVencidoAtualizado: pastDue },
+        requisicao: origemDoPedido(request),
+    })
     return Response.json({
         message: `Sua vaga está reservada por mais ${ACTIVITY_SEAT_HOLD_MINUTES} minutos. Pague o PIX nesse prazo; sem pagamento, a vaga é liberada. Para pagar, clique no botão abaixo ou acesse o menu MEUS PAGAMENTOS.`,
         link,

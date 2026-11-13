@@ -10,6 +10,7 @@ import ts from 'typescript';
 import * as activityBundle from '../../../activity-bundle.js';
 import * as activityChargeState from '../../../activity-charge-state.js';
 import * as scheduleConflict from '../../../schedule-conflict.js';
+import * as auditoria from '../../../auditoria.js';
 
 // Rotas reais de inscrição/compra de atividade contra um Mongo em memória (replica set).
 // Asaas e Auth0 são falsos: nenhuma chamada sai da máquina.
@@ -91,6 +92,7 @@ function loadRoute(path: string, method: string, userId: string) {
         '@/lib/activity-charge-state': activityChargeState,
         // PR #91: cliente Asaas do cadastro antes do PIX (aqui já existe: id_api do usuário de teste)
         '@/lib/payments/customer-profile-sync': { ensureProfileCustomer: async () => ({ ok: true, customerId: 'cus_ficticio' }) },
+        '@/lib/auditoria': auditoria,
     };
     const fakeFetch = async () => {
         asaas.calls += 1;
@@ -280,3 +282,25 @@ test('PIX da atividade: dentro dos 15 minutos devolve o mesmo; reserva expirada 
     assert.equal((await buy(userId)(ids.turma1)).status, 402);
 });
 
+test('aba Logs: reserva, renovação, inscrição e saída de atividade gratuita ficam registradas', async () => {
+    const userId = await newUser();
+    assert.equal((await buy(userId)(ids.turma1)).status, 200);
+    assert.equal((await enroll(userId)(ids.teoriaAvulsa)).status, 400, 'teórica avulsa no mesmo horário do pacote é recusada');
+    const outro = await newUser();
+    assert.equal((await enroll(outro)(ids.teoriaAvulsa)).status, 200);
+    assert.equal((await leave(outro)(ids.teoriaAvulsa)).status, 200);
+
+    const logs = await db.collection('logs_auditoria').find({}).sort({ em: 1 }).toArray();
+    const acoes = logs.map((l) => `${l.acao}:${l.alvo.usuarioId}`);
+    assert.deepEqual(acoes, [
+        `inscricao.reservar:${userId}`,
+        `inscricao.inscrever:${outro}`,
+        `inscricao.cancelar_pelo_congressista:${outro}`,
+    ]);
+    const reserva = logs[0];
+    assert.equal(reserva.origem, 'site');
+    assert.equal(reserva.ator.tipo, 'congressista');
+    assert.equal(reserva.alvo.minicursoId, String(ids.turma1));
+    assert.equal(reserva.alvo.minicursoNome, 'TURMA 1');
+    assert.match(String(reserva.alvo.cobrancaId), /^pay_\d+$/);
+});

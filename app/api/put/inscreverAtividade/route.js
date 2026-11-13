@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth0-compat';
 import { withApiAuthRequired } from '@/lib/auth0-compat';
 import { DateTime } from "luxon"
 import { acquireRegistrationLock } from '@/lib/activity-bundle';
+import { atorCongressista, origemDoPedido, registrarLog } from '@/lib/auditoria';
 //
 //
 //
@@ -117,6 +118,16 @@ export const PUT = withApiAuthRequired(async function (req) {
                 case !updateResult.participants.includes(userId):
                     return Response.json({ message: 'Infelizmente, as vagas se esgotaram.' }, { status: 403 });
                 case updateResult.participants.includes(userId):
+                    await registrarLog(db, {
+                        origem: 'site',
+                        acao: 'inscricao.inscrever',
+                        categoria: 'inscricao',
+                        resumo: 'Inscreveu-se em atividade gratuita',
+                        ator: atorCongressista(userId),
+                        alvo: { usuarioId: userId, minicursoId: String(eventId), minicursoNome: updateResult.name },
+                        depois: { inscrito: true, inscritos: updateResult.participants.length },
+                        requisicao: origemDoPedido(req),
+                    })
                     return Response.json({ message: 'Parabens! Você foi inscrito no evento!' }, { status: 200 });
             }
 

@@ -4,6 +4,7 @@ import { getSession } from '@/lib/auth0-compat';
 import { withApiAuthRequired } from '@/lib/auth0-compat';
 import { DateTime } from "luxon"
 import { syncIncludedActivities } from '@/lib/activity-bundle';
+import { atorCongressista, origemDoPedido, registrarLog } from '@/lib/auditoria';
 //
 //
 //
@@ -73,6 +74,16 @@ export const DELETE = withApiAuthRequired(async function (req) {
                     return Response.json({ message: 'Não foi possível retirar sua inscrição. Regarregue a página e tente novamente.' }, { status: 403 });
             }
             await syncIncludedActivities(db, eventId, userId, 'remove')
+            await registrarLog(db, {
+                origem: 'site',
+                acao: 'inscricao.cancelar_pelo_congressista',
+                categoria: 'inscricao',
+                resumo: 'Retirou a própria inscrição de atividade gratuita',
+                ator: atorCongressista(userId),
+                alvo: { usuarioId: userId, minicursoId: String(eventId), minicursoNome: updateResult.name },
+                depois: { inscrito: false },
+                requisicao: origemDoPedido(req),
+            })
 
             return Response.json({ message: 'Sua inscrição foi retirada com sucesso!' }, { status: 200 });
 
