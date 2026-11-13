@@ -2,6 +2,7 @@ import { ObjectId } from 'mongodb';
 import { after } from 'next/server.js';
 import { connectToDatabase } from '../../../../lib/mongodb.js';
 import { notCancelledWithoutRefund, syncIncludedActivities } from '../../../../lib/activity-bundle.js';
+import { ATOR_ASAAS, ATOR_SISTEMA, registrarLog } from '../../../../lib/auditoria.js';
 import {
   consumeDiscountCode,
   releaseDiscountReservation,
@@ -484,6 +485,26 @@ async function markFinancialEventForReview(
   ]);
 }
 
+// Aba Logs do Admin: efeito do evento de pagamento na inscrição da atividade.
+// Uma linha por (cobrança, evento, efeito): a transação repetir não duplica.
+async function registrarEfeitoNaAtividade(db, payload, storedPayment, acao, resumo, extra = {}) {
+  const payment = payload?.payment || {};
+  const event = String(payload?.event || '');
+  const veioDoAsaas = Boolean(getRequiredWebhookEventId(payload));
+  await registrarLog(db, {
+    chave: `atividade:${payment.id || storedPayment?.id}:${event}:${acao}`,
+    origem: veioDoAsaas ? 'webhook' : 'sistema',
+    acao,
+    categoria: 'pagamento',
+    resumo,
+    ator: veioDoAsaas ? ATOR_ASAAS : ATOR_SISTEMA,
+    alvo: { usuarioId: storedPayment?._userId, minicursoId: storedPayment?._eventID, cobrancaId: payment.id || storedPayment?.id },
+    antes: { statusGravado: storedPayment?.status ?? null },
+    depois: extra.depois,
+    detalhes: { evento: event, valor: payment.value ?? storedPayment?.value ?? null, dataPagamento: payment.clientPaymentDate || payment.paymentDate || null, ...(extra.detalhes || {}) },
+  });
+}
+
 export async function updateLegacyPayment(
   db,
   payload,
@@ -565,6 +586,8 @@ export async function updateLegacyPayment(
         { session: mongoSession },
       );
       await syncIncludedActivities(db, storedPayment._eventID, storedPayment._userId, 'remove', mongoSession);
+      await registrarEfeitoNaAtividade(db, payload, storedPayment, 'inscricao.removida_cobranca_excluida',
+        'Cobrança da atividade excluída no Asaas: pessoa retirada da atividade e das etapas', { depois: { inscrito: false } });
     }
     return true;
   }
@@ -628,6 +651,11 @@ export async function updateLegacyPayment(
       if (reinscricao.matchedCount > 0) {
         await syncIncludedActivities(db, storedPayment._eventID, storedPayment._userId, 'add', mongoSession);
       }
+      await registrarEfeitoNaAtividade(db, payload, storedPayment, 'pagamento.atividade_confirmado',
+        reinscricao.matchedCount > 0
+          ? 'Pagamento da atividade confirmado: inscrição garantida'
+          : 'Pagamento da atividade confirmado, mas a pessoa NÃO foi recolocada (cancelada sem estorno pelo Admin ou atividade inexistente)',
+        { depois: { inscrito: reinscricao.matchedCount > 0 } });
     } else if (isCancelledEvent(event) || isFullRefundEvent(event)) {
       await db.collection('minicursos').updateOne(
         { _id: new ObjectId(storedPayment._eventID) },
@@ -635,6 +663,12 @@ export async function updateLegacyPayment(
         { session: mongoSession },
       );
       await syncIncludedActivities(db, storedPayment._eventID, storedPayment._userId, 'remove', mongoSession);
+      await registrarEfeitoNaAtividade(db, payload, storedPayment,
+        isFullRefundEvent(event) ? 'inscricao.removida_estorno' : 'inscricao.removida_cobranca_cancelada',
+        isFullRefundEvent(event)
+          ? 'Cobrança da atividade estornada: pessoa retirada da atividade'
+          : 'Cobrança da atividade cancelada: pessoa retirada da atividade',
+        { depois: { inscrito: false } });
     }
   }
   return true;
@@ -1799,6 +1833,34 @@ async function resolveCheckoutPaidPayload(payload) {
   };
 }
 
+// Aba Logs do Admin: todo evento do Asaas processado (ou que falhou) vira uma linha.
+async function registrarWebhook(db, claimed, payload, status, result = {}) {
+  const payment = payload?.payment || claimed?.payload?.payment || {};
+  const evento = String(claimed?.eventType || payload?.event || 'desconhecido');
+  const situacao = status === 'PROCESSED' ? 'processado' : status === 'REVIEW_REQUIRED' ? 'precisa de revisão' : 'falhou';
+  await registrarLog(db, {
+    chave: `webhook:${claimed.eventId}:${status}`,
+    origem: 'webhook',
+    acao: `pagamento.webhook.${evento}`,
+    categoria: 'pagamento',
+    resumo: `Asaas: ${evento} (${situacao})`,
+    sucesso: status === 'PROCESSED',
+    ator: ATOR_ASAAS,
+    alvo: { cobrancaId: claimed.paymentId || payment.id },
+    detalhes: {
+      evento,
+      eventoId: claimed.eventId,
+      status,
+      valor: payment.value ?? null,
+      formaPagamento: payment.billingType ?? null,
+      cliente: payment.customer ?? null,
+      referencia: payment.externalReference ?? null,
+      compra: result?.sessionId ? String(result.sessionId) : null,
+      motivo: result?.reviewReason ?? null,
+    },
+  });
+}
+
 async function processClaimedWebhookEvent(db, client, claimed) {
   try {
     const payload = await resolveCheckoutPaidPayload(claimed.payload);
@@ -1814,6 +1876,7 @@ async function processClaimedWebhookEvent(db, client, claimed) {
       paymentId: payload?.payment?.id || null,
       ...(result.reviewReason ? { reviewReason: result.reviewReason } : {}),
     });
+    await registrarWebhook(db, claimed, payload, status, result);
     console.info('Webhook de pagamento processado', {
       eventId: claimed.eventId,
       event: claimed.eventType,
@@ -1827,6 +1890,7 @@ async function processClaimedWebhookEvent(db, client, claimed) {
         reviewReason: error.reason,
         paymentId: claimed.paymentId,
       });
+      await registrarWebhook(db, claimed, claimed.payload, 'REVIEW_REQUIRED', { reviewReason: error.reason });
       console.warn('Webhook de pagamento requer revisão', {
         eventId: claimed.eventId,
         event: claimed.eventType,
@@ -1837,6 +1901,9 @@ async function processClaimedWebhookEvent(db, client, claimed) {
     }
 
     const status = await failWebhookEvent(db, claimed, error);
+    await registrarWebhook(db, claimed, claimed.payload, status === 'PROCESSED' ? 'FAILED' : status, {
+      reviewReason: error instanceof Error ? error.message.slice(0, 200) : 'unknown_error',
+    });
     console.error('Falha ao processar webhook de pagamento', {
       eventId: claimed.eventId,
       event: claimed.eventType,
