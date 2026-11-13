@@ -89,6 +89,8 @@ function loadRoute(path: string, method: string, userId: string) {
         '@/lib/activity-bundle': activityBundle,
         '@/lib/schedule-conflict': scheduleConflict,
         '@/lib/activity-charge-state': activityChargeState,
+        // PR #91: cliente Asaas do cadastro antes do PIX (aqui já existe: id_api do usuário de teste)
+        '@/lib/payments/customer-profile-sync': { ensureProfileCustomer: async () => ({ ok: true, customerId: 'cus_ficticio' }) },
     };
     const fakeFetch = async () => {
         asaas.calls += 1;
@@ -277,3 +279,4 @@ test('PIX da atividade: dentro dos 15 minutos devolve o mesmo; reserva expirada 
     await set({ status: 'PAYMENT_RECEIVED' });
     assert.equal((await buy(userId)(ids.turma1)).status, 402);
 });
+
